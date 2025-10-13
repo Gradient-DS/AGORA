@@ -1,0 +1,606 @@
+---
+alwaysApply: false
+---
+Based on the conventions in this repository, here's a general-purpose Python cursor rules file:
+
+```markdown
+# Python Development Standards
+
+## Project Structure
+
+Use src-layout for all production Python packages:
+
+```
+project-root/
+├── src/
+│   └── your_package/
+│       ├── __init__.py
+│       ├── cli.py              # CLI entry point
+│       ├── config.py           # Pydantic settings
+│       ├── logging_config.py   # Logging configuration
+│       ├── core/               # Pure business logic
+│       │   ├── __init__.py
+│       │   └── *.py
+│       ├── adapters/           # I/O abstraction
+│       │   ├── __init__.py
+│       │   └── *.py
+│       └── pipelines/          # Orchestration
+│           ├── __init__.py
+│           └── *.py
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_core.py
+│   ├── test_adapters.py
+│   └── test_pipelines.py
+├── data/                       # Local data files
+├── pyproject.toml
+├── pytest.ini
+├── pyrightconfig.json
+├── requirements-dev.txt
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+## Python Version
+
+Require Python 3.11 or higher for modern type hints and performance improvements.
+
+## Configuration with Pydantic
+
+Always use Pydantic Settings for configuration management:
+
+```python
+from functools import lru_cache
+from typing import Literal
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import SecretStr
+
+class Settings(BaseSettings):
+    env: Literal["prod", "staging", "dev"] = "dev"
+    debug: bool = False
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="APP_",
+        extra="ignore"
+    )
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+```
+
+**Configuration Rules:**
+- Use `pydantic-settings` v2+ with `BaseSettings`
+- Load from `.env` file with consistent prefix (e.g., `APP_`)
+- Cache settings with `@lru_cache` for singleton pattern
+- Use `SecretStr` for sensitive values (passwords, tokens, API keys)
+- Use `Literal` types for string enums
+- Always provide sensible defaults
+- Never commit `.env` files to version control
+
+## Architecture Layers
+
+Follow layered architecture: **Core → Adapters → Pipelines → CLI**
+
+### Core Layer (Pure Business Logic)
+- Contains pure functions with no I/O
+- No external dependencies (databases, APIs, file systems)
+- Easy to test and reason about
+- Examples: calculations, transformations, filtering
+
+### Adapter Layer (I/O Boundary)
+- Define interfaces using `Protocol` (not abstract base classes)
+- Implement adapters for external systems
+- No inheritance required
+- Examples: database clients, API clients, storage systems
+
+**Use Protocol for interfaces:**
+```python
+from typing import Protocol
+
+class Storage(Protocol):
+    def save(self, key: str, data: bytes) -> None: ...
+    def load(self, key: str) -> bytes: ...
+```
+
+### Pipeline Layer (Orchestration)
+- Coordinates core logic with adapters
+- Uses dependency injection
+- Handles error boundaries
+- Returns verifiable results
+
+### CLI Layer (Entry Point)
+- Thin layer for wiring components
+- Uses `argparse` for argument parsing
+- Configures logging
+- Handles exceptions and exit codes
+
+## Dependency Injection
+
+Always inject dependencies (especially adapters) as function parameters:
+
+```python
+def process_data(
+    input_path: str,
+    storage: Storage | None = None
+) -> int:
+    stg = storage or DefaultStorage()
+    # ... use stg
+    return count
+```
+
+**Benefits:**
+- Easy to test with mock implementations
+- Swappable implementations
+- Business logic independent of I/O details
+
+## Error Handling
+
+Create domain-specific exception classes and use error boundaries:
+
+```python
+class ProcessingError(Exception):
+    """Domain exception for processing failures."""
+
+def process_data(path: str) -> int:
+    try:
+        # ... processing logic ...
+        return count
+    except FileNotFoundError as e:
+        log.error("Input not found: %s", e)
+        raise ProcessingError(str(e)) from e
+    except Exception as e:
+        log.exception("Unexpected failure")
+        raise ProcessingError("unexpected failure") from e
+```
+
+**Error Handling Rules:**
+- Create domain-specific exception classes
+- Catch implementation exceptions (FileNotFoundError, IOError, etc.)
+- Raise domain exceptions with `from e` to preserve cause
+- Log errors before re-raising
+- Single exception type for callers to handle
+
+## Logging
+
+### Centralized Configuration
+
+Create `logging_config.py`:
+
+```python
+import logging
+from .config import get_settings
+
+def configure_logging() -> None:
+    cfg = get_settings()
+    level = getattr(logging, cfg.log_level.upper(), logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
+```
+
+### Module-Level Loggers
+
+```python
+import logging
+
+log = logging.getLogger(__name__)
+
+log.debug("Detailed information for debugging")
+log.info("General informational messages")
+log.warning("Warning messages for potentially harmful situations")
+log.error("Error messages: %s", error_detail)
+log.exception("Exception with full traceback")
+```
+
+**Logging Rules:**
+- Configure logging once at application entry point
+- Use `logging.getLogger(__name__)` for module loggers
+- Use lazy formatting: `log.info("Count: %s", count)` not f-strings
+- Choose appropriate levels (DEBUG, INFO, WARNING, ERROR)
+- Use `log.exception()` for unexpected errors (includes traceback)
+- Drive log level from configuration
+
+## Testing with pytest
+
+### Test Structure
+
+```python
+# tests/conftest.py
+import pytest
+
+@pytest.fixture
+def temp_dir(tmp_path):
+    """Create temporary directory for tests."""
+    test_dir = tmp_path / "test_data"
+    test_dir.mkdir()
+    return str(test_dir)
+
+# tests/test_module.py
+class MockStorage:
+    """Mock adapter for testing."""
+    def __init__(self):
+        self.saved = []
+    
+    def save(self, key: str, data: bytes) -> None:
+        self.saved.append((key, data))
+
+def test_process_data_counts_items(temp_dir):
+    """Test that processing returns correct count."""
+    mock = MockStorage()
+    count = process_data(temp_dir, storage=mock)
+    assert count == len(mock.saved)
+```
+
+**Testing Rules:**
+- Use pytest fixtures for test setup
+- Create simple mock classes (avoid `unittest.mock` when possible)
+- Test pure functions in isolation (fast, reliable)
+- Test adapters with real I/O
+- Test pipelines with mock adapters
+- Use descriptive test names: `test_<function>_<scenario>_<expected>`
+- One assertion concept per test
+- Test error boundaries with `pytest.raises`
+
+### pytest Configuration
+
+**pytest.ini:**
+```ini
+[pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts = -v --strict-markers
+```
+
+## CLI with argparse
+
+### Entry Point Pattern
+
+```python
+import argparse
+import sys
+from package.logging_config import configure_logging
+from package.pipelines import run_pipeline, PipelineError
+
+def app() -> None:
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(
+        prog="command-name",
+        description="Tool description"
+    )
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    
+    cmd = sub.add_parser("process", help="Process data")
+    cmd.add_argument("--input", default="data", help="Input directory")
+    cmd.add_argument("--output", default="output", help="Output directory")
+    
+    args = parser.parse_args()
+    configure_logging()
+    
+    try:
+        if args.cmd == "process":
+            count = run_pipeline(args.input, args.output)
+            print(f"Processed {count} items")
+            sys.exit(0)
+    except PipelineError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("\nInterrupted", file=sys.stderr)
+        sys.exit(130)
+```
+
+### Register in pyproject.toml
+
+```toml
+[project.scripts]
+command-name = "package.cli:app"
+```
+
+**CLI Rules:**
+- Use `argparse` with subparsers for extensibility
+- Provide help messages for all arguments
+- Use sensible defaults
+- Configure logging at entry point
+- Handle domain exceptions with appropriate exit codes (0=success, 1=error, 130=interrupted)
+- Write errors to `sys.stderr`
+
+## Type Hints
+
+Use modern type hints with future annotations:
+
+```python
+from __future__ import annotations
+from typing import Protocol, Literal, Iterator
+
+def process_items(
+    items: list[str],
+    config: dict[str, int] | None = None
+) -> tuple[int, list[str]]:
+    """Process items and return count and results."""
+    ...
+```
+
+**Type Hint Rules:**
+- Always include `from __future__ import annotations` at top
+- Use type hints for all function signatures
+- Use `|` for unions (not `Union`)
+- Use lowercase builtins: `list[str]` not `List[str]`
+- Use `Protocol` for interface definitions
+- Use `Literal` for string enums
+- Return type hints are mandatory
+- Use `Iterator` or `Iterable` for generators
+
+## Import Organization
+
+Order imports in three groups:
+1. Future imports and standard library
+2. Third-party packages
+3. Local package imports
+
+```python
+from __future__ import annotations
+import logging
+from pathlib import Path
+from typing import Protocol
+
+from pydantic_settings import BaseSettings
+
+from package.config import get_settings
+from package.core import process_data
+```
+
+**Import Rules:**
+- Use absolute imports from src package
+- Group imports with blank lines between groups
+- Let ruff handle sorting within groups
+
+## Docstrings (Google Style)
+
+Use Google-style docstrings for all public functions and classes:
+
+```python
+def process_data(
+    input_path: str,
+    batch_size: int = 100,
+    storage: Storage | None = None
+) -> int:
+    """Process data from input path and store results.
+    
+    This function reads data from the input path, processes it in batches,
+    and stores the results using the provided storage adapter.
+    
+    Args:
+        input_path: Path to input data directory
+        batch_size: Number of items to process per batch
+        storage: Storage adapter (defaults to FileStorage)
+    
+    Returns:
+        Number of items successfully processed
+    
+    Raises:
+        ProcessingError: If processing fails or input not found
+    """
+    ...
+```
+
+**Docstring Rules:**
+- First line: brief summary (imperative mood)
+- Optional: extended description after blank line
+- `Args:` section for parameters
+- `Returns:` section for return value
+- `Raises:` section for exceptions
+- No inline comments (per user preference, only at function/class level)
+
+## Tool Configuration
+
+### pyproject.toml
+
+```toml
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "your-package"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+]
+
+[project.scripts]
+your-command = "your_package.cli:app"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "D",   # pydocstyle (docstrings)
+]
+ignore = [
+    "D203",  # one-blank-line-before-class
+    "D213",  # multi-line-summary-second-line
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+### pyrightconfig.json
+
+```json
+{
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.11",
+  "reportMissingTypeStubs": false
+}
+```
+
+### requirements-dev.txt
+
+```
+black>=23.0.0
+pytest>=7.0.0
+ruff>=0.1.0
+```
+
+## Anti-Patterns to Avoid
+
+### ❌ Hardcoded Dependencies
+```python
+# BAD: Can't inject mock for testing
+storage = S3Storage(bucket_name)
+```
+
+### ❌ Direct I/O in Business Logic
+```python
+# BAD: Core logic coupled to I/O
+def calculate_total(file_path: str) -> int:
+    with open(file_path) as f:  # Direct I/O
+        data = json.load(f)
+    return sum(data)
+```
+
+### ❌ Letting Generic Exceptions Escape
+```python
+# BAD: Caller must handle multiple exception types
+def process():
+    file = open(path)  # May raise FileNotFoundError
+    data = json.loads(content)  # May raise JSONDecodeError
+```
+
+### ❌ Manual sys.argv Parsing
+```python
+# BAD: No help, validation, or error handling
+input_dir = sys.argv[1] if len(sys.argv) > 1 else "data"
+```
+
+### ❌ Abstract Base Classes for Interfaces
+```python
+# BAD: More complex than Protocol
+from abc import ABC, abstractmethod
+
+class Storage(ABC):
+    @abstractmethod
+    def save(self, key: str, data: bytes) -> None:
+        pass
+```
+
+### ❌ Swallowing Exceptions
+```python
+# BAD: Errors silently ignored
+try:
+    process_data()
+except Exception:
+    pass
+```
+
+### ❌ Global State
+```python
+# BAD: Global configuration
+CONFIG = load_config()
+
+def process():
+    use(CONFIG)
+```
+
+## Development Workflow
+
+### Setup
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e .
+pip install -r requirements-dev.txt
+```
+
+### Run Checks
+```bash
+ruff check src tests          # Lint
+black --check src tests       # Format check
+pytest                        # Run tests
+pytest -v                     # Verbose
+pytest -k "test_name"         # Run specific test
+```
+
+### Pre-commit
+Before committing code:
+1. `ruff check src tests` - no errors
+2. `black src tests` - format code
+3. `pytest` - all tests pass
+4. `pyright` (optional) - type check
+
+## Environment Variables
+
+### .env.example
+Provide example environment file:
+```bash
+APP_ENV=dev
+APP_DEBUG=false
+APP_LOG_LEVEL=INFO
+APP_DATABASE_URL=postgresql://localhost/db
+APP_API_TOKEN=your-token-here
+```
+
+### .gitignore
+Always ignore:
+```
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+```
+
+## Summary
+
+**Core Principles:**
+1. Layered architecture (core/adapters/pipelines/cli)
+2. Dependency injection for all I/O
+3. Protocol-based interfaces (not ABC)
+4. Domain-specific exceptions with error boundaries
+5. Centralized configuration with Pydantic
+6. Centralized logging configuration
+7. Comprehensive testing with mocks
+8. Modern type hints everywhere
+9. Google-style docstrings
+10. Tools: ruff, black, pytest, pyright
+
+**When to Use:**
+- Production applications
+- Multi-developer projects
+- Long-term maintenance
+- Comprehensive testing requirements
+- Multiple environments (dev/staging/prod)
+
+This architecture provides testability, maintainability, and scalability for professional Python projects.
+```
+
+This is a completely general Python cursor rules file that captures all the conventions from the repository without being specific to any particular project. You can copy this markdown to any Python project as `.cursorrules`.

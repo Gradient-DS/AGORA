@@ -1,0 +1,20 @@
+{
+  "name": "agora-c4-architecture",
+  "version": "1.0.0",
+  "description": "C4 Architecture diagrams voor AGORA",
+  "scripts": {
+    "up": "docker compose up -d",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f",
+    "restart": "docker compose restart"
+  },
+  "keywords": [
+    "c4",
+    "architecture",
+    "structurizr"
+  ],
+  "author": "NVWA",
+  "license": "UNLICENSED",
+  "private": true
+}
+

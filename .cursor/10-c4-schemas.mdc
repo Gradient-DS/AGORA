@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+
+## Error Checking Protocol
+
+After making ANY changes to files, always check for errors:
+
+1. **After editing code files**: Run `read_lints` on the modified file(s) to check for linting errors
+2. **After editing C4 diagrams** (`workspace.dsl`): Run `read_lints` to validate the DSL syntax
+3. **If errors are found**: Fix them immediately before proceeding
+4. **Never leave broken code**: Always ensure all linting errors are resolved
+
+This applies to all file modifications including:
+- Source code files (.ts, .tsx, .js, .py, etc.)
+- Configuration files (.json, .yml, .yaml)
+- C4 architecture files (.dsl)
+- Any other editable files in the workspace
