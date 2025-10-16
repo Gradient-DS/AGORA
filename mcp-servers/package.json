@@ -1,0 +1,23 @@
+{
+  "name": "agora-mcp-servers",
+  "version": "1.0.0",
+  "description": "MCP servers for AGORA multi-agent system",
+  "scripts": {
+    "build": "docker-compose build",
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f",
+    "restart": "docker-compose restart",
+    "clean": "docker-compose down -v --rmi all"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "agora",
+    "nvwa",
+    "multi-agent"
+  ],
+  "author": "AGORA Team",
+  "private": true
+}
+

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  agora-openai:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_OPENAI_API_KEY=${APP_OPENAI_API_KEY}
+      - APP_OPENAI_MODEL=gpt-4o
+      - APP_MCP_SERVERS=company-compliance=http://company-compliance:5001,regulation-analysis=http://regulation-analysis:5002,reporting=http://reporting:5003,risk-enforcement=http://risk-enforcement:5004,utilities=http://utilities:5005
+      - APP_GUARDRAILS_ENABLED=true
+      - APP_OTEL_ENDPOINT=http://otel-collector:4317
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+      - APP_LOG_LEVEL=INFO
+    networks:
+      - agora-network
+
+networks:
+  agora-network:
+    external: true
+    name: agora-network
+

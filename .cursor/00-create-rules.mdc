@@ -1,0 +1,85 @@
+---
+alwaysApply: false
+---
+# Cursor Rules Location
+
+How to add new cursor rules to the project
+
+## Rule File Location
+
+1. Always place rule files in `PROJECT_ROOT/.cursor/rules/`:
+   ```
+   .cursor/rules/
+   ├── your-rule-name.mdc
+   ├── another-rule.mdc
+   └── ...
+   ```
+
+2. Follow the naming convention:
+   - Use kebab-case for filenames
+   - Always use .mdc extension
+   - Make names descriptive of the rule's purpose
+   - Use numeric prefixes for ordering (00-, 01-, for common rules, 10-, 20-, etc. for topic-specific rules)
+
+3. Directory structure:
+   ```
+   PROJECT_ROOT/
+   ├── .cursor/
+   │   └── rules/
+   │       ├── 00-foundation.mdc
+   │       ├── 01-conventions.mdc
+   │       └── 10-topic-specific.mdc
+   └── ...
+   ```
+
+4. Never place rule files:
+   - In the project root
+   - In subdirectories outside .cursor/rules
+   - In any other location
+
+## Rule File Structure
+
+Cursor rules have the following structure:
+
+```markdown
+---
+description: Short description of the rule's purpose
+globs: optional/path/pattern/**/* 
+alwaysApply: false
+---
+
+# Rule Title
+
+Main content explaining the rule with markdown formatting.
+
+1. Step-by-step instructions
+2. Code examples
+3. Guidelines
+
+Example:
+```python
+# Good example
+def good_example():
+    # Implementation following guidelines
+    pass
+
+# Bad example
+def bad_example():
+    # Implementation not following guidelines
+    pass
+```
+```
+
+## Header Fields
+
+- `description`: Brief explanation of what the rule does (required)
+- `globs`: File patterns where this rule applies (optional, array or string)
+- `alwaysApply`: Whether to include in all conversations (default: false)
+
+## Best Practices
+
+- Use `alwaysApply: true` for global conventions (00-, 01- prefix)
+- Use specific `globs` for topic-focused rules (10-, 20- prefix)
+- Keep rules concise and actionable
+- Include code examples when helpful
+- Version rules in git like code

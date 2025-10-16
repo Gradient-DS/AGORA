@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # IDE
 .vscode/
@@ -45,4 +46,5 @@ c4/*.svg
 c4/*.puml
 c4/.structurizr/
 c4/workspace.dsl.json
+
 

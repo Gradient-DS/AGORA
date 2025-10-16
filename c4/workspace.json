@@ -6,7 +6,7 @@
   "documentation" : { },
   "id" : 1,
   "lastModifiedAgent" : "structurizr-ui",
-  "lastModifiedDate" : "2025-10-13T15:19:02Z",
+  "lastModifiedDate" : "2025-10-15T10:55:16Z",
   "model" : {
     "people" : [ {
       "description" : "NVWA medewerker die AGORA gebruikt voor dagelijks werk",
@@ -680,7 +680,7 @@
     } ],
     "configuration" : {
       "branding" : { },
-      "lastSavedView" : "UserProfileComponents",
+      "lastSavedView" : "HAIComponents",
       "metadataSymbols" : "SquareBrackets",
       "styles" : {
         "elements" : [ {
@@ -749,7 +749,7 @@
       }, {
         "id" : "3",
         "x" : 770,
-        "y" : 855
+        "y" : 860
       }, {
         "id" : "9",
         "x" : 771,

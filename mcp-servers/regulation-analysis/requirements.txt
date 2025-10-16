@@ -1,0 +1,7 @@
+fastapi
+fastmcp
+starlette
+uvicorn
+httpx
+pydantic
+python-dotenv
