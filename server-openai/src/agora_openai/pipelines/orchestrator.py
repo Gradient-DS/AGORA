@@ -81,10 +81,10 @@ class Orchestrator:
             if protocol_handler:
                 message_id = str(uuid.uuid4())
                 
-                # Wrapper to inject protocol handler and session into tool executor
+                # Wrapper to inject protocol handler, session, and agent_id into tool executor
                 async def tool_executor_with_notification(tool_name: str, parameters: dict) -> dict:
                     return await self._execute_tool_with_notification(
-                        tool_name, parameters, protocol_handler, session_id
+                        tool_name, parameters, protocol_handler, session_id, routing.selected_agent
                     )
                 
                 async def stream_callback(chunk: str) -> None:
@@ -173,16 +173,23 @@ class Orchestrator:
         parameters: dict,
         protocol_handler: HAIProtocolHandler | None,
         session_id: str,
+        agent_id: str | None = None,
     ) -> dict:
         """Execute tool with WebSocket notifications."""
+        import uuid
+        # Generate unique ID for this tool call
+        tool_call_id = str(uuid.uuid4())
+        
         # Send "started" notification
         if protocol_handler and protocol_handler.is_connected:
             from common.hai_types import ToolCallMessage
             await protocol_handler.send_message(ToolCallMessage(
+                tool_call_id=tool_call_id,
                 tool_name=tool_name,
                 parameters=parameters,
                 session_id=session_id,
-                status="started"
+                status="started",
+                agent_id=agent_id
             ))
         
         # Execute the tool
@@ -200,16 +207,28 @@ class Orchestrator:
             
             result = await self.mcp.execute_tool(tool_name, parameters)
             
+            # Extract metadata from result dict (generic for any MCP server)
+            metadata = {}
+            result_summary = str(result)[:100] if result else "Success"
+            
+            if isinstance(result, dict):
+                # Extract known metadata fields if present
+                for key in ["download_urls", "report_id", "paths", "summary"]:
+                    if key in result:
+                        metadata[key] = result[key]
+            
             # Send "completed" notification
             if protocol_handler and protocol_handler.is_connected:
                 from common.hai_types import ToolCallMessage
-                result_summary = str(result)[:100] if result else "Success"
                 await protocol_handler.send_message(ToolCallMessage(
+                    tool_call_id=tool_call_id,
                     tool_name=tool_name,
                     parameters=parameters,
                     session_id=session_id,
                     status="completed",
-                    result=result_summary
+                    result=result_summary,
+                    metadata=metadata,
+                    agent_id=agent_id
                 ))
             
             # Log for audit
@@ -229,11 +248,13 @@ class Orchestrator:
             if protocol_handler and protocol_handler.is_connected:
                 from common.hai_types import ToolCallMessage
                 await protocol_handler.send_message(ToolCallMessage(
+                    tool_call_id=tool_call_id,
                     tool_name=tool_name,
                     parameters=parameters,
                     session_id=session_id,
                     status="failed",
-                    result=str(e)[:100]
+                    result=str(e)[:100],
+                    agent_id=agent_id
                 ))
             
             raise

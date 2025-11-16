@@ -71,11 +71,14 @@ class StatusMessage(BaseModel):
 class ToolCallMessage(BaseModel):
     """Tool execution notification."""
     type: Literal["tool_call"] = "tool_call"
+    tool_call_id: str = Field(description="Unique identifier for this tool call")
     tool_name: str = Field(description="Name of the tool being called")
     parameters: dict[str, Any] = Field(description="Tool parameters")
     session_id: str = Field(description="Session identifier")
     status: Literal["started", "completed", "failed"] = Field(description="Execution status")
     result: str | None = Field(default=None, description="Result summary (for completed)")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional tool-specific metadata")
+    agent_id: str | None = Field(default=None, description="Which agent called this tool")
 
 
 HAIMessage = (

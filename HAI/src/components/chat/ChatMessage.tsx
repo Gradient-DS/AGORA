@@ -4,22 +4,88 @@ import type { Message } from '@/types';
 import { Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ToolCallCard } from './ToolCallCard';
+import { ToolCallReference } from './ToolCallReference';
+import { DownloadLinks } from './DownloadLinks';
+import { useEffect } from 'react';
+import { useToolCallStore, useAgentStore } from '@/stores';
 
 interface ChatMessageProps {
   message: Message;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
-  // Handle tool call messages separately
+  const addToolCall = useToolCallStore((state) => state.addToolCall);
+  const updateToolCall = useToolCallStore((state) => state.updateToolCall);
+  const setAgentActive = useAgentStore((state) => state.setAgentActive);
+  const setAgentIdle = useAgentStore((state) => state.setAgentIdle);
+  const setAgentExecutingTools = useAgentStore((state) => state.setAgentExecutingTools);
+
+  // Track agent status based on message chunks
+  useEffect(() => {
+    if (message.agent_id) {
+      if (message.isStreaming) {
+        setAgentActive(message.agent_id);
+      } else if (message.type === 'assistant') {
+        // Delay setting to idle to account for tool calls
+        const timer = setTimeout(() => {
+          if (message.agent_id) {
+            setAgentIdle(message.agent_id);
+          }
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+    return undefined;
+  }, [message.agent_id, message.isStreaming, message.type, setAgentActive, setAgentIdle]);
+
+  // Handle tool call messages - add to tool call store and show compact reference
+  useEffect(() => {
+    if (message.type === 'tool_call') {
+      const toolCallId = message.id || `tool-${Date.now()}`;
+      const agentId = message.agent_id;
+      const toolStatus = message.tool_status;
+      
+      console.log('[ChatMessage] Processing tool call:', {
+        id: toolCallId,
+        toolName: message.tool_name,
+        status: toolStatus,
+        agentId,
+      });
+      
+      if (toolStatus === 'started') {
+        if (agentId) {
+          setAgentExecutingTools(agentId);
+        }
+        addToolCall({
+          id: toolCallId,
+          toolName: message.tool_name || message.content,
+          status: 'started',
+          parameters: message.metadata?.parameters as Record<string, unknown> | undefined,
+          messageId: message.id,
+          agentId,
+        });
+      } else if (toolStatus === 'completed' || toolStatus === 'failed') {
+        updateToolCall(toolCallId, {
+          status: toolStatus,
+          result: message.metadata?.result as string | undefined,
+        });
+        // Set agent back to active after tool execution
+        if (agentId) {
+          setAgentActive(agentId);
+        }
+      }
+    }
+  }, [message.id, message.type, message.tool_status, message.agent_id, addToolCall, updateToolCall, setAgentExecutingTools, setAgentActive]);
+
   if (message.type === 'tool_call') {
     return (
-      <ToolCallCard
-        toolName={message.tool_name || message.content}
-        status={message.tool_status || 'started'}
-        parameters={message.metadata?.parameters as Record<string, unknown> | undefined}
-        result={message.metadata?.result as string | undefined}
-      />
+      <div className="flex justify-center mb-2">
+        <ToolCallReference
+          toolName={message.tool_name || message.content}
+          status={message.tool_status || 'started'}
+          toolCallId={message.id || `tool-${Date.now()}`}
+        />
+      </div>
     );
   }
 
@@ -28,6 +94,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
     hour: '2-digit', 
     minute: '2-digit' 
   });
+
+  // Check if message contains download URLs
+  const downloadUrls = message.metadata?.download_urls as { json?: string; pdf?: string } | undefined;
+  const reportId = message.metadata?.report_id as string | undefined;
+  const hasDownloadLinks = downloadUrls && (downloadUrls.json || downloadUrls.pdf);
 
   return (
     <article
@@ -47,7 +118,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         </AvatarFallback>
       </Avatar>
 
-      <div className={cn('flex flex-col max-w-[80%]', isUser && 'items-end')}>
+      <div className={cn('flex flex-col max-w-[80%] gap-2', isUser && 'items-end')}>
         <div
           className={cn(
             'rounded-lg px-4 py-2 break-words',
@@ -65,6 +136,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
             )}
           </div>
         </div>
+
+        {hasDownloadLinks && !isUser && (
+          <DownloadLinks
+            jsonUrl={downloadUrls?.json}
+            pdfUrl={downloadUrls?.pdf}
+            reportId={reportId}
+          />
+        )}
         
         <span 
           className="text-xs text-muted-foreground mt-1 px-1"

@@ -58,11 +58,14 @@ export const StatusMessageSchema = z.object({
 
 export const ToolCallMessageSchema = z.object({
   type: z.literal('tool_call'),
+  tool_call_id: z.string(),
   tool_name: z.string(),
   parameters: z.record(z.unknown()),
   session_id: z.string(),
   status: z.enum(['started', 'completed', 'failed']),
   result: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+  agent_id: z.string().nullable().optional(),
 });
 
 export const HAIMessageSchema = z.discriminatedUnion('type', [

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { generateMessageId } from '@/lib/utils';
 import type { Message } from '@/types';
 import type { ProcessingStatus } from '@/types/schemas';
 
@@ -25,9 +24,23 @@ export const useMessageStore = create<MessageStore>((set) => ({
       ...message,
       timestamp: new Date(),
     };
-    set((state) => ({
-      messages: [...state.messages, newMessage],
-    }));
+    set((state) => {
+      // Check if message already exists (for tool_call updates)
+      const existingIndex = state.messages.findIndex((msg) => msg.id === message.id);
+      if (existingIndex !== -1) {
+        // Update existing message
+        const updatedMessages = [...state.messages];
+        updatedMessages[existingIndex] = {
+          ...updatedMessages[existingIndex],
+          ...newMessage,
+        };
+        return { messages: updatedMessages };
+      }
+      // Add new message
+      return {
+        messages: [...state.messages, newMessage],
+      };
+    });
   },
 
   updateMessageContent: (messageId, content, append) => {

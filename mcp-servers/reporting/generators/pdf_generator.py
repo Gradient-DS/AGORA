@@ -274,26 +274,39 @@ class PDFGenerator:
         
         elements.append(Paragraph("Overzicht Alle Overtredingen", self.styles['SectionHeader']))
         
+        # Create a style for table cells
+        cell_style = ParagraphStyle(
+            name='CellText',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            leading=10,
+        )
+        
+        # Header row with plain text
         violation_data = [["#", "Type", "Ernst", "Beschrijving", "Locatie"]]
         
+        # Data rows with Paragraph objects for text wrapping
         for i, v in enumerate(report.all_violations, 1):
             violation_data.append([
                 str(i),
-                v.type.value[:30] + "..." if len(v.type.value) > 30 else v.type.value,
-                v.severity.value if v.severity else "N/A",
-                v.description[:50] + "..." if len(v.description) > 50 else v.description,
-                v.location[:20] + "..." if v.location and len(v.location) > 20 else (v.location or "N/A")
+                Paragraph(v.type.value if v.type else "N/A", cell_style),
+                Paragraph(v.severity.value if v.severity else "N/A", cell_style),
+                Paragraph(v.description if v.description else "N/A", cell_style),
+                Paragraph(v.location if v.location else "N/A", cell_style)
             ])
         
-        table = Table(violation_data, colWidths=[1*cm, 4*cm, 3*cm, 6*cm, 3*cm])
+        # Adjusted column widths to fit within margins (total 17cm)
+        table = Table(violation_data, colWidths=[0.8*cm, 3.5*cm, 2.5*cm, 7*cm, 3.2*cm])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c5282')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),

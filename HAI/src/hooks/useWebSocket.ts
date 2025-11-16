@@ -102,11 +102,12 @@ export function useWebSocket() {
         case 'tool_call':
           // Add tool call as a special message in the chat
           addMessage({
-            id: `tool-${Date.now()}-${Math.random()}`,
+            id: message.tool_call_id,
             type: 'tool_call',
             content: message.tool_name,
             tool_name: message.tool_name,
             tool_status: message.status,
+            agent_id: message.agent_id ?? undefined,
             metadata: {
               parameters: message.parameters,
               result: message.result,
