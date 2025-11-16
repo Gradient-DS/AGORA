@@ -6,7 +6,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from agora_openai.config import get_settings, parse_mcp_servers
 from agora_openai.logging_config import configure_logging
-from agora_openai.core.agent_definitions import AGENT_CONFIGS
+from agora_openai.core.agent_definitions import AGENT_CONFIGS, list_all_agents
 from agora_openai.adapters.openai_assistants import OpenAIAssistantsClient
 from agora_openai.adapters.mcp_client import MCPToolClient
 from agora_openai.adapters.audit_logger import AuditLogger
@@ -105,6 +105,24 @@ async def root():
         "docs": "/docs",
         "websocket": "/ws",
         "voice_websocket": "/ws/voice",
+    }
+
+
+@app.get("/agents")
+async def get_agents():
+    """Get list of active and inactive agents."""
+    agents = list_all_agents()
+    return {
+        "active_agents": [
+            {
+                "id": agent["id"],
+                "name": agent["name"],
+                "model": agent["model"],
+                "description": agent["instructions"].split("\n\n")[0],
+            }
+            for agent in agents["active"]
+        ],
+        "inactive_agents": agents["inactive"],
     }
 
 

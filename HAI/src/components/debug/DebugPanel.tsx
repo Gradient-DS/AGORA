@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Bot, Circle, ChevronDown, ChevronRight } from 'lucide-react';
+import { Settings, Bot, Circle, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { useToolCallStore, useAgentStore } from '@/stores';
 import { ToolCallCard } from '@/components/chat/ToolCallCard';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,9 @@ export function DebugPanel() {
   const toolCalls = useToolCallStore((state) => state.toolCalls);
   const getToolCallsByAgent = useToolCallStore((state) => state.getToolCallsByAgent);
   const agents = useAgentStore((state) => state.getAllAgents());
+  const inactiveAgents = useAgentStore((state) => state.inactiveAgents);
   const [collapsedAgents, setCollapsedAgents] = useState<Set<string>>(new Set());
+  const [inactiveCollapsed, setInactiveCollapsed] = useState(true);
 
   console.log('[DebugPanel] All tool calls:', toolCalls.length, toolCalls);
 
@@ -119,6 +121,64 @@ export function DebugPanel() {
             );
           })}
         </div>
+
+        {/* Inactive Agents Section */}
+        {inactiveAgents.length > 0 && (
+          <>
+            <Separator className="my-4" />
+            <div className="space-y-2">
+              <button
+                onClick={() => setInactiveCollapsed(!inactiveCollapsed)}
+                className="w-full flex items-center justify-between p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  {inactiveCollapsed ? (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <Lock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Inactieve Agents
+                  </span>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {inactiveAgents.length}
+                </Badge>
+              </button>
+
+              {!inactiveCollapsed && (
+                <div className="ml-6 space-y-2 animate-in fade-in slide-in-from-top-2">
+                  {inactiveAgents.map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="p-2 rounded-lg bg-muted/20 border border-dashed opacity-60"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Lock className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {agent.name}
+                            </span>
+                            {agent.coming_soon && (
+                              <Badge variant="outline" className="text-xs">
+                                Binnenkort
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {agent.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {toolCalls.length === 0 && (
           <>

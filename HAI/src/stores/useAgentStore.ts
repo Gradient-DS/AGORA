@@ -7,6 +7,13 @@ export interface Agent {
   lastActive?: Date;
 }
 
+export interface InactiveAgent {
+  id: string;
+  name: string;
+  description: string;
+  coming_soon: boolean;
+}
+
 const KNOWN_AGENTS: Record<string, string> = {
   'general-agent': 'NVWA General Assistant',
   'regulation-agent': 'Regulation Analysis Expert',
@@ -17,12 +24,14 @@ const KNOWN_AGENTS: Record<string, string> = {
 interface AgentStore {
   agents: Map<string, Agent>;
   activeAgents: Set<string>;
+  inactiveAgents: InactiveAgent[];
   setAgentActive: (agentId: string) => void;
   setAgentIdle: (agentId: string) => void;
   setAgentExecutingTools: (agentId: string) => void;
   getAgent: (agentId: string) => Agent | undefined;
   getAllAgents: () => Agent[];
   getActiveAgents: () => Agent[];
+  loadAgentsFromAPI: () => Promise<void>;
 }
 
 export const useAgentStore = create<AgentStore>((set, get) => {
@@ -39,6 +48,28 @@ export const useAgentStore = create<AgentStore>((set, get) => {
   return {
     agents: initialAgents,
     activeAgents: new Set<string>(),
+    inactiveAgents: [],
+
+    loadAgentsFromAPI: async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_WS_URL?.replace('ws://', 'http://').replace('wss://', 'https://').replace('/ws', '');
+        const response = await fetch(`${apiUrl}/agents`);
+        
+        if (!response.ok) {
+          console.warn('Failed to fetch agents from API, using defaults');
+          return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.inactive_agents) {
+          set({ inactiveAgents: data.inactive_agents });
+          console.log(`Loaded ${data.inactive_agents.length} inactive agents from API`);
+        }
+      } catch (error) {
+        console.warn('Failed to load agents from API:', error);
+      }
+    },
 
     setAgentActive: (agentId: string) =>
       set((state) => {
