@@ -50,7 +50,7 @@ export function DebugPanel() {
             Onder de Motorkap
           </CardTitle>
           <Badge variant="outline" className="gap-1">
-            {toolCalls.length} {toolCalls.length === 1 ? 'Execution' : 'Executions'}
+            {toolCalls.length} {toolCalls.length === 1 ? 'call' : 'calls'}
           </Badge>
         </div>
       </CardHeader>
@@ -93,7 +93,7 @@ export function DebugPanel() {
                   <div className="flex items-center gap-2">
                     {agentToolCalls.length > 0 && (
                       <Badge variant="secondary" className="text-xs">
-                        {agentToolCalls.length} {agentToolCalls.length === 1 ? 'call' : 'calls'}
+                        {agentToolCalls.length} {agentToolCalls.length === 1 ? 'aanroep' : 'aanroepen'}
                       </Badge>
                     )}
                     <span className="text-xs text-muted-foreground">
@@ -161,11 +161,6 @@ export function DebugPanel() {
                             <span className="text-sm font-medium text-muted-foreground">
                               {agent.name}
                             </span>
-                            {agent.coming_soon && (
-                              <Badge variant="outline" className="text-xs">
-                                Binnenkort
-                              </Badge>
-                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {agent.description}
@@ -185,7 +180,7 @@ export function DebugPanel() {
             <Separator />
             <div className="p-4 rounded-lg bg-muted/50 text-sm">
               <p className="text-muted-foreground">
-                Geen tool executions nog. Tool calls verschijnen hier zodra ze worden uitgevoerd.
+                Nog geen tool uitvoeringen. Tool aanroepen verschijnen hier zodra ze worden uitgevoerd.
               </p>
             </div>
           </>

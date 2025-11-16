@@ -83,7 +83,7 @@ export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialog
 
       <CardContent className="space-y-4">
         <div>
-          <h4 className="text-sm font-semibold mb-2">Reasoning</h4>
+          <h4 className="text-sm font-semibold mb-2">Redenering</h4>
           <p className="text-sm text-muted-foreground">{approval.reasoning}</p>
         </div>
 
@@ -102,13 +102,13 @@ export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialog
 
         <div>
           <label htmlFor="feedback" className="text-sm font-semibold mb-2 block">
-            Feedback (Optional)
+            Feedback (Optioneel)
           </label>
           <Textarea
             id="feedback"
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Add any feedback or comments..."
+            placeholder="Voeg eventuele feedback of opmerkingen toe..."
             className="min-h-[80px]"
             disabled={isSubmitting}
           />
@@ -120,23 +120,23 @@ export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialog
           variant="outline"
           onClick={handleReject}
           disabled={isSubmitting}
-          aria-label="Reject tool execution"
+          aria-label="Weiger tool uitvoering"
         >
           <XCircle className="h-4 w-4 mr-2" aria-hidden="true" />
-          Reject
+          Weigeren
         </Button>
         <Button
           onClick={handleApprove}
           disabled={isSubmitting}
-          aria-label="Approve tool execution"
+          aria-label="Goedkeuren tool uitvoering"
         >
           <CheckCircle className="h-4 w-4 mr-2" aria-hidden="true" />
-          Approve
+          Goedkeuren
         </Button>
       </CardFooter>
 
       <div className="px-6 pb-4 text-xs text-muted-foreground">
-        Keyboard shortcuts: <kbd>Enter</kbd> to approve, <kbd>Esc</kbd> to reject
+        Toetsenbord sneltoetsen: <kbd>Enter</kbd> om goed te keuren, <kbd>Esc</kbd> om te weigeren
       </div>
     </Card>
   );

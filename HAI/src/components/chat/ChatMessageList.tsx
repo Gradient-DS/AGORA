@@ -11,10 +11,10 @@ interface ChatMessageListProps {
 }
 
 const statusMessages: Record<ProcessingStatus, string> = {
-  thinking: 'Thinking...',
-  routing: 'Routing to appropriate agent...',
-  executing_tools: 'Executing tools...',
-  completed: 'Completed',
+  thinking: 'Aan het denken...',
+  routing: 'Agent wordt gekozen...',
+  executing_tools: 'Tools worden uitgevoerd...',
+  completed: 'Afgerond',
 };
 
 export function ChatMessageList({ messages, status, isTyping }: ChatMessageListProps) {
@@ -28,12 +28,12 @@ export function ChatMessageList({ messages, status, isTyping }: ChatMessageListP
     <div
       role="log"
       aria-live="polite"
-      aria-label="Conversation messages"
+      aria-label="Conversatie berichten"
       className="h-full overflow-y-auto p-4 space-y-4"
     >
       {messages.length === 0 && (
         <div className="flex items-center justify-center h-full text-muted-foreground">
-          <p>Start a conversation by typing a message below</p>
+          <p>Start een gesprek door hieronder een bericht te typen</p>
         </div>
       )}
 
@@ -51,7 +51,7 @@ export function ChatMessageList({ messages, status, isTyping }: ChatMessageListP
       {isTyping && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          <span aria-live="polite">Assistant is typing...</span>
+          <span aria-live="polite">Assistent is aan het typen...</span>
         </div>
       )}
 

@@ -48,7 +48,7 @@ export default function App() {
         {connectionError && (
           <Alert variant="destructive" className="flex-shrink-0">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Connection Error</AlertTitle>
+            <AlertTitle>Verbindingsfout</AlertTitle>
             <AlertDescription>{connectionError.message}</AlertDescription>
           </Alert>
         )}

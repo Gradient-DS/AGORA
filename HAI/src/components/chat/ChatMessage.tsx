@@ -102,7 +102,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <article
-      aria-label={`Message from ${message.type}`}
+      aria-label={`Bericht van ${message.type}`}
       className={cn(
         'flex gap-3 mb-4 animate-in fade-in slide-in-from-bottom-2',
         isUser && 'flex-row-reverse'
@@ -132,7 +132,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
               {message.content}
             </ReactMarkdown>
             {message.isStreaming && (
-              <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" aria-label="Streaming indicator" />
+              <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" aria-label="Streaming indicatie" />
             )}
           </div>
         </div>
@@ -147,7 +147,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         
         <span 
           className="text-xs text-muted-foreground mt-1 px-1"
-          aria-label={`Sent at ${timestamp}`}
+          aria-label={`Verzonden om ${timestamp}`}
         >
           {timestamp}
         </span>

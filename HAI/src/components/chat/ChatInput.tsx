@@ -15,7 +15,7 @@ interface ChatInputProps {
 export function ChatInput({ 
   onSend, 
   disabled = false, 
-  placeholder = 'Type your message...',
+  placeholder = 'Typ uw bericht...',
   onToggleVoice,
   isVoiceActive = false
 }: ChatInputProps) {
@@ -55,7 +55,7 @@ export function ChatInput({
             'h-[60px] w-[60px] flex-shrink-0',
             isVoiceActive && 'bg-primary'
           )}
-          aria-label={isVoiceActive ? 'Stop voice mode' : 'Start voice mode'}
+          aria-label={isVoiceActive ? 'Stop spraak modus' : 'Start spraak modus'}
           aria-pressed={isVoiceActive}
         >
           {isVoiceActive ? (
@@ -73,14 +73,14 @@ export function ChatInput({
         placeholder={placeholder}
         disabled={disabled}
         className="min-h-[60px] max-h-[200px] resize-none"
-        aria-label="Message input"
+        aria-label="Bericht invoer"
       />
       <Button
         onClick={handleSend}
         disabled={disabled || !message.trim()}
         size="icon"
         className="h-[60px] w-[60px] flex-shrink-0"
-        aria-label="Send message"
+        aria-label="Verstuur bericht"
       >
         <Send className="h-5 w-5" aria-hidden="true" />
       </Button>

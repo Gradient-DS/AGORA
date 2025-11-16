@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge';
 import { Wrench, CheckCircle2, XCircle, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,19 +20,19 @@ export function ToolCallReference({ toolName, status, toolCallId }: ToolCallRefe
       icon: Loader2,
       color: 'text-blue-500',
       bgColor: 'bg-blue-50 dark:bg-blue-900/30',
-      label: 'Executing',
+      label: 'Uitvoeren',
     },
     completed: {
       icon: CheckCircle2,
       color: 'text-green-500',
       bgColor: 'bg-green-50 dark:bg-green-900/30',
-      label: 'Completed',
+      label: 'Afgerond',
     },
     failed: {
       icon: XCircle,
       color: 'text-red-500',
       bgColor: 'bg-red-50 dark:bg-red-900/30',
-      label: 'Failed',
+      label: 'Mislukt',
     },
   };
 
@@ -58,7 +57,7 @@ export function ToolCallReference({ toolName, status, toolCallId }: ToolCallRefe
         'inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all hover:scale-105 cursor-pointer',
         config.bgColor
       )}
-      title="Click to view details in Onder de Motorkap panel"
+      title="Klik om details te bekijken in het Onder de Motorkap paneel"
     >
       <Wrench className="h-3 w-3" aria-hidden="true" />
       <span>{formatToolName(toolName)}</span>

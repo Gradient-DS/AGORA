@@ -47,6 +47,23 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
     }
   };
 
+  const getStatusLabel = () => {
+    switch (status) {
+      case 'connected':
+        return 'verbonden';
+      case 'connecting':
+        return 'verbinden';
+      case 'reconnecting':
+        return 'opnieuw verbinden';
+      case 'disconnected':
+        return 'verbroken';
+      case 'error':
+        return 'fout';
+      default:
+        return status;
+    }
+  };
+
   return (
     <Card className="rounded-none border-x-0 border-t-0">
       <header className="flex flex-col gap-2 p-4">
@@ -66,7 +83,7 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
               variant="outline"
               onClick={handleNewConversation}
               className="flex items-center gap-1"
-              aria-label="Start new conversation"
+              aria-label="Start nieuwe inspectie"
             >
               <Plus className="h-3 w-3" />
               Nieuwe Inspectie
@@ -76,10 +93,10 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
               variant={getStatusVariant()}
               className="flex items-center gap-1"
               role="status"
-              aria-label={`Connection status: ${status}`}
+              aria-label={`Verbindingsstatus: ${getStatusLabel()}`}
             >
               {getStatusIcon()}
-              <span className="capitalize">{status}</span>
+              <span className="capitalize">{getStatusLabel()}</span>
             </Badge>
             
             {(status === 'error' || status === 'disconnected') && onReconnect && (
@@ -88,10 +105,10 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                 variant="outline"
                 onClick={onReconnect}
                 className="flex items-center gap-1"
-                aria-label="Retry connection"
+                aria-label="Probeer opnieuw verbinding te maken"
               >
                 <RefreshCw className="h-3 w-3" />
-                Retry
+                Opnieuw
               </Button>
             )}
           </div>
@@ -99,7 +116,7 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
 
         {error && status === 'error' && (
           <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-            <strong>Connection Error:</strong> {error.message}
+            <strong>Verbindingsfout:</strong> {error.message}
           </div>
         )}
       </header>
