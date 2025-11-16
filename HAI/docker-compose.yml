@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  hai:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - orchestrator
+    networks:
+      - agora-network
+
+networks:
+  agora-network:
+    external: true
+

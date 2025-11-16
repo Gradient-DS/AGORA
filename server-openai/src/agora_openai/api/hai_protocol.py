@@ -19,9 +19,13 @@ class HAIProtocolHandler:
     
     def __init__(self, websocket: WebSocket):
         self.websocket = websocket
+        self.is_connected = True
     
     async def receive_message(self) -> UserMessage | None:
         """Receive and parse HAI message from WebSocket."""
+        if not self.is_connected:
+            return None
+            
         try:
             data = await self.websocket.receive_text()
             message_dict = json.loads(data)
@@ -38,16 +42,31 @@ class HAIProtocolHandler:
             return None
         except Exception as e:
             log.error("Error receiving message: %s", e)
-            await self.send_error("receive_error", str(e))
+            self.is_connected = False
             return None
     
     async def send_message(self, message: HAIMessage) -> None:
         """Send HAI message to WebSocket."""
+        if not self.is_connected:
+            log.debug("Cannot send message, WebSocket is not connected")
+            return
+            
         try:
+            log.debug("Attempting to send message type: %s", message.type)
             message_json = message.model_dump_json()
+            log.debug("Serialized message: %s", message_json[:200] if len(message_json) > 200 else message_json)
             await self.websocket.send_text(message_json)
+            log.debug("Message sent successfully")
+        except RuntimeError as e:
+            if "websocket.send" in str(e) or "websocket.close" in str(e):
+                log.warning("WebSocket already closed, cannot send message: %s", e)
+                self.is_connected = False
+            else:
+                log.error("RuntimeError sending message: %s", e, exc_info=True)
+                self.is_connected = False
         except Exception as e:
-            log.error("Error sending message: %s", e)
+            log.error("Exception sending message: %s (type: %s)", e, type(e).__name__, exc_info=True)
+            self.is_connected = False
     
     async def send_assistant_message(self, content: str, session_id: str, agent_id: str | None = None) -> None:
         """Send assistant message."""

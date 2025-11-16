@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -12,6 +13,8 @@ from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
 from agora_openai.api.hai_protocol import HAIProtocolHandler
+from agora_openai.api.voice_handler import VoiceSessionHandler
+from agora_openai.adapters.realtime_client import OpenAIRealtimeClient
 
 log = logging.getLogger(__name__)
 
@@ -98,6 +101,7 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs",
         "websocket": "/ws",
+        "voice_websocket": "/ws/voice",
     }
 
 
@@ -109,33 +113,162 @@ async def websocket_endpoint(websocket: WebSocket):
     handler = HAIProtocolHandler(websocket)
     orchestrator: Orchestrator = app.state.orchestrator
     
-    log.info("WebSocket connection established")
+    log.info("=" * 80)
+    log.info("WebSocket connection ESTABLISHED from %s", websocket.client)
+    log.info("=" * 80)
     
     try:
-        await handler.send_status("connected", "Connection established")
-        
         while True:
-            user_message = await handler.receive_message()
-            
-            if user_message is None:
-                continue
-            
-            session_id = user_message.session_id
-            
-            await handler.send_status("routing", "Analyzing request...", session_id)
-            
-            response = await orchestrator.process_message(user_message, session_id)
-            
-            await handler.send_message(response)
+            if not handler.is_connected:
+                log.info("Handler reports connection is closed, exiting loop")
+                break
+                
+            try:
+                user_message = await handler.receive_message()
+                
+                if user_message is None:
+                    if not handler.is_connected:
+                        log.info("Connection closed during receive, exiting loop")
+                        break
+                    continue
+                
+                session_id = user_message.session_id
+                log.info(f"Processing message for session: {session_id}")
+                
+                await handler.send_status("routing", "Analyzing request...", session_id)
+                
+                if not handler.is_connected:
+                    log.info("Connection closed after status send, exiting loop")
+                    break
+                
+                response = await orchestrator.process_message(user_message, session_id)
+                log.info(f"Got response from orchestrator: type={response.type}, has_content={bool(response.content)}")
+                
+                await handler.send_message(response)
+                
+                if not handler.is_connected:
+                    log.info("Connection closed after response send, exiting loop")
+                    break
+                    
+                log.info(f"Response sent successfully for session: {session_id}")
+                
+            except WebSocketDisconnect:
+                log.info("WebSocket disconnected by client")
+                handler.is_connected = False
+                raise
+            except Exception as e:
+                log.error("=" * 80)
+                log.error("ERROR PROCESSING MESSAGE")
+                log.error("=" * 80)
+                log.error("Error: %s", e, exc_info=True)
+                log.error("=" * 80)
+                
+                if handler.is_connected:
+                    try:
+                        await handler.send_error("processing_error", f"Error processing message: {str(e)}")
+                        if handler.is_connected:
+                            log.info("Error message sent to client, connection maintained")
+                        else:
+                            log.info("Connection closed while sending error, exiting loop")
+                            break
+                    except Exception as send_err:
+                        log.error("Failed to send error message: %s", send_err)
+                        log.error("Connection will be closed")
+                        handler.is_connected = False
+                        raise
+                else:
+                    log.info("Connection already closed, cannot send error message")
+                    break
             
     except WebSocketDisconnect:
-        log.info("WebSocket disconnected")
+        log.info("=" * 80)
+        log.info("WebSocket connection CLOSED")
+        log.info("=" * 80)
     except Exception as e:
-        log.error("WebSocket error: %s", e, exc_info=True)
+        log.error("=" * 80)
+        log.error("FATAL WebSocket error - connection will close")
+        log.error("=" * 80)
+        log.error("Fatal WebSocket error: %s", e, exc_info=True)
+        log.error("=" * 80)
         try:
             await handler.send_error("internal_error", "Internal server error")
         except Exception:
             pass
+
+
+@app.websocket("/ws/voice")
+async def voice_websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for voice mode using OpenAI Realtime API with tool support."""
+    await websocket.accept()
+    
+    settings = get_settings()
+    
+    log.info("=" * 80)
+    log.info("Voice WebSocket connection ESTABLISHED from %s", websocket.client)
+    log.info("=" * 80)
+    
+    realtime_client = OpenAIRealtimeClient(
+        api_key=settings.openai_api_key.get_secret_value()
+    )
+    
+    orchestrator: Orchestrator = app.state.orchestrator
+    mcp_client = orchestrator.mcp
+    
+    handler = VoiceSessionHandler(websocket, realtime_client, mcp_client)
+    
+    try:
+        while True:
+            try:
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                
+                if message.get("type") == "session.start":
+                    session_id = message.get("session_id", "default")
+                    instructions = message.get("instructions")
+                    conversation_history = message.get("conversation_history", [])
+                    await handler.start(session_id, instructions, conversation_history)
+                
+                elif message.get("type") == "session.stop":
+                    await handler.stop()
+                    break
+                
+                elif handler.is_active:
+                    await handler.handle_client_message(message)
+                else:
+                    log.warning("Received message but session not active")
+                    
+            except WebSocketDisconnect:
+                log.info("Voice WebSocket disconnected by client")
+                break
+            except json.JSONDecodeError as e:
+                log.error("Invalid JSON received: %s", e)
+            except Exception as e:
+                log.error("Error processing voice message: %s", e, exc_info=True)
+                try:
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": "error",
+                                "error_code": "processing_error",
+                                "message": str(e),
+                            }
+                        )
+                    )
+                except Exception:
+                    break
+                    
+    except WebSocketDisconnect:
+        log.info("=" * 80)
+        log.info("Voice WebSocket connection CLOSED")
+        log.info("=" * 80)
+    except Exception as e:
+        log.error("=" * 80)
+        log.error("FATAL Voice WebSocket error - connection will close")
+        log.error("=" * 80)
+        log.error("Fatal error: %s", e, exc_info=True)
+    finally:
+        if handler.is_active:
+            await handler.stop()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .prose {
+    color: inherit;
+  }
+  
+  .prose p {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+  
+  .prose p:first-child {
+    margin-top: 0;
+  }
+  
+  .prose p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+  }
+  
+  .prose h1 {
+    font-size: 1.5em;
+  }
+  
+  .prose h2 {
+    font-size: 1.3em;
+  }
+  
+  .prose h3 {
+    font-size: 1.1em;
+  }
+  
+  .prose ul, .prose ol {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+  }
+  
+  .prose ul {
+    list-style-type: disc;
+  }
+  
+  .prose ol {
+    list-style-type: decimal;
+  }
+  
+  .prose li {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+  }
+  
+  .prose code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.125em 0.25em;
+    border-radius: 0.25em;
+    font-size: 0.875em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  
+  .dark .prose code {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .prose pre {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 1em;
+    border-radius: 0.5em;
+    overflow-x: auto;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+  
+  .dark .prose pre {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .prose pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  .prose strong {
+    font-weight: 600;
+  }
+  
+  .prose em {
+    font-style: italic;
+  }
+  
+  .prose blockquote {
+    border-left: 3px solid currentColor;
+    padding-left: 1em;
+    margin-left: 0;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    opacity: 0.8;
+  }
+  
+  .prose a {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+  }
+  
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+  
+  .prose th, .prose td {
+    border: 1px solid currentColor;
+    padding: 0.5em;
+    text-align: left;
+  }
+  
+  .prose th {
+    font-weight: 600;
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark .prose th {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
