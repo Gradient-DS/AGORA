@@ -7,6 +7,7 @@ export interface Message {
   timestamp: Date;
   agent_id?: string;
   metadata?: Record<string, unknown>;
+  isStreaming?: boolean;
 }
 
 export interface Session {

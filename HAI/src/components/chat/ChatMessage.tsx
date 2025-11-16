@@ -47,6 +47,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
             </ReactMarkdown>
+            {message.isStreaming && (
+              <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" aria-label="Streaming indicator" />
+            )}
           </div>
         </div>
         

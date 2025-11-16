@@ -102,8 +102,7 @@ Our custom code focuses on:
 
 **Agent Types**:
 - **Regulation Agent** - Compliance and regulatory expertise
-- **Risk Agent** - Risk assessment and threat analysis
-- **Reporting Agent** - Report generation and analytics
+- **Reporting Agent** - HAP inspection report generation and data extraction
 
 ### Adapters
 
@@ -116,7 +115,7 @@ Our custom code focuses on:
 
 **Integrations**:
 - OpenAI Assistants API
-- MCP servers (5 servers for compliance tools)
+- MCP servers (2 servers for compliance tools)
 - OpenTelemetry for observability
 
 ## Key Features
@@ -127,7 +126,7 @@ Uses OpenAI's structured outputs to guarantee type-safe routing:
 
 ```python
 class AgentSelection(BaseModel):
-    selected_agent: Literal["regulation-agent", "risk-agent", "reporting-agent"]
+    selected_agent: Literal["regulation-agent", "reporting-agent"]
     reasoning: str
     confidence: float
     requires_multiple_agents: bool

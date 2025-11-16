@@ -18,11 +18,11 @@ def test_agent_selection_schema():
 def test_agent_selection_with_follow_ups():
     """Test agent selection with follow-up agents."""
     selection = AgentSelection(
-        selected_agent="risk-agent",
-        reasoning="Risk assessment required",
+        selected_agent="reporting-agent",
+        reasoning="Report generation required",
         confidence=0.85,
         requires_multiple_agents=True,
-        suggested_follow_up_agents=["reporting-agent"],
+        suggested_follow_up_agents=["regulation-agent"],
     )
     
     assert selection.requires_multiple_agents

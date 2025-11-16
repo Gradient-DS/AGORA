@@ -194,7 +194,6 @@ server-openai/
 ```python
 selected_agent: Literal[
     "regulation-agent",
-    "risk-agent",
     "reporting-agent",
     "new-agent",  # Add here
 ]

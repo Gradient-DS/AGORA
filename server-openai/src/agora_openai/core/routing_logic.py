@@ -6,8 +6,9 @@ class AgentSelection(BaseModel):
     """Structured output for intelligent agent routing."""
     selected_agent: Literal[
         "regulation-agent",
-        "risk-agent",
         "reporting-agent",
+        "kvk-agent",
+        "history-agent",
     ] = Field(description="The most appropriate agent for this request")
     
     reasoning: str = Field(
@@ -31,30 +32,46 @@ class AgentSelection(BaseModel):
     )
 
 
-ROUTING_SYSTEM_PROMPT = """You are an intelligent routing system for a compliance platform.
+ROUTING_SYSTEM_PROMPT = """You are an intelligent routing system for AGORA compliance platform.
+
+🇳🇱 CRITICAL: All selected agents will respond in Dutch to NVWA inspectors.
 
 Analyze the user's request and select the most appropriate specialized agent:
 
 **regulation-agent**: 
 - Regulatory compliance questions
-- Legal requirements
+- Legal requirements and regulations
 - Standards and certifications
 - Import/export regulations
 - Industry-specific rules
-
-**risk-agent**:
 - Risk assessment and analysis
 - Threat identification
-- Vulnerability assessment
 - Security concerns
-- Incident analysis
+- Will respond in DUTCH about regulations
 
 **reporting-agent**:
-- Report generation
-- Data analysis and visualization
-- Compliance summaries
-- Trend analysis
-- Performance metrics
+- Report generation (HAP inspection reports)
+- Data extraction from conversations
+- Report verification and validation
+- PDF and JSON report creation
+- Inspection documentation
+- Will respond in DUTCH with report status
+
+**kvk-agent**:
+- Company information lookup (KVK number)
+- Company existence verification
+- Business activities (SBI codes)
+- Company active status checks
+- Contact and location details
+- Will respond in DUTCH with company information
+
+**history-agent**:
+- Inspection history for companies
+- Past violations and trends
+- Repeat violation checks
+- Follow-up action status
+- Inspector search and past inspections
+- Will respond in DUTCH with historical analysis
 
 Consider:
 1. Primary topic and domain

@@ -6,6 +6,7 @@ from fastapi import WebSocket
 from common.hai_types import (
     UserMessage,
     AssistantMessage,
+    AssistantMessageChunk,
     ErrorMessage,
     StatusMessage,
     HAIMessage,
@@ -74,6 +75,24 @@ class HAIProtocolHandler:
             content=content,
             session_id=session_id,
             agent_id=agent_id,
+        )
+        await self.send_message(message)
+    
+    async def send_assistant_message_chunk(
+        self,
+        content: str,
+        session_id: str,
+        agent_id: str | None,
+        message_id: str,
+        is_final: bool = False,
+    ) -> None:
+        """Send partial assistant message chunk for streaming."""
+        message = AssistantMessageChunk(
+            content=content,
+            session_id=session_id,
+            agent_id=agent_id,
+            message_id=message_id,
+            is_final=is_final,
         )
         await self.send_message(message)
     

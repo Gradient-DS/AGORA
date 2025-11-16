@@ -6,7 +6,7 @@ Complete setup instructions for running the AGORA OpenAI orchestration with MCP 
 
 The system consists of:
 - **OpenAI Orchestrator** - Main server using OpenAI Assistants API
-- **5 MCP Servers** - Specialized tools for compliance operations
+- **2 MCP Servers** - Specialized tools for compliance operations
 
 ## Quick Start
 
@@ -17,16 +17,13 @@ cd mcp-servers
 docker-compose up --build -d
 ```
 
-This starts 5 MCP servers with HTTP transport on:
-- http://localhost:5001 - Company Compliance
+This starts 2 MCP servers with HTTP transport on:
 - http://localhost:5002 - Regulation Analysis
 - http://localhost:5003 - Reporting
-- http://localhost:5004 - Risk Enforcement
-- http://localhost:5005 - Utilities
 
 Verify they're running:
 ```bash
-curl http://localhost:5001/health
+curl http://localhost:5002/health
 curl http://localhost:5002/tools | jq
 ```
 
@@ -36,7 +33,7 @@ Create `.env` in `server-openai/`:
 ```bash
 APP_OPENAI_API_KEY=sk-your-actual-key-here
 APP_OPENAI_MODEL=gpt-4o
-APP_MCP_SERVERS=company-compliance=http://localhost:5001,regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,risk-enforcement=http://localhost:5004,utilities=http://localhost:5005
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003
 APP_GUARDRAILS_ENABLED=true
 APP_OTEL_ENDPOINT=http://localhost:4317
 APP_HOST=0.0.0.0
@@ -57,11 +54,10 @@ Server will start on http://localhost:8000
 You should see:
 ```
 Starting AGORA OpenAI Orchestration Server
-Discovered 10 tools from 5 servers
+Discovered tools from 2 servers
 Created assistant regulation-agent: asst_xxxxx
-Created assistant risk-agent: asst_xxxxx
 Created assistant reporting-agent: asst_xxxxx
-Initialized 3 assistants
+Initialized 2 assistants
 ```
 
 ### 4. Test the System
@@ -115,19 +111,11 @@ python test_client.py
 │   http://localhost:8000                 │
 └────┬─────────────────────────┬──────────┘
      │                         │
-     │  ┌──────────────────────┤
-     │  │  ┌───────────────────┤
-     │  │  │  ┌────────────────┤
-     │  │  │  │  ┌─────────────┤
-     │  │  │  │  │
-     ▼  ▼  ▼  ▼  ▼
+     ▼                         ▼
 ┌─────────────────────────────────────────┐
 │        MCP Servers (HTTP)               │
-│  5001: Company Compliance               │
 │  5002: Regulation Analysis              │
 │  5003: Reporting                        │
-│  5004: Risk Enforcement                 │
-│  5005: Utilities                        │
 └─────────────────────────────────────────┘
 ```
 
@@ -137,7 +125,7 @@ python test_client.py
 
 **MCP Servers:**
 ```bash
-cd mcp-servers/company-compliance
+cd mcp-servers/regulation-analysis
 pip install -r requirements.txt
 python server.py  # Runs on port 8000
 ```
@@ -146,7 +134,7 @@ python server.py  # Runs on port 8000
 ```bash
 cd server-openai
 pip install -e .
-APP_MCP_SERVERS=company-compliance=http://localhost:8000
+APP_MCP_SERVERS=regulation-analysis=http://localhost:8000
 python -m agora_openai.api.server
 ```
 
@@ -161,7 +149,7 @@ docker-compose up --build
 **OpenAI Server:**
 ```bash
 cd server-openai
-APP_MCP_SERVERS=company-compliance=http://localhost:5001,regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,risk-enforcement=http://localhost:5004,utilities=http://localhost:5005
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003
 python -m agora_openai.api.server
 ```
 
@@ -169,7 +157,7 @@ python -m agora_openai.api.server
 
 Update `server-openai/.env`:
 ```bash
-APP_MCP_SERVERS=company-compliance=http://company-compliance:8000,regulation-analysis=http://regulation-analysis:8000,reporting=http://reporting:8000,risk-enforcement=http://risk-enforcement:8000,utilities=http://utilities:8000
+APP_MCP_SERVERS=regulation-analysis=http://regulation-analysis:8000,reporting=http://reporting:8000
 ```
 
 Run both:
@@ -187,26 +175,26 @@ docker-compose up
 
 ### Health Check
 ```bash
-curl http://localhost:5001/health
+curl http://localhost:5002/health
 ```
 
 ### List Tools
 ```bash
-curl http://localhost:5001/tools | jq
+curl http://localhost:5002/tools | jq
 ```
 
 ### Execute Tool
 ```bash
-curl -X POST http://localhost:5001/tools/get_company_profile \
+curl -X POST http://localhost:5002/tools/semantic_search_regulations \
   -H "Content-Type: application/json" \
-  -d '{"arguments": {"company_id": "C001"}}' | jq
+  -d '{"arguments": {"query": "HACCP temperature control", "top_k": 5}}' | jq
 ```
 
-### Test Regulation Lookup
+### Test Report Generation
 ```bash
-curl -X POST http://localhost:5002/tools/lookup_regulation_articles \
+curl -X POST http://localhost:5003/tools/start_inspection_report \
   -H "Content-Type: application/json" \
-  -d '{"arguments": {"domain": "food_safety", "keywords": ["temperature", "HACCP"]}}' | jq
+  -d '{"arguments": {"session_id": "test-123", "inspector_name": "John Doe", "inspection_date": "2024-01-15"}}' | jq
 ```
 
 ## Troubleshooting
@@ -220,12 +208,12 @@ docker-compose ps
 
 **Test connectivity:**
 ```bash
-curl http://localhost:5001/tools
+curl http://localhost:5002/tools
 ```
 
 **Check logs:**
 ```bash
-docker-compose logs company-compliance
+docker-compose logs regulation-analysis
 ```
 
 ### OpenAI Server Can't Start
@@ -252,9 +240,9 @@ lsof -i :8000
 
 **Test tool directly:**
 ```bash
-curl -X POST http://localhost:5001/tools/get_company_profile \
+curl -X POST http://localhost:5002/tools/semantic_search_regulations \
   -H "Content-Type: application/json" \
-  -d '{"arguments": {"company_id": "C001"}}'
+  -d '{"arguments": {"query": "food safety", "top_k": 3}}'
 ```
 
 ## Key Files
@@ -304,4 +292,3 @@ The MCP servers have been **migrated from stdio to HTTP transport** using FastMC
 See individual READMEs for detailed information:
 - [OpenAI Server README](server-openai/README.md)
 - [MCP Servers README](mcp-servers/README.md)
-

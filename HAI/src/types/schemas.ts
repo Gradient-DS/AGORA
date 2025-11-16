@@ -15,6 +15,15 @@ export const AssistantMessageSchema = z.object({
   metadata: z.record(z.unknown()).default({}),
 });
 
+export const AssistantMessageChunkSchema = z.object({
+  type: z.literal('assistant_message_chunk'),
+  content: z.string(),
+  session_id: z.string(),
+  agent_id: z.string().nullable().optional(),
+  message_id: z.string(),
+  is_final: z.boolean().default(false),
+});
+
 export const ToolApprovalRequestSchema = z.object({
   type: z.literal('tool_approval_request'),
   tool_name: z.string(),
@@ -50,6 +59,7 @@ export const StatusMessageSchema = z.object({
 export const HAIMessageSchema = z.discriminatedUnion('type', [
   UserMessageSchema,
   AssistantMessageSchema,
+  AssistantMessageChunkSchema,
   ToolApprovalRequestSchema,
   ToolApprovalResponseSchema,
   ErrorMessageSchema,
@@ -58,6 +68,7 @@ export const HAIMessageSchema = z.discriminatedUnion('type', [
 
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 export type AssistantMessage = z.infer<typeof AssistantMessageSchema>;
+export type AssistantMessageChunk = z.infer<typeof AssistantMessageChunkSchema>;
 export type ToolApprovalRequest = z.infer<typeof ToolApprovalRequestSchema>;
 export type ToolApprovalResponse = z.infer<typeof ToolApprovalResponseSchema>;
 export type ErrorMessage = z.infer<typeof ErrorMessageSchema>;

@@ -107,6 +107,100 @@ class OpenAIAssistantsClient:
             return message_content.text.value
         return str(message_content)
     
+    async def run_assistant_with_tools_streaming(
+        self,
+        thread_id: str,
+        assistant_id: str,
+        tool_executor: Callable[[str, dict[str, Any]], Any],
+        stream_callback: Callable[[str], Any],
+    ) -> str:
+        """Run assistant with streaming support using OpenAI's stream API.
+        
+        Streams text chunks via callback and handles tool calls during streaming.
+        When tool calls are required, the stream ends and we need to handle them separately.
+        """
+        full_response = []
+        run_id = None
+        
+        try:
+            async with self.client.beta.threads.runs.stream(
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+            ) as stream:
+                async for event in stream:
+                    log.debug("Stream event: %s", event.event)
+                    
+                    if event.event == "thread.run.created":
+                        run_id = event.data.id
+                    
+                    elif event.event == "thread.message.delta":
+                        if hasattr(event.data, "delta") and hasattr(event.data.delta, "content"):
+                            for content_block in event.data.delta.content:
+                                if hasattr(content_block, "text") and hasattr(content_block.text, "value"):
+                                    chunk = content_block.text.value
+                                    full_response.append(chunk)
+                                    await stream_callback(chunk)
+                    
+                    elif event.event == "thread.run.requires_action":
+                        log.info("Stream paused for tool execution")
+                        run = event.data
+                        run_id = run.id
+                        break
+                    
+                    elif event.event == "thread.run.failed":
+                        error_msg = str(event.data.last_error) if event.data.last_error else "Unknown error"
+                        raise Exception(f"Run failed: {error_msg}")
+                    
+                    elif event.event == "thread.run.cancelled":
+                        raise Exception("Run was cancelled")
+                    
+                    elif event.event == "thread.run.expired":
+                        raise Exception("Run expired")
+        
+        except Exception as e:
+            if "requires_action" not in str(e):
+                raise
+        
+        if run_id:
+            run = await self.client.beta.threads.runs.retrieve(
+                thread_id=thread_id,
+                run_id=run_id,
+            )
+            
+            if run.status == "requires_action":
+                tool_outputs = await self._execute_required_tools(
+                    run,
+                    tool_executor,
+                )
+                
+                async with self.client.beta.threads.runs.submit_tool_outputs_stream(
+                    thread_id=thread_id,
+                    run_id=run.id,
+                    tool_outputs=tool_outputs,
+                ) as stream:
+                    async for event in stream:
+                        log.debug("Post-tool stream event: %s", event.event)
+                        
+                        if event.event == "thread.message.delta":
+                            if hasattr(event.data, "delta") and hasattr(event.data.delta, "content"):
+                                for content_block in event.data.delta.content:
+                                    if hasattr(content_block, "text") and hasattr(content_block.text, "value"):
+                                        chunk = content_block.text.value
+                                        full_response.append(chunk)
+                                        await stream_callback(chunk)
+                        
+                        elif event.event == "thread.run.failed":
+                            error_msg = str(event.data.last_error) if event.data.last_error else "Unknown error"
+                            raise Exception(f"Run failed: {error_msg}")
+                        
+                        elif event.event == "thread.run.cancelled":
+                            raise Exception("Run was cancelled")
+                        
+                        elif event.event == "thread.run.expired":
+                            raise Exception("Run expired")
+        
+        return "".join(full_response)
+    
     async def _execute_required_tools(
         self,
         run: Any,

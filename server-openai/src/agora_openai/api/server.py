@@ -141,10 +141,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     log.info("Connection closed after status send, exiting loop")
                     break
                 
-                response = await orchestrator.process_message(user_message, session_id)
+                response = await orchestrator.process_message(user_message, session_id, handler)
                 log.info(f"Got response from orchestrator: type={response.type}, has_content={bool(response.content)}")
-                
-                await handler.send_message(response)
                 
                 if not handler.is_connected:
                     log.info("Connection closed after response send, exiting loop")

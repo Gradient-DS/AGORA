@@ -53,11 +53,8 @@ The AGORA system now provides a **unified backend** that can be accessed through
 │  │    ┌───────────────────────┐           │        ││
 │  │    │   MCP Tools/Servers   │           │        ││
 │  │    │                       │           │        ││
-│  │    │ • Company Compliance  │           │        ││
-│  │    │ • Risk Enforcement    │           │        ││
 │  │    │ • Reporting           │           │        ││
 │  │    │ • Regulation Analysis │           │        ││
-│  │    │ • Utilities           │           │        ││
 │  │    └───────────────────────┘           │        ││
 │  │                                         │        ││
 │  │  ┌──────────────────────────────────┐  │        ││
@@ -74,10 +71,8 @@ The AGORA system now provides a **unified backend** that can be accessed through
 
 ### 1. **Unified Tool Access** 
 Both voice and chat can access the same MCP tools:
-- Company compliance checking
-- Risk analysis and enforcement
-- Regulatory information
-- Reporting capabilities
+- Regulatory information and analysis
+- HAP inspection reporting capabilities
 - Any custom MCP tools you add
 
 ### 2. **Shared Conversation Context**
@@ -135,36 +130,35 @@ Both voice and chat can access the same MCP tools:
 ### Example 1: Voice Tool Use
 
 ```
-User (voice): "What are the current risk ratings for our top 5 clients?"
+User (voice): "What are the HACCP regulations for temperature control?"
 
-Assistant (voice): "Let me check that for you..."
-[Tool executing: get_client_risk_ratings]
-[Tool completed: get_client_risk_ratings]
+Assistant (voice): "Let me search the regulations for you..."
+[Tool executing: semantic_search_regulations]
+[Tool completed: semantic_search_regulations]
 
-Assistant (voice): "Here are the current risk ratings for your top 5 clients:
-1. Acme Corp - Low Risk
-2. Beta Industries - Medium Risk
-3. Gamma Systems - Low Risk
-4. Delta Enterprises - High Risk - requires attention
-5. Epsilon Holdings - Medium Risk
+Assistant (voice): "According to HACCP regulations, temperature control requirements state:
+- Cold foods must be kept at 4°C or below
+- Hot foods must be maintained at 60°C or above
+- Food in the danger zone (4-60°C) should not exceed 2 hours
+- Temperature logs must be maintained daily
 
-I notice Delta Enterprises has a high risk rating. Would you like more details?"
+Would you like more details on any specific aspect?"
 ```
 
 ### Example 2: Mixed Voice and Chat
 
 ```
 [User starts in chat]
-User (typed): "Show me the compliance report for Q3"
+User (typed): "Show me the inspection report for session ABC123"
 Assistant: [Generates report using reporting tool]
 
 [User switches to voice]
 User (voice): "What were the main findings in that report?"
-Assistant (voice): [Remembers context, discusses Q3 report findings]
+Assistant (voice): [Remembers context, discusses inspection findings]
 
 [User switches back to chat to see details]
-User (typed): "Can you export that as PDF?"
-Assistant: [Uses export tool, provides download link]
+User (typed): "Can you generate the PDF version?"
+Assistant: [Uses generate_final_report tool, provides download link]
 ```
 
 ## Implementation Details
@@ -231,7 +225,7 @@ Tools are automatically registered from your MCP servers:
 
 ```bash
 # .env
-APP_MCP_SERVERS=compliance=http://localhost:8001,risk=http://localhost:8002
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003
 ```
 
 All discovered tools are automatically available in both voice and chat modes.
@@ -242,7 +236,7 @@ You can customize how the AI behaves in voice mode:
 ```python
 # When starting voice session from frontend
 voiceClient.startSession(
-    "You are a financial compliance expert. Always cite regulations when discussing compliance."
+    "You are an NVWA inspection assistant. Always follow Dutch inspection protocols."
 )
 ```
 
@@ -294,7 +288,7 @@ voiceClient.startSession(
 1. Start backend with MCP servers:
 ```bash
 cd server-openai
-APP_MCP_SERVERS=compliance=http://localhost:8001 python -m agora_openai.api.server
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003 python -m agora_openai.api.server
 ```
 
 2. Start frontend:
@@ -305,18 +299,18 @@ pnpm run dev
 
 3. Activate voice mode and say:
 ```
-"Check the compliance status for Acme Corporation"
+"What are the HACCP requirements for temperature control?"
 ```
 
 4. Watch for:
-- Console log: "Function call requested: check_compliance"
-- UI: "🔧 Executing check_compliance..."
-- Voice response with compliance information
+- Console log: "Function call requested: semantic_search_regulations"
+- UI: "🔧 Executing semantic_search_regulations..."
+- Voice response with regulation information
 
 ### Test Context Sharing
 
 1. Start in chat mode
-2. Type: "What regulations apply to financial institutions?"
+2. Type: "What regulations apply to food safety in restaurants?"
 3. Switch to voice mode
 4. Say: "Tell me more about the second one"
 5. AI should remember the previous context
@@ -325,7 +319,7 @@ pnpm run dev
 
 ### For Voice Interactions
 
-1. **Be Specific**: "Check compliance for Acme Corp" vs "Check compliance"
+1. **Be Specific**: "Search for HACCP temperature requirements" vs "Search regulations"
 2. **Use Natural Language**: The AI understands context and nuance
 3. **Wait for Confirmation**: Let tool execution complete before next request
 4. **Review Results**: Check the chat interface for detailed tool outputs
@@ -351,9 +345,8 @@ pnpm run dev
 ```python
 # For high-risk tools
 HIGH_RISK_TOOLS = [
-    "execute_trade",
-    "approve_transaction",
-    "delete_record"
+    "generate_final_report",
+    "delete_session_data"
 ]
 
 # Disable in voice mode or require approval

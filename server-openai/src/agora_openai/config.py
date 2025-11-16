@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr, Field
 from functools import lru_cache
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -27,9 +28,10 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", description="Logging level")
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).parent.parent.parent.parent / ".env") if (Path(__file__).parent.parent.parent.parent / ".env").exists() else None,
         env_prefix="APP_",
         case_sensitive=False,
+        extra='ignore',
     )
 
 

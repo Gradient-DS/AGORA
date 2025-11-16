@@ -79,9 +79,8 @@ All tests should pass without requiring OpenAI API key (they use mocks).
 
 ## What's Happening?
 
-1. **Server starts** and initializes 3 OpenAI Assistants:
+1. **Server starts** and initializes 2 OpenAI Assistants:
    - Regulation Agent
-   - Risk Agent  
    - Reporting Agent
 
 2. **MCP tools are discovered** from configured servers

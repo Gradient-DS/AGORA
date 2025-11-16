@@ -1,11 +1,13 @@
 from __future__ import annotations
 import logging
+import uuid
 from common.hai_types import UserMessage, AssistantMessage
 from agora_openai.core.routing_logic import AgentSelection
 from agora_openai.adapters.openai_assistants import OpenAIAssistantsClient
 from agora_openai.adapters.mcp_client import MCPToolClient
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline
+from agora_openai.api.hai_protocol import HAIProtocolHandler
 
 log = logging.getLogger(__name__)
 
@@ -30,8 +32,12 @@ class Orchestrator:
         self,
         message: UserMessage,
         session_id: str,
+        protocol_handler: HAIProtocolHandler | None = None,
     ) -> AssistantMessage:
-        """Process message with OpenAI-native features."""
+        """Process message with OpenAI-native features.
+        
+        If protocol_handler is provided, responses will be streamed in real-time.
+        """
         
         is_valid, error = await self.moderator.validate_input(message.content)
         if not is_valid:
@@ -72,11 +78,41 @@ class Orchestrator:
             
             assistant_id = self.openai.assistants[routing.selected_agent]
             
-            response_content = await self.openai.run_assistant_with_tools(
-                thread_id=thread_id,
-                assistant_id=assistant_id,
-                tool_executor=self._execute_tool_with_logging,
-            )
+            if protocol_handler:
+                message_id = str(uuid.uuid4())
+                
+                async def stream_callback(chunk: str) -> None:
+                    """Send each chunk via protocol handler."""
+                    if protocol_handler and protocol_handler.is_connected:
+                        await protocol_handler.send_assistant_message_chunk(
+                            content=chunk,
+                            session_id=session_id,
+                            agent_id=routing.selected_agent,
+                            message_id=message_id,
+                            is_final=False,
+                        )
+                
+                response_content = await self.openai.run_assistant_with_tools_streaming(
+                    thread_id=thread_id,
+                    assistant_id=assistant_id,
+                    tool_executor=self._execute_tool_with_logging,
+                    stream_callback=stream_callback,
+                )
+                
+                if protocol_handler and protocol_handler.is_connected:
+                    await protocol_handler.send_assistant_message_chunk(
+                        content="",
+                        session_id=session_id,
+                        agent_id=routing.selected_agent,
+                        message_id=message_id,
+                        is_final=True,
+                    )
+            else:
+                response_content = await self.openai.run_assistant_with_tools(
+                    thread_id=thread_id,
+                    assistant_id=assistant_id,
+                    tool_executor=self._execute_tool_with_logging,
+                )
             
             is_valid, error = await self.moderator.validate_output(response_content)
             if not is_valid:

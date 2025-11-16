@@ -1,22 +1,4 @@
 services:
-  company-compliance:
-    platform: linux/arm64
-    build:
-      context: ./company-compliance
-      dockerfile: Dockerfile
-    image: mcp-company-compliance:latest
-    container_name: mcp-company-compliance
-    ports:
-      - "5001:8000"
-    networks:
-      - agora-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
 
   regulation-analysis:
     build:
@@ -29,6 +11,13 @@ services:
     networks:
       - agora-network
     restart: unless-stopped
+    environment:
+      WEAVIATE_URL: "http://weaviate:8080"
+      EMBEDDING_MODEL: "nomic-ai/nomic-embed-text-v1.5"
+      EMBEDDING_DEVICE: "mps"
+    depends_on:
+      weaviate:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
       interval: 30s
@@ -54,12 +43,12 @@ services:
       retries: 3
       start_period: 5s
 
-  risk-enforcement:
+  kvk-lookup:
     build:
-      context: ./risk-enforcement
+      context: ./kvk-lookup
       dockerfile: Dockerfile
-    image: mcp-risk-enforcement:latest
-    container_name: mcp-risk-enforcement
+    image: mcp-kvk-lookup:latest
+    container_name: mcp-kvk-lookup
     ports:
       - "5004:8000"
     networks:
@@ -72,12 +61,12 @@ services:
       retries: 3
       start_period: 5s
 
-  utilities:
+  inspection-history:
     build:
-      context: ./utilities
+      context: ./inspection-history
       dockerfile: Dockerfile
-    image: mcp-utilities:latest
-    container_name: mcp-utilities
+    image: mcp-inspection-history:latest
+    container_name: mcp-inspection-history
     ports:
       - "5005:8000"
     networks:
@@ -89,9 +78,37 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+      
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.27.0
+    container_name: weaviate
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    networks:
+      - agora-network
+    restart: unless-stopped
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      ENABLE_MODULES: ''
+      CLUSTER_HOSTNAME: 'node1'
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=3", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
 networks:
   agora-network:
     driver: bridge
     name: agora-network
+
+volumes:
+  weaviate_data:
 

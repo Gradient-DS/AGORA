@@ -20,6 +20,16 @@ class AssistantMessage(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict, description="Response metadata")
 
 
+class AssistantMessageChunk(BaseModel):
+    """Streaming chunk of assistant response."""
+    type: Literal["assistant_message_chunk"] = "assistant_message_chunk"
+    content: str = Field(description="Partial content chunk")
+    session_id: str = Field(description="Session identifier")
+    agent_id: str | None = Field(default=None, description="Which agent generated this response")
+    message_id: str = Field(description="Unique ID to identify which message this chunk belongs to")
+    is_final: bool = Field(default=False, description="Indicates if this is the last chunk")
+
+
 class ToolApprovalRequest(BaseModel):
     """Request human approval for tool execution."""
     type: Literal["tool_approval_request"] = "tool_approval_request"
@@ -61,6 +71,7 @@ class StatusMessage(BaseModel):
 HAIMessage = (
     UserMessage
     | AssistantMessage
+    | AssistantMessageChunk
     | ToolApprovalRequest
     | ToolApprovalResponse
     | ErrorMessage
