@@ -1,8 +1,16 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useConnectionStore, useSessionStore, useMessageStore } from '@/stores';
-import { Wifi, WifiOff, Loader2, RefreshCw, Plus } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel 
+} from '@/components/ui/dropdown-menu';
+import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, PERSONAS } from '@/stores';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
@@ -12,14 +20,16 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const clearSession = useSessionStore((state) => state.clearSession);
   const initializeSession = useSessionStore((state) => state.initializeSession);
   const clearMessages = useMessageStore((state) => state.clearMessages);
+  const currentUser = useUserStore((state) => state.currentUser);
+  const setUser = useUserStore((state) => state.setUser);
 
-  const handleNewConversation = () => {
-    // Clear session and messages
+  const handleNewConversation = (userId?: string) => {
+    if (userId) {
+      setUser(userId);
+    }
     clearSession();
     clearMessages();
-    // Reinitialize with new session
     initializeSession();
-    // Force page reload to reconnect with new session
     window.location.reload();
   };
 
@@ -70,24 +80,62 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">{env.VITE_APP_NAME}</h1>
-            {session && (
-              <p className="text-xs text-muted-foreground">
-                Session: {session.id.slice(0, 12)}...
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              {session && (
+                <p className="text-xs text-muted-foreground">
+                  Session: {session.id.slice(0, 12)}...
+                </p>
+              )}
+              {currentUser && (
+                <Badge variant="secondary" className="text-xs">
+                  <User className="h-3 w-3 mr-1" />
+                  {currentUser.name}
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleNewConversation}
-              className="flex items-center gap-1"
-              aria-label="Start nieuwe inspectie"
-            >
-              <Plus className="h-3 w-3" />
-              Nieuwe Inspectie
-            </Button>
+            <div className="flex items-center">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleNewConversation()}
+                className="flex items-center gap-1 rounded-r-none border-r-0"
+                aria-label="Start nieuwe inspectie"
+              >
+                <Plus className="h-3 w-3" />
+                Nieuwe Inspectie
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-l-none px-2"
+                    aria-label="Selecteer inspecteur"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>Selecteer inspecteur</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {Object.values(PERSONAS).map((persona) => (
+                    <DropdownMenuItem
+                      key={persona.id}
+                      onClick={() => handleNewConversation(persona.id)}
+                      className="flex flex-col items-start py-2 cursor-pointer"
+                    >
+                      <div className="font-medium">{persona.name}</div>
+                      <div className="text-xs text-muted-foreground">{persona.title}</div>
+                      <div className="text-xs text-muted-foreground">{persona.experience} ervaring</div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             
             <Badge 
               variant={getStatusVariant()}

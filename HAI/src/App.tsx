@@ -6,12 +6,13 @@ import { ApprovalDialog } from '@/components/approval/ApprovalDialog';
 import { ApprovalQueue } from '@/components/approval/ApprovalQueue';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
-import { useSessionStore, useApprovalStore, useConnectionStore, useVoiceStore, useAgentStore } from '@/stores';
+import { useSessionStore, useApprovalStore, useConnectionStore, useVoiceStore, useAgentStore, useUserStore } from '@/stores';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function App() {
   const initializeSession = useSessionStore((state) => state.initializeSession);
+  const initializeUser = useUserStore((state) => state.initializeUser);
   const loadAgentsFromAPI = useAgentStore((state) => state.loadAgentsFromAPI);
   const { sendMessage, sendToolApproval, reconnect } = useWebSocket();
   const { toggleVoice } = useVoiceMode();
@@ -23,8 +24,9 @@ export default function App() {
 
   useEffect(() => {
     initializeSession();
+    initializeUser();
     loadAgentsFromAPI();
-  }, [initializeSession, loadAgentsFromAPI]);
+  }, [initializeSession, initializeUser, loadAgentsFromAPI]);
 
   const handleSendMessage = (message: string) => {
     sendMessage(message);
