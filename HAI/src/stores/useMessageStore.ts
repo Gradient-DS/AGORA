@@ -62,6 +62,7 @@ export const useMessageStore = create<MessageStore>((set) => ({
   },
 
   updateStatus: (status) => {
+    console.log('[MessageStore] Updating status:', status);
     set({ currentStatus: status });
   },
 

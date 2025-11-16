@@ -186,5 +186,34 @@
   .dark .prose th {
     background-color: rgba(255, 255, 255, 0.05);
   }
+
+  @keyframes wave {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-wave {
+    animation: wave 3s ease-in-out infinite;
+  }
+
+  @keyframes wave-opacity {
+    0%, 100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .animate-wave-opacity {
+    animation: wave-opacity 2s ease-in-out infinite;
+  }
 }
 

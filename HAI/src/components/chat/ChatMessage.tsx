@@ -90,10 +90,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }
 
   const isUser = message.type === 'user';
-  const timestamp = message.timestamp.toLocaleTimeString([], { 
+  const timestamp = message.timestamp.toLocaleTimeString('nl-NL', { 
     hour: '2-digit', 
-    minute: '2-digit' 
+    minute: '2-digit',
+    hour12: false
   });
+
+  // Get agent display name
+  const getAgent = useAgentStore((state) => state.getAgent);
+  const agentName = message.agent_id ? getAgent(message.agent_id)?.name || message.agent_id : null;
 
   // Check if message contains download URLs
   const downloadUrls = message.metadata?.download_urls as { json?: string; pdf?: string } | undefined;
@@ -145,18 +150,19 @@ export function ChatMessage({ message }: ChatMessageProps) {
           />
         )}
         
-        <span 
-          className="text-xs text-muted-foreground mt-1 px-1"
-          aria-label={`Verzonden om ${timestamp}`}
-        >
-          {timestamp}
-        </span>
-
-        {message.agent_id && (
-          <span className="text-xs text-muted-foreground px-1">
-            {message.agent_id}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 px-1">
+          <span aria-label={`Verzonden om ${timestamp}`}>
+            {timestamp}
           </span>
-        )}
+          {agentName && (
+            <>
+              <span>-</span>
+              <span className="font-medium">
+                {agentName}
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </article>
   );

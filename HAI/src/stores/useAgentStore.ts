@@ -15,10 +15,10 @@ export interface InactiveAgent {
 }
 
 const KNOWN_AGENTS: Record<string, string> = {
-  'general-agent': 'NVWA General Assistant',
-  'regulation-agent': 'Regulation Analysis Expert',
-  'reporting-agent': 'HAP Report Specialist',
-  'history-agent': 'Company & History Specialist',
+  'general-agent': 'Algemene Assistent',
+  'regulation-agent': 'Regelgeving Specialist',
+  'reporting-agent': 'Rapportage Specialist',
+  'history-agent': 'Bedrijfsinformatie Specialist',
 };
 
 interface AgentStore {

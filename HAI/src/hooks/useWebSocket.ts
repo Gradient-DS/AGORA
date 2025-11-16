@@ -96,6 +96,7 @@ export function useWebSocket() {
           break;
 
         case 'status':
+          console.log('[useWebSocket] Status update:', message.status, message.message);
           updateStatus(message.status);
           break;
 

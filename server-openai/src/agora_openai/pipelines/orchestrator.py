@@ -138,6 +138,10 @@ class Orchestrator:
                 metadata={"agent_id": routing.selected_agent},
             )
             
+            # Send completed status
+            if protocol_handler and protocol_handler.is_connected:
+                await protocol_handler.send_status("completed", "Response ready", session_id)
+            
             return assistant_message
             
         except Exception as e:
