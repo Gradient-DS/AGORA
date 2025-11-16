@@ -81,6 +81,12 @@ class Orchestrator:
             if protocol_handler:
                 message_id = str(uuid.uuid4())
                 
+                # Wrapper to inject protocol handler and session into tool executor
+                async def tool_executor_with_notification(tool_name: str, parameters: dict) -> dict:
+                    return await self._execute_tool_with_notification(
+                        tool_name, parameters, protocol_handler, session_id
+                    )
+                
                 async def stream_callback(chunk: str) -> None:
                     """Send each chunk via protocol handler."""
                     if protocol_handler and protocol_handler.is_connected:
@@ -95,7 +101,7 @@ class Orchestrator:
                 response_content = await self.openai.run_assistant_with_tools_streaming(
                     thread_id=thread_id,
                     assistant_id=assistant_id,
-                    tool_executor=self._execute_tool_with_logging,
+                    tool_executor=tool_executor_with_notification,
                     stream_callback=stream_callback,
                 )
                 
@@ -147,6 +153,8 @@ class Orchestrator:
         parameters: dict,
     ) -> dict:
         """Execute tool and log the execution."""
+        log.info("Executing tool: %s", tool_name)
+        
         result = await self.mcp.execute_tool(tool_name, parameters)
         
         session_id = "unknown"
@@ -158,4 +166,75 @@ class Orchestrator:
         )
         
         return result
+    
+    async def _execute_tool_with_notification(
+        self,
+        tool_name: str,
+        parameters: dict,
+        protocol_handler: HAIProtocolHandler | None,
+        session_id: str,
+    ) -> dict:
+        """Execute tool with WebSocket notifications."""
+        # Send "started" notification
+        if protocol_handler and protocol_handler.is_connected:
+            from common.hai_types import ToolCallMessage
+            await protocol_handler.send_message(ToolCallMessage(
+                tool_name=tool_name,
+                parameters=parameters,
+                session_id=session_id,
+                status="started"
+            ))
+        
+        # Execute the tool
+        try:
+            # Special handling for extract_inspection_data - inject conversation history
+            if tool_name == "extract_inspection_data":
+                thread_id = self.threads.get(session_id)
+                if thread_id:
+                    try:
+                        conversation_history = await self.openai.get_thread_messages(thread_id)
+                        parameters["conversation_history"] = conversation_history
+                        log.info(f"Injected {len(conversation_history)} messages into extract_inspection_data")
+                    except Exception as e:
+                        log.warning(f"Failed to retrieve conversation history: {e}")
+            
+            result = await self.mcp.execute_tool(tool_name, parameters)
+            
+            # Send "completed" notification
+            if protocol_handler and protocol_handler.is_connected:
+                from common.hai_types import ToolCallMessage
+                result_summary = str(result)[:100] if result else "Success"
+                await protocol_handler.send_message(ToolCallMessage(
+                    tool_name=tool_name,
+                    parameters=parameters,
+                    session_id=session_id,
+                    status="completed",
+                    result=result_summary
+                ))
+            
+            # Log for audit
+            await self.audit.log_tool_execution(
+                tool_name=tool_name,
+                parameters=parameters,
+                result=result,
+                session_id=session_id,
+            )
+            
+            return result
+            
+        except Exception as e:
+            log.error("Tool execution failed: %s", e)
+            
+            # Send "failed" notification
+            if protocol_handler and protocol_handler.is_connected:
+                from common.hai_types import ToolCallMessage
+                await protocol_handler.send_message(ToolCallMessage(
+                    tool_name=tool_name,
+                    parameters=parameters,
+                    session_id=session_id,
+                    status="failed",
+                    result=str(e)[:100]
+                ))
+            
+            raise
 

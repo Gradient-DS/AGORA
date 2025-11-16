@@ -56,6 +56,15 @@ export const StatusMessageSchema = z.object({
   session_id: z.string().nullable().optional(),
 });
 
+export const ToolCallMessageSchema = z.object({
+  type: z.literal('tool_call'),
+  tool_name: z.string(),
+  parameters: z.record(z.unknown()),
+  session_id: z.string(),
+  status: z.enum(['started', 'completed', 'failed']),
+  result: z.string().nullable().optional(),
+});
+
 export const HAIMessageSchema = z.discriminatedUnion('type', [
   UserMessageSchema,
   AssistantMessageSchema,
@@ -64,6 +73,7 @@ export const HAIMessageSchema = z.discriminatedUnion('type', [
   ToolApprovalResponseSchema,
   ErrorMessageSchema,
   StatusMessageSchema,
+  ToolCallMessageSchema,
 ]);
 
 export type UserMessage = z.infer<typeof UserMessageSchema>;
@@ -73,6 +83,7 @@ export type ToolApprovalRequest = z.infer<typeof ToolApprovalRequestSchema>;
 export type ToolApprovalResponse = z.infer<typeof ToolApprovalResponseSchema>;
 export type ErrorMessage = z.infer<typeof ErrorMessageSchema>;
 export type StatusMessage = z.infer<typeof StatusMessageSchema>;
+export type ToolCallMessage = z.infer<typeof ToolCallMessageSchema>;
 export type HAIMessage = z.infer<typeof HAIMessageSchema>;
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';

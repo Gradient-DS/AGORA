@@ -27,11 +27,14 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.log_level)
     log.info("Starting AGORA OpenAI Orchestration Server")
     
+    mcp_servers = parse_mcp_servers(settings.mcp_servers)
+    log.info("MCP Servers configured: %s", mcp_servers)
+    
     openai_client = OpenAIAssistantsClient(
         api_key=settings.openai_api_key.get_secret_value()
     )
     
-    mcp_client = MCPToolClient(parse_mcp_servers(settings.mcp_servers))
+    mcp_client = MCPToolClient(mcp_servers)
     
     mcp_tools = await mcp_client.discover_tools()
     log.info("Discovered %d MCP tools", len(mcp_tools))

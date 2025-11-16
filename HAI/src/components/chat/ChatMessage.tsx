@@ -4,12 +4,25 @@ import type { Message } from '@/types';
 import { Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ToolCallCard } from './ToolCallCard';
 
 interface ChatMessageProps {
   message: Message;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
+  // Handle tool call messages separately
+  if (message.type === 'tool_call') {
+    return (
+      <ToolCallCard
+        toolName={message.tool_name || message.content}
+        status={message.tool_status || 'started'}
+        parameters={message.metadata?.parameters as Record<string, unknown> | undefined}
+        result={message.metadata?.result as string | undefined}
+      />
+    );
+  }
+
   const isUser = message.type === 'user';
   const timestamp = message.timestamp.toLocaleTimeString([], { 
     hour: '2-digit', 

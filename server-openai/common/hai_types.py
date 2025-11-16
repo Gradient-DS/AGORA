@@ -68,6 +68,16 @@ class StatusMessage(BaseModel):
     session_id: str | None = Field(default=None, description="Session identifier")
 
 
+class ToolCallMessage(BaseModel):
+    """Tool execution notification."""
+    type: Literal["tool_call"] = "tool_call"
+    tool_name: str = Field(description="Name of the tool being called")
+    parameters: dict[str, Any] = Field(description="Tool parameters")
+    session_id: str = Field(description="Session identifier")
+    status: Literal["started", "completed", "failed"] = Field(description="Execution status")
+    result: str | None = Field(default=None, description="Result summary (for completed)")
+
+
 HAIMessage = (
     UserMessage
     | AssistantMessage
@@ -76,5 +86,6 @@ HAIMessage = (
     | ToolApprovalResponse
     | ErrorMessage
     | StatusMessage
+    | ToolCallMessage
 )
 

@@ -4,12 +4,11 @@ Model Context Protocol (MCP) servers for AGORA's compliance platform using the *
 
 ## Overview
 
-Four specialized MCP servers providing tools for compliance operations:
+Three specialized MCP servers providing tools for compliance operations:
 
 1. **Regulation Analysis** (port 5002) - Regulatory lookups and document analysis
-2. **Reporting** (port 5003) - HAP inspection report generation
-3. **KVK Lookup** (port 5004) - Dutch Chamber of Commerce company information
-4. **Inspection History** (port 5005) - Historical inspection data and violations (demo/mock)
+2. **Reporting** (port 5003) - HAP inspection report generation  
+3. **Company Information & Inspection History** (port 5005) - KVK lookups and historical inspection data
 
 ## Quick Start
 
@@ -25,19 +24,18 @@ export COMPOSE_DOCKER_CLI_BUILD=0
 docker-compose up --build
 ```
 
-This will start both MCP servers:
+This will start the MCP servers:
 
 - http://localhost:5002 - Regulation Analysis
 - http://localhost:5003 - Reporting
-- http://localhost:5004 - KVK Lookup
-- http://localhost:5005 - Inspection History
+- http://localhost:5005 - Company Information & Inspection History
 
 ### 2. Configure OpenAI Orchestrator
 
 Add to your `.env` file:
 
 ```bash
-APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,kvk-lookup=http://localhost:5004,inspection-history=http://localhost:5005
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,inspection-history=http://localhost:5005
 ```
 
 ### 3. Test the Servers
@@ -132,15 +130,12 @@ mcp-servers/
 - `submit_verification_answers(session_id, answers)` - Submit answers to verification questions
 - `generate_final_report(session_id)` - Generate final JSON and PDF reports
 
-### KVK Lookup
+### Company Information & Inspection History
 
+**Company Verification:**
 - `check_company_exists(kvk_number)` - Check if company exists in KVK register
-- `get_company_info(kvk_number)` - Get comprehensive company information
-- `check_company_active(kvk_number)` - Check if company is actively operating
-- `get_company_activities(kvk_number)` - Get business activities (SBI codes)
 
-### Inspection History
-
+**Inspection History (includes full company details):**
 - `get_inspection_history(kvk_number, limit)` - Get past inspections for a company
 - `get_company_violations(kvk_number, limit, severity)` - Get all violations across inspections
 - `check_repeat_violation(kvk_number, violation_category)` - Check if violation is a repeat

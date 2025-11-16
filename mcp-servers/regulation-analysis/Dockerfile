@@ -11,10 +11,13 @@ RUN apt-get update -y && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY regulation-analysis/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY server.py .
+COPY regulation-analysis/server.py .
+COPY document-ingestion/config.py ./config.py
+COPY document-ingestion/database ./database
+COPY document-ingestion/embeddings ./embeddings
 
 RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app

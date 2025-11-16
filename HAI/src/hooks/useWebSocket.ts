@@ -99,6 +99,21 @@ export function useWebSocket() {
           updateStatus(message.status);
           break;
 
+        case 'tool_call':
+          // Add tool call as a special message in the chat
+          addMessage({
+            id: `tool-${Date.now()}-${Math.random()}`,
+            type: 'tool_call',
+            content: message.tool_name,
+            tool_name: message.tool_name,
+            tool_status: message.status,
+            metadata: {
+              parameters: message.parameters,
+              result: message.result,
+            },
+          });
+          break;
+
         case 'tool_approval_request':
           addApproval(message);
           break;

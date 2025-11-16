@@ -7,7 +7,7 @@ from sentence_transformers import SentenceTransformer
 logger = logging.getLogger(__name__)
 
 
-class JinaEmbedder:
+class Embedder:
     def __init__(self, model_name: str = "nomic-ai/nomic-embed-text-v1.5", device: str = None):
         self.model_name = model_name
         

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 mcp = FastMCP("Reporting Server", stateless_http=True)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("MCP_OPENAI_API_KEY", "")
 
 storage = FileStorage(base_path="./storage")
 session_manager = SessionManager(storage)
@@ -88,13 +88,15 @@ async def start_inspection_report(
 @mcp.tool
 async def extract_inspection_data(
     session_id: str,
-    conversation_history: list[dict],
+    conversation_history: list[dict] = None,
 ) -> dict:
     """Extract structured HAP inspection data from conversation history.
     
+    The conversation history can be provided or will be retrieved from session storage.
+    
     Args:
         session_id: Session identifier
-        conversation_history: List of conversation messages with 'role' and 'content'
+        conversation_history: Optional list of conversation messages with 'role' and 'content'
     
     Returns:
         Extracted data with confidence scores and fields needing verification
@@ -107,6 +109,24 @@ async def extract_inspection_data(
         }
     
     try:
+        # Ensure session exists
+        session = session_manager.get_session(session_id)
+        if not session:
+            logger.info(f"Creating new session for {session_id}")
+            session_manager.create_session(session_id=session_id)
+        
+        # Use provided conversation history or retrieve from storage
+        if not conversation_history:
+            draft = storage.load_draft(session_id)
+            conversation_history = draft.get("conversation_history", []) if draft else []
+        
+        if not conversation_history:
+            return {
+                "success": False,
+                "error": "No conversation history found",
+                "message": f"Geen gespreksgeschiedenis gevonden voor sessie {session_id}. Zorg ervoor dat de sessie is gestart en er gesprekken zijn gevoerd."
+            }
+        
         logger.info(f"Extracting data from {len(conversation_history)} messages for session {session_id}")
         
         session_manager.store_conversation(session_id, conversation_history)
@@ -122,7 +142,7 @@ async def extract_inspection_data(
         session_manager.update_extracted_data(session_id, extracted_data)
         session_manager.update_session_status(session_id, "data_extracted", "verification")
         
-        completeness = await verifier.check_completeness(extracted_data) if verifier else {}
+        completeness = verifier.check_completeness(extracted_data) if verifier else {}
         
         return {
             "success": True,
@@ -246,7 +266,7 @@ async def submit_verification_answers(
         session_manager.add_verification_answers(session_id, answers)
         session_manager.update_session_status(session_id, "verified", "generation")
         
-        completeness = await verifier.check_completeness(updated_data) if verifier else {}
+        completeness = verifier.check_completeness(updated_data) if verifier else {}
         
         return {
             "success": True,
@@ -314,13 +334,20 @@ async def generate_final_report(
         
         summary = json_generator.generate_summary(hap_report)
         
+        # Generate download URLs
+        download_urls = {
+            "json": f"http://localhost:5003/reports/{session_id}/json",
+            "pdf": f"http://localhost:5003/reports/{session_id}/pdf"
+        }
+        
         return {
             "success": True,
             "session_id": session_id,
             "report_id": report_id,
             "paths": paths,
+            "download_urls": download_urls,
             "summary": summary,
-            "message": f"Rapport {report_id} succesvol gegenereerd."
+            "message": f"Rapport {report_id} succesvol gegenereerd. Download via: JSON: {download_urls['json']} | PDF: {download_urls['pdf']}"
         }
         
     except Exception as e:
@@ -378,6 +405,56 @@ async def health_check(request: Request) -> JSONResponse:
         "timestamp": datetime.now().isoformat(),
         "openai_configured": bool(OPENAI_API_KEY)
     }, status_code=200)
+
+
+@mcp.custom_route("/reports/{session_id}/json", methods=["GET"])
+async def download_json_report(request: Request) -> JSONResponse:
+    """Download JSON report for a session."""
+    from starlette.responses import FileResponse
+    
+    session_id = request.path_params.get("session_id")
+    if not session_id:
+        return JSONResponse({"error": "Session ID required"}, status_code=400)
+    
+    paths = storage.get_report_paths(session_id)
+    json_path = paths.get("final_json")
+    
+    if not json_path or not os.path.exists(json_path):
+        return JSONResponse({
+            "error": "Report not found",
+            "message": f"Geen rapport gevonden voor sessie {session_id}"
+        }, status_code=404)
+    
+    return FileResponse(
+        json_path,
+        media_type="application/json",
+        filename=f"rapport_{session_id}.json"
+    )
+
+
+@mcp.custom_route("/reports/{session_id}/pdf", methods=["GET"])
+async def download_pdf_report(request: Request) -> JSONResponse:
+    """Download PDF report for a session."""
+    from starlette.responses import FileResponse
+    
+    session_id = request.path_params.get("session_id")
+    if not session_id:
+        return JSONResponse({"error": "Session ID required"}, status_code=400)
+    
+    paths = storage.get_report_paths(session_id)
+    pdf_path = paths.get("final_pdf")
+    
+    if not pdf_path or not os.path.exists(pdf_path):
+        return JSONResponse({
+            "error": "Report not found",
+            "message": f"Geen PDF rapport gevonden voor sessie {session_id}"
+        }, status_code=404)
+    
+    return FileResponse(
+        pdf_path,
+        media_type="application/pdf",
+        filename=f"rapport_{session_id}.pdf"
+    )
 
 
 @mcp.resource("server://info")

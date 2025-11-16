@@ -2,8 +2,8 @@ services:
 
   regulation-analysis:
     build:
-      context: ./regulation-analysis
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./regulation-analysis/Dockerfile
     image: mcp-regulation-analysis:latest
     container_name: mcp-regulation-analysis
     ports:
@@ -11,10 +11,13 @@ services:
     networks:
       - agora-network
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
-      WEAVIATE_URL: "http://weaviate:8080"
-      EMBEDDING_MODEL: "nomic-ai/nomic-embed-text-v1.5"
-      EMBEDDING_DEVICE: "mps"
+      MCP_WEAVIATE_URL: "http://weaviate:8080"
+      MCP_EMBEDDING_MODEL: "nomic-ai/nomic-embed-text-v1.5"
+      MCP_EMBEDDING_DEVICE: "cpu"
+      MCP_OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
     depends_on:
       weaviate:
         condition: service_healthy
@@ -36,24 +39,12 @@ services:
     networks:
       - agora-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
-
-  kvk-lookup:
-    build:
-      context: ./kvk-lookup
-      dockerfile: Dockerfile
-    image: mcp-kvk-lookup:latest
-    container_name: mcp-kvk-lookup
-    ports:
-      - "5004:8000"
-    networks:
-      - agora-network
-    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
+    volumes:
+      - reporting_storage:/app/storage
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
       interval: 30s
@@ -111,4 +102,5 @@ networks:
 
 volumes:
   weaviate_data:
+  reporting_storage:
 

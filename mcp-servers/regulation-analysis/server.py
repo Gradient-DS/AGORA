@@ -9,8 +9,6 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from fastmcp import FastMCP
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "document-ingestion"))
-
 try:
     from config import get_settings
     from database.weaviate_client import WeaviateClient
@@ -18,7 +16,7 @@ try:
     WEAVIATE_AVAILABLE = True
 except ImportError as e:
     WEAVIATE_AVAILABLE = False
-    logging.warning(f"Weaviate client not available - search functionality will be limited: {e}")
+    logging.warning(f"Weaviate dependencies not available - search functionality will be limited: {e}")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -55,7 +53,7 @@ async def search_regulations(query: str, filters: Optional[Dict[str, str]] = Non
     
     Args:
         query: Natural language query describing what you're looking for
-        filters: Optional filters (source_type: Dutch/EU/SPEC, regulation_type: food_safety/hygiene/allergens/etc)
+        filters: Optional filters (source_type: Dutch/EU/SPEC, regulation_type: microbiological_criteria/allergens/food_information)
         limit: Maximum number of results to return (default 10)
     """
     if not weaviate_client or not embedder:
@@ -168,7 +166,7 @@ async def lookup_regulation_articles(domain: str, keywords: list[str]) -> dict:
     """Search for relevant regulation articles by domain and keywords (legacy interface).
     
     Args:
-        domain: Regulation domain (food_safety, hygiene, allergens, etc)
+        domain: Regulation domain (microbiological_criteria, allergens, food_information, etc)
         keywords: Keywords to search for in regulations
     """
     if not weaviate_client or not embedder:

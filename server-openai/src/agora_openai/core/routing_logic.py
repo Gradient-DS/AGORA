@@ -5,9 +5,9 @@ from typing import Literal
 class AgentSelection(BaseModel):
     """Structured output for intelligent agent routing."""
     selected_agent: Literal[
+        "general-agent",
         "regulation-agent",
         "reporting-agent",
-        "kvk-agent",
         "history-agent",
     ] = Field(description="The most appropriate agent for this request")
     
@@ -36,9 +36,21 @@ ROUTING_SYSTEM_PROMPT = """You are an intelligent routing system for AGORA compl
 
 🇳🇱 CRITICAL: All selected agents will respond in Dutch to NVWA inspectors.
 
-Analyze the user's request and select the most appropriate specialized agent:
+Analyze the user's request and select the most appropriate agent:
 
-**regulation-agent**: 
+**general-agent** (DEFAULT - use this most often):
+- General questions and greetings
+- Multi-step inspection workflows
+- "Start inspectie" commands
+- "Geef me het dossier" requests
+- Questions requiring multiple tools/domains
+- Clarifying questions in conversations
+- Coordinating complex inspections
+- Synthesizing information from multiple sources
+- ALWAYS use for inspection start/coordination
+
+**regulation-agent** (only for SPECIFIC regulation questions):
+ 
 - Regulatory compliance questions
 - Legal requirements and regulations
 - Standards and certifications
@@ -57,21 +69,14 @@ Analyze the user's request and select the most appropriate specialized agent:
 - Inspection documentation
 - Will respond in DUTCH with report status
 
-**kvk-agent**:
-- Company information lookup (KVK number)
-- Company existence verification
-- Business activities (SBI codes)
-- Company active status checks
-- Contact and location details
-- Will respond in DUTCH with company information
-
 **history-agent**:
-- Inspection history for companies
+- Company existence verification (KVK number)
+- Inspection history for companies (includes company details)
 - Past violations and trends
 - Repeat violation checks
 - Follow-up action status
 - Inspector search and past inspections
-- Will respond in DUTCH with historical analysis
+- Will respond in DUTCH with company and historical analysis
 
 Consider:
 1. Primary topic and domain

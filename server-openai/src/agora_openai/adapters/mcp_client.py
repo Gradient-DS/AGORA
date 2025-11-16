@@ -38,6 +38,10 @@ class MCPToolClient:
     ) -> list[dict[str, Any]]:
         """Discover tools from single MCP server using streamable-http protocol."""
         try:
+            # FastMCP servers use /mcp path
+            mcp_url = url if url.endswith('/mcp') else f"{url}/mcp"
+            log.info("Discovering tools from %s at %s", server_name, mcp_url)
+            
             async with httpx.AsyncClient(timeout=10.0) as client:
                 # MCP streamable-http protocol: send initialize request
                 request_id = str(uuid.uuid4())
@@ -49,7 +53,7 @@ class MCPToolClient:
                 }
                 
                 response = await client.post(
-                    url,
+                    mcp_url,
                     json=mcp_request,
                     headers={
                         "Content-Type": "application/json",
@@ -111,6 +115,9 @@ class MCPToolClient:
             return {"error": f"Unknown tool: {tool_name}"}
         
         try:
+            # FastMCP servers use /mcp path
+            mcp_url = server_url if server_url.endswith('/mcp') else f"{server_url}/mcp"
+            
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # MCP streamable-http protocol: send tools/call request
                 request_id = str(uuid.uuid4())
@@ -125,7 +132,7 @@ class MCPToolClient:
                 }
                 
                 response = await client.post(
-                    server_url,
+                    mcp_url,
                     json=mcp_request,
                     headers={
                         "Content-Type": "application/json",

@@ -4,11 +4,15 @@ from typing import Optional
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from fastmcp import FastMCP
+import httpx
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-mcp = FastMCP("Inspection History", stateless_http=True)
+mcp = FastMCP("Company Information & Inspection History", stateless_http=True)
+
+# KVK API base URL for company lookups
+KVK_BASE_URL = "https://opendata.kvk.nl/api/v1/hvds"
 
 # Dutch language messages for better inspector experience
 DUTCH_MESSAGES = {
@@ -24,9 +28,9 @@ DUTCH_MESSAGES = {
 # Demo data for testing scenarios
 # Using KVK numbers that can be looked up via KVK Lookup MCP server
 DEMO_INSPECTIONS = {
-    "59581883": {  # Restaurant Bella Rosa (Koen scenario)
+    "92251854": {  # Restaurant Bella Rosa (Koen scenario)
         "company_name": "Restaurant Bella Rosa",
-        "kvk_number": "59581883",
+        "kvk_number": "92251854",
         "inspections": [
             {
                 "inspection_id": "INS-2022-001234",
@@ -64,9 +68,9 @@ DEMO_INSPECTIONS = {
             }
         ]
     },
-    "12345678": {  # SpeelgoedPlaza (Fatima scenario)
+    "92262856": {  # SpeelgoedPlaza (Fatima scenario)
         "company_name": "SpeelgoedPlaza Den Haag",
-        "kvk_number": "12345678",
+        "kvk_number": "92262856",
         "inspections": [
             {
                 "inspection_id": "INS-2023-005678",
@@ -98,9 +102,9 @@ DEMO_INSPECTIONS = {
             }
         ]
     },
-    "87654321": {  # Slagerij de Boer (Jan scenario)
+    "34084173": {  # Slagerij de Boer (Jan scenario)
         "company_name": "Slagerij de Boer",
-        "kvk_number": "87654321",
+        "kvk_number": "34084173",
         "inspections": [
             {
                 "inspection_id": "INS-2021-009876",
@@ -140,9 +144,9 @@ DEMO_INSPECTIONS = {
         ]
     },
     # Additional demo company for testing
-    "11223344": {
+    "92267548": {
         "company_name": "Café Het Bruine Paard",
-        "kvk_number": "11223344",
+        "kvk_number": "92267548",
         "inspections": [
             {
                 "inspection_id": "INS-2024-001111",
@@ -157,6 +161,84 @@ DEMO_INSPECTIONS = {
         ]
     }
 }
+
+
+# ============================================================================
+# COMPANY INFORMATION TOOLS (KVK Integration)
+# ============================================================================
+
+@mcp.tool()
+async def check_company_exists(kvk_number: str) -> dict:
+    """Check if a company exists in the KVK register.
+    
+    Use this as the first step when an inspector provides a KVK number.
+    Verifies the company exists before retrieving detailed information.
+    
+    Args:
+        kvk_number: 8-digit KVK (Chamber of Commerce) number
+    
+    Returns:
+        Dictionary with exists status and basic validation
+    """
+    logger.info(f"Checking existence for KVK number: {kvk_number}")
+    
+    try:
+        if not kvk_number.isdigit() or len(kvk_number) != 8:
+            return {
+                "status": "error",
+                "exists": False,
+                "error": "KVK number must be exactly 8 digits",
+                "code": "INVALID_FORMAT"
+            }
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"{KVK_BASE_URL}/basisbedrijfsgegevens/kvknummer/{kvk_number}"
+            response = await client.get(url)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "status": "success",
+                    "exists": True,
+                    "kvk_number": kvk_number,
+                    "active": data.get("actief") == "J",
+                }
+            elif response.status_code == 404:
+                return {
+                    "status": "success",
+                    "exists": False,
+                    "kvk_number": kvk_number,
+                    "message": "Company not found in KVK register"
+                }
+            else:
+                return {
+                    "status": "error",
+                    "exists": False,
+                    "error": f"KVK API returned status {response.status_code}",
+                    "code": "API_ERROR"
+                }
+                
+    except httpx.TimeoutException:
+        logger.error(f"Timeout checking company: {kvk_number}")
+        return {
+            "status": "error",
+            "exists": False,
+            "error": "Request timed out",
+            "code": "TIMEOUT"
+        }
+    except Exception as e:
+        logger.error(f"Error checking company {kvk_number}: {e}")
+        return {
+            "status": "error",
+            "exists": False,
+            "error": str(e),
+            "code": "INTERNAL_ERROR"
+        }
+
+
+# ============================================================================
+# INSPECTION HISTORY TOOLS
+# ============================================================================
 
 
 @mcp.tool()

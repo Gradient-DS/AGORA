@@ -2,6 +2,98 @@
 
 Complete walkthrough of the three inspector scenarios using AGORA's MCP servers and agents.
 
+---
+
+## 📋 Quick Copy-Paste Inputs for Demo
+
+### Scenario 1: Inspecteur Koen – Restaurant Bella Rosa
+
+```
+Start inspectie bij Restaurant Bella Rosa
+```
+
+```
+92251854
+```
+
+```
+Wat zijn de bedrijfsgegevens?
+```
+
+```
+Zijn er eerdere overtredingen bekend?
+```
+
+```
+Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten
+```
+
+```
+Welke regelgeving is van toepassing?
+```
+
+```
+Ik ga handhaven
+```
+
+```
+Genereer rapport
+```
+
+---
+
+### Scenario 2: Inspecteur Fatima – SpeelgoedPlaza
+
+```
+Start inspectie bij SpeelgoedPlaza
+```
+
+```
+92262856
+```
+
+```
+Zijn er eerder onveilige producten aangetroffen?
+```
+
+```
+Geen CE-markering zichtbaar op product, geen conformiteitsverklaring aanwezig
+```
+
+```
+Welke regelgeving is van toepassing voor CE-markering?
+```
+
+```
+Genereer rapport
+```
+
+---
+
+### Scenario 3: Inspecteur Jan – Slagerij de Boer
+
+```
+Start inspectie bij Slagerij de Boer
+```
+
+```
+34084173
+```
+
+```
+Wat is er eerder geconstateerd?
+```
+
+```
+Ongeëtiketteerde producten in de koeling, herhaling van eerdere overtreding
+```
+
+```
+Genereer rapport met escalatie
+```
+
+---
+
 ## Setup
 
 Ensure all MCP servers are running:

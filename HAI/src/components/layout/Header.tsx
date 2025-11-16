@@ -1,14 +1,27 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useConnectionStore, useSessionStore } from '@/stores';
-import { Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
+import { useConnectionStore, useSessionStore, useMessageStore } from '@/stores';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const status = useConnectionStore((state) => state.status);
   const error = useConnectionStore((state) => state.error);
   const session = useSessionStore((state) => state.session);
+  const clearSession = useSessionStore((state) => state.clearSession);
+  const initializeSession = useSessionStore((state) => state.initializeSession);
+  const clearMessages = useMessageStore((state) => state.clearMessages);
+
+  const handleNewConversation = () => {
+    // Clear session and messages
+    clearSession();
+    clearMessages();
+    // Reinitialize with new session
+    initializeSession();
+    // Force page reload to reconnect with new session
+    window.location.reload();
+  };
 
   const getStatusIcon = () => {
     switch (status) {
@@ -48,6 +61,17 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleNewConversation}
+              className="flex items-center gap-1"
+              aria-label="Start new conversation"
+            >
+              <Plus className="h-3 w-3" />
+              Nieuwe Inspectie
+            </Button>
+            
             <Badge 
               variant={getStatusVariant()}
               className="flex items-center gap-1"

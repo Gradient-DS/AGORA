@@ -9,7 +9,7 @@ services:
       - ../.env
     environment:
       - APP_OPENAI_MODEL=gpt-4o
-      - APP_MCP_SERVERS=regulation-analysis=http://regulation-analysis:8000,reporting=http://reporting:8000,kvk-lookup=http://kvk-lookup:8000,inspection-history=http://inspection-history:8000
+      - APP_MCP_SERVERS=regulation-analysis=http://regulation-analysis:8000,reporting=http://reporting:8000,inspection-history=http://inspection-history:8000
       - APP_GUARDRAILS_ENABLED=true
       - APP_OTEL_ENDPOINT=http://otel-collector:4317
       - APP_HOST=0.0.0.0
