@@ -40,6 +40,7 @@ Extract all relevant information and return as JSON following the specified stru
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.2,
+                timeout=60.0,
             )
             
             extracted_data = json.loads(response.choices[0].message.content)
@@ -99,6 +100,7 @@ Return JSON with:
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.3,
+                timeout=60.0,
             )
             
             return json.loads(response.choices[0].message.content)

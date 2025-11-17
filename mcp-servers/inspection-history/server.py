@@ -190,19 +190,19 @@ async def check_company_exists(kvk_number: str) -> dict:
                 "error": "KVK number must be exactly 8 digits",
                 "code": "INVALID_FORMAT"
             }
-        
+        return {
+                "status": "success",
+                "exists": True,
+                "kvk_number": kvk_number,
+                "active": True,
+            }
         async with httpx.AsyncClient(timeout=10.0) as client:
             url = f"{KVK_BASE_URL}/basisbedrijfsgegevens/kvknummer/{kvk_number}"
             response = await client.get(url)
             
             if response.status_code == 200:
                 data = response.json()
-                return {
-                    "status": "success",
-                    "exists": True,
-                    "kvk_number": kvk_number,
-                    "active": data.get("actief") == "J",
-                }
+
             elif response.status_code == 404:
                 return {
                     "status": "success",

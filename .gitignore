@@ -49,3 +49,5 @@ c4/workspace.dsl.json
 
 
 .pnpm-store/
+
+sessions.*

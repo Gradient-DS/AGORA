@@ -43,6 +43,9 @@ services:
       - ../.env
     environment:
       OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
+      AGORA_SERVER_URL: "http://host.docker.internal:5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - reporting_storage:/app/storage
     healthcheck:

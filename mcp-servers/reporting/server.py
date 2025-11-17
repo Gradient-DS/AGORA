@@ -88,15 +88,20 @@ async def start_inspection_report(
 @mcp.tool
 async def extract_inspection_data(
     session_id: str,
-    conversation_history: list[dict] = None,
+    inspection_summary: str,
 ) -> dict:
-    """Extract structured HAP inspection data from conversation history.
+    """Extract structured HAP inspection data from an inspection summary.
     
-    The conversation history can be provided or will be retrieved from session storage.
+    The agent must provide a comprehensive summary of the inspection including:
+    - Company details (name, address, KVK number)
+    - Inspection date and inspector name
+    - Violations found (description, severity, location)
+    - Follow-up actions required
+    - Any observations or notes
     
     Args:
         session_id: Session identifier
-        conversation_history: Optional list of conversation messages with 'role' and 'content'
+        inspection_summary: Comprehensive summary of the inspection with all relevant details
     
     Returns:
         Extracted data with confidence scores and fields needing verification
@@ -109,33 +114,32 @@ async def extract_inspection_data(
         }
     
     try:
+        if not inspection_summary or len(inspection_summary.strip()) < 50:
+            return {
+                "success": False,
+                "error": "Insufficient inspection summary",
+                "message": "De inspectie samenvatting is te kort of ontbreekt. Geef een uitgebreide samenvatting met: bedrijfsgegevens, inspectiedatum, overtredingen, en vervolgacties."
+            }
+        
         # Ensure session exists
         session = session_manager.get_session(session_id)
         if not session:
             logger.info(f"Creating new session for {session_id}")
             session_manager.create_session(session_id=session_id)
         
-        # Use provided conversation history or retrieve from storage
-        if not conversation_history:
-            draft = storage.load_draft(session_id)
-            conversation_history = draft.get("conversation_history", []) if draft else []
+        logger.info(f"Extracting data from inspection summary for session {session_id}")
         
-        if not conversation_history:
-            return {
-                "success": False,
-                "error": "No conversation history found",
-                "message": f"Geen gespreksgeschiedenis gevonden voor sessie {session_id}. Zorg ervoor dat de sessie is gestart en er gesprekken zijn gevoerd."
-            }
-        
-        logger.info(f"Extracting data from {len(conversation_history)} messages for session {session_id}")
-        
-        session_manager.store_conversation(session_id, conversation_history)
+        # Convert summary to message format for the extractor
+        messages = [
+            {"role": "user", "content": "Genereer een HAP rapport op basis van de volgende inspectie:"},
+            {"role": "assistant", "content": inspection_summary}
+        ]
         
         draft = storage.load_draft(session_id)
         existing_data = draft.get("extracted_data", {}) if draft else {}
         
         extracted_data = await extractor.extract_from_conversation(
-            messages=conversation_history,
+            messages=messages,
             existing_data=existing_data
         )
         
@@ -324,8 +328,6 @@ async def generate_final_report(
             session_id=session_id,
             report_id=report_id
         )
-        
-        hap_report.conversation_history = draft.get("conversation_history", [])
         
         json_data = json_generator.generate(hap_report)
         pdf_content = pdf_generator.generate(hap_report)

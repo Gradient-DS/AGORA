@@ -7,76 +7,70 @@ from fastapi.middleware.cors import CORSMiddleware
 from agora_openai.config import get_settings, parse_mcp_servers
 from agora_openai.logging_config import configure_logging
 from agora_openai.core.agent_definitions import AGENT_CONFIGS, list_all_agents
-from agora_openai.adapters.openai_assistants import OpenAIAssistantsClient
-from agora_openai.adapters.mcp_client import MCPToolClient
+from agora_openai.core.agent_runner import AgentRegistry, AgentRunner
+from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
 from agora_openai.api.hai_protocol import HAIProtocolHandler
-from agora_openai.api.voice_handler import VoiceSessionHandler
-from agora_openai.adapters.realtime_client import OpenAIRealtimeClient
+from agora_openai.api.unified_voice_handler import UnifiedVoiceHandler
 
 log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize OpenAI Assistants on startup."""
+    """Initialize Agent SDK agents on startup."""
     settings = get_settings()
     
     configure_logging(settings.log_level)
-    log.info("Starting AGORA OpenAI Orchestration Server")
+    log.info("Starting AGORA Agent SDK Server")
+    
+    # Set OPENAI_API_KEY for Agents SDK
+    import os
+    os.environ["OPENAI_API_KEY"] = settings.openai_api_key.get_secret_value()
+    log.info("Configured OpenAI API key for Agents SDK")
     
     mcp_servers = parse_mcp_servers(settings.mcp_servers)
     log.info("MCP Servers configured: %s", mcp_servers)
     
-    openai_client = OpenAIAssistantsClient(
-        api_key=settings.openai_api_key.get_secret_value()
-    )
+    mcp_tool_registry = MCPToolRegistry(mcp_servers)
     
-    mcp_client = MCPToolClient(mcp_servers)
+    await mcp_tool_registry.discover_and_register_tools()
+    log.info("Discovered and registered MCP servers")
     
-    mcp_tools = await mcp_client.discover_tools()
-    log.info("Discovered %d MCP tools", len(mcp_tools))
+    agent_registry = AgentRegistry(mcp_tool_registry)
     
     for agent_config in AGENT_CONFIGS:
-        builtin_tools = [
-            {"type": tool_type}
-            for tool_type in agent_config["tools"]
-        ]
-        all_tools = builtin_tools + mcp_tools
-        
-        await openai_client.initialize_assistant(
-            agent_id=agent_config["id"],
-            name=agent_config["name"],
-            instructions=agent_config["instructions"],
-            model=agent_config["model"],
-            tools=all_tools,
-            temperature=agent_config["temperature"],
-        )
+        agent_registry.register_agent(agent_config)
     
-    log.info("Initialized %d assistants", len(AGENT_CONFIGS))
+    agent_registry.configure_handoffs()
+    log.info("Configured agent handoffs")
+    
+    agent_runner = AgentRunner(agent_registry)
     
     moderator = ModerationPipeline(enabled=settings.guardrails_enabled)
     audit_logger = AuditLogger(otel_endpoint=settings.otel_endpoint)
     
     orchestrator = Orchestrator(
-        openai_client=openai_client,
-        mcp_client=mcp_client,
+        agent_runner=agent_runner,
         moderator=moderator,
         audit_logger=audit_logger,
     )
     
     app.state.orchestrator = orchestrator
+    app.state.agent_registry = agent_registry
+    app.state.mcp_tool_registry = mcp_tool_registry
     
     yield
     
-    log.info("Shutting down AGORA OpenAI Orchestration Server")
+    log.info("Shutting down AGORA Agent SDK Server")
+    await mcp_tool_registry.disconnect_all()
 
 
 app = FastAPI(
-    title="AGORA OpenAI Orchestration",
-    description="OpenAI-native orchestration for AGORA multi-agent system",
+    title="AGORA Agent SDK Orchestration",
+    description="Agent SDK orchestration for AGORA multi-agent system",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -93,14 +87,14 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "agora-openai"}
+    return {"status": "healthy", "service": "agora-agents"}
 
 
 @app.get("/")
 async def root():
     """Root endpoint."""
     return {
-        "service": "AGORA OpenAI Orchestration",
+        "service": "AGORA Agent SDK Orchestration",
         "version": "1.0.0",
         "docs": "/docs",
         "websocket": "/ws",
@@ -124,6 +118,43 @@ async def get_agents():
         ],
         "inactive_agents": agents["inactive"],
     }
+
+
+@app.get("/sessions/{session_id}/history")
+async def get_session_history(session_id: str, include_tools: bool = False):
+    """Get conversation history for a session.
+    
+    This endpoint is used by MCP servers (like reporting) to retrieve
+    conversation history from the Agents SDK SQLite session storage.
+    
+    Args:
+        session_id: Session identifier
+        include_tools: If True, includes tool calls and results in the history
+    
+    Returns:
+        Conversation history with user, assistant, and optionally tool messages
+    """
+    orchestrator: Orchestrator = app.state.orchestrator
+    
+    try:
+        history = await orchestrator.agent_runner.get_conversation_history(
+            session_id=session_id,
+            include_tool_calls=include_tools
+        )
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "history": history,
+            "message_count": len(history),
+        }
+    except Exception as e:
+        log.error(f"Error retrieving session history: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to retrieve history for session {session_id}"
+        }
 
 
 @app.websocket("/ws")
@@ -155,8 +186,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 session_id = user_message.session_id
                 log.info(f"Processing message for session: {session_id}")
-                
-                await handler.send_status("routing", "Analyzing request...", session_id)
                 
                 if not handler.is_connected:
                     log.info("Connection closed after status send, exiting loop")
@@ -217,23 +246,16 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.websocket("/ws/voice")
 async def voice_websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for voice mode using OpenAI Realtime API with tool support."""
+    """WebSocket endpoint for unified voice mode using Agents SDK VoicePipeline."""
     await websocket.accept()
     
-    settings = get_settings()
-    
     log.info("=" * 80)
-    log.info("Voice WebSocket connection ESTABLISHED from %s", websocket.client)
+    log.info("Unified Voice WebSocket connection ESTABLISHED from %s", websocket.client)
     log.info("=" * 80)
     
-    realtime_client = OpenAIRealtimeClient(
-        api_key=settings.openai_api_key.get_secret_value()
-    )
+    agent_registry: AgentRegistry = app.state.agent_registry
     
-    orchestrator: Orchestrator = app.state.orchestrator
-    mcp_client = orchestrator.mcp
-    
-    handler = VoiceSessionHandler(websocket, realtime_client, mcp_client)
+    handler = UnifiedVoiceHandler(websocket, agent_registry)
     
     try:
         while True:
@@ -243,9 +265,9 @@ async def voice_websocket_endpoint(websocket: WebSocket):
                 
                 if message.get("type") == "session.start":
                     session_id = message.get("session_id", "default")
-                    instructions = message.get("instructions")
+                    agent_id = message.get("agent_id", "general-agent")
                     conversation_history = message.get("conversation_history", [])
-                    await handler.start(session_id, instructions, conversation_history)
+                    await handler.start(session_id, agent_id, conversation_history)
                 
                 elif message.get("type") == "session.stop":
                     await handler.stop()
@@ -257,7 +279,7 @@ async def voice_websocket_endpoint(websocket: WebSocket):
                     log.warning("Received message but session not active")
                     
             except WebSocketDisconnect:
-                log.info("Voice WebSocket disconnected by client")
+                log.info("Unified Voice WebSocket disconnected by client")
                 break
             except json.JSONDecodeError as e:
                 log.error("Invalid JSON received: %s", e)
@@ -278,11 +300,11 @@ async def voice_websocket_endpoint(websocket: WebSocket):
                     
     except WebSocketDisconnect:
         log.info("=" * 80)
-        log.info("Voice WebSocket connection CLOSED")
+        log.info("Unified Voice WebSocket connection CLOSED")
         log.info("=" * 80)
     except Exception as e:
         log.error("=" * 80)
-        log.error("FATAL Voice WebSocket error - connection will close")
+        log.error("FATAL Unified Voice WebSocket error - connection will close")
         log.error("=" * 80)
         log.error("Fatal error: %s", e, exc_info=True)
     finally:
@@ -299,4 +321,3 @@ if __name__ == "__main__":
         port=settings.port,
         reload=True,
     )
-

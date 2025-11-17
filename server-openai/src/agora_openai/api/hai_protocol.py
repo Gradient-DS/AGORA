@@ -9,6 +9,7 @@ from common.hai_types import (
     AssistantMessageChunk,
     ErrorMessage,
     StatusMessage,
+    ToolCallMessage,
     HAIMessage,
 )
 
@@ -113,4 +114,26 @@ class HAIProtocolHandler:
             details=details or {},
         )
         await self.send_message(error_message)
+    
+    async def send_tool_call(
+        self,
+        tool_call_id: str,
+        tool_name: str,
+        parameters: dict[str, Any],
+        session_id: str,
+        status: str,
+        result: str | None = None,
+        agent_id: str | None = None,
+    ) -> None:
+        """Send tool call notification."""
+        tool_call_message = ToolCallMessage(
+            tool_call_id=tool_call_id,
+            tool_name=tool_name,
+            parameters=parameters,
+            session_id=session_id,
+            status=status,  # type: ignore
+            result=result,
+            agent_id=agent_id,
+        )
+        await self.send_message(tool_call_message)
 
