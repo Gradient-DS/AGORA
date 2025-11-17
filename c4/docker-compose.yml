@@ -4,7 +4,7 @@ services:
   structurizr:
     image: structurizr/lite
     ports:
-      - "8080:8080"
+      - "8085:8080"
     volumes:
       - ./:/usr/local/structurizr
     restart: unless-stopped
