@@ -25,18 +25,18 @@ export function VoiceButton({
         'w-full h-20 text-lg',
         isListening && 'animate-pulse-slow'
       )}
-      aria-label={isActive ? 'Stop voice mode' : 'Start voice mode'}
+      aria-label={isActive ? 'Stop spraak modus' : 'Start spraak modus'}
       aria-pressed={isActive}
     >
       {isActive ? (
         <>
           <MicOff className="mr-2 h-6 w-6" aria-hidden="true" />
-          Stop Voice
+          Stop Spraak
         </>
       ) : (
         <>
           <Mic className="mr-2 h-6 w-6" aria-hidden="true" />
-          Start Voice
+          Start Spraak
         </>
       )}
     </Button>

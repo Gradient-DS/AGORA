@@ -1,14 +1,37 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useConnectionStore, useSessionStore } from '@/stores';
-import { Wifi, WifiOff, Loader2, RefreshCw } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel 
+} from '@/components/ui/dropdown-menu';
+import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, PERSONAS } from '@/stores';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const status = useConnectionStore((state) => state.status);
   const error = useConnectionStore((state) => state.error);
   const session = useSessionStore((state) => state.session);
+  const clearSession = useSessionStore((state) => state.clearSession);
+  const initializeSession = useSessionStore((state) => state.initializeSession);
+  const clearMessages = useMessageStore((state) => state.clearMessages);
+  const currentUser = useUserStore((state) => state.currentUser);
+  const setUser = useUserStore((state) => state.setUser);
+
+  const handleNewConversation = (userId?: string) => {
+    if (userId) {
+      setUser(userId);
+    }
+    clearSession();
+    clearMessages();
+    initializeSession();
+    window.location.reload();
+  };
 
   const getStatusIcon = () => {
     switch (status) {
@@ -34,28 +57,94 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
     }
   };
 
+  const getStatusLabel = () => {
+    switch (status) {
+      case 'connected':
+        return 'verbonden';
+      case 'connecting':
+        return 'verbinden';
+      case 'reconnecting':
+        return 'opnieuw verbinden';
+      case 'disconnected':
+        return 'verbroken';
+      case 'error':
+        return 'fout';
+      default:
+        return status;
+    }
+  };
+
   return (
     <Card className="rounded-none border-x-0 border-t-0">
       <header className="flex flex-col gap-2 p-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">{env.VITE_APP_NAME}</h1>
-            {session && (
-              <p className="text-xs text-muted-foreground">
-                Session: {session.id.slice(0, 12)}...
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              {session && (
+                <p className="text-xs text-muted-foreground">
+                  Session: {session.id.slice(0, 12)}...
+                </p>
+              )}
+              {currentUser && (
+                <Badge variant="secondary" className="text-xs">
+                  <User className="h-3 w-3 mr-1" />
+                  {currentUser.name}
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleNewConversation()}
+                className="flex items-center gap-1 rounded-r-none border-r-0"
+                aria-label="Start nieuwe inspectie"
+              >
+                <Plus className="h-3 w-3" />
+                Nieuwe Inspectie
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-l-none px-2"
+                    aria-label="Selecteer inspecteur"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>Selecteer inspecteur</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {Object.values(PERSONAS).map((persona) => (
+                    <DropdownMenuItem
+                      key={persona.id}
+                      onClick={() => handleNewConversation(persona.id)}
+                      className="flex flex-col items-start py-2 cursor-pointer"
+                    >
+                      <div className="font-medium">{persona.name}</div>
+                      <div className="text-xs text-muted-foreground">{persona.title}</div>
+                      <div className="text-xs text-muted-foreground">{persona.experience} ervaring</div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
             <Badge 
               variant={getStatusVariant()}
               className="flex items-center gap-1"
               role="status"
-              aria-label={`Connection status: ${status}`}
+              aria-label={`Verbindingsstatus: ${getStatusLabel()}`}
             >
               {getStatusIcon()}
-              <span className="capitalize">{status}</span>
+              <span className="capitalize">{getStatusLabel()}</span>
             </Badge>
             
             {(status === 'error' || status === 'disconnected') && onReconnect && (
@@ -64,10 +153,10 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                 variant="outline"
                 onClick={onReconnect}
                 className="flex items-center gap-1"
-                aria-label="Retry connection"
+                aria-label="Probeer opnieuw verbinding te maken"
               >
                 <RefreshCw className="h-3 w-3" />
-                Retry
+                Opnieuw
               </Button>
             )}
           </div>
@@ -75,7 +164,7 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
 
         {error && status === 'error' && (
           <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-            <strong>Connection Error:</strong> {error.message}
+            <strong>Verbindingsfout:</strong> {error.message}
           </div>
         )}
       </header>

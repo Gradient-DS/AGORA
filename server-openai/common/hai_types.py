@@ -20,6 +20,16 @@ class AssistantMessage(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict, description="Response metadata")
 
 
+class AssistantMessageChunk(BaseModel):
+    """Streaming chunk of assistant response."""
+    type: Literal["assistant_message_chunk"] = "assistant_message_chunk"
+    content: str = Field(description="Partial content chunk")
+    session_id: str = Field(description="Session identifier")
+    agent_id: str | None = Field(default=None, description="Which agent generated this response")
+    message_id: str = Field(description="Unique ID to identify which message this chunk belongs to")
+    is_final: bool = Field(default=False, description="Indicates if this is the last chunk")
+
+
 class ToolApprovalRequest(BaseModel):
     """Request human approval for tool execution."""
     type: Literal["tool_approval_request"] = "tool_approval_request"
@@ -58,12 +68,27 @@ class StatusMessage(BaseModel):
     session_id: str | None = Field(default=None, description="Session identifier")
 
 
+class ToolCallMessage(BaseModel):
+    """Tool execution notification."""
+    type: Literal["tool_call"] = "tool_call"
+    tool_call_id: str = Field(description="Unique identifier for this tool call")
+    tool_name: str = Field(description="Name of the tool being called")
+    parameters: dict[str, Any] = Field(description="Tool parameters")
+    session_id: str = Field(description="Session identifier")
+    status: Literal["started", "completed", "failed"] = Field(description="Execution status")
+    result: str | None = Field(default=None, description="Result summary (for completed)")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional tool-specific metadata")
+    agent_id: str | None = Field(default=None, description="Which agent called this tool")
+
+
 HAIMessage = (
     UserMessage
     | AssistantMessage
+    | AssistantMessageChunk
     | ToolApprovalRequest
     | ToolApprovalResponse
     | ErrorMessage
     | StatusMessage
+    | ToolCallMessage
 )
 

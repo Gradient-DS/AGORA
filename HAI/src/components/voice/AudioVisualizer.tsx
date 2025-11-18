@@ -61,11 +61,11 @@ export function AudioVisualizer({
         width={800}
         height={128}
         className="w-full h-full"
-        aria-label="Audio visualization"
+        aria-label="Audio visualisatie"
       />
       {!isActive && (
         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-          <p>Start voice mode to see audio visualization</p>
+          <p>Start spraak modus om audio visualisatie te zien</p>
         </div>
       )}
     </div>

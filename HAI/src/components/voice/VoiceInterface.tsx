@@ -14,16 +14,16 @@ export function VoiceInterface({ onToggleVoice, disabled = false }: VoiceInterfa
   const { isActive, isListening, isSpeaking, volume } = useVoiceStore();
 
   const getStatusText = () => {
-    if (!isActive) return 'Voice mode inactive';
-    if (isSpeaking) return 'Assistant is speaking...';
-    if (isListening) return 'Listening...';
-    return 'Voice mode active';
+    if (!isActive) return 'Spraak modus inactief';
+    if (isSpeaking) return 'Assistent is aan het spreken...';
+    if (isListening) return 'Aan het luisteren...';
+    return 'Spraak modus actief';
   };
 
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Voice Interface</CardTitle>
+        <CardTitle>Spraak Interface</CardTitle>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col justify-center items-center space-y-6">
@@ -42,7 +42,7 @@ export function VoiceInterface({ onToggleVoice, disabled = false }: VoiceInterfa
           className="text-center"
           role="status"
           aria-live="polite"
-          aria-label="Voice status"
+          aria-label="Spraak status"
         >
           <p className="text-lg font-medium">{getStatusText()}</p>
         </div>

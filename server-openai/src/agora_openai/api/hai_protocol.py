@@ -6,8 +6,10 @@ from fastapi import WebSocket
 from common.hai_types import (
     UserMessage,
     AssistantMessage,
+    AssistantMessageChunk,
     ErrorMessage,
     StatusMessage,
+    ToolCallMessage,
     HAIMessage,
 )
 
@@ -77,6 +79,24 @@ class HAIProtocolHandler:
         )
         await self.send_message(message)
     
+    async def send_assistant_message_chunk(
+        self,
+        content: str,
+        session_id: str,
+        agent_id: str | None,
+        message_id: str,
+        is_final: bool = False,
+    ) -> None:
+        """Send partial assistant message chunk for streaming."""
+        message = AssistantMessageChunk(
+            content=content,
+            session_id=session_id,
+            agent_id=agent_id,
+            message_id=message_id,
+            is_final=is_final,
+        )
+        await self.send_message(message)
+    
     async def send_status(self, status: str, message: str | None = None, session_id: str | None = None) -> None:
         """Send status update."""
         status_message = StatusMessage(
@@ -94,4 +114,26 @@ class HAIProtocolHandler:
             details=details or {},
         )
         await self.send_message(error_message)
+    
+    async def send_tool_call(
+        self,
+        tool_call_id: str,
+        tool_name: str,
+        parameters: dict[str, Any],
+        session_id: str,
+        status: str,
+        result: str | None = None,
+        agent_id: str | None = None,
+    ) -> None:
+        """Send tool call notification."""
+        tool_call_message = ToolCallMessage(
+            tool_call_id=tool_call_id,
+            tool_name=tool_name,
+            parameters=parameters,
+            session_id=session_id,
+            status=status,  # type: ignore
+            result=result,
+            agent_id=agent_id,
+        )
+        await self.send_message(tool_call_message)
 

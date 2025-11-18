@@ -15,6 +15,15 @@ export const AssistantMessageSchema = z.object({
   metadata: z.record(z.unknown()).default({}),
 });
 
+export const AssistantMessageChunkSchema = z.object({
+  type: z.literal('assistant_message_chunk'),
+  content: z.string(),
+  session_id: z.string(),
+  agent_id: z.string().nullable().optional(),
+  message_id: z.string(),
+  is_final: z.boolean().default(false),
+});
+
 export const ToolApprovalRequestSchema = z.object({
   type: z.literal('tool_approval_request'),
   tool_name: z.string(),
@@ -47,21 +56,37 @@ export const StatusMessageSchema = z.object({
   session_id: z.string().nullable().optional(),
 });
 
+export const ToolCallMessageSchema = z.object({
+  type: z.literal('tool_call'),
+  tool_call_id: z.string(),
+  tool_name: z.string(),
+  parameters: z.record(z.unknown()),
+  session_id: z.string(),
+  status: z.enum(['started', 'completed', 'failed']),
+  result: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).default({}),
+  agent_id: z.string().nullable().optional(),
+});
+
 export const HAIMessageSchema = z.discriminatedUnion('type', [
   UserMessageSchema,
   AssistantMessageSchema,
+  AssistantMessageChunkSchema,
   ToolApprovalRequestSchema,
   ToolApprovalResponseSchema,
   ErrorMessageSchema,
   StatusMessageSchema,
+  ToolCallMessageSchema,
 ]);
 
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 export type AssistantMessage = z.infer<typeof AssistantMessageSchema>;
+export type AssistantMessageChunk = z.infer<typeof AssistantMessageChunkSchema>;
 export type ToolApprovalRequest = z.infer<typeof ToolApprovalRequestSchema>;
 export type ToolApprovalResponse = z.infer<typeof ToolApprovalResponseSchema>;
 export type ErrorMessage = z.infer<typeof ErrorMessageSchema>;
 export type StatusMessage = z.infer<typeof StatusMessageSchema>;
+export type ToolCallMessage = z.infer<typeof ToolCallMessageSchema>;
 export type HAIMessage = z.infer<typeof HAIMessageSchema>;
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';

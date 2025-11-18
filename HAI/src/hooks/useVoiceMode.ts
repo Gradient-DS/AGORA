@@ -3,6 +3,7 @@ import { useVoiceStore } from '@/stores';
 import { useSessionStore, useMessageStore } from '@/stores';
 import { VoiceWebSocketClient } from '@/lib/websocket/voiceClient';
 import { getEnvVariable } from '@/lib/env';
+import { generateMessageId } from '@/lib/utils';
 
 export function useVoiceMode() {
   const { isActive, setActive, setListening, setSpeaking, setVolume, reset } = useVoiceStore();
@@ -186,6 +187,7 @@ export function useVoiceMode() {
 
       case 'transcript.user':
         addMessage({
+          id: generateMessageId(),
           type: 'user',
           content: message.text as string,
           metadata: { source: 'voice' },
@@ -198,6 +200,7 @@ export function useVoiceMode() {
 
       case 'transcript.assistant':
         addMessage({
+          id: generateMessageId(),
           type: 'assistant',
           content: message.text as string,
           agent_id: 'voice-assistant',
@@ -208,6 +211,7 @@ export function useVoiceMode() {
       case 'tool.executing':
         console.log(`Executing tool: ${message.tool_name}`);
         addMessage({
+          id: generateMessageId(),
           type: 'assistant',
           content: `🔧 Executing ${message.tool_name}...`,
           agent_id: 'voice-assistant',
@@ -218,6 +222,7 @@ export function useVoiceMode() {
       case 'tool.completed':
         console.log(`Tool completed: ${message.tool_name}`);
         addMessage({
+          id: generateMessageId(),
           type: 'assistant',
           content: `✅ ${message.tool_name} completed`,
           agent_id: 'voice-assistant',
@@ -228,6 +233,7 @@ export function useVoiceMode() {
       case 'tool.failed':
         console.error(`Tool failed: ${message.tool_name}`, message.error);
         addMessage({
+          id: generateMessageId(),
           type: 'assistant',
           content: `❌ ${message.tool_name} failed: ${message.error}`,
           agent_id: 'voice-assistant',

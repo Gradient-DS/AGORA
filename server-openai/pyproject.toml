@@ -13,6 +13,7 @@ dependencies = [
     "uvicorn[standard]>=0.27.0",
     "websockets>=12.0",
     "openai>=1.50.0",
+    "openai-agents[voice]>=0.1.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "httpx>=0.26.0",
@@ -21,6 +22,8 @@ dependencies = [
     "opentelemetry-sdk>=1.22.0",
     "opentelemetry-instrumentation-fastapi>=0.43b0",
     "python-dotenv>=1.0.0",
+    "numpy>=1.24.0",
+    "sounddevice>=0.4.6",
 ]
 
 [project.optional-dependencies]

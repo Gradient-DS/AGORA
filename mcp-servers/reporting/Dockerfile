@@ -15,6 +15,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY server.py .
+COPY models/ ./models/
+COPY storage/ ./storage/
+COPY analyzers/ ./analyzers/
+COPY verification/ ./verification/
+COPY generators/ ./generators/
+
+RUN mkdir -p /app/storage/reports /app/storage/conversation_history
 
 RUN useradd --create-home --shell /bin/bash app && \
     chown -R app:app /app

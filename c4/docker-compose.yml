@@ -1,11 +1,20 @@
-version: "3.9"
-
 services:
-  structurizr:
+  structurizr-opensource:
     image: structurizr/lite
     ports:
-      - "8080:8080"
+      - "8085:8080"
     volumes:
       - ./:/usr/local/structurizr
+    environment:
+      - STRUCTURIZR_WORKSPACE_FILENAME=workspace-opensource
     restart: unless-stopped
 
+  structurizr-openai:
+    image: structurizr/lite
+    ports:
+      - "8086:8080"
+    volumes:
+      - ./:/usr/local/structurizr
+    environment:
+      - STRUCTURIZR_WORKSPACE_FILENAME=workspace-openai
+    restart: unless-stopped

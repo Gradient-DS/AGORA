@@ -16,7 +16,7 @@ export function ApprovalQueue() {
       <CardHeader>
         <CardTitle className="text-sm flex items-center gap-2">
           <AlertCircle className="h-4 w-4" aria-hidden="true" />
-          Pending Approvals
+          Openstaande Goedkeuringen
           <Badge variant="secondary">{pendingApprovals.length}</Badge>
         </CardTitle>
       </CardHeader>

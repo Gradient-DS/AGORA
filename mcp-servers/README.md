@@ -4,13 +4,11 @@ Model Context Protocol (MCP) servers for AGORA's compliance platform using the *
 
 ## Overview
 
-Five specialized MCP servers providing tools for compliance operations:
+Three specialized MCP servers providing tools for compliance operations:
 
-1. **Company Compliance** (port 5001) - Company profiles and inspection history
-2. **Regulation Analysis** (port 5002) - Regulatory lookups and document analysis
-3. **Reporting** (port 5003) - Inspection report generation
-4. **Risk Enforcement** (port 5004) - Risk scoring and enforcement flagging
-5. **Utilities** (port 5005) - Translation, date formatting, and utilities
+1. **Regulation Analysis** (port 5002) - Regulatory lookups and document analysis
+2. **Reporting** (port 5003) - HAP inspection report generation  
+3. **Company Information & Inspection History** (port 5005) - KVK lookups and historical inspection data
 
 ## Quick Start
 
@@ -26,20 +24,18 @@ export COMPOSE_DOCKER_CLI_BUILD=0
 docker-compose up --build
 ```
 
-This will start all 5 MCP servers:
+This will start the MCP servers:
 
-- http://localhost:5001 - Company Compliance
 - http://localhost:5002 - Regulation Analysis
 - http://localhost:5003 - Reporting
-- http://localhost:5004 - Risk Enforcement
-- http://localhost:5005 - Utilities
+- http://localhost:5005 - Company Information & Inspection History
 
 ### 2. Configure OpenAI Orchestrator
 
 Add to your `.env` file:
 
 ```bash
-APP_MCP_SERVERS=company-compliance=http://localhost:5001,regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,risk-enforcement=http://localhost:5004,utilities=http://localhost:5005
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,inspection-history=http://localhost:5005
 ```
 
 ### 3. Test the Servers
@@ -48,13 +44,13 @@ Check health status:
 
 ```bash
 # Test health endpoint (HTTP)
-curl http://localhost:5001/health
+curl http://localhost:5002/health
 
 # Check container health
 docker-compose ps
 
 # View logs
-docker-compose logs company-compliance
+docker-compose logs regulation-analysis
 ```
 
 Each server exposes:
@@ -65,14 +61,14 @@ Each server exposes:
 Test MCP endpoints:
 ```bash
 # List available tools
-curl http://localhost:5001/mcp/tools
+curl http://localhost:5002/mcp/tools
 
 # Call a tool
-curl -X POST http://localhost:5001/mcp/tools/call \
+curl -X POST http://localhost:5002/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "get_company_profile",
-    "arguments": {"company_id": "C001"}
+    "name": "lookup_regulation_articles",
+    "arguments": {"domain": "food_safety", "keywords": ["HACCP"]}
   }'
 ```
 
@@ -92,7 +88,7 @@ Each server runs independently using the **FastMCP** framework with **HTTP trans
 ### Run Locally (without Docker)
 
 ```bash
-cd mcp-servers/company-compliance
+cd mcp-servers/regulation-analysis
 pip install -r requirements.txt
 python server.py
 ```
@@ -103,24 +99,17 @@ Server will start with http transport on the default port.
 
 ```
 mcp-servers/
-├── company-compliance/
-│   ├── server.py          # FastMCP server
-│   ├── requirements.txt   # Dependencies
-│   └── Dockerfile
 ├── regulation-analysis/
 │   ├── server.py
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── reporting/
 │   ├── server.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── risk-enforcement/
-│   ├── server.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── utilities/
-│   ├── server.py
+│   ├── analyzers/
+│   ├── generators/
+│   ├── models/
+│   ├── storage/
+│   ├── verification/
 │   ├── requirements.txt
 │   └── Dockerfile
 └── docker-compose.yml
@@ -128,30 +117,30 @@ mcp-servers/
 
 ## Available Tools
 
-### Company Compliance
-
-- `get_company_profile(company_id)` - Get company info
-- `fetch_inspection_history(company_id, limit)` - Get inspection records
-
 ### Regulation Analysis
 
-- `lookup_regulation_articles(domain, keywords)` - Search regulations
-- `analyze_document(document_uri, analysis_type)` - Analyze documents
+- `semantic_search_regulations(query, top_k)` - Search regulations using semantic similarity
+- `get_regulation_by_id(regulation_id)` - Get specific regulation by ID
 
 ### Reporting
 
-- `generate_inspection_report(company_id, inspection_data, history, notes)` - Generate reports
+- `start_inspection_report(session_id, inspector_name, inspection_date)` - Start a new inspection report
+- `extract_inspection_data(session_id, conversation_history)` - Extract structured data from conversation
+- `verify_inspection_data(session_id)` - Get verification questions for missing data
+- `submit_verification_answers(session_id, answers)` - Submit answers to verification questions
+- `generate_final_report(session_id)` - Generate final JSON and PDF reports
 
-### Risk Enforcement
+### Company Information & Inspection History
 
-- `calculate_risk_score(history, business_activities, region)` - Calculate risk
-- `flag_for_enforcement(company_id, violation_id, severity, justification)` - Flag violations
+**Company Verification:**
+- `check_company_exists(kvk_number)` - Check if company exists in KVK register
 
-### Utilities
-
-- `translate_text(text, target_language)` - Translate text
-- `format_date(date_str, format_type)` - Format dates
-- `calculate_due_date(start_date, days)` - Calculate due dates
+**Inspection History (includes full company details):**
+- `get_inspection_history(kvk_number, limit)` - Get past inspections for a company
+- `get_company_violations(kvk_number, limit, severity)` - Get all violations across inspections
+- `check_repeat_violation(kvk_number, violation_category)` - Check if violation is a repeat
+- `get_follow_up_status(kvk_number, inspection_id)` - Get follow-up action status
+- `search_inspections_by_inspector(inspector_name, limit)` - Find inspections by inspector
 
 ## FastMCP Implementation
 
@@ -206,16 +195,13 @@ These servers use HTTP transport, making them compatible with OpenAI's Responses
 ```python
 # In your OpenAI orchestrator
 mcp_servers = {
-    "company-compliance": "http://localhost:5001",
     "regulation-analysis": "http://localhost:5002",
-    "reporting": "http://localhost:5003",
-    "risk-enforcement": "http://localhost:5004",
-    "utilities": "http://localhost:5005"
+    "reporting": "http://localhost:5003"
 }
 
 # The MCP client can call tools via HTTP
-# Example: GET http://localhost:5001/mcp/tools (list tools)
-# Example: POST http://localhost:5001/mcp/tools/call (execute tool)
+# Example: GET http://localhost:5002/mcp/tools (list tools)
+# Example: POST http://localhost:5002/mcp/tools/call (execute tool)
 ```
 
 ## Troubleshooting
@@ -235,29 +221,29 @@ echo 'export COMPOSE_DOCKER_CLI_BUILD=0' >> ~/.zshrc
 **Ports already in use:**
 ```bash
 # Check what's using the ports
-lsof -i :5001-5005
+lsof -i :5002-5003
 
 # Stop containers
 docker-compose down
 ```
 
 **Can't connect from orchestrator:**
-- Check health: `curl http://localhost:5001/health`
+- Check health: `curl http://localhost:5002/health`
 - Verify containers are healthy: `docker-compose ps` (should show "healthy")
-- Check server logs: `docker-compose logs company-compliance`
+- Check server logs: `docker-compose logs regulation-analysis`
 - Check network: `docker network inspect agora-network`
 - Verify ports are exposed: `docker-compose ps | grep ":500"`
 
 **Health checks failing:**
-- Check if server is starting: `docker-compose logs company-compliance`
+- Check if server is starting: `docker-compose logs regulation-analysis`
 - Verify httpx is installed: Check requirements.txt
 - Increase start_period in docker-compose.yml if server needs more time
 
 **Tools not discovered:**
-- Check server logs for errors: `docker-compose logs company-compliance`
+- Check server logs for errors: `docker-compose logs regulation-analysis`
 - Verify decorators use `@mcp.tool` (without parentheses)
 - Ensure server runs `mcp.run(transport="http", host="0.0.0.0", port=8000)`
-- Test tools endpoint: `curl http://localhost:5001/mcp/tools`
+- Test tools endpoint: `curl http://localhost:5002/mcp/tools`
 - Test server info: Query `server://info` resource
 
 ## Production Deployment
@@ -266,7 +252,7 @@ For production:
 
 1. **Use environment variables** for server URLs:
    ```bash
-   APP_MCP_SERVERS=company-compliance=http://mcp-company-compliance:8000,regulation-analysis=http://mcp-regulation-analysis:8000,...
+   APP_MCP_SERVERS=regulation-analysis=http://mcp-regulation-analysis:8000,reporting=http://mcp-reporting:8000
    ```
 
 2. **Remove port mappings** for servers that don't need external access (only keep internal Docker networking)
@@ -279,7 +265,7 @@ For production:
 
 6. **Scale servers** as needed:
    ```bash
-   docker-compose up --scale company-compliance=3
+   docker-compose up --scale regulation-analysis=3
    ```
 
 ## References

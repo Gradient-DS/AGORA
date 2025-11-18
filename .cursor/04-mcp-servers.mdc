@@ -1,0 +1,863 @@
+---
+description: FastMCP-based tool servers with HTTP transport for OpenAI integration
+globs: mcp-servers/**/*
+alwaysApply: false
+---
+
+# MCP Servers - FastMCP with HTTP Transport
+
+## Overview
+
+The AGORA system uses **FastMCP** framework to implement Model Context Protocol (MCP) servers with HTTP transport for OpenAI integration. These servers provide specialized tools for the multi-agent system.
+
+## Active MCP Servers
+
+1. **Regulation Analysis** (port 5002) - Regulatory lookups, document search, and compliance analysis
+2. **Reporting** (port 5003) - HAP inspection report generation and structured data extraction
+
+## Core Principles
+
+### 1. Use FastMCP Framework
+FastMCP provides automatic HTTP transport, tool registration, and OpenAI compatibility.
+
+```python
+from fastmcp import FastMCP
+
+mcp = FastMCP("Server Name")
+
+# Tools automatically available via HTTP
+# Health checks built-in
+# OpenAI function format automatic
+```
+
+### 2. HTTP Transport Only
+All MCP servers use HTTP transport (not stdio) for:
+- OpenAI Responses API compatibility
+- Standard HTTP client access
+- Docker health checks
+- Easy testing with curl
+
+### 3. Stateless Tool Design
+Each tool should be stateless or use external storage:
+- No in-memory state (except for session data with TTL)
+- Use external services for persistence
+- Clear error handling
+- Fast execution (<3s ideal for voice mode)
+
+### 4. Type-Safe Parameters
+Use Python type hints for all tool parameters:
+- FastMCP generates OpenAI function schemas automatically
+- Runtime validation
+- Clear documentation
+
+## Project Structure
+
+```
+mcp-servers/
+├── regulation-analysis/
+│   ├── server.py              # Main MCP server
+│   ├── requirements.txt       # Pinned dependencies
+│   ├── Dockerfile            # Non-root user, health checks
+│   └── README.md
+├── reporting/
+│   ├── server.py              # Main MCP server
+│   ├── analyzers/            # Data extraction logic
+│   ├── generators/           # Report generation
+│   ├── models/               # Data models
+│   ├── storage/              # Session storage
+│   ├── verification/         # Data verification
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── README.md
+├── document-ingestion/
+│   ├── chunkers/             # Document chunking
+│   ├── database/             # Weaviate integration
+│   ├── embeddings/           # Embedding generation
+│   ├── parsers/              # PDF parsing
+│   ├── summarizers/          # Document summarization
+│   └── ...
+└── docker-compose.yml         # Multi-service deployment
+```
+
+## FastMCP Server Template
+
+Every MCP server follows this template:
+
+```python
+import logging
+from datetime import datetime
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from fastmcp import FastMCP
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Create MCP instance
+mcp = FastMCP("Server Name")
+
+# Define tools
+@mcp.tool()
+async def my_tool(param: str, optional_param: int = 10) -> dict:
+    """Tool description that becomes OpenAI function description.
+    
+    Args:
+        param: Description of required parameter
+        optional_param: Description of optional parameter
+    
+    Returns:
+        Dictionary with tool results
+    """
+    logger.info(f"Executing my_tool with param={param}")
+    
+    try:
+        # Tool implementation
+        result = {"status": "success", "data": param}
+        return result
+    except Exception as e:
+        logger.error(f"Error in my_tool: {e}")
+        return {"status": "error", "error": str(e)}
+
+# Health check endpoint (required for Docker)
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> JSONResponse:
+    """Health check endpoint for Docker health checks."""
+    return JSONResponse(
+        {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "service": "Server Name"
+        },
+        status_code=200
+    )
+
+# Server info resource
+@mcp.resource("server://info")
+def server_info() -> str:
+    """Server capabilities and metadata."""
+    import json
+    return json.dumps({
+        "name": "Server Name",
+        "version": "1.0.0",
+        "description": "Server description",
+        "tools": ["my_tool"]
+    })
+
+# Run server
+if __name__ == "__main__":
+    logger.info("Starting server on http://0.0.0.0:8000")
+    mcp.run(transport="http", host="0.0.0.0", port=8000)
+```
+
+## Key FastMCP Patterns
+
+### Tool Definition with @mcp.tool()
+
+```python
+@mcp.tool()
+async def semantic_search_regulations(
+    query: str,
+    top_k: int = 5,
+    filters: dict | None = None
+) -> dict:
+    """Search regulations using semantic similarity.
+    
+    Use this tool to find relevant regulatory articles based on
+    natural language queries about food safety, HACCP, or compliance.
+    
+    Args:
+        query: Natural language search query
+        top_k: Number of results to return (default: 5)
+        filters: Optional filters for domain, date, etc.
+    
+    Returns:
+        List of matching regulation articles with scores
+    """
+    # Implementation
+    return {
+        "results": [...],
+        "count": top_k,
+        "query": query
+    }
+```
+
+**Key Points:**
+- Use `@mcp.tool()` (no parentheses if no parameters)
+- Full type hints required
+- Docstring becomes OpenAI function description
+- Return dict for JSON serialization
+- Handle errors gracefully
+
+### Custom HTTP Routes with @mcp.custom_route()
+
+```python
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> JSONResponse:
+    """Required for Docker health checks."""
+    return JSONResponse(
+        {"status": "healthy", "timestamp": datetime.now().isoformat()},
+        status_code=200
+    )
+
+@mcp.custom_route("/metrics", methods=["GET"])
+async def metrics(request: Request) -> JSONResponse:
+    """Optional metrics endpoint."""
+    return JSONResponse({
+        "tools_executed": tool_counter.value,
+        "uptime_seconds": time.time() - start_time
+    })
+```
+
+**Required Routes:**
+- `/health` - Docker health checks (GET)
+- FastMCP automatically provides:
+  - `/mcp/tools` - List all tools (GET)
+  - `/mcp/tools/call` - Execute tool (POST)
+  - `/mcp/resources` - List resources (GET)
+
+### Resource Endpoints with @mcp.resource()
+
+```python
+@mcp.resource("server://info")
+def server_info() -> str:
+    """Server metadata and capabilities."""
+    return json.dumps({
+        "name": "Regulation Analysis",
+        "version": "1.0.0",
+        "capabilities": ["semantic_search", "document_analysis"],
+        "status": "operational"
+    })
+
+@mcp.resource("regulations://stats")
+def regulation_stats() -> str:
+    """Statistics about available regulations."""
+    return json.dumps({
+        "total_regulations": 1500,
+        "last_updated": "2025-01-15",
+        "languages": ["nl", "en"]
+    })
+```
+
+## OpenAI Function Format
+
+FastMCP automatically converts your tools to OpenAI function format:
+
+```python
+# Your tool definition
+@mcp.tool()
+async def check_compliance(company_id: str, regulation: str) -> dict:
+    """Check if company is compliant with regulation."""
+    pass
+
+# Automatically becomes (available at GET /mcp/tools):
+{
+    "type": "function",
+    "function": {
+        "name": "check_compliance",
+        "description": "Check if company is compliant with regulation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "company_id": {"type": "string"},
+                "regulation": {"type": "string"}
+            },
+            "required": ["company_id", "regulation"]
+        }
+    }
+}
+```
+
+## Docker Configuration
+
+### Dockerfile Template
+
+```dockerfile
+FROM python:3.11-slim
+
+# Create non-root user
+RUN useradd -m -u 1000 mcp && \
+    mkdir -p /app && \
+    chown -R mcp:mcp /app
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY --chown=mcp:mcp . .
+
+# Switch to non-root user
+USER mcp
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/health', timeout=5.0)"
+
+# Run server
+CMD ["python", "server.py"]
+```
+
+**Key Points:**
+- Non-root user for security
+- Health check using HTTP endpoint
+- Pinned dependencies
+- Minimal base image
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  regulation-analysis:
+    build: ./regulation-analysis
+    container_name: agora-regulation-analysis
+    ports:
+      - "5002:8000"
+    environment:
+      - LOG_LEVEL=INFO
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - agora-network
+    restart: unless-stopped
+
+  reporting:
+    build: ./reporting
+    container_name: agora-reporting
+    ports:
+      - "5003:8000"
+    environment:
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - agora-network
+    restart: unless-stopped
+
+networks:
+  agora-network:
+    name: agora-network
+    driver: bridge
+```
+
+## Development Workflow
+
+### 1. Create New MCP Server
+
+```bash
+cd mcp-servers
+mkdir my-new-server
+cd my-new-server
+
+# Create server.py from template
+# Create requirements.txt
+# Create Dockerfile
+# Update ../docker-compose.yml
+```
+
+### 2. Define Tools
+
+```python
+@mcp.tool()
+async def my_tool(param: str) -> dict:
+    """Tool description."""
+    # Implementation
+    return {"result": "value"}
+```
+
+### 3. Test Locally
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run server
+python server.py
+
+# Test in another terminal
+curl http://localhost:8000/health
+curl http://localhost:8000/mcp/tools | jq
+curl -X POST http://localhost:8000/mcp/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my_tool", "arguments": {"param": "value"}}'
+```
+
+### 4. Build and Run with Docker
+
+```bash
+# Build
+docker-compose build my-new-server
+
+# Run
+docker-compose up my-new-server
+
+# Check health
+docker-compose ps
+curl http://localhost:5004/health  # Adjust port
+```
+
+### 5. Add to Orchestrator
+
+```bash
+# In server-openai/.env
+APP_MCP_SERVERS=regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,my-new-server=http://localhost:5004
+```
+
+## Testing MCP Servers
+
+### Test Health Endpoint
+
+```bash
+curl http://localhost:5002/health
+# Expected: {"status": "healthy", "timestamp": "...", "service": "..."}
+```
+
+### List Available Tools
+
+```bash
+curl http://localhost:5002/mcp/tools | jq
+# Shows all tools in OpenAI function format
+```
+
+### Execute Tool Directly
+
+```bash
+curl -X POST http://localhost:5002/mcp/tools/call \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "semantic_search_regulations",
+    "arguments": {
+      "query": "HACCP temperature control",
+      "top_k": 5
+    }
+  }' | jq
+```
+
+### Test with Python
+
+```python
+import httpx
+import asyncio
+
+async def test_mcp_server():
+    async with httpx.AsyncClient() as client:
+        # Check health
+        health = await client.get("http://localhost:5002/health")
+        print(f"Health: {health.json()}")
+        
+        # List tools
+        tools = await client.get("http://localhost:5002/mcp/tools")
+        print(f"Tools: {tools.json()}")
+        
+        # Execute tool
+        result = await client.post(
+            "http://localhost:5002/mcp/tools/call",
+            json={
+                "name": "semantic_search_regulations",
+                "arguments": {"query": "food safety", "top_k": 3}
+            }
+        )
+        print(f"Result: {result.json()}")
+
+asyncio.run(test_mcp_server())
+```
+
+## Error Handling
+
+### Tool-Level Error Handling
+
+```python
+@mcp.tool()
+async def my_tool(param: str) -> dict:
+    """Tool with proper error handling."""
+    try:
+        # Validate input
+        if not param:
+            return {
+                "status": "error",
+                "error": "param is required",
+                "code": "INVALID_INPUT"
+            }
+        
+        # Execute logic
+        result = await process(param)
+        
+        # Return success
+        return {
+            "status": "success",
+            "data": result,
+            "metadata": {"execution_time": 0.5}
+        }
+        
+    except ValueError as e:
+        logger.warning(f"Validation error in my_tool: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "code": "VALIDATION_ERROR"
+        }
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in my_tool: {e}")
+        return {
+            "status": "error",
+            "error": "Internal server error",
+            "code": "INTERNAL_ERROR"
+        }
+```
+
+**Error Response Format:**
+```json
+{
+    "status": "error",
+    "error": "Human-readable error message",
+    "code": "ERROR_CODE",
+    "details": {}  // Optional
+}
+```
+
+## Performance Best Practices
+
+### 1. Fast Tool Execution
+- Target <3s for voice mode compatibility
+- Use async/await for I/O operations
+- Implement timeouts
+- Cache expensive operations
+
+```python
+from functools import lru_cache
+import asyncio
+
+@lru_cache(maxsize=100)
+def cached_lookup(key: str) -> dict:
+    """Expensive operation with caching."""
+    return slow_database_query(key)
+
+@mcp.tool()
+async def fast_tool(query: str) -> dict:
+    """Fast tool with timeout."""
+    try:
+        result = await asyncio.wait_for(
+            async_operation(query),
+            timeout=2.0
+        )
+        return {"status": "success", "data": result}
+    except asyncio.TimeoutError:
+        return {"status": "error", "error": "Operation timed out"}
+```
+
+### 2. Efficient Resource Usage
+- Stream large responses
+- Limit result set sizes
+- Use pagination for large datasets
+- Clean up resources
+
+```python
+@mcp.tool()
+async def search_with_pagination(
+    query: str,
+    page: int = 1,
+    page_size: int = 10
+) -> dict:
+    """Paginated search for large result sets."""
+    offset = (page - 1) * page_size
+    results = await db.query(query, limit=page_size, offset=offset)
+    
+    return {
+        "results": results,
+        "page": page,
+        "page_size": page_size,
+        "has_more": len(results) == page_size
+    }
+```
+
+### 3. Logging and Observability
+- Log tool executions
+- Track execution time
+- Log errors with context
+- Use structured logging
+
+```python
+import time
+import structlog
+
+logger = structlog.get_logger()
+
+@mcp.tool()
+async def observable_tool(param: str) -> dict:
+    """Tool with comprehensive logging."""
+    start_time = time.time()
+    
+    logger.info("tool_started", tool="observable_tool", param=param)
+    
+    try:
+        result = await execute(param)
+        
+        duration = time.time() - start_time
+        logger.info(
+            "tool_completed",
+            tool="observable_tool",
+            duration=duration,
+            success=True
+        )
+        
+        return {"status": "success", "data": result}
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            "tool_failed",
+            tool="observable_tool",
+            duration=duration,
+            error=str(e)
+        )
+        raise
+```
+
+## Security Considerations
+
+### 1. Input Validation
+Always validate and sanitize inputs:
+
+```python
+from pydantic import BaseModel, Field, validator
+
+class ToolInput(BaseModel):
+    query: str = Field(..., min_length=1, max_length=1000)
+    limit: int = Field(default=10, ge=1, le=100)
+    
+    @validator('query')
+    def validate_query(cls, v):
+        # Sanitize input
+        if any(char in v for char in ['<', '>', ';', '&']):
+            raise ValueError("Invalid characters in query")
+        return v.strip()
+
+@mcp.tool()
+async def safe_tool(query: str, limit: int = 10) -> dict:
+    """Tool with input validation."""
+    # Validate with Pydantic
+    validated = ToolInput(query=query, limit=limit)
+    
+    # Use validated inputs
+    results = await search(validated.query, validated.limit)
+    return {"results": results}
+```
+
+### 2. Rate Limiting
+Implement rate limiting for expensive operations:
+
+```python
+from collections import defaultdict
+import time
+
+# Simple rate limiter
+rate_limits = defaultdict(list)
+
+def check_rate_limit(key: str, max_calls: int = 10, window: int = 60) -> bool:
+    """Check if rate limit is exceeded."""
+    now = time.time()
+    # Clean old entries
+    rate_limits[key] = [t for t in rate_limits[key] if now - t < window]
+    
+    if len(rate_limits[key]) >= max_calls:
+        return False
+    
+    rate_limits[key].append(now)
+    return True
+
+@mcp.tool()
+async def rate_limited_tool(param: str) -> dict:
+    """Tool with rate limiting."""
+    if not check_rate_limit(f"tool:{param}"):
+        return {
+            "status": "error",
+            "error": "Rate limit exceeded",
+            "code": "RATE_LIMITED"
+        }
+    
+    # Execute tool
+    return {"status": "success", "data": await process(param)}
+```
+
+### 3. Authentication (Production)
+For production deployments, add authentication:
+
+```python
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+import hmac
+import hashlib
+
+def verify_signature(request: Request, secret: str) -> bool:
+    """Verify HMAC signature for requests."""
+    signature = request.headers.get("X-Signature")
+    if not signature:
+        return False
+    
+    body = request.body()
+    expected = hmac.new(
+        secret.encode(),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, expected)
+
+@mcp.custom_route("/mcp/tools/call", methods=["POST"])
+async def authenticated_tool_call(request: Request) -> JSONResponse:
+    """Tool execution with authentication."""
+    if not verify_signature(request, SECRET_KEY):
+        return JSONResponse(
+            {"error": "Unauthorized"},
+            status_code=401
+        )
+    
+    # Process tool call
+    ...
+```
+
+## Troubleshooting
+
+### Server Won't Start
+
+```bash
+# Check if port is in use
+lsof -i :8000
+
+# Check logs
+docker-compose logs regulation-analysis
+
+# Test dependencies
+pip install -r requirements.txt
+python -c "from fastmcp import FastMCP; print('OK')"
+```
+
+### Health Checks Failing
+
+```bash
+# Test health endpoint directly
+curl http://localhost:5002/health
+
+# Check Docker health status
+docker-compose ps
+
+# View detailed health check logs
+docker inspect --format='{{json .State.Health}}' agora-regulation-analysis | jq
+```
+
+### Tools Not Discovered
+
+```bash
+# Check if tools are registered
+curl http://localhost:5002/mcp/tools | jq
+
+# Verify @mcp.tool() decorator (no parentheses unless passing args)
+# Check server logs for errors
+docker-compose logs regulation-analysis | grep -i error
+```
+
+### Slow Tool Execution
+
+```python
+# Add timing logs
+import time
+
+@mcp.tool()
+async def slow_tool(param: str) -> dict:
+    start = time.time()
+    logger.info(f"Tool started: {param}")
+    
+    result = await process(param)
+    
+    duration = time.time() - start
+    logger.info(f"Tool completed in {duration:.2f}s")
+    
+    if duration > 3.0:
+        logger.warning(f"Slow tool execution: {duration:.2f}s")
+    
+    return {"result": result, "execution_time": duration}
+```
+
+## Example: Reporting Server Structure
+
+The reporting server demonstrates advanced MCP server architecture:
+
+```
+reporting/
+├── server.py                  # Main FastMCP server
+├── models/
+│   ├── session.py            # Session data models
+│   ├── inspection.py         # Inspection data models
+│   └── report.py             # Report models
+├── storage/
+│   ├── session_store.py      # Session persistence
+│   └── ttl_cache.py          # Time-based cache
+├── analyzers/
+│   ├── data_extractor.py     # Extract data from conversations
+│   ├── compliance_checker.py # Compliance validation
+│   └── risk_assessor.py      # Risk analysis
+├── generators/
+│   ├── json_generator.py     # JSON report generation
+│   ├── pdf_generator.py      # PDF report generation
+│   └── chart_generator.py    # Visualization generation
+├── verification/
+│   ├── question_generator.py # Generate verification questions
+│   ├── answer_validator.py   # Validate verification answers
+│   └── completeness_check.py # Check data completeness
+├── requirements.txt
+├── Dockerfile
+└── README.md
+```
+
+Tools exposed by reporting server:
+
+1. `start_inspection_report(session_id, inspector_name, date)` - Initialize session
+2. `extract_inspection_data(session_id, conversation)` - Extract structured data
+3. `verify_inspection_data(session_id)` - Get verification questions
+4. `submit_verification_answers(session_id, answers)` - Submit answers
+5. `generate_final_report(session_id)` - Generate JSON + PDF
+
+## Summary
+
+**Always:**
+- ✅ Use FastMCP framework with HTTP transport
+- ✅ Define tools with `@mcp.tool()` and full type hints
+- ✅ Add `/health` endpoint for Docker
+- ✅ Return dicts from tools (JSON serializable)
+- ✅ Handle errors gracefully with status/error fields
+- ✅ Log tool executions and errors
+- ✅ Keep tools fast (<3s for voice compatibility)
+- ✅ Use non-root Docker user
+- ✅ Pin dependencies in requirements.txt
+
+**Never:**
+- ❌ Use stdio transport (use HTTP)
+- ❌ Store state in memory without TTL
+- ❌ Return non-serializable objects
+- ❌ Forget error handling
+- ❌ Skip health check endpoint
+- ❌ Run as root in Docker
+- ❌ Make tools blocking/slow without timeout
+
+**Remember:**
+Tools should be fast, stateless, type-safe, and error-resilient. FastMCP handles the complexity of HTTP transport and OpenAI integration automatically.

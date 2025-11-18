@@ -31,6 +31,8 @@ export function useWebSocket() {
   const setStatus = useConnectionStore((state) => state.setStatus);
   const setError = useConnectionStore((state) => state.setError);
   const addMessage = useMessageStore((state) => state.addMessage);
+  const updateMessageContent = useMessageStore((state) => state.updateMessageContent);
+  const finalizeMessage = useMessageStore((state) => state.finalizeMessage);
   const updateStatus = useMessageStore((state) => state.updateStatus);
   const session = useSessionStore((state) => state.session);
   const updateActivity = useSessionStore((state) => state.updateActivity);
@@ -58,6 +60,7 @@ export function useWebSocket() {
       switch (message.type) {
         case 'assistant_message':
           addMessage({
+            id: `msg-${Date.now()}-${Math.random()}`,
             type: 'assistant',
             content: message.content,
             agent_id: message.agent_id ?? undefined,
@@ -65,8 +68,52 @@ export function useWebSocket() {
           });
           break;
 
+        case 'assistant_message_chunk':
+          {
+            const existingMessage = useMessageStore.getState().messages.find(
+              (msg) => msg.id === message.message_id
+            );
+
+            if (!existingMessage) {
+              if (message.content) {
+                addMessage({
+                  id: message.message_id,
+                  type: 'assistant',
+                  content: message.content,
+                  agent_id: message.agent_id ?? undefined,
+                  isStreaming: !message.is_final,
+                });
+              }
+            } else {
+              if (message.content) {
+                updateMessageContent(message.message_id, message.content, true);
+              }
+              if (message.is_final) {
+                finalizeMessage(message.message_id);
+              }
+            }
+          }
+          break;
+
         case 'status':
+          console.log('[useWebSocket] Status update:', message.status, message.message);
           updateStatus(message.status);
+          break;
+
+        case 'tool_call':
+          // Add tool call as a special message in the chat
+          addMessage({
+            id: message.tool_call_id,
+            type: 'tool_call',
+            content: message.tool_name,
+            tool_name: message.tool_name,
+            tool_status: message.status,
+            agent_id: message.agent_id ?? undefined,
+            metadata: {
+              parameters: message.parameters,
+              result: message.result,
+            },
+          });
           break;
 
         case 'tool_approval_request':
@@ -111,11 +158,12 @@ export function useWebSocket() {
         }, 100);
       }
     };
-  }, [setStatus, setError, addMessage, updateStatus, addApproval, updateActivity]);
+  }, [setStatus, setError, addMessage, updateMessageContent, finalizeMessage, updateStatus, addApproval, updateActivity]);
 
   const sendMessage = (content: string) => {
     if (clientRef.current && session) {
       addMessage({
+        id: `msg-${Date.now()}-${Math.random()}`,
         type: 'user',
         content,
       });

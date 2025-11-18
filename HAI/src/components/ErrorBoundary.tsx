@@ -46,28 +46,28 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="max-w-md w-full space-y-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Something went wrong</AlertTitle>
+              <AlertTitle>Er is iets misgegaan</AlertTitle>
               <AlertDescription>
-                {this.state.error?.message || 'An unexpected error occurred'}
+                {this.state.error?.message || 'Er is een onverwachte fout opgetreden'}
               </AlertDescription>
             </Alert>
 
             <div className="flex gap-2">
               <Button onClick={this.handleReset} className="flex-1">
-                Try Again
+                Probeer Opnieuw
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => window.location.reload()}
                 className="flex-1"
               >
-                Reload Page
+                Pagina Herladen
               </Button>
             </div>
 
             {import.meta.env.DEV && this.state.error && (
               <details className="mt-4 p-4 bg-muted rounded-lg">
-                <summary className="cursor-pointer font-semibold">Error Details</summary>
+                <summary className="cursor-pointer font-semibold">Fout Details</summary>
                 <pre className="mt-2 text-xs overflow-auto">
                   {this.state.error.stack}
                 </pre>
