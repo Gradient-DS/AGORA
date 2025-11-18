@@ -1,0 +1,306 @@
+{
+  "name": "Error Handling Scenarios",
+  "description": "Various error conditions and recovery patterns",
+  "scenarios": [
+    {
+      "name": "Moderation Violation",
+      "description": "User input blocked by content filter",
+      "messages": [
+        {
+          "direction": "client_to_server",
+          "message": {
+            "type": "user_message",
+            "content": "[Message containing inappropriate content]",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "metadata": {}
+          },
+          "notes": "User sends message with blocked content"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "error",
+            "error_code": "moderation_violation",
+            "message": "Your message contains content that violates our usage policy. Please rephrase your message.",
+            "details": {
+              "blocked_pattern": "profanity",
+              "severity": "medium",
+              "policy_url": "https://nvwa.nl/acceptable-use"
+            }
+          },
+          "notes": "Server blocks message and explains why"
+        }
+      ],
+      "expected_ui_behavior": {
+        "action": "Show error notification",
+        "color": "red",
+        "message_display": "Your message contains content that violates our usage policy. Please rephrase your message.",
+        "input_state": "Clear input field or keep for editing",
+        "additional_action": "Optionally show link to policy"
+      }
+    },
+    {
+      "name": "Rate Limit Exceeded",
+      "description": "Too many requests from user",
+      "messages": [
+        {
+          "direction": "client_to_server",
+          "message": {
+            "type": "user_message",
+            "content": "Tell me about regulations",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "metadata": {}
+          },
+          "notes": "User sends 11th message in 1 minute (exceeds limit)"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "error",
+            "error_code": "rate_limit_exceeded",
+            "message": "You've sent too many messages. Please wait a moment before trying again.",
+            "details": {
+              "retry_after_seconds": 30,
+              "limit": "10 messages per minute",
+              "current_count": 11
+            }
+          },
+          "notes": "Server rejects due to rate limit"
+        }
+      ],
+      "expected_ui_behavior": {
+        "action": "Show warning notification with countdown",
+        "color": "orange",
+        "message_display": "You've sent too many messages. Please wait 30 seconds before trying again.",
+        "input_state": "Disable input for 30 seconds with countdown timer",
+        "additional_action": "Auto-enable input after countdown"
+      }
+    },
+    {
+      "name": "Tool Execution Failed",
+      "description": "External tool fails during execution",
+      "messages": [
+        {
+          "direction": "client_to_server",
+          "message": {
+            "type": "user_message",
+            "content": "Search for restaurant regulations",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "metadata": {}
+          },
+          "notes": "User requests search operation"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "status",
+            "status": "executing_tools",
+            "message": "Searching regulations database...",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "notes": "Tool execution begins"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "tool_call",
+            "tool_call_id": "call_search_1",
+            "tool_name": "search_regulations",
+            "parameters": {"query": "restaurant regulations"},
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "status": "started",
+            "agent_id": "regulation_agent"
+          },
+          "notes": "Tool execution started"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "tool_call",
+            "tool_call_id": "call_search_1",
+            "tool_name": "search_regulations",
+            "parameters": {"query": "restaurant regulations"},
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "status": "failed",
+            "result": "Database connection timeout",
+            "agent_id": "regulation_agent",
+            "metadata": {
+              "error_type": "connection_timeout",
+              "retry_possible": true
+            }
+          },
+          "notes": "Tool execution failed"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "assistant_message_chunk",
+            "content": "I apologize, but I'm having trouble connecting to the regulations database right now. ",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "agent_id": "regulation_agent",
+            "message_id": "msg_error_1",
+            "is_final": false
+          },
+          "notes": "Assistant provides graceful error message"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "assistant_message_chunk",
+            "content": "Could you please try your question again in a moment? If the problem persists, I can help you with general guidance while the system recovers.",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000",
+            "agent_id": "regulation_agent",
+            "message_id": "msg_error_1",
+            "is_final": true
+          },
+          "notes": "Assistant offers alternative path"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "status",
+            "status": "completed",
+            "session_id": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "notes": "Processing complete despite error"
+        }
+      ],
+      "expected_ui_behavior": {
+        "on_tool_failed": "Show error badge on tool execution indicator",
+        "tool_indicator_color": "red",
+        "message_display": "Show assistant's error explanation",
+        "retry_button": "Optionally show 'Retry' button if error.metadata.retry_possible is true"
+      }
+    },
+    {
+      "name": "Invalid Session",
+      "description": "Session not found or expired",
+      "messages": [
+        {
+          "direction": "client_to_server",
+          "message": {
+            "type": "user_message",
+            "content": "Continue our previous conversation",
+            "session_id": "invalid-session-id-999",
+            "metadata": {}
+          },
+          "notes": "User tries to use expired/invalid session"
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "error",
+            "error_code": "invalid_session",
+            "message": "Your session has expired or is invalid. Starting a new conversation.",
+            "details": {
+              "session_id": "invalid-session-id-999",
+              "reason": "session_not_found"
+            }
+          },
+          "notes": "Server rejects invalid session"
+        }
+      ],
+      "expected_ui_behavior": {
+        "action": "Clear local session, generate new session_id",
+        "notification": "Show info notification: 'Starting a new conversation'",
+        "storage_action": "localStorage.removeItem('agora_session_id')",
+        "recovery": "Generate new UUID, store it, retry message with new session"
+      }
+    },
+    {
+      "name": "Invalid JSON Format",
+      "description": "Client sends malformed JSON",
+      "messages": [
+        {
+          "direction": "client_to_server",
+          "message": "{type: 'user_message', content: 'test'}",
+          "notes": "Malformed JSON (unquoted keys) - THIS IS WRONG",
+          "is_invalid": true
+        },
+        {
+          "direction": "server_to_client",
+          "message": {
+            "type": "error",
+            "error_code": "invalid_json",
+            "message": "Received invalid JSON format",
+            "details": {
+              "error": "Expecting property name enclosed in double quotes"
+            }
+          },
+          "notes": "Server cannot parse message"
+        }
+      ],
+      "expected_ui_behavior": {
+        "action": "This is a client bug - log to error tracking",
+        "developer_action": "Fix JSON serialization in client code",
+        "user_message": "Show generic error: 'Something went wrong. Please try again.'",
+        "recovery": "Ensure all messages use JSON.stringify() for serialization"
+      }
+    },
+    {
+      "name": "WebSocket Connection Lost",
+      "description": "Connection drops during conversation",
+      "events": [
+        {
+          "event": "websocket_close",
+          "code": 1006,
+          "reason": "Abnormal closure",
+          "notes": "Network interruption or server restart"
+        }
+      ],
+      "expected_ui_behavior": {
+        "immediate_action": "Show 'Connection lost' notification",
+        "notification_color": "yellow",
+        "message": "Connection lost. Reconnecting...",
+        "retry_strategy": "Exponential backoff: 1s, 2s, 4s, 8s, 16s",
+        "max_retries": 5,
+        "on_reconnect_success": "Show 'Reconnected!' notification, restore session",
+        "on_max_retries": "Show error: 'Unable to connect. Please refresh the page.'",
+        "input_state": "Disable input during reconnection attempts"
+      },
+      "recovery_code_example": {
+        "language": "typescript",
+        "code": "let reconnectAttempts = 0;\nconst MAX_ATTEMPTS = 5;\n\nfunction reconnect() {\n  if (reconnectAttempts >= MAX_ATTEMPTS) {\n    showError('Unable to connect. Please refresh.');\n    return;\n  }\n  const delay = 1000 * Math.pow(2, reconnectAttempts);\n  reconnectAttempts++;\n  setTimeout(() => connectWebSocket(), delay);\n}"
+      }
+    }
+  ],
+  "error_code_reference": {
+    "moderation_violation": {
+      "severity": "medium",
+      "user_action": "Rephrase message",
+      "retry_possible": true,
+      "log_to_monitoring": true
+    },
+    "rate_limit_exceeded": {
+      "severity": "low",
+      "user_action": "Wait and retry",
+      "retry_possible": true,
+      "log_to_monitoring": false
+    },
+    "tool_execution_failed": {
+      "severity": "medium",
+      "user_action": "Retry or rephrase",
+      "retry_possible": true,
+      "log_to_monitoring": true
+    },
+    "invalid_session": {
+      "severity": "low",
+      "user_action": "Automatic - create new session",
+      "retry_possible": true,
+      "log_to_monitoring": false
+    },
+    "invalid_json": {
+      "severity": "high",
+      "user_action": "Report bug to developers",
+      "retry_possible": false,
+      "log_to_monitoring": true
+    },
+    "internal_server_error": {
+      "severity": "high",
+      "user_action": "Retry or contact support",
+      "retry_possible": true,
+      "log_to_monitoring": true
+    }
+  }
+}
+

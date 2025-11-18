@@ -9,31 +9,11 @@ Complete walkthrough of the three inspector scenarios using AGORA's MCP servers 
 ### Scenario 1: Inspecteur Koen – Restaurant Bella Rosa
 
 ```
-Start inspectie bij Restaurant Bella Rosa
+Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854
 ```
 
 ```
-92251854
-```
-
-```
-Wat zijn de bedrijfsgegevens?
-```
-
-```
-Zijn er eerdere overtredingen bekend?
-```
-
-```
-Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten
-```
-
-```
-Welke regelgeving is van toepassing?
-```
-
-```
-Ik ga handhaven
+Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?
 ```
 
 ```

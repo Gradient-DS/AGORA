@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AGORA HAI Protocol Message Schemas",
+  "description": "JSON Schema definitions for all HAI Protocol message types",
+  "definitions": {
+    "UserMessage": {
+      "type": "object",
+      "required": ["type", "content", "session_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "user_message",
+          "description": "Message type discriminator"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000,
+          "description": "User's message content"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+$",
+          "description": "Session identifier for conversation continuity"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {},
+          "description": "Optional metadata"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AssistantMessage": {
+      "type": "object",
+      "required": ["type", "content"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "assistant_message"
+        },
+        "content": {
+          "type": "string",
+          "description": "Complete assistant response"
+        },
+        "session_id": {
+          "type": ["string", "null"],
+          "description": "Session identifier"
+        },
+        "agent_id": {
+          "type": ["string", "null"],
+          "description": "Agent that generated this response"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "AssistantMessageChunk": {
+      "type": "object",
+      "required": ["type", "content", "session_id", "message_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "assistant_message_chunk"
+        },
+        "content": {
+          "type": "string",
+          "description": "Partial content chunk"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session identifier"
+        },
+        "agent_id": {
+          "type": ["string", "null"],
+          "description": "Agent that generated this chunk"
+        },
+        "message_id": {
+          "type": "string",
+          "description": "Unique ID to group chunks"
+        },
+        "is_final": {
+          "type": "boolean",
+          "default": false,
+          "description": "True if this is the last chunk"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToolCallMessage": {
+      "type": "object",
+      "required": ["type", "tool_call_id", "tool_name", "parameters", "session_id", "status"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tool_call"
+        },
+        "tool_call_id": {
+          "type": "string",
+          "description": "Unique identifier for this tool call"
+        },
+        "tool_name": {
+          "type": "string",
+          "description": "Name of the tool"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Tool input parameters"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["started", "completed", "failed"],
+          "description": "Execution status"
+        },
+        "result": {
+          "type": ["string", "null"],
+          "description": "Result summary (for completed/failed)"
+        },
+        "agent_id": {
+          "type": ["string", "null"]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToolApprovalRequest": {
+      "type": "object",
+      "required": ["type", "tool_name", "tool_description", "parameters", "reasoning", "risk_level", "session_id", "approval_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tool_approval_request"
+        },
+        "tool_name": {
+          "type": "string",
+          "description": "Name of tool requiring approval"
+        },
+        "tool_description": {
+          "type": "string",
+          "description": "What the tool does"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Tool parameters"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "Why the agent wants to use this tool"
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Risk assessment"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "approval_id": {
+          "type": "string",
+          "description": "Unique approval request ID"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToolApprovalResponse": {
+      "type": "object",
+      "required": ["type", "approval_id", "approved"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tool_approval_response"
+        },
+        "approval_id": {
+          "type": "string",
+          "description": "Must match the request"
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "true to proceed, false to cancel"
+        },
+        "feedback": {
+          "type": ["string", "null"],
+          "description": "Optional user comment"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StatusMessage": {
+      "type": "object",
+      "required": ["type", "status"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "status"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["thinking", "routing", "executing_tools", "completed"],
+          "description": "Processing status"
+        },
+        "message": {
+          "type": ["string", "null"],
+          "description": "Optional status message"
+        },
+        "session_id": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorMessage": {
+      "type": "object",
+      "required": ["type", "error_code", "message"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "error"
+        },
+        "error_code": {
+          "type": "string",
+          "description": "Machine-readable error code",
+          "examples": [
+            "moderation_violation",
+            "rate_limit_exceeded",
+            "tool_execution_failed",
+            "invalid_session",
+            "invalid_json"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable error message"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {},
+          "description": "Additional error context"
+        }
+      },
+      "additionalProperties": false
+    },
+    "HAIMessage": {
+      "oneOf": [
+        {"$ref": "#/definitions/UserMessage"},
+        {"$ref": "#/definitions/AssistantMessage"},
+        {"$ref": "#/definitions/AssistantMessageChunk"},
+        {"$ref": "#/definitions/ToolCallMessage"},
+        {"$ref": "#/definitions/ToolApprovalRequest"},
+        {"$ref": "#/definitions/ToolApprovalResponse"},
+        {"$ref": "#/definitions/StatusMessage"},
+        {"$ref": "#/definitions/ErrorMessage"}
+      ],
+      "discriminator": {
+        "propertyName": "type"
+      }
+    }
+  },
+  "$ref": "#/definitions/HAIMessage"
+}
+
