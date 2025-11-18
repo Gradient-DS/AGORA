@@ -17,9 +17,6 @@ info:
   contact:
     name: AGORA Development Team
     email: lex@gradient-ds.com
-  license:
-    name: Proprietary
-    url: https://nvwa.nl
 
 servers:
   development:
