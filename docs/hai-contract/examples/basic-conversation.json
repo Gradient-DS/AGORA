@@ -1,0 +1,135 @@
+{
+  "name": "Basic Conversation Flow",
+  "description": "Simple question-answer interaction with streaming response",
+  "messages": [
+    {
+      "direction": "client_to_server",
+      "message": {
+        "type": "user_message",
+        "content": "What are the food safety regulations for restaurants?",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "metadata": {}
+      },
+      "notes": "User initiates conversation with a question"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "status",
+        "status": "thinking",
+        "message": "Analyzing your question...",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      "notes": "Show loading indicator with 'thinking' status"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "assistant_message_chunk",
+        "content": "Based on ",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "agent_id": "regulation_agent",
+        "message_id": "msg_abc123",
+        "is_final": false
+      },
+      "notes": "First chunk of streaming response - start displaying"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "assistant_message_chunk",
+        "content": "the current food safety regulations, ",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "agent_id": "regulation_agent",
+        "message_id": "msg_abc123",
+        "is_final": false
+      },
+      "notes": "Continue appending chunks to the message"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "assistant_message_chunk",
+        "content": "restaurants must maintain proper temperature control for food storage. Refrigerated items should be kept below 4°C, and frozen items at -18°C or lower. Additionally, raw and cooked foods must be stored separately to prevent cross-contamination.",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "agent_id": "regulation_agent",
+        "message_id": "msg_abc123",
+        "is_final": true
+      },
+      "notes": "Final chunk with is_final=true - stop spinner, enable input"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "status",
+        "status": "completed",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      "notes": "All processing complete - clear any remaining loading indicators"
+    },
+    {
+      "direction": "client_to_server",
+      "message": {
+        "type": "user_message",
+        "content": "What about temperature monitoring frequency?",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "metadata": {
+          "previous_message_id": "msg_abc123"
+        }
+      },
+      "notes": "User asks follow-up question in the same session"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "status",
+        "status": "thinking",
+        "message": "Checking regulations...",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      "notes": "Processing follow-up with conversation context"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "assistant_message_chunk",
+        "content": "According to regulations, ",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "agent_id": "regulation_agent",
+        "message_id": "msg_def456",
+        "is_final": false
+      },
+      "notes": "New message_id for the follow-up response"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "assistant_message_chunk",
+        "content": "restaurants must monitor refrigeration temperatures at least twice daily, with readings documented in a log book. Critical control points should be checked more frequently during peak hours.",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000",
+        "agent_id": "regulation_agent",
+        "message_id": "msg_def456",
+        "is_final": true
+      },
+      "notes": "Complete follow-up response"
+    },
+    {
+      "direction": "server_to_client",
+      "message": {
+        "type": "status",
+        "status": "completed",
+        "session_id": "123e4567-e89b-12d3-a456-426614174000"
+      },
+      "notes": "Conversation continues..."
+    }
+  ],
+  "expected_ui_behavior": {
+    "on_user_message": "Disable input field, show sending indicator",
+    "on_thinking_status": "Show 'Assistant is thinking...' with spinner",
+    "on_first_chunk": "Display message container, start appending text",
+    "on_subsequent_chunks": "Continue appending to message with same message_id",
+    "on_final_chunk": "Stop appending, mark message complete, enable input",
+    "on_completed_status": "Clear all loading indicators, ready for next input"
+  }
+}
+

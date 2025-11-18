@@ -35,26 +35,29 @@ workspace "AGORA v1.0 — Multi-Agent Systeem NVWA" {
         tags "Backend"
         
         // Orchestrator components
-        agentRunner = component "Agent Runner" "OpenAI Agents SDK Runner" "Python" {
-          description "Beheert agent executie met streaming support, tool callbacks en session management via SQLite"
+        group "OpenAI Agents SDK Core" {
+          agentRunner = component "Agent Runner" "OpenAI Agents SDK Runner" "Python" {
+            description "Beheert agent executie met streaming support, tool callbacks en session management via SQLite"
+          }
+          agentRegistry = component "Agent Registry" "Multi-agent configuratie" "Python" {
+            description "Registry van alle agents: general, regulation, reporting en history agents met handoff support"
+          }
+          moderator = component "Moderator" "Input/output validation" "Python" {
+            description "Valideert user input en assistant output op blocked patterns en sensitive content"
+          }
+          auditLogger = component "Audit Logger" "OpenTelemetry logging" "Python" {
+            description "Audit logging van alle berichten en beslissingen via OpenTelemetry"
+          }
+          sessionStorage = component "Session Storage" "SQLite database" "Python" {
+            description "Conversation history en agent state opslag via Agents SDK SQLiteSession"
+          }
         }
-        agentRegistry = component "Agent Registry" "Multi-agent configuratie" "Python" {
-          description "Registry van alle agents: general, regulation, reporting en history agents met handoff support"
-        }
+        
         mcpToolRegistry = component "MCP Tool Registry" "Native MCP integration" "Python" {
           description "Agent SDK native MCP server connecties voor tools en resources"
         }
-        moderator = component "Moderator" "Input/output validation" "Python" {
-          description "Valideert user input en assistant output op blocked patterns en sensitive content"
-        }
-        auditLogger = component "Audit Logger" "OpenTelemetry logging" "Python" {
-          description "Audit logging van alle berichten en beslissingen via OpenTelemetry"
-        }
         haiProtocolHandler = component "HAI Protocol Handler" "WebSocket protocol handler" "Python" {
           description "Beheert HAI protocol communicatie: user messages, assistant chunks, tool calls, status updates"
-        }
-        sessionStorage = component "Session Storage" "SQLite database" "Python" {
-          description "Conversation history en agent state opslag via Agents SDK SQLiteSession"
         }
         
         haiProtocolHandler -> agentRunner "Stuurt requests naar"

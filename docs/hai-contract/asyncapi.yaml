@@ -1,0 +1,472 @@
+asyncapi: 3.0.0
+info:
+  title: AGORA HAI Protocol API
+  version: 1.0.0
+  description: |
+    WebSocket protocol for communication between the Human Agent Interface (HAI) 
+    and the AGORA backend orchestrator. This protocol supports real-time chat, 
+    streaming responses, tool execution notifications, and human-in-the-loop approvals.
+    
+    ## Key Features
+    - Real-time bidirectional communication
+    - Streaming assistant responses
+    - Tool execution transparency
+    - Human-in-the-loop approval workflow
+    - Session-based conversation continuity
+    
+  contact:
+    name: AGORA Development Team
+    email: lex@gradient-ds.com
+  license:
+    name: Proprietary
+    url: https://nvwa.nl
+
+servers:
+  development:
+    host: localhost:8000
+    protocol: ws
+    description: Local development server
+
+channels:
+  /ws:
+    address: /ws
+    messages:
+      UserMessage:
+        $ref: '#/components/messages/UserMessage'
+      AssistantMessage:
+        $ref: '#/components/messages/AssistantMessage'
+      AssistantMessageChunk:
+        $ref: '#/components/messages/AssistantMessageChunk'
+      ToolCallMessage:
+        $ref: '#/components/messages/ToolCallMessage'
+      ToolApprovalRequest:
+        $ref: '#/components/messages/ToolApprovalRequest'
+      ToolApprovalResponse:
+        $ref: '#/components/messages/ToolApprovalResponse'
+      StatusMessage:
+        $ref: '#/components/messages/StatusMessage'
+      ErrorMessage:
+        $ref: '#/components/messages/ErrorMessage'
+
+operations:
+  sendUserMessage:
+    action: send
+    channel:
+      $ref: '#/channels/~1ws'
+    summary: Send user message or approval response
+    messages:
+      - $ref: '#/channels/~1ws/messages/UserMessage'
+      - $ref: '#/channels/~1ws/messages/ToolApprovalResponse'
+  
+  receiveMessages:
+    action: receive
+    channel:
+      $ref: '#/channels/~1ws'
+    summary: Receive assistant responses, tool notifications, and status updates
+    messages:
+      - $ref: '#/channels/~1ws/messages/AssistantMessage'
+      - $ref: '#/channels/~1ws/messages/AssistantMessageChunk'
+      - $ref: '#/channels/~1ws/messages/ToolCallMessage'
+      - $ref: '#/channels/~1ws/messages/ToolApprovalRequest'
+      - $ref: '#/channels/~1ws/messages/StatusMessage'
+      - $ref: '#/channels/~1ws/messages/ErrorMessage'
+
+components:
+  messages:
+    UserMessage:
+      name: UserMessage
+      title: User Message
+      summary: Message sent from user to the system
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UserMessage'
+      examples:
+        - name: BasicQuestion
+          summary: User asks a question
+          payload:
+            type: "user_message"
+            content: "What are the food safety regulations for restaurants?"
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            metadata: {}
+        - name: FollowUp
+          summary: Follow-up question in existing session
+          payload:
+            type: "user_message"
+            content: "Can you create an inspection report for this?"
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            metadata:
+              previous_message_id: "msg_xyz789"
+
+    AssistantMessage:
+      name: AssistantMessage
+      title: Assistant Complete Message
+      summary: Complete response from assistant (non-streaming mode)
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssistantMessage'
+      examples:
+        - name: CompleteResponse
+          summary: Full assistant response
+          payload:
+            type: "assistant_message"
+            content: "Based on the regulations, restaurants must maintain proper temperature control for food storage. Refrigerated items should be kept below 4°C."
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            agent_id: "regulation_agent"
+            metadata: {}
+
+    AssistantMessageChunk:
+      name: AssistantMessageChunk
+      title: Assistant Streaming Chunk
+      summary: Partial streaming response from assistant (preferred method)
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssistantMessageChunk'
+      examples:
+        - name: FirstChunk
+          summary: First chunk of streaming response
+          payload:
+            type: "assistant_message_chunk"
+            content: "Based on the "
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            agent_id: "regulation_agent"
+            message_id: "msg_abc123"
+            is_final: false
+        - name: FinalChunk
+          summary: Last chunk of streaming response
+          payload:
+            type: "assistant_message_chunk"
+            content: "regulations, restaurants must maintain proper temperature control."
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            agent_id: "regulation_agent"
+            message_id: "msg_abc123"
+            is_final: true
+
+    ToolCallMessage:
+      name: ToolCallMessage
+      title: Tool Execution Notification
+      summary: Notification about tool execution status (started, completed, failed)
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallMessage'
+      examples:
+        - name: ToolStarted
+          summary: Tool execution started
+          payload:
+            type: "tool_call"
+            tool_call_id: "call_abc123"
+            tool_name: "search_regulations"
+            parameters:
+              query: "restaurant food safety"
+              limit: 10
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            status: "started"
+            agent_id: "regulation_agent"
+            metadata: {}
+        - name: ToolCompleted
+          summary: Tool execution completed successfully
+          payload:
+            type: "tool_call"
+            tool_call_id: "call_abc123"
+            tool_name: "search_regulations"
+            parameters:
+              query: "restaurant food safety"
+              limit: 10
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            status: "completed"
+            result: "Found 5 relevant regulations"
+            agent_id: "regulation_agent"
+            metadata:
+              documents_found: 5
+              search_time_ms: 234
+
+    ToolApprovalRequest:
+      name: ToolApprovalRequest
+      title: Tool Approval Request
+      summary: Request user approval before executing sensitive tool
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolApprovalRequest'
+      examples:
+        - name: HighRiskTool
+          summary: Request approval for high-risk operation
+          payload:
+            type: "tool_approval_request"
+            tool_name: "generate_inspection_report"
+            tool_description: "Generates an official inspection report PDF that will be stored in the system"
+            parameters:
+              inspection_id: "INS-2024-001"
+              include_photos: true
+            reasoning: "User requested to create the final inspection report based on the conversation"
+            risk_level: "high"
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            approval_id: "appr_xyz789"
+
+    ToolApprovalResponse:
+      name: ToolApprovalResponse
+      title: Tool Approval Response
+      summary: User's decision on tool execution approval
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolApprovalResponse'
+      examples:
+        - name: Approved
+          summary: User approves the tool execution
+          payload:
+            type: "tool_approval_response"
+            approval_id: "appr_xyz789"
+            approved: true
+            feedback: "Looks good, proceed with report generation"
+        - name: Rejected
+          summary: User rejects the tool execution
+          payload:
+            type: "tool_approval_response"
+            approval_id: "appr_xyz789"
+            approved: false
+            feedback: "I need to add more details first"
+
+    StatusMessage:
+      name: StatusMessage
+      title: Status Update
+      summary: Processing status update for UI loading indicators
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StatusMessage'
+      examples:
+        - name: Thinking
+          summary: Assistant is processing the request
+          payload:
+            type: "status"
+            status: "thinking"
+            message: "Analyzing your question..."
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+        - name: ExecutingTools
+          summary: Running tool operations
+          payload:
+            type: "status"
+            status: "executing_tools"
+            message: "Searching regulation database..."
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+
+    ErrorMessage:
+      name: ErrorMessage
+      title: Error Notification
+      summary: Error occurred during processing
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ErrorMessage'
+      examples:
+        - name: ModerationViolation
+          summary: Content moderation blocked the message
+          payload:
+            type: "error"
+            error_code: "moderation_violation"
+            message: "Your message contains prohibited content"
+            details:
+              blocked_pattern: "profanity"
+              severity: "medium"
+        - name: ToolExecutionError
+          summary: Tool execution failed
+          payload:
+            type: "error"
+            error_code: "tool_execution_failed"
+            message: "Failed to generate inspection report"
+            details:
+              tool_name: "generate_inspection_report"
+              reason: "Missing required inspection data"
+
+  schemas:
+    UserMessage:
+      type: object
+      required: [type, content, session_id]
+      properties:
+        type:
+          type: string
+          const: "user_message"
+          description: Message type discriminator
+        content:
+          type: string
+          description: User's message content
+          minLength: 1
+          maxLength: 10000
+        session_id:
+          type: string
+          description: Session identifier for conversation continuity (UUID format recommended)
+          pattern: '^[a-zA-Z0-9_-]+$'
+        metadata:
+          type: object
+          additionalProperties: true
+          default: {}
+          description: Optional metadata for tracking and context
+
+    AssistantMessage:
+      type: object
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          const: "assistant_message"
+        content:
+          type: string
+          description: Complete assistant response text
+        session_id:
+          type: string
+          nullable: true
+        agent_id:
+          type: string
+          nullable: true
+          description: Identifier of the agent that generated this response
+        metadata:
+          type: object
+          additionalProperties: true
+          default: {}
+
+    AssistantMessageChunk:
+      type: object
+      required: [type, content, session_id, message_id]
+      properties:
+        type:
+          type: string
+          const: "assistant_message_chunk"
+        content:
+          type: string
+          description: Partial content chunk (concat with same message_id)
+        session_id:
+          type: string
+        agent_id:
+          type: string
+          nullable: true
+        message_id:
+          type: string
+          description: Unique ID to group chunks belonging to the same message
+        is_final:
+          type: boolean
+          default: false
+          description: True indicates this is the last chunk of the message
+
+    ToolCallMessage:
+      type: object
+      required: [type, tool_call_id, tool_name, parameters, session_id, status]
+      properties:
+        type:
+          type: string
+          const: "tool_call"
+        tool_call_id:
+          type: string
+          description: Unique identifier for this tool call
+        tool_name:
+          type: string
+          description: Name of the tool being executed
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Tool input parameters
+        session_id:
+          type: string
+        status:
+          type: string
+          enum: [started, completed, failed]
+          description: Current execution status
+        result:
+          type: string
+          nullable: true
+          description: Result summary (only present when status is 'completed')
+        agent_id:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          default: {}
+
+    ToolApprovalRequest:
+      type: object
+      required: [type, tool_name, tool_description, parameters, reasoning, risk_level, session_id, approval_id]
+      properties:
+        type:
+          type: string
+          const: "tool_approval_request"
+        tool_name:
+          type: string
+          description: Name of the tool requiring approval
+        tool_description:
+          type: string
+          description: Human-readable description of what the tool does
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Parameters that will be passed to the tool
+        reasoning:
+          type: string
+          description: Explanation of why the agent wants to use this tool
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+          description: Risk assessment for this operation
+        session_id:
+          type: string
+        approval_id:
+          type: string
+          description: Unique approval request identifier (must be included in response)
+
+    ToolApprovalResponse:
+      type: object
+      required: [type, approval_id, approved]
+      properties:
+        type:
+          type: string
+          const: "tool_approval_response"
+        approval_id:
+          type: string
+          description: Must match the approval_id from the request
+        approved:
+          type: boolean
+          description: true to proceed with execution, false to cancel
+        feedback:
+          type: string
+          nullable: true
+          description: Optional user comment or reasoning
+
+    StatusMessage:
+      type: object
+      required: [type, status]
+      properties:
+        type:
+          type: string
+          const: "status"
+        status:
+          type: string
+          enum: [thinking, routing, executing_tools, completed]
+          description: Current processing status
+        message:
+          type: string
+          nullable: true
+          description: Optional human-readable status message
+        session_id:
+          type: string
+          nullable: true
+
+    ErrorMessage:
+      type: object
+      required: [type, error_code, message]
+      properties:
+        type:
+          type: string
+          const: "error"
+        error_code:
+          type: string
+          description: Machine-readable error code for programmatic handling
+          examples:
+            - moderation_violation
+            - rate_limit_exceeded
+            - tool_execution_failed
+            - invalid_session
+            - invalid_json
+        message:
+          type: string
+          description: Human-readable error message for display
+        details:
+          type: object
+          additionalProperties: true
+          default: {}
+          description: Additional error context and debugging information
+
