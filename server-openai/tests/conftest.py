@@ -1,8 +1,10 @@
 import pytest
 from typing import Any, AsyncGenerator
+from unittest.mock import MagicMock, AsyncMock
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
+from agora_openai.core.agent_runner import AgentRunner
 
 
 class AgentSelection:
@@ -115,16 +117,31 @@ def moderator() -> ModerationPipeline:
 
 
 @pytest.fixture
+def mock_agent_runner() -> AgentRunner:
+    """Provide mock agent runner."""
+    runner = MagicMock(spec=AgentRunner)
+    runner.run_agent = AsyncMock(
+        return_value=("Mock response from agent", "general-agent")
+    )
+
+    # Also mock the threads/sessions dict if needed by test_thread_persistence
+    # test_thread_persistence accesses orchestrator.threads which doesn't exist on Orchestrator anymore?
+    # Wait, test_orchestrator.py: test_thread_persistence accesses orchestrator.threads.
+    # But Orchestrator class doesn't have self.threads anymore.
+    # It uses AgentRunner which has sessions.
+
+    return runner
+
+
+@pytest.fixture
 async def orchestrator(
-    mock_openai_client: MockOpenAIAssistantsClient,
-    mock_mcp_client: MockMCPToolClient,
+    mock_agent_runner: AgentRunner,
     moderator: ModerationPipeline,
     audit_logger: AuditLogger,
 ) -> AsyncGenerator[Orchestrator, None]:
     """Provide orchestrator with mocked dependencies."""
     orch = Orchestrator(
-        openai_client=mock_openai_client,
-        mcp_client=mock_mcp_client,
+        agent_runner=mock_agent_runner,
         moderator=moderator,
         audit_logger=audit_logger,
     )
