@@ -1,19 +1,26 @@
 import pytest
 from typing import Any, AsyncGenerator
-from agora_openai.adapters.openai_assistants import OpenAIAssistantsClient
-from agora_openai.adapters.mcp_client import MCPToolClient
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
 
 
+class AgentSelection:
+    """Mock agent selection."""
+
+    def __init__(self, selected_agent, reasoning, confidence):
+        self.selected_agent = selected_agent
+        self.reasoning = reasoning
+        self.confidence = confidence
+
+
 class MockOpenAIAssistantsClient:
     """Mock OpenAI Assistants API."""
-    
+
     def __init__(self):
         self.threads: dict[str, list[str]] = {}
         self.assistants: dict[str, str] = {}
-    
+
     async def initialize_assistant(
         self,
         agent_id: str,
@@ -26,16 +33,16 @@ class MockOpenAIAssistantsClient:
         assistant_id = f"asst_mock_{agent_id}"
         self.assistants[agent_id] = assistant_id
         return assistant_id
-    
+
     async def create_thread(self, metadata: dict[str, Any] | None = None) -> str:
         thread_id = f"thread_mock_{len(self.threads)}"
         self.threads[thread_id] = []
         return thread_id
-    
+
     async def send_message(self, thread_id: str, content: str) -> None:
         if thread_id in self.threads:
             self.threads[thread_id].append(content)
-    
+
     async def run_assistant_with_tools(
         self,
         thread_id: str,
@@ -43,14 +50,13 @@ class MockOpenAIAssistantsClient:
         tool_executor: Any,
     ) -> str:
         return "Mock response from assistant"
-    
+
     async def route_with_structured_output(
         self,
         message: str,
         context: dict[str, Any],
         response_model: type,
     ) -> Any:
-        from agora_openai.core.routing_logic import AgentSelection
         return AgentSelection(
             selected_agent="regulation-agent",
             reasoning="Mock routing",
@@ -60,10 +66,10 @@ class MockOpenAIAssistantsClient:
 
 class MockMCPToolClient:
     """Mock MCP tool client."""
-    
+
     def __init__(self):
         self.tool_definitions = []
-    
+
     async def discover_tools(self) -> list[dict[str, Any]]:
         return [
             {
@@ -75,7 +81,7 @@ class MockMCPToolClient:
                 },
             }
         ]
-    
+
     async def execute_tool(
         self,
         tool_name: str,
@@ -123,4 +129,3 @@ async def orchestrator(
         audit_logger=audit_logger,
     )
     yield orch
-

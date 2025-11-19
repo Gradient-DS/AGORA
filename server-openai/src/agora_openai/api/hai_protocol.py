@@ -2,7 +2,9 @@ from __future__ import annotations
 import json
 import logging
 from typing import Any
+
 from fastapi import WebSocket
+
 from agora_openai.common.hai_types import (
     UserMessage,
     AssistantMessage,
@@ -10,6 +12,8 @@ from agora_openai.common.hai_types import (
     ErrorMessage,
     StatusMessage,
     ToolCallMessage,
+    ToolApprovalRequest,
+    ToolApprovalResponse,
     HAIMessage,
 )
 
@@ -18,26 +22,29 @@ log = logging.getLogger(__name__)
 
 class HAIProtocolHandler:
     """Handle HAI protocol WebSocket communication."""
-    
+
     def __init__(self, websocket: WebSocket):
         self.websocket = websocket
         self.is_connected = True
-    
-    async def receive_message(self) -> UserMessage | None:
+
+    async def receive_message(self) -> UserMessage | ToolApprovalResponse | None:
         """Receive and parse HAI message from WebSocket."""
         if not self.is_connected:
             return None
-            
+
         try:
             data = await self.websocket.receive_text()
             message_dict = json.loads(data)
-            
-            if message_dict.get("type") == "user_message":
+            message_type = message_dict.get("type")
+
+            if message_type == "user_message":
                 return UserMessage(**message_dict)
-            
-            log.warning("Received unexpected message type: %s", message_dict.get("type"))
+            elif message_type == "tool_approval_response":
+                return ToolApprovalResponse(**message_dict)
+
+            log.warning("Received unexpected message type: %s", message_type)
             return None
-            
+
         except json.JSONDecodeError as e:
             log.error("Invalid JSON received: %s", e)
             await self.send_error("invalid_json", "Invalid JSON format")
@@ -46,17 +53,20 @@ class HAIProtocolHandler:
             log.error("Error receiving message: %s", e)
             self.is_connected = False
             return None
-    
+
     async def send_message(self, message: HAIMessage) -> None:
         """Send HAI message to WebSocket."""
         if not self.is_connected:
             log.debug("Cannot send message, WebSocket is not connected")
             return
-            
+
         try:
             log.debug("Attempting to send message type: %s", message.type)
             message_json = message.model_dump_json()
-            log.debug("Serialized message: %s", message_json[:200] if len(message_json) > 200 else message_json)
+            log.debug(
+                "Serialized message: %s",
+                message_json[:200] if len(message_json) > 200 else message_json,
+            )
             await self.websocket.send_text(message_json)
             log.debug("Message sent successfully")
         except RuntimeError as e:
@@ -67,10 +77,17 @@ class HAIProtocolHandler:
                 log.error("RuntimeError sending message: %s", e, exc_info=True)
                 self.is_connected = False
         except Exception as e:
-            log.error("Exception sending message: %s (type: %s)", e, type(e).__name__, exc_info=True)
+            log.error(
+                "Exception sending message: %s (type: %s)",
+                e,
+                type(e).__name__,
+                exc_info=True,
+            )
             self.is_connected = False
-    
-    async def send_assistant_message(self, content: str, session_id: str, agent_id: str | None = None) -> None:
+
+    async def send_assistant_message(
+        self, content: str, session_id: str, agent_id: str | None = None
+    ) -> None:
         """Send assistant message."""
         message = AssistantMessage(
             content=content,
@@ -78,7 +95,7 @@ class HAIProtocolHandler:
             agent_id=agent_id,
         )
         await self.send_message(message)
-    
+
     async def send_assistant_message_chunk(
         self,
         content: str,
@@ -96,8 +113,10 @@ class HAIProtocolHandler:
             is_final=is_final,
         )
         await self.send_message(message)
-    
-    async def send_status(self, status: str, message: str | None = None, session_id: str | None = None) -> None:
+
+    async def send_status(
+        self, status: str, message: str | None = None, session_id: str | None = None
+    ) -> None:
         """Send status update."""
         status_message = StatusMessage(
             status=status,  # type: ignore
@@ -105,8 +124,10 @@ class HAIProtocolHandler:
             session_id=session_id,
         )
         await self.send_message(status_message)
-    
-    async def send_error(self, error_code: str, message: str, details: dict[str, Any] | None = None) -> None:
+
+    async def send_error(
+        self, error_code: str, message: str, details: dict[str, Any] | None = None
+    ) -> None:
         """Send error message."""
         error_message = ErrorMessage(
             error_code=error_code,
@@ -114,7 +135,7 @@ class HAIProtocolHandler:
             details=details or {},
         )
         await self.send_message(error_message)
-    
+
     async def send_tool_call(
         self,
         tool_call_id: str,
@@ -137,3 +158,24 @@ class HAIProtocolHandler:
         )
         await self.send_message(tool_call_message)
 
+    async def send_tool_approval_request(
+        self,
+        tool_name: str,
+        tool_description: str,
+        parameters: dict[str, Any],
+        reasoning: str,
+        risk_level: str,
+        session_id: str,
+        approval_id: str,
+    ) -> None:
+        """Send tool approval request."""
+        request = ToolApprovalRequest(
+            tool_name=tool_name,
+            tool_description=tool_description,
+            parameters=parameters,
+            reasoning=reasoning,
+            risk_level=risk_level,  # type: ignore
+            session_id=session_id,
+            approval_id=approval_id,
+        )
+        await self.send_message(request)

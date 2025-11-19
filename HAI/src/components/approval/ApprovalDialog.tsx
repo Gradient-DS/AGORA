@@ -11,13 +11,16 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ToolApprovalRequest, RiskLevel } from '@/types/schemas';
 
 interface ApprovalDialogProps {
   approval: ToolApprovalRequest;
   onApprove: (approvalId: string, feedback?: string) => void;
   onReject: (approvalId: string, feedback?: string) => void;
+  currentIndex: number;
+  totalCount: number;
+  onNavigate: (direction: 'next' | 'prev') => void;
 }
 
 const riskLevelConfig: Record<RiskLevel, { color: string; icon: typeof AlertCircle }> = {
@@ -27,7 +30,14 @@ const riskLevelConfig: Record<RiskLevel, { color: string; icon: typeof AlertCirc
   critical: { color: 'bg-red-500', icon: XCircle },
 };
 
-export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialogProps) {
+export function ApprovalDialog({ 
+  approval, 
+  onApprove, 
+  onReject,
+  currentIndex,
+  totalCount,
+  onNavigate
+}: ApprovalDialogProps) {
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,12 +45,14 @@ export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialog
     setIsSubmitting(true);
     await onApprove(approval.approval_id, feedback || undefined);
     setIsSubmitting(false);
+    setFeedback('');
   };
 
   const handleReject = async () => {
     setIsSubmitting(true);
     await onReject(approval.approval_id, feedback || undefined);
     setIsSubmitting(false);
+    setFeedback('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -48,38 +60,70 @@ export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialog
       handleApprove();
     } else if (e.key === 'Escape') {
       handleReject();
+    } else if (e.key === 'ArrowLeft' && !isSubmitting) {
+      if (currentIndex > 0) onNavigate('prev');
+    } else if (e.key === 'ArrowRight' && !isSubmitting) {
+      if (currentIndex < totalCount - 1) onNavigate('next');
     }
   };
 
   const RiskIcon = riskLevelConfig[approval.risk_level].icon;
 
   return (
-    <Card 
-      className="max-w-2xl mx-auto"
-      role="dialog"
-      aria-labelledby="approval-title"
-      aria-describedby="approval-description"
-      onKeyDown={handleKeyDown}
-    >
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <CardTitle id="approval-title" className="flex items-center gap-2">
-              {approval.tool_name}
-              <Badge 
-                variant={approval.risk_level === 'critical' || approval.risk_level === 'high' ? 'destructive' : 'default'}
-                className="ml-2"
-              >
-                <RiskIcon className="h-3 w-3 mr-1" aria-hidden="true" />
-                {approval.risk_level.toUpperCase()}
-              </Badge>
-            </CardTitle>
-            <CardDescription id="approval-description">
-              {approval.tool_description}
-            </CardDescription>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <Card 
+        className="w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-labelledby="approval-title"
+        aria-describedby="approval-description"
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+      >
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <CardTitle id="approval-title" className="flex items-center gap-2">
+                {approval.tool_name}
+                <Badge 
+                  variant={approval.risk_level === 'critical' || approval.risk_level === 'high' ? 'destructive' : 'default'}
+                  className="ml-2"
+                >
+                  <RiskIcon className="h-3 w-3 mr-1" aria-hidden="true" />
+                  {approval.risk_level.toUpperCase()}
+                </Badge>
+              </CardTitle>
+              <CardDescription id="approval-description">
+                {approval.tool_description}
+              </CardDescription>
+            </div>
+            
+            {totalCount > 1 && (
+              <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onNavigate('prev')}
+                  disabled={currentIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium min-w-[3rem] text-center">
+                  {currentIndex + 1} / {totalCount}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => onNavigate('next')}
+                  disabled={currentIndex === totalCount - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       <CardContent className="space-y-4">
         <div>
@@ -138,7 +182,8 @@ export function ApprovalDialog({ approval, onApprove, onReject }: ApprovalDialog
       <div className="px-6 pb-4 text-xs text-muted-foreground">
         Toetsenbord sneltoetsen: <kbd>Enter</kbd> om goed te keuren, <kbd>Esc</kbd> om te weigeren
       </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
 

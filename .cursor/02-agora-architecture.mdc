@@ -2,282 +2,126 @@
 
 ## System Overview
 
-AGORA is a multi-agent system for NVWA inspectors, built using a LangGraph-based orchestrator with MCP (Model Context Protocol) integration.
+AGORA is a multi-agent system for NVWA inspectors, built using an OpenAI-native backend (`server-openai`) utilizing the Agents SDK and MCP (Model Context Protocol) integration.
 
-**Architecture Documentation**: See `c4/workspace.dsl` and view diagrams at http://localhost:8080
+**Architecture Documentation**: See `c4/workspace-openai.dsl` (OpenAI Architecture).
 
 ## Architecture Pattern
 
-**Agent-with-Tools Pattern** (NOT multi-agent orchestration):
-- Single intelligent LangGraph agent with LLM reasoning
-- Agent has access to tools/resources via MCP protocol
-- External MCP servers expose existing NVWA capabilities
-- State management with checkpointing and human-in-the-loop
+**Multi-Agent Handoff Pattern**:
+- **Entry Agent**: A generalist agent handles triage and common queries.
+- **Specialist Agents**: Domain-specific agents (Regulation, History, Reporting) with scoped tools.
+- **Handoffs**: Explicit control transfer between agents managed by the Agents SDK.
+- **MCP Integration**: Tools are exposed via MCP servers and injected into agents.
 
 ## Tech Stack by Container
 
 ### 1. HAI (Human Agent Interface) - Frontend
 **Technology**: React + TypeScript + WebSocket
-**Purpose**: User interface for text and voice interaction
+**Purpose**: User interface for text interaction (Voice currently disabled).
 
 **Stack**:
 - React 18+ (UI framework)
 - TypeScript
 - WebSocket client (real-time communication)
-- Whisper API (speech-to-text)
-- ElevenLabs API (text-to-speech)
-- Vite or Create React App (build tool)
+- Zustand (State Management)
+- shadcn/ui (Component Library)
 
-### 2. Orchestrator - Backend Core
-**Technology**: Python + LangGraph + LangChain
-**Purpose**: Central orchestration engine with state management
+### 2. Orchestrator - Backend Core (server-openai)
+**Technology**: Python + OpenAI Agents SDK + FastAPI
+**Purpose**: Central orchestration engine with session management.
 
 **Stack**:
 - Python 3.11+
-- LangGraph (state management, checkpointing)
-- LangChain (agent framework, memory)
-- OpenAI API / Anthropic API (LLM: GPT-5 or Sonnet-4.5)
-- MCP SDK (Model Context Protocol client)
-- Guardrails-AI (moderation and governance)
-- OpenTelemetry (instrumentation)
-- FastAPI or WebSocket server (API layer)
+- **openai-agents** (Agents SDK): Core multi-agent framework.
+- **FastAPI**: API and WebSocket server.
+- **SQLite**: Local session persistence (`sessions.db`).
+- **MCP Client**: Model Context Protocol integration.
+- **OpenTelemetry**: Instrumentation and audit logging.
 
-### 3. Tool Catalog - Database
-**Technology**: PostgreSQL
-**Purpose**: MCP tool and resource configuration storage
+### 3. Microservices (mcp-servers)
+**Technology**: Python (FastMCP)
+**Purpose**: Specialized tools and capabilities.
 
-**Stack**:
-- PostgreSQL 15+
-- Alembic (migrations)
-- SQLAlchemy or asyncpg (ORM/driver)
+**Servers**:
+- `regulation-analysis`: Regulatory search and compliance checking.
+- `reporting`: Report generation and data extraction.
+- `inspection-history`: Historical company data.
+- `document-ingestion`: RAG pipeline.
 
-### 4. User Profile - Database
-**Technology**: PostgreSQL
-**Purpose**: User profiles and personalization
-
-**Stack**:
-- PostgreSQL 15+
-- Alembic (migrations)
-- SQLAlchemy or asyncpg (ORM/driver)
-
-### 5. Visibility - Observability
+### 4. Observability
 **Technology**: Grafana + Prometheus + OpenTelemetry
-**Purpose**: Monitoring, logging, and observability
-
-**Stack**:
-- OpenTelemetry Collector
-- Prometheus (metrics)
-- Grafana (dashboards)
-- Loki (log aggregation)
-- Jaeger or Tempo (distributed tracing)
-
-### External Services
-**MCP Servers**: Existing NVWA systems exposed via Model Context Protocol
-- Rapportage tools
-- ARIA-A Scanner
-- E-nummer Database
-- Other NVWA applications
-
-## Project Folder Structure
-
-```
-agora/
-├── c4/                           # C4 Architecture diagrams (Structurizr DSL)
-│   ├── workspace.dsl             # Main architecture definition
-│   ├── docker-compose.yml        # Structurizr Lite
-│   └── README.md
-│
-├── hai/                          # Human Agent Interface (Frontend Container)
-│   ├── src/
-│   │   ├── ui_components/        # React UI components (chat, voice, visualizations)
-│   │   ├── audio_interface/      # Whisper + ElevenLabs integration
-│   │   └── websocket_client/     # WebSocket connection to Orchestrator
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
-│
-├── orchestrator/                 # Orchestrator (Backend Container - Python Package)
-│   ├── src/
-│   │   └── agora_orchestrator/   # Main package
-│   │       ├── __init__.py
-│   │       ├── config.py         # Pydantic settings
-│   │       ├── logging_config.py # Logging configuration
-│   │       ├── api/              # WebSocket/FastAPI endpoints
-│   │       │   ├── __init__.py
-│   │       │   └── server.py
-│   │       ├── core/             # Pure business logic
-│   │       │   ├── __init__.py
-│   │       │   ├── state_manager.py      # LangGraph state + checkpointing
-│   │       │   ├── reasoning_llm.py      # LLM integration
-│   │       │   └── memory_manager.py     # LangChain memory
-│   │       ├── adapters/         # I/O abstraction layer
-│   │       │   ├── __init__.py
-│   │       │   ├── mcp_client.py         # MCP protocol client
-│   │       │   ├── tool_selector.py      # Tool selection from catalog
-│   │       │   └── audit_logger.py       # OpenTelemetry logging
-│   │       └── pipelines/        # Orchestration flows
-│   │           ├── __init__.py
-│   │           ├── orchestration.py      # Main agent loop
-│   │           └── moderator.py          # Guardrails-AI
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── conftest.py
-│   │   ├── test_core/
-│   │   ├── test_adapters/
-│   │   └── test_pipelines/
-│   ├── data/                     # Local data files
-│   ├── pyproject.toml            # Package definition + dependencies
-│   ├── pytest.ini
-│   ├── pyrightconfig.json
-│   ├── requirements-dev.txt      # Development dependencies
-│   ├── .env.example              # Environment variables template
-│   └── README.md
-│
-├── tool_catalog/                 # Tool Catalog Database (Container)
-│   ├── migrations/               # Alembic migrations
-│   ├── schemas/
-│   │   ├── tool_registry.sql     # MCP tool metadata schema
-│   │   └── tool_config.sql       # Active tool configurations schema
-│   └── README.md
-│
-├── user_profile/                 # User Profile Database (Container)
-│   ├── migrations/               # Alembic migrations
-│   ├── schemas/
-│   │   ├── profile_data.sql      # User base data schema
-│   │   ├── preferences.sql       # User preferences schema
-│   │   └── history.sql           # Interaction history schema
-│   └── README.md
-│
-├── visibility/                   # Observability Stack (Container)
-│   ├── grafana/
-│   │   └── dashboards/           # Grafana dashboard configs
-│   ├── prometheus/
-│   │   └── prometheus.yml        # Prometheus config
-│   ├── otel/
-│   │   └── otel-collector.yml    # OpenTelemetry collector config
-│   └── docker-compose.yml        # Full observability stack
-│
-├── docker-compose.yml            # Full system compose
-├── .gitignore
-└── README.md
-```
-
-## Key Architectural Decisions
-
-### 1. LangGraph for State Management
-- Provides checkpointing for state persistence
-- Human-in-the-loop intervention points
-- Rollback capabilities for critical operations
-- Essential for government/compliance requirements
-
-### 2. Model Context Protocol (MCP)
-- Standard protocol for exposing tools/resources to LLMs
-- Allows integration with existing NVWA systems
-- MCP servers can be simple (database queries) or complex (AI services)
-- Cleaner than building custom agent-to-agent protocols
-
-### 3. Single Agent Pattern
-- Reasoning LLM directly orchestrates tool calls via function calling
-- Tool Selector provides available tools based on context
-- MCP Client executes the selected tools
-- Simpler than multi-agent orchestration
-
-### 4. Separation of Memory and State
-- **Memory Manager**: Conversation history and context (LangChain)
-- **State Manager**: Orchestration flow and checkpoints (LangGraph)
-- Allows independent scaling and management
+**Purpose**: Monitoring, logging, and audit trails.
 
 ## Data Flow
 
 ```
 Inspector (HAI)
-  ↓ WebSocket
-State Manager (entry point)
+  ↓ WebSocket (HAI Protocol)
+Orchestrator (server-openai)
   ↓
-Memory Manager (load context)
+HAIProtocolHandler
   ↓
-Tool Selector (determine available MCP tools)
+Orchestrator Pipeline (Validation & Approval)
   ↓
-Reasoning LLM (decide which tools to call)
+AgentRunner (Agents SDK)
   ↓
-MCP Client (execute tool via MCP protocol)
+SQLite Session Store (History)
   ↓
-Moderator (validate output)
+Current Agent (LLM)
   ↓
-Memory Manager (update context)
+MCP Tool Registry
   ↓
-State Manager (checkpoint)
-  ↓
-Response to Inspector
+MCP Server (e.g. Regulation)
 ```
 
-## Python Package Architecture (Orchestrator)
+## Project Folder Structure
 
-The orchestrator follows **src-layout** with **layered architecture**:
+```
+agora/
+├── HAI/                          # Frontend Application
+│   ├── src/
+│   │   ├── components/           # UI components
+│   │   ├── lib/websocket/        # Protocol handling
+│   │   └── stores/               # State management
+│
+├── server-openai/                # Backend Application
+│   ├── src/agora_openai/
+│   │   ├── core/                 # Agent definitions & Runner
+│   │   ├── api/                  # Server & Protocol Handlers
+│   │   ├── adapters/             # MCP & Audit adapters
+│   │   └── pipelines/            # Orchestration logic
+│   ├── sessions.db               # Local session storage
+│
+├── mcp-servers/                  # MCP Tool Servers
+│   ├── regulation-analysis/
+│   ├── reporting/
+│   └── ...
+│
+├── c4/                           # Architecture diagrams
+└── .cursor/rules/                # Development rules
+```
 
-### Core Layer (Pure Business Logic)
-- `state_manager.py` - LangGraph orchestration state
-- `reasoning_llm.py` - LLM integration and function calling
-- `memory_manager.py` - Conversation memory (LangChain)
-- **No I/O dependencies**: Pure functions, easy to test
+## Key Architectural Decisions
 
-### Adapter Layer (I/O Abstraction)
-- `mcp_client.py` - Model Context Protocol client
-- `tool_selector.py` - Database queries for tool selection
-- `audit_logger.py` - OpenTelemetry instrumentation
-- **Protocol-based interfaces**: Swappable implementations
+### 1. OpenAI Agents SDK
+- Native support for multi-agent patterns and handoffs.
+- Simplified state management via `SQLiteSession`.
+- Built-in streaming capabilities.
 
-### Pipeline Layer (Orchestration)
-- `orchestration.py` - Main agent loop coordination
-- `moderator.py` - Guardrails-AI integration
-- **Dependency injection**: Wires core logic with adapters
+### 2. Model Context Protocol (MCP)
+- Standardizes tool exposure.
+- Decouples tool implementation from the agent logic.
+- Allows independent scaling and deployment of capabilities.
 
-### API Layer (Entry Point)
-- `api/server.py` - WebSocket/FastAPI server
-- **Thin layer**: Configuration and request handling
-
-### Configuration
-- **Pydantic Settings**: Type-safe configuration from `.env`
-- **Python 3.11+**: Modern type hints and performance
-- **pyproject.toml**: Package definition with dependencies
+### 3. Handoffs vs. Central Routing
+- Agents explicitly hand off to specialists based on conversation flow.
+- Reduces latency compared to a central "Router Agent" for every turn.
+- Maintains context across agent transitions.
 
 ## Development Principles
 
-1. **Component Isolation**: Each component is independently testable
-2. **Protocol-Based Integration**: Use MCP for external integrations
-3. **State Management**: All orchestration state is checkpointed
-4. **Observability First**: Comprehensive logging and tracing
-5. **Human-in-the-Loop**: Support approval workflows for critical actions
-6. **Compliance**: Full audit trail via OpenTelemetry
-7. **Layered Architecture**: Core → Adapters → Pipelines → API
-8. **Dependency Injection**: All I/O abstracted behind protocols
-
-## Getting Started
-
-1. **View Architecture**: `cd c4 && npm run up` → http://localhost:8080
-2. **Frontend Development**: `cd hai && npm install && npm run dev`
-3. **Backend Development**: 
-   ```bash
-   cd orchestrator
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   pip install -e ".[dev]"
-   python -m agora_orchestrator.api.server
-   ```
-4. **Database Setup**: `cd tool_catalog && alembic upgrade head`
-5. **Observability**: `cd visibility && docker compose up`
-
-## References
-
-- **C4 Architecture**: `c4/workspace.dsl` and `c4/README.md`
-- **Python Standards**: `.cursor/01-python-rules.mdc` (src-layout, layered architecture)
-- **LangGraph Docs**: https://langchain-ai.github.io/langgraph/
-- **MCP Protocol**: https://modelcontextprotocol.io/
-- **Guardrails-AI**: https://www.guardrailsai.com/
-
-## Notes
-
-- The orchestrator package structure follows conventions in `.cursor/01-python-rules.mdc`
-- Uses **src-layout** (industry standard) instead of flat layout
-- **Core/Adapters/Pipelines** architecture separates business logic from I/O
-- All Python packages should follow this pattern for consistency
+1.  **Protocol-First**: HAI Protocol defines the contract between Frontend and Backend.
+2.  **Scoped Capabilities**: Agents only see the MCP tools relevant to their domain.
+3.  **Human-in-the-loop**: Critical tools require explicit user approval via the Orchestrator.
+4.  **Auditability**: All actions and messages are logged via OpenTelemetry.

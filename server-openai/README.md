@@ -150,7 +150,7 @@ async def chat():
 asyncio.run(chat())
 ```
 
-### Spraakmodus
+### Spraakmodus (TODO)
 
 Verbind met `/ws/voice` voor spraakinteractie:
 
@@ -177,10 +177,7 @@ Real-time berichtfragmenten via HAI protocol voor responsieve UI.
 ### 4. MCP Tool Integratie
 Dynamische tool-ontdekking en uitvoering van MCP servers via HTTP.
 
-### 5. Ondersteuning voor Spraakmodus
-Realtime API voor spraak met dezelfde agent definities als tekstmodus.
-
-### 6. Meldingen van Tool-uitvoering
+### 5. Meldingen van Tool-uitvoering
 Real-time status updates (gestart/voltooid/mislukt) naar UI.
 
 ## Ontwikkeling
