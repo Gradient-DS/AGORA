@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any
 from fastapi import WebSocket
-from common.hai_types import (
+from agora_openai.common.hai_types import (
     UserMessage,
     AssistantMessage,
     AssistantMessageChunk,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 import uuid
-from common.hai_types import UserMessage, AssistantMessage
+from agora_openai.common.hai_types import UserMessage, AssistantMessage
 from agora_openai.core.agent_runner import AgentRunner
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline

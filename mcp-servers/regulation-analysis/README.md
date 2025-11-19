@@ -1,24 +1,24 @@
-# Regulation Analysis MCP Server
+# Regelgevingsanalyse MCP Server
 
-MCP server providing regulation lookup and document analysis capabilities using Weaviate vector database with semantic embeddings.
+MCP server die mogelijkheden biedt voor het opzoeken van regelgeving en documentanalyse met behulp van de Weaviate vector database met semantische embeddings.
 
-## Overview
+## Overzicht
 
-This server provides semantic search over regulatory documents (Dutch and EU legislation, SPEC 37) using:
-- **Vector Search**: Semantic embeddings (Nomic v1.5) for semantic similarity
-- **Hybrid Search**: Combined vector + BM25 keyword matching
-- **Metadata Filtering**: Filter by source type, regulation type, date range
-- **Citation Support**: Full citation metadata for compliance references
+Deze server biedt semantische zoekfunctionaliteit over regelgevende documenten (Nederlandse en EU-wetgeving, SPEC 37) met behulp van:
+- **Vector Search**: Semantische embeddings (Nomic v1.5) voor semantische gelijkenis
+- **Hybride Search**: Gecombineerde vector + BM25 trefwoordovereenkomst
+- **Metadata Filtering**: Filter op brontype, regelgevingstype, datumbereik
+- **Citatie Ondersteuning**: Volledige citatiemetadata voor compliance-referenties
 
 ## Tools
 
 ### search_regulations
-Search for relevant regulation articles using vector and hybrid search.
+Zoek naar relevante regelgevingsartikelen met behulp van vector en hybride search.
 
 **Input:**
 ```json
 {
-  "query": "natural language query",
+  "query": "natuurlijke taal vraag",
   "filters": {
     "source_type": "Dutch | EU | SPEC",
     "regulation_type": "food_safety | hygiene | allergens | etc"
@@ -35,21 +35,21 @@ Search for relevant regulation articles using vector and hybrid search.
   "found": 5,
   "results": [
     {
-      "content": "regulation text",
-      "citation": "Source: ... | Article: ... | Page: ... | Regulation: ...",
+      "content": "tekst van de regelgeving",
+      "citation": "Bron: ... | Artikel: ... | Pagina: ... | Regelgeving: ...",
       "score": 0.95,
       "regulation_type": "allergens",
       "source_type": "Dutch",
       "article": "Artikel 2",
-      "section": "Section title",
-      "document_summary": "200-token AI summary"
+      "section": "Sectietitel",
+      "document_summary": "200-token AI samenvatting"
     }
   ]
 }
 ```
 
 ### get_regulation_context
-Get surrounding chunks for additional context around a specific regulation chunk.
+Haal omliggende chunks op voor extra context rond een specifiek regelgevingschunk.
 
 **Input:**
 ```json
@@ -59,174 +59,84 @@ Get surrounding chunks for additional context around a specific regulation chunk
 }
 ```
 
-**Output:**
-```json
-{
-  "chunk_id": "uuid",
-  "context_size": 5,
-  "chunks": [
-    {
-      "content": "text",
-      "chunk_id": "uuid",
-      "previous_chunk_id": "uuid",
-      "next_chunk_id": "uuid",
-      "article_number": "Artikel 1",
-      "section_title": "Section"
-    }
-  ]
-}
-```
-
-### lookup_regulation_articles (Legacy)
-Search for relevant regulation articles by domain and keywords.
-
-**Input:**
-```json
-{
-  "domain": "food_safety",
-  "keywords": ["allergen", "labeling"]
-}
-```
-
-Uses `search_regulations` internally.
-
 ### get_database_stats
-Get statistics about the regulation database.
+Haal statistieken op over de regelgevingsdatabase.
 
-**Output:**
-```json
-{
-  "status": "connected",
-  "weaviate_url": "http://weaviate:8080",
-  "collection": "RegulationChunk",
-  "statistics": {
-    "total_chunks": 1234
-  }
-}
-```
+## Bronnen
 
-## Resources
+- `server://info` - Server mogelijkheden en status
+- `server://citation_instructions` - Uitgebreide richtlijnen voor het correct citeren van regelgeving
 
-- `server://info` - Server capabilities and status
-- `server://citation_instructions` - Comprehensive guidelines for citing regulations properly
+### Citatie Instructies
 
-### Citation Instructions
+De server biedt gedetailleerde citatierichtlijnen via de `server://citation_instructions` resource. Deze resource moet door AI-agenten worden gelezen om te zorgen voor een juiste citatie van alle regelgevende informatie.
 
-The server provides detailed citation guidelines through the `server://citation_instructions` resource. This resource should be read by AI agents to ensure proper citation of all regulatory information.
-
-**Key citation requirements:**
-- Every regulatory statement must include source, article, page, and regulation number
-- Use inline citations for short facts: `[Source: ... | Article: ... | Page: ...]`
-- Use block citations for longer excerpts with full metadata
-- Never make up citations - only use sources from search results
-- Prioritize official sources: EU regulations > Dutch law > SPEC guidelines
-
-The citation instructions include:
-- Standard citation formats
-- Examples for different use cases
-- Special handling for tables, cross-references, and conflicts
-- Integration guidelines for compliance, risk analysis, and enforcement responses
+**Belangrijkste citatie-eisen:**
+- Elke regelgevende verklaring moet bron, artikel, pagina en regelgevingsnummer bevatten
+- Prioriteer officiële bronnen: EU-verordeningen > Nederlandse wetgeving > SPEC richtlijnen
 
 ## Setup
 
-### Environment Variables
+### Omgevingsvariabelen
 
-The server loads environment variables from `/Users/lexlubbers/Code/AGORA/.env` with **MCP_** prefix:
+De server laadt omgevingsvariabelen van `/Users/lexlubbers/Code/AGORA/.env` met **MCP_** voorvoegsel:
 
 ```bash
-# MCP Server Configuration
-MCP_OPENAI_API_KEY=your_key                      # Required for document summarization
+# MCP Server Configuratie
+MCP_OPENAI_API_KEY=jouw_sleutel                   # Vereist voor documentsamenvatting
 MCP_WEAVIATE_URL=http://localhost:8080
 MCP_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5
-MCP_EMBEDDING_DEVICE=mps                         # Optional: cuda/mps/cpu (auto-detected)
+MCP_EMBEDDING_DEVICE=mps                          # Optioneel: cuda/mps/cpu (auto-detected)
 ```
 
-Uses **pydantic-settings** with **MCP_** prefix, matching the pattern used by server-openai (which uses **APP_** prefix).
-
-The embedding model is loaded from Hugging Face and runs locally (no API key needed).
-
-When running in Docker, these are set via `docker-compose.yml`.
-
-### Running with Docker Compose
+### Draaien met Docker Compose
 
 ```bash
-cd /Users/lexlubbers/Code/AGORA/mcp-servers
+cd mcp-servers
 docker-compose up regulation-analysis weaviate -d
 ```
 
-The server will:
-1. Wait for Weaviate to be healthy
-2. Connect to Weaviate on startup
-3. Serve on http://localhost:5002
-
-### Running Locally
+### Lokaal Draaien
 
 ```bash
 pip install -r requirements.txt
-
-# Make sure .env file exists at project root with required variables
 python server.py
 ```
 
 ## Data Ingestion
 
-Before the server can search regulations, you must ingest the PDF documents:
+Voordat de server regelgeving kan doorzoeken, moet je de PDF-documenten 'ingesten':
 
 ```bash
 cd ../document-ingestion
 pip install -r requirements.txt
-
-# Ensure .env file exists at project root with MCP_OPENAI_API_KEY
 python ingest.py
 ```
 
-See `../document-ingestion/README.md` for details.
+Zie `../document-ingestion/README.md` voor details.
 
-## Testing
+## Testen
 
 ### Health Check
 ```bash
 curl http://localhost:5002/health
 ```
 
-### Search Regulations
+### Zoek Regelgeving
 ```bash
 curl -X POST http://localhost:5002/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
     "name": "search_regulations",
     "arguments": {
-      "query": "allergen labeling requirements for unpacked foods",
+      "query": "allergenen etikettering eisen voor onverpakte levensmiddelen",
       "filters": {"source_type": "Dutch"},
       "limit": 5
     }
   }'
 ```
 
-### Get Database Stats
-```bash
-curl -X POST http://localhost:5002/mcp/tools/call \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "get_database_stats",
-    "arguments": {}
-  }'
-```
-
-### Get Context
-```bash
-curl -X POST http://localhost:5002/mcp/tools/call \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "get_regulation_context",
-    "arguments": {
-      "chunk_id": "your-chunk-uuid",
-      "context_size": 2
-    }
-  }'
-```
-
-## Architecture
+## Architectuur
 
 ```
 ┌─────────────────────┐
@@ -250,32 +160,30 @@ curl -X POST http://localhost:5002/mcp/tools/call \
            └─────────────────────┘
 ```
 
-## Search Strategy
+## Zoekstrategie
 
-The server uses a hybrid search approach:
+De server gebruikt een hybride zoekbenadering:
 
-1. **Query Embedding** (70% weight)
-   - User query is embedded with task prefix `search_query`
-   - Vector similarity search finds semantically related chunks
+1. **Query Embedding** (70% gewicht)
+   - Gebruikersvraag wordt embedded met taakvoorvoegsel `search_query`
+   - Vector similarity search vindt semantisch gerelateerde chunks
 
-2. **BM25 Keyword** (30% weight)
-   - Traditional keyword matching for exact terms
-   - Good for specific article numbers, regulation codes
+2. **BM25 Trefwoord** (30% gewicht)
+   - Traditionele trefwoordovereenkomst voor exacte termen
+   - Goed voor specifieke artikelnummers, regelgevingscodes
 
-Alpha parameter: 0.7 (70% vector, 30% keyword)
+## Fallback Modus
 
-## Fallback Mode
+Als Weaviate niet beschikbaar is, zal de server:
+- Succesvol starten maar met beperkte functionaliteit
+- Foutmeldingen retourneren voor zoektools
+- Nog steeds health check en info endpoints bieden
 
-If Weaviate is not available, the server will:
-- Start successfully but with limited functionality
-- Return error messages for search tools
-- Still provide health check and info endpoints
+Dit zorgt ervoor dat de orchestrator kan starten, zelfs als de database tijdelijk niet beschikbaar is.
 
-This allows the orchestrator to start even if the database is temporarily unavailable.
+## Integratie met OpenAI Orchestrator
 
-## Integration with OpenAI Orchestrator
-
-Add to your OpenAI orchestrator configuration:
+Voeg toe aan je OpenAI orchestrator configuratie:
 
 ```python
 mcp_servers = {
@@ -283,29 +191,17 @@ mcp_servers = {
 }
 ```
 
-The orchestrator can then call tools like:
-- `search_regulations` for finding relevant regulations
-- `get_regulation_context` for expanding context
-- `get_database_stats` for debugging
-
-## Troubleshooting
+## Probleemoplossing
 
 ### "Weaviate search not available"
-- Check Weaviate is running: `docker ps | grep weaviate`
-- Verify connection: `curl http://localhost:8080/v1/meta`
-- Check logs: `docker logs mcp-regulation-analysis`
+- Controleer of Weaviate draait: `docker ps | grep weaviate`
+- Verifieer verbinding: `curl http://localhost:8080/v1/meta`
 
-### No search results
-- Verify data is ingested: `get_database_stats` tool
-- Check Weaviate has data: `curl http://localhost:8080/v1/objects`
-- Try broader query terms
+### Geen zoekresultaten
+- Verifieer of data is geïngest: `get_database_stats` tool
+- Probeer bredere zoektermen
 
-### Slow searches
-- Reduce limit parameter
-- Use more specific filters
-- Check Weaviate performance: `docker stats weaviate`
-
-## References
+## Bronnen
 
 - [FastMCP Framework](https://github.com/jlowin/fastmcp)
 - [Weaviate Vector Database](https://weaviate.io)

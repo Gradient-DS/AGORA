@@ -1,0 +1,271 @@
+openapi: 3.0.0
+info:
+  title: AGORA HAI REST API
+  version: 1.0.0
+  description: |
+    REST API for the AGORA Human Agent Interface (HAI). 
+    This API handles session history retrieval, user management, and other non-real-time operations
+    that complement the WebSocket protocol.
+
+  contact:
+    name: AGORA Development Team
+    email: lex@gradient-ds.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+  # ---------------------------------------------------------------------------
+  # HISTORY MANAGEMENT
+  # ---------------------------------------------------------------------------
+  /sessions/{session_id}/history:
+    get:
+      summary: Get conversation history
+      description: |
+        Retrieves the full conversation history for a specific session.
+        This should be called by the client on page load before establishing the WebSocket connection.
+      operationId: getSessionHistory
+      tags:
+        - History
+      parameters:
+        - in: path
+          name: session_id
+          schema:
+            type: string
+            example: "123e4567-e89b-12d3-a456-426614174000"
+          required: true
+          description: Unique session identifier
+        - in: query
+          name: include_tools
+          schema:
+            type: boolean
+            default: false
+          description: If true, includes tool calls and results in the history
+      responses:
+        '200':
+          description: Conversation history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  session_id:
+                    type: string
+                    example: "123e4567-e89b-12d3-a456-426614174000"
+                  message_count:
+                    type: integer
+                    example: 15
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HistoryMessage'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ---------------------------------------------------------------------------
+  # USER MANAGEMENT
+  # ---------------------------------------------------------------------------
+  /users/me:
+    get:
+      summary: Get current user profile
+      description: Retrieves profile information for the currently authenticated user.
+      operationId: getCurrentUser
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me/preferences:
+    put:
+      summary: Update user preferences
+      description: Updates settings like theme, notifications, or default agent.
+      operationId: updateUserPreferences
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  preferences:
+                    $ref: '#/components/schemas/UserPreferences'
+
+components:
+  schemas:
+    # -------------------------------------------------------------------------
+    # HISTORY SCHEMAS
+    # -------------------------------------------------------------------------
+    HistoryMessage:
+      type: object
+      description: A single message in the conversation history
+      required: [type, content, session_id]
+      discriminator:
+        propertyName: type
+        mapping:
+          user_message: '#/components/schemas/UserMessage'
+          assistant_message: '#/components/schemas/AssistantMessage'
+          tool_call_end: '#/components/schemas/ToolCallEnd'
+      oneOf:
+        - $ref: '#/components/schemas/UserMessage'
+        - $ref: '#/components/schemas/AssistantMessage'
+        - $ref: '#/components/schemas/ToolCallEnd'
+
+    UserMessage:
+      type: object
+      required: [type, content, session_id]
+      properties:
+        type:
+          type: string
+          const: "user_message"
+        content:
+          type: string
+        session_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    AssistantMessage:
+      type: object
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          const: "assistant_message"
+        content:
+          type: string
+        session_id:
+          type: string
+        agent_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    ToolCallEnd:
+      type: object
+      required: [type, tool_call_id, tool_name, result]
+      properties:
+        type:
+          type: string
+          const: "tool_call_end"
+        tool_call_id:
+          type: string
+        tool_name:
+          type: string
+        result:
+          type: string
+        session_id:
+          type: string
+        agent_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    # -------------------------------------------------------------------------
+    # USER SCHEMAS
+    # -------------------------------------------------------------------------
+    UserProfile:
+      type: object
+      required: [id, email, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "jane.doe@example.com"
+        name:
+          type: string
+          example: "Jane Doe"
+        role:
+          type: string
+          enum: [admin, inspector, viewer]
+          example: "inspector"
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+
+    UserPreferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          default: system
+        notifications_enabled:
+          type: boolean
+          default: true
+        default_agent_id:
+          type: string
+          example: "general-agent"
+        language:
+          type: string
+          example: "nl-NL"
+
+    # -------------------------------------------------------------------------
+    # COMMON SCHEMAS
+    # -------------------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error code or short type
+          example: "not_found"
+        message:
+          type: string
+          description: Human readable error message
+          example: "The requested resource could not be found."
+

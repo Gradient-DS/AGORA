@@ -1,13 +1,29 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr, Field
 from functools import lru_cache
-from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
+import logging
+
+
+# Configure logging for config loading
+logger = logging.getLogger(__name__)
+
+# Load environment variables from .env file if present
+# find_dotenv searches for .env file starting from current directory and going up
+env_file = find_dotenv(usecwd=True)
+if env_file:
+    load_dotenv(env_file)
+    logger.info(f"Loaded environment variables from {env_file}")
 
 
 class Settings(BaseSettings):
     """Application settings."""
     
-    openai_api_key: SecretStr = Field(description="OpenAI API key")
+    # Using validation_alias to strictly look for MCP_OPENAI_API_KEY as requested
+    openai_api_key: SecretStr = Field(
+        validation_alias="MCP_OPENAI_API_KEY",
+        description="OpenAI API key"
+    )
     openai_model: str = Field(default="gpt-4o", description="Default OpenAI model")
     
     mcp_servers: str = Field(
@@ -28,7 +44,6 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", description="Logging level")
     
     model_config = SettingsConfigDict(
-        env_file=str(Path(__file__).parent.parent.parent.parent / ".env") if (Path(__file__).parent.parent.parent.parent / ".env").exists() else None,
         env_prefix="APP_",
         case_sensitive=False,
         extra='ignore',
@@ -59,4 +74,3 @@ def parse_mcp_servers(servers_str: str) -> dict[str, str]:
             name, url = pair.split("=", 1)
             result[name.strip()] = url.strip()
     return result
-

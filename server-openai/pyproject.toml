@@ -37,7 +37,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agora_openai", "common"]
+packages = ["src/agora_openai"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

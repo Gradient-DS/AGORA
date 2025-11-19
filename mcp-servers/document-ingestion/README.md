@@ -1,135 +1,135 @@
 # Document Ingestion Pipeline
 
-This pipeline parses regulatory PDFs, chunks them semantically, embeds them using Nomic embedding model, and stores them in Weaviate for vector search.
+Deze pipeline verwerkt regelgevende PDF's, deelt ze op in semantische stukken (chunks), genereert embeddings met behulp van het Nomic embedding model, en slaat ze op in Weaviate voor vector search.
 
-## Architecture
+## Architectuur
 
-- **PDF Parsing**: Docling with aggressive OCR settings for structure-preserving PDF to Markdown conversion
-- **OCR Fallback**: OpenAI GPT-4 Vision for image-based/scanned PDFs when standard OCR fails
-- **Semantic Chunking**: Article/section-based splitting with metadata preservation
-- **Embeddings**: Nomic Embed v1.5 (768 dimensions) with task-specific prefixes
-- **Summarization**: OpenAI GPT-4 for document summaries
-- **Vector Database**: Weaviate with custom schema for regulatory content
+- **PDF Parsing**: Docling met agressieve OCR-instellingen voor structuurbehoudende conversie van PDF naar Markdown
+- **OCR Fallback**: OpenAI GPT-4 Vision voor op afbeeldingen gebaseerde/gescande PDF's wanneer standaard OCR faalt
+- **Semantische Chunking**: Splitsen op basis van artikelen/secties met behoud van metadata
+- **Embeddings**: Nomic Embed v1.5 (768 dimensies) met taakspecifieke voorvoegsels
+- **Samenvatting**: OpenAI GPT-4 voor documentsamenvattingen
+- **Vector Database**: Weaviate met aangepast schema voor regelgevende inhoud
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Installeer Afhankelijkheden
 
 ```bash
-cd /Users/lexlubbers/Code/AGORA/mcp-servers/document-ingestion
+cd mcp-servers/document-ingestion
 pip install -r requirements.txt
 ```
 
-**Note for macOS users**: `pdf2image` requires poppler. Install it with:
+**Opmerking voor macOS gebruikers**: `pdf2image` vereist poppler. Installeer het met:
 ```bash
 brew install poppler
 ```
 
-### 2. Set Environment Variables
+### 2. Stel Omgevingsvariabelen in
 
-Create a `.env` file at the project root (`/Users/lexlubbers/Code/AGORA/.env`) with **MCP_** prefix:
+Maak een `.env` bestand in de root van het project (`/Users/lexlubbers/Code/AGORA/.env`) met **MCP_** voorvoegsel:
 
 ```bash
-# MCP Server Configuration (uses MCP_ prefix, similar to APP_ for server-openai)
+# MCP Server Configuratie (gebruikt MCP_ prefix, vergelijkbaar met APP_ voor server-openai)
 
-# Required:
-MCP_OPENAI_API_KEY=your_openai_api_key_here
+# Vereist:
+MCP_OPENAI_API_KEY=jouw_openai_api_key_hier
 
-# Optional (defaults shown):
-MCP_EMBEDDING_MODEL=embedding modelai/embedding model-embeddings-v4
+# Optioneel (standaardwaarden getoond):
+MCP_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5
 MCP_WEAVIATE_URL=http://localhost:8080
 MCP_BATCH_SIZE=32
 MCP_MAX_CHUNK_SIZE=1000
 MCP_CHUNK_OVERLAP=100
 
-# Optional - Force specific device for embedding model model
-# MCP_EMBEDDING_DEVICE=mps  # cuda, mps, or cpu
+# Optioneel - Forceer specifiek apparaat voor embedding model
+# MCP_EMBEDDING_DEVICE=mps  # cuda, mps, of cpu
 ```
 
-The configuration uses **pydantic-settings** with **MCP_** prefix, just like the `APP_` prefix for server-openai.
+De configuratie gebruikt **pydantic-settings** met **MCP_** voorvoegsel, net als het `APP_` voorvoegsel voor server-openai.
 
-The ingestion script automatically loads the `.env` file from the project root.
+Het ingest-script laadt automatisch het `.env` bestand vanuit de project root.
 
 ### 3. Start Weaviate
 
-Make sure Weaviate is running:
+Zorg ervoor dat Weaviate draait:
 
 ```bash
-cd /Users/lexlubbers/Code/AGORA/mcp-servers
+cd mcp-servers
 docker-compose up weaviate -d
 ```
 
-Verify Weaviate is healthy:
+Verifieer dat Weaviate gezond is:
 
 ```bash
 curl http://localhost:8080/v1/meta
 ```
 
-## Usage
+## Gebruik
 
-### Run Full Ingestion Pipeline
+### Draai Volledige Ingestion Pipeline
 
 ```bash
 python ingest.py
 ```
 
-This will:
-1. Parse all PDFs from `../input/SPEC Agent/`
-2. Generate document summaries
-3. Create semantic chunks
-4. Embed chunks with embedding model
-5. Upload to Weaviate
+Dit zal:
+1. Alle PDF's parsen van `../input/SPEC Agent/`
+2. Documentsamenvattingen genereren
+3. Semantische chunks creëren
+4. Chunks embedden met embedding model
+5. Uploaden naar Weaviate
 
-### Convert Single PDF to Markdown Only
+### Converteer Enkele PDF naar Markdown Alleen
 
-If you just want to convert a single PDF to markdown without the full pipeline:
+Als je alleen een enkele PDF naar markdown wilt converteren zonder de volledige pipeline:
 
 ```bash
-# Convert a specific PDF
+# Converteer een specifieke PDF
 python pdf_to_markdown.py "../input/SPEC Agent/Nederlandse wetgeving - Warenwetregeling allergeneninformatie niet-voorverpakte levensmiddelen.pdf"
 
-# Or specify custom output directory
-python pdf_to_markdown.py "/path/to/your/document.pdf" "./my_output/"
+# Of specificeer een aangepaste uitvoermap
+python pdf_to_markdown.py "/pad/naar/jouw/document.pdf" "./mijn_output/"
 
-# The markdown file will be saved to output/markdown/ by default
+# Het markdown bestand wordt standaard opgeslagen in output/markdown/
 ```
 
-**OpenAI Vision OCR Fallback**: If standard OCR produces less than 100 characters (mostly images), the parser automatically falls back to OpenAI GPT-4 Vision for OCR. This is particularly useful for:
-- Scanned documents
-- Image-based PDFs
-- Poor quality PDFs where standard OCR fails
+**OpenAI Vision OCR Fallback**: Als standaard OCR minder dan 100 karakters produceert (meestal afbeeldingen), valt de parser automatisch terug op OpenAI GPT-4 Vision voor OCR. Dit is vooral handig voor:
+- Gescande documenten
+- PDF's gebaseerd op afbeeldingen
+- PDF's van slechte kwaliteit waar standaard OCR faalt
 
-The fallback will convert each page to an image and use GPT-4 Vision to extract text, including table structure.
+De fallback converteert elke pagina naar een afbeelding en gebruikt GPT-4 Vision om tekst te extraheren, inclusief tabelstructuur.
 
-This is useful for:
-- Testing PDF parsing on a single document
-- Quick conversion without embedding/database steps
-- Inspecting document structure before full ingestion
+Dit is handig voor:
+- Testen van PDF parsing op een enkel document
+- Snelle conversie zonder embedding/database stappen
+- Inspecteren van documentstructuur vóór volledige ingestion
 
-### Inspect Intermediate Files
+### Inspecteer Tussenbestanden
 
-Markdown files:
+Markdown bestanden:
 ```bash
 ls -la output/markdown/
-cat output/markdown/Nederlandse\ wetgeving\ -\ Warenwetregeling\ allergeneninformatie\ niet-voorverpakte\ levensmiddelen.md
+cat output/markdown/Bestandsnaam.md
 ```
 
-Chunk JSON files:
+Chunk JSON bestanden:
 ```bash
 ls -la output/chunks/
-cat output/chunks/Nederlandse\ wetgeving\ -\ Warenwetregeling\ allergeneninformatie\ niet-voorverpakte\ levensmiddelen_chunks.json | jq '.[0]'
+cat output/chunks/Bestandsnaam_chunks.json | jq '.[0]'
 ```
 
-### Verify Ingestion
+### Verifieer Ingestion
 
-Check total document count:
+Controleer totaal aantal documenten:
 ```bash
 curl -X POST http://localhost:8080/v1/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{Aggregate{RegulationChunk{meta{count}}}}"}'
 ```
 
-Query a specific chunk:
+Vraag een specifiek chunk op:
 ```bash
 curl -X POST http://localhost:8080/v1/graphql \
   -H "Content-Type: application/json" \
@@ -140,91 +140,90 @@ curl -X POST http://localhost:8080/v1/graphql \
 
 ## Schema
 
-The Weaviate schema includes:
+Het Weaviate schema bevat:
 
-### Core Content
-- `content` - The chunk text
-- `chunk_id` - Unique identifier
+### Kern Inhoud
+- `content` - De chunk tekst
+- `chunk_id` - Unieke identifier
 
 ### Document Metadata
-- `document_name` - Source document
-- `document_summary` - 200-token AI summary
-- `source_type` - Dutch, EU, or SPEC
+- `document_name` - Brondocument
+- `document_summary` - 200-token AI samenvatting
+- `source_type` - Dutch, EU, of SPEC
 - `regulation_type` - food_safety, hygiene, allergens, etc.
-- `regulation_number` - BWBR code or EU regulation number
+- `regulation_number` - BWBR code of EU verordening nummer
 
-### Citation Metadata
-- `article_number` - Article reference
-- `section_title` - Section heading
-- `page_number` - Page number
-- `page_range` - Page range string
+### Citatie Metadata
+- `article_number` - Artikel referentie
+- `section_title` - Sectie kop
+- `page_number` - Paginanummer
+- `page_range` - Paginabereik string
 
-### Additional Metadata
-- `effective_date` - When regulation became effective
-- `nvwa_category` - NVWA compliance category
-- `keywords` - Extracted keywords
+### Extra Metadata
+- `effective_date` - Datum van inwerkingtreding
+- `nvwa_category` - NVWA compliance categorie
+- `keywords` - Geëxtraheerde sleutelwoorden
 
-### Navigation
-- `previous_chunk_id` - Previous chunk for context
-- `next_chunk_id` - Next chunk for context
+### Navigatie
+- `previous_chunk_id` - Vorige chunk voor context
+- `next_chunk_id` - Volgende chunk voor context
 
-## Chunking Strategy
+## Chunking Strategie
 
-1. **Primary**: Split on article boundaries (Artikel 1, Artikel 2, etc.)
-2. **Secondary**: Split on section headings (### headers)
-3. **Fallback**: Fixed 1000-character chunks with 100-character overlap
+1. **Primair**: Splitsen op artikelgrenzen (Artikel 1, Artikel 2, etc.)
+2. **Secundair**: Splitsen op sectiekoppen (### headers)
+3. **Fallback**: Vaste 1000-karakter chunks met 100-karakter overlap
 
-## embedding model Embeddings
+## Embedding Model Embeddings
 
-Using the open source embedding model v4 model from Hugging Face with task-specific prefixes:
+Gebruik makend van het open source embedding model v4 model van Hugging Face met taakspecifieke voorvoegsels:
 
-- **Ingestion**: `task="retrieval.passage"` - For document chunks
-- **Query**: `task="retrieval.query"` - For user queries (used in MCP server)
+- **Ingestion**: `task="retrieval.passage"` - Voor document chunks
+- **Query**: `task="retrieval.query"` - Voor gebruikersvragen (gebruikt in MCP server)
 
-Model: `embedding modelai/embedding model-embeddings-v4` from Hugging Face (1024 dimensions)
+Model: `nomic-ai/nomic-embed-text-v1.5` van Hugging Face (768 dimensies)
 
-The model is loaded locally using PyTorch and transformers, automatically selecting the best device:
+Het model wordt lokaal geladen met PyTorch en transformers, waarbij automatisch het beste apparaat wordt geselecteerd:
 - CUDA (NVIDIA GPU)
 - MPS (Apple Silicon)
 - CPU (fallback)
 
-First run will download the model (~2GB). Subsequent runs use the cached version.
+De eerste keer draaien zal het model downloaden (~2GB). Latere runs gebruiken de gecachte versie.
 
-## Troubleshooting
+## Probleemoplossing
 
-### Weaviate Connection Failed
+### Weaviate Verbinding Mislukt
 ```bash
-# Check if Weaviate is running
+# Controleer of Weaviate draait
 docker ps | grep weaviate
 
-# Check Weaviate logs
+# Controleer Weaviate logs
 docker logs weaviate
 
-# Restart Weaviate
+# Herstart Weaviate
 docker-compose restart weaviate
 ```
 
 ### OpenAI Rate Limits
-The pipeline processes documents sequentially. If you hit rate limits, the summarizer will fall back to using the first 200 words.
+De pipeline verwerkt documenten sequentieel. Als je rate limits raakt, zal de samenvatter terugvallen op het gebruik van de eerste 200 woorden.
 
-### Model Loading
-The first time you run the ingestion, it will download the embedding model model from Hugging Face (~2GB). This can take a few minutes depending on your connection.
+### Model Laden
+De eerste keer dat je de ingestion draait, wordt het embedding model gedownload van Hugging Face (~2GB). Dit kan enkele minuten duren, afhankelijk van je verbinding.
 
-### Out of Memory Errors
-If you get OOM errors while embedding:
-- Reduce batch size in `embedding model_embedder.py` (default is 32)
-- Use CPU instead: `export embedding model_DEVICE=cpu`
-- Close other applications to free memory
+### Out of Memory Fouten
+Als je OOM fouten krijgt tijdens het embedden:
+- Verminder batch size in `.env` of config (standaard is 32)
+- Gebruik CPU in plaats daarvan: `export MCP_EMBEDDING_DEVICE=cpu`
+- Sluit andere applicaties om geheugen vrij te maken
 
-### PDF Parsing Errors
-If a PDF fails to parse with docling, check:
-- PDF is not password protected
-- PDF is not corrupted
-- PDF has text (not just scanned images)
+### PDF Parsing Fouten
+Als een PDF niet geparsed kan worden met docling, controleer:
+- PDF is niet beveiligd met wachtwoord
+- PDF is niet corrupt
+- PDF bevat tekst (niet alleen gescande afbeeldingen)
 
-## Integration with MCP Server
+## Integratie met MCP Server
 
-The ingested data is automatically available to the `regulation-analysis` MCP server at `http://localhost:5002`.
+De geïnvesteerde data is automatisch beschikbaar voor de `regulation-analysis` MCP server op `http://localhost:5002`.
 
-See `../regulation-analysis/README.md` for search API documentation.
-
+Zie `../regulation-analysis/README.md` voor zoek API documentatie.

@@ -1,43 +1,51 @@
 # AGORA
 
-Multi-agent compliance platform for NVWA inspectors. Orchestrates specialized AI agents via the HAI (Human Agent Interface) protocol for inspection workflows, regulatory analysis, and reporting.
+Multi-agent compliance platform voor NVWA-inspecteurs. Orkestreert gespecialiseerde AI-agenten via het HAI (Human Agent Interface) protocol voor inspectieworkflows, regelgevingsanalyse en rapportage.
 
-## Function
+Dit project wordt ontwikkeld in opdracht van de **Nederlandse Voedsel- en Warenautoriteit (NVWA)**.
 
-AGORA provides inspectors with:
-- Real-time text and voice interface for inspections
-- Automated company verification (KVK) and inspection history lookup
-- Regulatory compliance analysis with semantic search
-- HAP inspection report generation (JSON + PDF)
-- Human-in-the-loop approval workflow for high-risk actions
-- Full audit trail with OpenTelemetry observability
+## Contact
 
-## Architecture
+Voor vragen of meer informatie, neem contact op met:
+- **Lex Lubbers**: [lex@gradient-ds.com](mailto:lex@gradient-ds.com)
+
+## Functionaliteit
+
+AGORA biedt inspecteurs:
+- Real-time tekst- en spraakinterface voor inspecties
+- Geautomatiseerde bedrijfsverificatie (KVK) en inspectiegeschiedenis
+- Analyse van regelgeving met semantische zoekfunctionaliteit
+- Generatie van HAP-inspectierapporten (JSON + PDF)
+- Human-in-the-loop goedkeuringsworkflow voor risicovolle acties
+- Volledige audit trail met OpenTelemetry observability
+
+Na de pilot fase wordt dit uitgebreid tot een multi-agent systeem voor toepassing binnen de gehele NVWA.
+## Architectuur
 
 ```
-Inspector (Browser)
+Inspecteur (Browser)
        ↓ WebSocket (HAI Protocol)
     HAI (React UI)
        ↓ 
   server-openai (FastAPI + OpenAI Agents SDK)
        ↓ MCP Protocol (HTTP)
   mcp-servers (FastMCP)
-    ├── inspection-history (port 5005)
-    ├── regulation-analysis (port 5002)
-    └── reporting (port 5003)
+    ├── inspection-history (poort 5005)
+    ├── regulation-analysis (poort 5002)
+    └── reporting (poort 5003)
 ```
 
-**Key Components:**
-- **HAI**: React frontend with text/voice interface (port 3000)
-- **server-openai**: OpenAI Agents SDK orchestrator with autonomous agent handoffs (port 8000)
-- **server-opensource**: LangGraph orchestrator ⚠️ **TODO - Not implemented**
-- **mcp-servers**: FastMCP tool servers for domain operations
-- **docs/hai-contract**: WebSocket protocol specification (AsyncAPI 3.0)
-- **c4**: Architecture diagrams (Structurizr)
+**Belangrijkste Componenten:**
+- **HAI**: React frontend met tekst/spraak interface (poort 3000)
+- **server-openai**: OpenAI Agents SDK orchestrator met autonome agent handoffs (poort 8000)
+- **server-opensource**: LangGraph orchestrator ⚠️ **TODO - Nog niet geïmplementeerd**
+- **mcp-servers**: FastMCP tool servers voor domeinoperaties
+- **docs/hai-contract**: WebSocket protocol specificatie (AsyncAPI 3.0)
+- **c4**: Architectuurdiagrammen (Structurizr)
 
-## Quick Start
+## Snel aan de slag
 
-### Prerequisites
+### Vereisten
 
 - Node.js 20+
 - Python 3.11+
@@ -48,14 +56,14 @@ Inspector (Browser)
 
 ```bash
 cd mcp-servers
-export DOCKER_BUILDKIT=0  # macOS optimization
+export DOCKER_BUILDKIT=0  # macOS optimalisatie
 docker-compose up --build
 ```
 
-Servers start on:
-- http://localhost:5002 (Regulation Analysis)
-- http://localhost:5003 (Reporting)
-- http://localhost:5005 (Inspection History)
+Servers starten op:
+- http://localhost:5002 (Regelgevingsanalyse)
+- http://localhost:5003 (Rapportage)
+- http://localhost:5005 (Inspectiegeschiedenis)
 
 ### 2. Start OpenAI Server
 
@@ -63,72 +71,72 @@ Servers start on:
 cd server-openai
 pip install -e .
 
-# Configure environment
-export APP_OPENAI_API_KEY="your_key"
+# Configureer omgeving
+export APP_OPENAI_API_KEY="jouw_api_key"
 export APP_MCP_SERVERS="regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,inspection-history=http://localhost:5005"
 
-# Run server
+# Start server
 python -m agora_openai.api.server
 ```
 
-Server starts on http://localhost:8000
+Server start op http://localhost:8000
 
 ### 3. Start HAI Frontend
 
 ```bash
 cd HAI
 pnpm install
-cp .env.example .env.local  # Configure VITE_WS_URL=ws://localhost:8000/ws
+cp .env.example .env.local  # Configureer VITE_WS_URL=ws://localhost:8000/ws
 pnpm run dev
 ```
 
-Frontend available at http://localhost:3000
+Frontend beschikbaar op http://localhost:3000
 
-### 4. View Architecture Diagrams
+### 4. Bekijk Architectuurdiagrammen
 
 ```bash
 cd c4
 npm run up
 ```
 
-Open http://localhost:8080 for interactive C4 diagrams
+Open http://localhost:8080 voor interactieve C4-diagrammen
 
-## Project Structure
+## Projectstructuur
 
 ```
 AGORA/
 ├── HAI/                      # React frontend (TypeScript + Vite)
-│   ├── src/components/       # UI components (chat, voice, approval)
+│   ├── src/components/       # UI componenten (chat, voice, goedkeuring)
 │   ├── src/stores/           # Zustand state management
 │   └── src/lib/websocket/    # HAI protocol client
 ├── server-openai/            # OpenAI Agents SDK orchestrator
 │   ├── src/agora_openai/
-│   │   ├── core/             # Agent definitions & runner
+│   │   ├── core/             # Agent definities & runner
 │   │   ├── adapters/         # MCP client, Realtime API
-│   │   ├── pipelines/        # Orchestration logic
+│   │   ├── pipelines/        # Orchestratie logica
 │   │   └── api/              # FastAPI + WebSocket server
-│   └── common/               # Shared types & protocols
+│   └── common/               # Gedeelde types & protocollen
 ├── server-opensource/        # ⚠️ TODO: LangGraph orchestrator
 ├── mcp-servers/              # FastMCP tool servers
-│   ├── inspection-history/   # KVK + inspection data
-│   ├── regulation-analysis/  # Semantic regulation search
-│   └── reporting/            # HAP report generation
-├── docs/hai-contract/        # HAI Protocol specification
-│   ├── HAI_PROTOCOL.md       # Human-readable docs
-│   ├── asyncapi.yaml         # Machine-readable contract
-│   └── schemas/              # JSON Schema definitions
-└── c4/                       # Architecture diagrams (Structurizr DSL)
+│   ├── inspection-history/   # KVK + inspectiedata
+│   ├── regulation-analysis/  # Semantische regelgeving zoeken
+│   └── reporting/            # HAP rapportgeneratie
+├── docs/hai-contract/        # HAI Protocol specificatie
+│   ├── HAI_PROTOCOL.md       # Leesbare documentatie
+│   ├── asyncapi.yaml         # Machine-leesbaar contract
+│   └── schemas/              # JSON Schema definities
+└── c4/                       # Architectuurdiagrammen (Structurizr DSL)
 ```
 
-## Development Workflow
+## Ontwikkelingsworkflow
 
-1. **Protocol changes**: Update `docs/hai-contract/asyncapi.yaml` first
-2. **MCP servers**: Each server is independent FastMCP service
-3. **Orchestrator**: Agents defined in `server-openai/src/agora_openai/core/agent_definitions.py`
-4. **Frontend**: Components in `HAI/src/components/`, state in `HAI/src/stores/`
-5. **Architecture**: Edit `c4/workspace-openai.dsl`, view at http://localhost:8080
+1. **Protocolwijzigingen**: Update eerst `docs/hai-contract/asyncapi.yaml`
+2. **MCP servers**: Elke server is een onafhankelijke FastMCP service
+3. **Orchestrator**: Agenten gedefinieerd in `server-openai/src/agora_openai/core/agent_definitions.py`
+4. **Frontend**: Componenten in `HAI/src/components/`, state in `HAI/src/stores/`
+5. **Architectuur**: Bewerk `c4/workspace-openai.dsl`, bekijk op http://localhost:8080
 
-## Testing
+## Testen
 
 **MCP Servers:**
 ```bash
@@ -150,48 +158,48 @@ pnpm run test
 
 ## Docker Deployment
 
-Full stack with Docker Compose (development):
+Full stack met Docker Compose (ontwikkeling):
 ```bash
 # Start MCP servers
 cd mcp-servers && docker-compose up -d
 
-# Start OpenAI server (requires .env configuration)
+# Start OpenAI server (vereist .env configuratie)
 cd server-openai && docker-compose up -d
 
 # Start HAI (nginx)
 cd HAI && docker build -t agora-hai . && docker run -p 80:80 agora-hai
 ```
 
-## Documentation
+## Documentatie
 
-- **[HAI Protocol](./docs/hai-contract/HAI_PROTOCOL.md)**: Complete WebSocket API specification
-- **[HAI Contract README](./docs/hai-contract/README.md)**: AsyncAPI tooling guide
-- **[MCP Servers](./mcp-servers/README.md)**: FastMCP implementation & tools
-- **[Server OpenAI](./server-openai/README.md)**: Agent definitions & architecture
+- **[HAI Protocol](./docs/hai-contract/HAI_PROTOCOL.md)**: Volledige WebSocket API specificatie
+- **[HAI Contract README](./docs/hai-contract/README.md)**: AsyncAPI tooling gids
+- **[MCP Servers](./mcp-servers/README.md)**: FastMCP implementatie & tools
+- **[Server OpenAI](./server-openai/README.md)**: Agent definities & architectuur
 - **[HAI Frontend](./HAI/README.md)**: React app setup & features
-- **[C4 Architecture](./c4/README.md)**: System diagrams & design decisions
-- **[Demo Scenarios](./DEMO_SCENARIOS.md)**: Example conversation flows
+- **[C4 Architectuur](./c4/README.md)**: Systeemdiagrammen & ontwerpbeslissingen
+- **[Demo Scenario's](./DEMO_SCENARIOS.md)**: Voorbeeld gespreksflows
 
-## Compliance
+## Compliance & Standaarden
 
-- **EU AI Act**: Human-in-the-loop, audit trails, transparency
-- **AVG/GDPR**: Data minimization, encryption
-- **BIO**: Dutch government security standards
-- **WCAG 2.1 AA**: Accessibility compliant
+- **EU AI Act**: Human-in-the-loop, audit trails, transparantie
+- **AVG/GDPR**: Dataminimalisatie, encryptie
+- **BIO**: Overheidsbeveiligingsstandaarden (Baseline Informatiebeveiliging Overheid)
+- **WCAG 2.1 AA**: Toegankelijkheidsconform
 
 ## Tech Stack
 
-| Layer | Technology |
+| Laag | Technologie |
 |-------|-----------|
 | Frontend | React 18 + TypeScript + Vite + Zustand + shadcn/ui |
 | Orchestrator | OpenAI Agents SDK + FastAPI + WebSocket |
-| Agents | OpenAI GPT models with autonomous handoffs |
+| Agenten | OpenAI GPT modellen met autonome handoffs |
 | Tools | FastMCP (HTTP transport) |
 | Protocol | HAI (WebSocket) + MCP (HTTP) |
-| State | SQLite (sessions) + LocalStorage (UI) |
-| Observability | OpenTelemetry + structured logging |
+| State | SQLite (sessies) + LocalStorage (UI) |
+| Observability | OpenTelemetry + gestructureerde logging |
 
-## License
+## Licentie
 
-Proprietary - NVWA AGORA Platform
-
+Dit project wordt voorbereid voor open source vrijgave. De definitieve licentie is nader te bepalen (Suggestie: MIT of EUPL).
+Zie [CONTRIBUTING.md](CONTRIBUTING.md) voor richtlijnen over bijdragen.

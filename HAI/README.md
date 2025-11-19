@@ -1,100 +1,100 @@
 # AGORA HAI (Human Agent Interface)
 
-A modern React-based web application that provides inspectors with an intuitive interface to interact with the AGORA multi-agent system via text and voice.
+Een moderne, op React gebaseerde webapplicatie die inspecteurs een intuïtieve interface biedt voor interactie met het AGORA multi-agent systeem via tekst en spraak.
 
-## Features
+## Functionaliteiten
 
-- **Real-time Chat Interface**: Text-based communication with the AGORA orchestrator
-- **Voice Interface**: Voice input with visual feedback and audio visualization
-- **Tool Approval Workflow**: Secure approval system for agent tool executions
-- **WebSocket Communication**: Real-time bidirectional communication using the HAI Protocol
-- **Accessibility First**: WCAG 2.1 AA compliant with full keyboard navigation and screen reader support
-- **Modern UI**: Built with shadcn/ui and Tailwind CSS for a beautiful, responsive experience
+- **Real-time Chat Interface**: Tekstgebaseerde communicatie met de AGORA orchestrator
+- **Spraakinterface**: Spraakinvoer met visuele feedback en audiovisualisatie
+- **Tool Goedkeuringsworkflow**: Veilig goedkeuringssysteem voor het uitvoeren van agent-tools
+- **WebSocket Communicatie**: Real-time bidirectionele communicatie met behulp van het HAI Protocol
+- **Toegankelijkheid Eerst**: Voldoet aan WCAG 2.1 AA met volledige toetsenbordnavigatie en ondersteuning voor schermlezers
+- **Moderne UI**: Gebouwd met shadcn/ui en Tailwind CSS voor een mooie, responsieve ervaring
 
 ## Tech Stack
 
-- **React 18+** with TypeScript 5+
-- **Vite** for fast development and optimized builds
-- **Zustand** for state management
-- **Zod** for runtime type validation
-- **shadcn/ui** component library
-- **Tailwind CSS** for styling
-- **Vitest** for testing
+- **React 18+** met TypeScript 5+
+- **Vite** voor snelle ontwikkeling en geoptimaliseerde builds
+- **Zustand** voor state management
+- **Zod** voor runtime type validatie
+- **shadcn/ui** componentenbibliotheek
+- **Tailwind CSS** voor styling
+- **Vitest** voor testen
 
-## Prerequisites
+## Vereisten
 
 - Node.js 20+
 - pnpm 8+
 
-## Installation
+## Installatie
 
 ```bash
 cd HAI
 pnpm install
 ```
 
-## Configuration
+## Configuratie
 
-Create a `.env.local` file based on `.env.example`:
+Maak een `.env.local` bestand op basis van `.env.example`:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your configuration:
+Pas `.env.local` aan met je configuratie:
 
 ```env
 VITE_WS_URL=ws://localhost:8000/ws
-VITE_OPENAI_API_KEY=your_api_key_here
+VITE_OPENAI_API_KEY=jouw_api_key_hier
 VITE_APP_NAME=AGORA HAI
 VITE_SESSION_TIMEOUT=3600000
 ```
 
-## Development
+## Ontwikkeling
 
-Start the development server:
+Start de ontwikkelserver:
 
 ```bash
 pnpm run dev
 ```
 
-The application will be available at `http://localhost:3000`.
+De applicatie is beschikbaar op `http://localhost:3000`.
 
-## Building
+## Bouwen
 
-Create a production build:
+Maak een productiebuild:
 
 ```bash
 pnpm run build
 ```
 
-Preview the production build:
+Bekijk de productiebuild:
 
 ```bash
 pnpm run preview
 ```
 
-## Testing
+## Testen
 
-Run tests:
+Voer tests uit:
 
 ```bash
 pnpm run test
 ```
 
-Run tests in watch mode:
+Testen in watch modus:
 
 ```bash
 pnpm run test:watch
 ```
 
-Generate coverage report:
+Genereer coverage rapport:
 
 ```bash
 pnpm run test:coverage
 ```
 
-## Code Quality
+## Code Kwaliteit
 
 Lint code:
 
@@ -102,7 +102,7 @@ Lint code:
 pnpm run lint
 ```
 
-Fix linting issues:
+Herstel linting problemen:
 
 ```bash
 pnpm run lint:fix
@@ -114,55 +114,55 @@ Type check:
 pnpm run type-check
 ```
 
-## Project Structure
+## Projectstructuur
 
 ```
 HAI/
 ├── src/
-│   ├── components/       # React components
-│   │   ├── ui/          # shadcn/ui components
-│   │   ├── chat/        # Chat interface components
-│   │   ├── voice/       # Voice interface components
-│   │   ├── approval/    # Tool approval components
-│   │   └── layout/      # Layout components
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/             # Utilities and libraries
+│   ├── components/       # React componenten
+│   │   ├── ui/          # shadcn/ui componenten
+│   │   ├── chat/        # Chat interface componenten
+│   │   ├── voice/       # Spraak interface componenten
+│   │   ├── approval/    # Tool goedkeuringscomponenten
+│   │   └── layout/      # Layout componenten
+│   ├── hooks/           # Aangepaste React hooks
+│   ├── lib/             # Hulpprogramma's en bibliotheken
 │   │   ├── websocket/   # WebSocket client
-│   │   └── utils/       # Utility functions
+│   │   └── utils/       # Hulpfuncties
 │   ├── stores/          # Zustand stores
-│   ├── styles/          # Global styles
-│   ├── types/           # TypeScript types and schemas
-│   ├── App.tsx          # Main App component
-│   └── main.tsx         # Application entry point
-├── tests/               # Test files
-└── public/              # Static assets
+│   ├── styles/          # Globale stijlen
+│   ├── types/           # TypeScript types en schema's
+│   ├── App.tsx          # Hoofd App component
+│   └── main.tsx         # Applicatie toegangspunt
+├── tests/               # Testbestanden
+└── public/              # Statische assets
 ```
 
 ## HAI Protocol
 
-The application communicates with the AGORA orchestrator using the HAI Protocol over WebSocket. The protocol supports the following message types:
+De applicatie communiceert met de AGORA orchestrator via het HAI Protocol over WebSocket. Het protocol ondersteunt de volgende berichttypen:
 
-- `user_message`: User input to orchestrator
-- `assistant_message`: Response from orchestrator
-- `tool_approval_request`: Request user approval for tool execution
-- `tool_approval_response`: User's approval decision
-- `status`: Status updates (thinking, routing, executing_tools, completed)
-- `error`: Error messages
+- `user_message`: Gebruikersinvoer naar orchestrator
+- `assistant_message`: Antwoord van orchestrator
+- `tool_approval_request`: Verzoek om gebruikersgoedkeuring voor tool-uitvoering
+- `tool_approval_response`: Goedkeuringsbeslissing van de gebruiker
+- `status`: Status updates (denken, routeren, uitvoeren_tools, voltooid)
+- `error`: Foutmeldingen
 
-See `src/types/schemas.ts` for detailed message schemas.
+Zie `src/types/schemas.ts` voor gedetailleerde berichtschema's.
 
-## Accessibility
+## Toegankelijkheid
 
-The application is designed with accessibility in mind:
+De applicatie is ontworpen met toegankelijkheid in gedachten:
 
-- ✅ Keyboard navigation support
-- ✅ ARIA labels and roles
-- ✅ Screen reader friendly
+- ✅ Ondersteuning voor toetsenbordnavigatie
+- ✅ ARIA labels en rollen
+- ✅ Schermlezer vriendelijk
 - ✅ Focus management
-- ✅ Color contrast compliance
-- ✅ Semantic HTML
+- ✅ Kleurcontrast conformiteit
+- ✅ Semantische HTML
 
-## Browser Support
+## Browser Ondersteuning
 
 - Chrome/Edge 90+
 - Firefox 88+
@@ -170,30 +170,29 @@ The application is designed with accessibility in mind:
 
 ## Docker
 
-Build the Docker image:
+Bouw de Docker image:
 
 ```bash
 docker build -t agora-hai .
 ```
 
-Run the container:
+Draai de container:
 
 ```bash
 docker run -p 80:80 agora-hai
 ```
 
-## Contributing
+## Bijdragen
 
-1. Follow the TypeScript and React conventions outlined in `.cursor/hai-react-app.mdc`
-2. Ensure all tests pass before submitting changes
-3. Maintain accessibility standards
-4. Write meaningful commit messages following conventional commits
+1. Volg de TypeScript en React conventies zoals beschreven in `.cursor/hai-react-app.mdc`
+2. Zorg ervoor dat alle tests slagen voordat je wijzigingen indient
+3. Behoud de toegankelijkheidsstandaarden
+4. Schrijf betekenisvolle commit-berichten volgens conventionele commits
 
-## License
+## Licentie
 
-Proprietary - AGORA Development Team
+Zie de hoofd-README voor licentie-informatie.
 
-## Support
+## Ondersteuning
 
-For issues or questions, contact the AGORA Development Team.
-
+Neem voor problemen of vragen contact op met het AGORA Ontwikkelteam.

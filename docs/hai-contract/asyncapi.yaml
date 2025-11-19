@@ -1,16 +1,20 @@
 asyncapi: 3.0.0
 info:
   title: AGORA HAI Protocol API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     WebSocket protocol for communication between the Human Agent Interface (HAI) 
     and the AGORA backend orchestrator. This protocol supports real-time chat, 
     streaming responses, tool execution notifications, and human-in-the-loop approvals.
     
+    **Scope:** Text and control messages only. Audio/Video streaming is out of scope.
+    
+    **History:** Conversation history should be loaded via the REST API (`GET /sessions/{id}/history`) before connecting. This protocol handles real-time events only.
+    
     ## Key Features
     - Real-time bidirectional communication
     - Streaming assistant responses
-    - Tool execution transparency
+    - Tool execution transparency (Start/End/Error events)
     - Human-in-the-loop approval workflow
     - Session-based conversation continuity
     
@@ -34,8 +38,12 @@ channels:
         $ref: '#/components/messages/AssistantMessage'
       AssistantMessageChunk:
         $ref: '#/components/messages/AssistantMessageChunk'
-      ToolCallMessage:
-        $ref: '#/components/messages/ToolCallMessage'
+      ToolCallStart:
+        $ref: '#/components/messages/ToolCallStart'
+      ToolCallEnd:
+        $ref: '#/components/messages/ToolCallEnd'
+      ToolCallError:
+        $ref: '#/components/messages/ToolCallError'
       ToolApprovalRequest:
         $ref: '#/components/messages/ToolApprovalRequest'
       ToolApprovalResponse:
@@ -63,7 +71,9 @@ operations:
     messages:
       - $ref: '#/channels/~1ws/messages/AssistantMessage'
       - $ref: '#/channels/~1ws/messages/AssistantMessageChunk'
-      - $ref: '#/channels/~1ws/messages/ToolCallMessage'
+      - $ref: '#/channels/~1ws/messages/ToolCallStart'
+      - $ref: '#/channels/~1ws/messages/ToolCallEnd'
+      - $ref: '#/channels/~1ws/messages/ToolCallError'
       - $ref: '#/channels/~1ws/messages/ToolApprovalRequest'
       - $ref: '#/channels/~1ws/messages/StatusMessage'
       - $ref: '#/channels/~1ws/messages/ErrorMessage'
@@ -138,43 +148,67 @@ components:
             message_id: "msg_abc123"
             is_final: true
 
-    ToolCallMessage:
-      name: ToolCallMessage
-      title: Tool Execution Notification
-      summary: Notification about tool execution status (started, completed, failed)
+    ToolCallStart:
+      name: ToolCallStart
+      title: Tool Execution Started
+      summary: Notification that tool execution has begun
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/ToolCallMessage'
+        $ref: '#/components/schemas/ToolCallStart'
       examples:
         - name: ToolStarted
           summary: Tool execution started
           payload:
-            type: "tool_call"
+            type: "tool_call_start"
             tool_call_id: "call_abc123"
             tool_name: "search_regulations"
             parameters:
               query: "restaurant food safety"
               limit: 10
             session_id: "123e4567-e89b-12d3-a456-426614174000"
-            status: "started"
             agent_id: "regulation_agent"
             metadata: {}
+
+    ToolCallEnd:
+      name: ToolCallEnd
+      title: Tool Execution Completed
+      summary: Notification that tool execution finished successfully
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallEnd'
+      examples:
         - name: ToolCompleted
           summary: Tool execution completed successfully
           payload:
-            type: "tool_call"
+            type: "tool_call_end"
             tool_call_id: "call_abc123"
             tool_name: "search_regulations"
-            parameters:
-              query: "restaurant food safety"
-              limit: 10
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            status: "completed"
             result: "Found 5 relevant regulations"
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
             agent_id: "regulation_agent"
             metadata:
               documents_found: 5
               search_time_ms: 234
+
+    ToolCallError:
+      name: ToolCallError
+      title: Tool Execution Failed
+      summary: Notification that tool execution failed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallError'
+      examples:
+        - name: ToolFailed
+          summary: Tool execution failed
+          payload:
+            type: "tool_call_error"
+            tool_call_id: "call_abc123"
+            tool_name: "search_regulations"
+            error: "Database connection timeout"
+            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            agent_id: "regulation_agent"
+            metadata:
+              retry_allowed: true
 
     ToolApprovalRequest:
       name: ToolApprovalRequest
@@ -340,13 +374,13 @@ components:
           default: false
           description: True indicates this is the last chunk of the message
 
-    ToolCallMessage:
+    ToolCallStart:
       type: object
-      required: [type, tool_call_id, tool_name, parameters, session_id, status]
+      required: [type, tool_call_id, tool_name, parameters, session_id]
       properties:
         type:
           type: string
-          const: "tool_call"
+          const: "tool_call_start"
         tool_call_id:
           type: string
           description: Unique identifier for this tool call
@@ -359,14 +393,56 @@ components:
           description: Tool input parameters
         session_id:
           type: string
-        status:
-          type: string
-          enum: [started, completed, failed]
-          description: Current execution status
-        result:
+        agent_id:
           type: string
           nullable: true
-          description: Result summary (only present when status is 'completed')
+        metadata:
+          type: object
+          additionalProperties: true
+          default: {}
+
+    ToolCallEnd:
+      type: object
+      required: [type, tool_call_id, tool_name, result, session_id]
+      properties:
+        type:
+          type: string
+          const: "tool_call_end"
+        tool_call_id:
+          type: string
+          description: Unique identifier for this tool call (matches start)
+        tool_name:
+          type: string
+        result:
+          type: string
+          description: Result summary of the tool execution
+        session_id:
+          type: string
+        agent_id:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          default: {}
+
+    ToolCallError:
+      type: object
+      required: [type, tool_call_id, tool_name, error, session_id]
+      properties:
+        type:
+          type: string
+          const: "tool_call_error"
+        tool_call_id:
+          type: string
+          description: Unique identifier for this tool call (matches start)
+        tool_name:
+          type: string
+        error:
+          type: string
+          description: Error message
+        session_id:
+          type: string
         agent_id:
           type: string
           nullable: true
@@ -466,4 +542,3 @@ components:
           additionalProperties: true
           default: {}
           description: Additional error context and debugging information
-

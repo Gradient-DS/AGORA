@@ -1,7 +1,7 @@
 # AGORA HAI Protocol Specification
 
-**Version:** 1.0.0  
-**Last Updated:** November 17, 2025
+**Version:** 1.1.0  
+**Last Updated:** November 19, 2025
 
 ## Table of Contents
 
@@ -20,11 +20,14 @@
 
 The HAI (Human Agent Interface) Protocol defines the WebSocket-based communication contract between the frontend HAI client and the AGORA backend orchestrator.
 
+### Scope: Text & Control Only
+This version of the protocol (v1.x) specifically covers **text-based communication and control signals** (like tool approvals). It does **not** cover real-time audio/video streaming. Voice interactions are handled via separate dedicated endpoints (e.g., `/ws/voice`) or protocols to ensure clear separation of concerns.
+
 ### Key Features
 
 - **Real-time bidirectional communication** via WebSocket
 - **Streaming responses** for immediate user feedback
-- **Tool execution transparency** with lifecycle notifications
+- **Tool execution transparency** with distinct lifecycle events
 - **Human-in-the-loop approvals** for sensitive operations
 - **Session-based continuity** for conversation history
 
@@ -34,7 +37,7 @@ The HAI (Human Agent Interface) Protocol defines the WebSocket-based communicati
 ┌─────────────┐         WebSocket          ┌──────────────────┐
 │             │◄──────────────────────────►│                  │
 │  HAI Client │    HAI Protocol (JSON)     │  Orchestrator    │
-│  (Frontend) │                            │  (Backend)       │
+│  (Frontend) │  (Text/Control Only)     │  (Backend)       │
 │             │                            │                  │
 └─────────────┘                            └──────────────────┘
 ```
@@ -74,6 +77,17 @@ localStorage.setItem('agora_session_id', sessionId);
 const sessionId = localStorage.getItem('agora_session_id') || crypto.randomUUID();
 ```
 
+### Session History & Persistence
+
+The WebSocket protocol is designed for **real-time communication only**. To load past conversation history (e.g., on page reload), clients should use the accompanying REST API.
+
+**Flow:**
+1. **Load History via HTTP:** `GET /sessions/{session_id}/history`
+   - Returns full conversation transcript
+   - Client renders these messages immediately (without animation)
+2. **Connect via WebSocket:** `ws://.../ws`
+   - Establishes real-time channel for *new* messages
+   - Uses the same `session_id`
 ---
 
 ## Message Format
@@ -85,7 +99,7 @@ All messages are JSON-encoded text frames with a `type` discriminator field.
 | Direction | Message Types |
 |-----------|--------------|
 | **Client → Server** | `user_message`, `tool_approval_response` |
-| **Server → Client** | `assistant_message`, `assistant_message_chunk`, `tool_call`, `tool_approval_request`, `status`, `error` |
+| **Server → Client** | `assistant_message`, `assistant_message_chunk`, `tool_call_start`, `tool_call_end`, `tool_call_error`, `tool_approval_request`, `status`, `error` |
 
 ### Type Discriminator
 
@@ -210,64 +224,97 @@ interface AssistantMessageChunk {
 
 ---
 
-### 4. Tool Call Message (Server → Client)
+### 4. Tool Call Messages (Server → Client)
 
-Notification about tool execution lifecycle.
+Notification about tool execution lifecycle, split into distinct events for clearer state management.
+
+#### 4a. Tool Call Start
+
+Indicates a tool execution has begun.
 
 ```typescript
-interface ToolCallMessage {
-  type: "tool_call";
+interface ToolCallStart {
+  type: "tool_call_start";
   tool_call_id: string;         // Unique identifier
   tool_name: string;            // e.g., "search_regulations"
   parameters: Record<string, any>; // Tool input params
   session_id: string;
-  status: "started" | "completed" | "failed";
-  result?: string;              // Present when status="completed"
   agent_id?: string;
   metadata?: Record<string, any>;
 }
 ```
 
-**Status Lifecycle:**
+**Example:**
+```json
+{
+  "type": "tool_call_start",
+  "tool_call_id": "call_abc123",
+  "tool_name": "search_regulations",
+  "parameters": {"query": "food safety"},
+  "session_id": "123e4567...",
+  "agent_id": "regulation_agent"
+}
+```
+*UI Action: Show "Searching regulations..." indicator*
 
-1. **`started`** - Tool execution begins
-   ```json
-   {
-     "type": "tool_call",
-     "tool_call_id": "call_abc123",
-     "tool_name": "search_regulations",
-     "parameters": {"query": "food safety"},
-     "session_id": "123e4567...",
-     "status": "started"
-   }
-   ```
-   *UI: Show "Searching regulations..." indicator*
+#### 4b. Tool Call End
 
-2. **`completed`** - Tool execution succeeded
-   ```json
-   {
-     "type": "tool_call",
-     "tool_call_id": "call_abc123",
-     "tool_name": "search_regulations",
-     "parameters": {"query": "food safety"},
-     "session_id": "123e4567...",
-     "status": "completed",
-     "result": "Found 5 relevant regulations"
-   }
-   ```
-   *UI: Show "Found 5 relevant regulations" success badge*
+Indicates successful completion of a tool execution.
 
-3. **`failed`** - Tool execution failed
-   ```json
-   {
-     "type": "tool_call",
-     "tool_call_id": "call_abc123",
-     "tool_name": "search_regulations",
-     "status": "failed",
-     "result": "Database connection timeout"
-   }
-   ```
-   *UI: Show error indicator*
+```typescript
+interface ToolCallEnd {
+  type: "tool_call_end";
+  tool_call_id: string;         // Matches the start ID
+  tool_name: string;
+  result: string;               // Tool output summary
+  session_id: string;
+  agent_id?: string;
+  metadata?: Record<string, any>;
+}
+```
+
+**Example:**
+```json
+{
+  "type": "tool_call_end",
+  "tool_call_id": "call_abc123",
+  "tool_name": "search_regulations",
+  "result": "Found 5 relevant regulations",
+  "session_id": "123e4567...",
+  "metadata": {
+    "documents_found": 5
+  }
+}
+```
+*UI Action: Update indicator to success badge, optionally show result summary*
+
+#### 4c. Tool Call Error
+
+Indicates tool execution failed.
+
+```typescript
+interface ToolCallError {
+  type: "tool_call_error";
+  tool_call_id: string;         // Matches the start ID
+  tool_name: string;
+  error: string;                // Error message
+  session_id: string;
+  agent_id?: string;
+  metadata?: Record<string, any>;
+}
+```
+
+**Example:**
+```json
+{
+  "type": "tool_call_error",
+  "tool_call_id": "call_abc123",
+  "tool_name": "search_regulations",
+  "error": "Database connection timeout",
+  "session_id": "123e4567..."
+}
+```
+*UI Action: Update indicator to error state, show retry option if applicable*
 
 ---
 
@@ -306,13 +353,8 @@ interface ToolApprovalRequest {
 - Show modal dialog with tool details
 - Display `tool_description` and `reasoning`
 - Show `parameters` in expandable section
-- Color-code by `risk_level`:
-  - `low` - Green
-  - `medium` - Yellow
-  - `high` - Orange
-  - `critical` - Red
+- Color-code by `risk_level`
 - Provide "Approve" and "Reject" buttons
-- Optional feedback textarea
 
 ---
 
@@ -336,16 +378,6 @@ interface ToolApprovalResponse {
   "approval_id": "appr_abc123",
   "approved": true,
   "feedback": "Looks good, proceed with report generation"
-}
-```
-
-**Example (Rejected):**
-```json
-{
-  "type": "tool_approval_response",
-  "approval_id": "appr_abc123",
-  "approved": false,
-  "feedback": "I need to add more inspection details first"
 }
 ```
 
@@ -373,16 +405,6 @@ interface StatusMessage {
 | `executing_tools` | Show tool execution progress | "Searching database..." |
 | `completed` | Hide all loading indicators | null |
 
-**Example:**
-```json
-{
-  "type": "status",
-  "status": "thinking",
-  "message": "Analyzing your question...",
-  "session_id": "123e4567..."
-}
-```
-
 ---
 
 ### 8. Error Message (Server → Client)
@@ -397,16 +419,6 @@ interface ErrorMessage {
   details?: Record<string, any>; // Additional context
 }
 ```
-
-**Common Error Codes:**
-
-| Error Code | Meaning | User Action |
-|-----------|---------|------------|
-| `moderation_violation` | Content blocked by filter | Rephrase message |
-| `rate_limit_exceeded` | Too many requests | Wait and retry |
-| `tool_execution_failed` | Tool call failed | Check parameters |
-| `invalid_session` | Session not found | Create new session |
-| `invalid_json` | Malformed message | Check client code |
 
 **Example:**
 ```json
@@ -425,25 +437,7 @@ interface ErrorMessage {
 
 ## Conversation Flows
 
-### Flow 1: Basic Question-Answer
-
-```
-Client                                    Server
-  |                                         |
-  |-- UserMessage -----------------------> |
-  |   "What are food safety regs?"         |
-  |                                         |
-  | <------------ StatusMessage: thinking  |
-  |                                         |
-  | <------------ AssistantMessageChunk    |
-  | <------------ AssistantMessageChunk    |
-  | <------------ AssistantMessageChunk    |
-  | <------ AssistantMessageChunk (final)  |
-  |                                         |
-  | <------------ StatusMessage: completed |
-```
-
-### Flow 2: Tool Execution
+### Flow 1: Tool Execution
 
 ```
 Client                                    Server
@@ -454,17 +448,17 @@ Client                                    Server
   | <------------ StatusMessage: routing   |
   | <----- StatusMessage: executing_tools  |
   |                                         |
-  | <--------- ToolCallMessage: started    |
+  | <--------- ToolCallStart ------------- |
   |            (tool: search_regulations)  |
   |                                         |
-  | <-------- ToolCallMessage: completed   |
+  | <--------- ToolCallEnd --------------- |
   |           (result: "Found 5 docs")     |
   |                                         |
   | <------------ AssistantMessageChunk... |
   | <------------ StatusMessage: completed |
 ```
 
-### Flow 3: Human-in-the-Loop Approval
+### Flow 2: Human-in-the-Loop Approval
 
 ```
 Client                                    Server
@@ -481,114 +475,11 @@ Client                                    Server
   |-- ToolApprovalResponse --------------> |
   |   (approved: true)                     |
   |                                         |
-  | <--------- ToolCallMessage: started    |
-  | <-------- ToolCallMessage: completed   |
+  | <--------- ToolCallStart ------------- |
+  | <--------- ToolCallEnd --------------- |
   |                                         |
   | <------------ AssistantMessageChunk... |
   | <------------ StatusMessage: completed |
-```
-
-### Flow 4: Error Handling
-
-```
-Client                                    Server
-  |                                         |
-  |-- UserMessage (with profanity) ------> |
-  |                                         |
-  | <------------ ErrorMessage ----------- |
-  |   (error_code: moderation_violation)   |
-  |   [ERROR SHOWN TO USER]                |
-  |                                         |
-  |-- UserMessage (rephrased) -----------> |
-  |   [NORMAL FLOW CONTINUES]              |
-```
-
----
-
-## Error Handling
-
-### Client-Side Error Handling
-
-```typescript
-// WebSocket connection error
-websocket.onerror = (error) => {
-  console.error('WebSocket error:', error);
-  showNotification('Connection error. Retrying...');
-  // Implement exponential backoff retry
-};
-
-// WebSocket closed
-websocket.onclose = (event) => {
-  if (!event.wasClean) {
-    console.error('Connection closed unexpectedly:', event.code);
-    attemptReconnection();
-  }
-};
-
-// Message parsing error
-websocket.onmessage = (event) => {
-  try {
-    const message = JSON.parse(event.data);
-    handleMessage(message);
-  } catch (error) {
-    console.error('Failed to parse message:', error);
-    // Log to monitoring system
-  }
-};
-
-// Protocol error message
-function handleErrorMessage(error: ErrorMessage) {
-  switch (error.error_code) {
-    case 'moderation_violation':
-      showError('Your message was blocked. Please rephrase.');
-      break;
-    case 'rate_limit_exceeded':
-      showError('Too many requests. Please wait a moment.');
-      setTimeout(() => enableInput(), 5000);
-      break;
-    case 'invalid_session':
-      // Create new session
-      localStorage.removeItem('agora_session_id');
-      location.reload();
-      break;
-    default:
-      showError(error.message);
-  }
-}
-```
-
-### Reconnection Strategy
-
-```typescript
-let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
-const BASE_DELAY = 1000; // ms
-
-function attemptReconnection() {
-  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    showError('Unable to connect. Please refresh the page.');
-    return;
-  }
-  
-  const delay = BASE_DELAY * Math.pow(2, reconnectAttempts);
-  reconnectAttempts++;
-  
-  setTimeout(() => {
-    console.log(`Reconnection attempt ${reconnectAttempts}...`);
-    connectWebSocket();
-  }, delay);
-}
-
-function connectWebSocket() {
-  const ws = new WebSocket('ws://localhost:8000/ws');
-  
-  ws.onopen = () => {
-    reconnectAttempts = 0; // Reset on successful connection
-    showNotification('Connected!');
-  };
-  
-  ws.onclose = attemptReconnection;
-}
 ```
 
 ---
@@ -605,38 +496,20 @@ function connectWebSocket() {
 - [ ] **Session Management**
   - [ ] Generate and persist `session_id`
   - [ ] Include `session_id` in all messages
-  - [ ] Handle session expiry
 
 - [ ] **Message Handling**
   - [ ] Parse incoming JSON messages
   - [ ] Route by `type` discriminator
   - [ ] Validate required fields
 
-- [ ] **Streaming Responses**
-  - [ ] Concatenate chunks by `message_id`
-  - [ ] Display text progressively
-  - [ ] Finalize on `is_final: true`
-
 - [ ] **Tool Execution UI**
-  - [ ] Show tool execution indicators
-  - [ ] Display tool names and status
-  - [ ] Handle lifecycle (started → completed/failed)
+  - [ ] Listen for `tool_call_start` to show progress
+  - [ ] Listen for `tool_call_end` to show success
+  - [ ] Listen for `tool_call_error` to handle failures
 
 - [ ] **Approval Flow**
-  - [ ] Render approval modal
-  - [ ] Display tool details and risk level
-  - [ ] Send approval response
-  - [ ] Block UI until user decision
-
-- [ ] **Status Indicators**
-  - [ ] Show appropriate loading states
-  - [ ] Map status to UI elements
-  - [ ] Clear indicators on completion
-
-- [ ] **Error Handling**
-  - [ ] Display error messages
-  - [ ] Handle specific error codes
-  - [ ] Log errors for debugging
+  - [ ] Render approval modal on `tool_approval_request`
+  - [ ] Send `tool_approval_response`
 
 ### TypeScript Types
 
@@ -646,192 +519,44 @@ export type HAIMessage =
   | UserMessage
   | AssistantMessage
   | AssistantMessageChunk
-  | ToolCallMessage
+  | ToolCallStart
+  | ToolCallEnd
+  | ToolCallError
   | ToolApprovalRequest
   | ToolApprovalResponse
   | StatusMessage
   | ErrorMessage;
 
-export interface UserMessage {
-  type: "user_message";
-  content: string;
-  session_id: string;
-  metadata?: Record<string, any>;
-}
+// ... [other types unchanged]
 
-export interface AssistantMessage {
-  type: "assistant_message";
-  content: string;
-  session_id?: string;
-  agent_id?: string;
-  metadata?: Record<string, any>;
-}
-
-export interface AssistantMessageChunk {
-  type: "assistant_message_chunk";
-  content: string;
-  session_id: string;
-  agent_id?: string;
-  message_id: string;
-  is_final: boolean;
-}
-
-export interface ToolCallMessage {
-  type: "tool_call";
+export interface ToolCallStart {
+  type: "tool_call_start";
   tool_call_id: string;
   tool_name: string;
   parameters: Record<string, any>;
   session_id: string;
-  status: "started" | "completed" | "failed";
-  result?: string;
   agent_id?: string;
   metadata?: Record<string, any>;
 }
 
-export interface ToolApprovalRequest {
-  type: "tool_approval_request";
+export interface ToolCallEnd {
+  type: "tool_call_end";
+  tool_call_id: string;
   tool_name: string;
-  tool_description: string;
-  parameters: Record<string, any>;
-  reasoning: string;
-  risk_level: "low" | "medium" | "high" | "critical";
+  result: string;
   session_id: string;
-  approval_id: string;
+  agent_id?: string;
+  metadata?: Record<string, any>;
 }
 
-export interface ToolApprovalResponse {
-  type: "tool_approval_response";
-  approval_id: string;
-  approved: boolean;
-  feedback?: string;
-}
-
-export interface StatusMessage {
-  type: "status";
-  status: "thinking" | "routing" | "executing_tools" | "completed";
-  message?: string;
-  session_id?: string;
-}
-
-export interface ErrorMessage {
-  type: "error";
-  error_code: string;
-  message: string;
-  details?: Record<string, any>;
-}
-
-// Type guard helpers
-export function isUserMessage(msg: HAIMessage): msg is UserMessage {
-  return msg.type === "user_message";
-}
-
-export function isAssistantChunk(msg: HAIMessage): msg is AssistantMessageChunk {
-  return msg.type === "assistant_message_chunk";
-}
-
-// ... add more type guards as needed
-```
-
-### Example Client Implementation
-
-```typescript
-// websocket-client.ts
-import { HAIMessage, UserMessage } from './types';
-
-export class HAIClient {
-  private ws: WebSocket | null = null;
-  private sessionId: string;
-  private messageHandlers: Map<string, (msg: any) => void> = new Map();
-  
-  constructor(private url: string) {
-    this.sessionId = this.getOrCreateSessionId();
-  }
-  
-  connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(this.url);
-      
-      this.ws.onopen = () => {
-        console.log('Connected to AGORA');
-        resolve();
-      };
-      
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        reject(error);
-      };
-      
-      this.ws.onmessage = (event) => {
-        try {
-          const message: HAIMessage = JSON.parse(event.data);
-          this.handleMessage(message);
-        } catch (error) {
-          console.error('Failed to parse message:', error);
-        }
-      };
-    });
-  }
-  
-  sendUserMessage(content: string, metadata: Record<string, any> = {}): void {
-    const message: UserMessage = {
-      type: "user_message",
-      content,
-      session_id: this.sessionId,
-      metadata,
-    };
-    this.send(message);
-  }
-  
-  onAssistantChunk(handler: (chunk: AssistantMessageChunk) => void): void {
-    this.messageHandlers.set('assistant_message_chunk', handler);
-  }
-  
-  onToolCall(handler: (toolCall: ToolCallMessage) => void): void {
-    this.messageHandlers.set('tool_call', handler);
-  }
-  
-  onApprovalRequest(handler: (request: ToolApprovalRequest) => void): void {
-    this.messageHandlers.set('tool_approval_request', handler);
-  }
-  
-  onStatus(handler: (status: StatusMessage) => void): void {
-    this.messageHandlers.set('status', handler);
-  }
-  
-  onError(handler: (error: ErrorMessage) => void): void {
-    this.messageHandlers.set('error', handler);
-  }
-  
-  private send(message: any): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket not connected');
-      return;
-    }
-    this.ws.send(JSON.stringify(message));
-  }
-  
-  private handleMessage(message: HAIMessage): void {
-    const handler = this.messageHandlers.get(message.type);
-    if (handler) {
-      handler(message);
-    }
-  }
-  
-  private getOrCreateSessionId(): string {
-    let sessionId = localStorage.getItem('agora_session_id');
-    if (!sessionId) {
-      sessionId = crypto.randomUUID();
-      localStorage.setItem('agora_session_id', sessionId);
-    }
-    return sessionId;
-  }
-  
-  disconnect(): void {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-  }
+export interface ToolCallError {
+  type: "tool_call_error";
+  tool_call_id: string;
+  tool_name: string;
+  error: string;
+  session_id: string;
+  agent_id?: string;
+  metadata?: Record<string, any>;
 }
 ```
 
@@ -844,7 +569,6 @@ export class HAIClient {
 You can test the protocol using tools like:
 - **websocat** (CLI): `websocat ws://localhost:8000/ws`
 - **Postman** (GUI): Supports WebSocket testing
-- **wscat** (CLI): `wscat -c ws://localhost:8000/ws`
 
 **Example Test Session:**
 ```bash
@@ -858,48 +582,7 @@ $ websocat ws://localhost:8000/ws
 {"type":"assistant_message_chunk","content":"there!","message_id":"msg_1","session_id":"test-123","is_final":true}
 ```
 
-### Automated Testing
-
-See `examples/` directory for ready-to-use test scenarios:
-- `basic-conversation.json` - Simple Q&A flow
-- `tool-approval-flow.json` - HITL approval scenario
-- `error-handling.json` - Error scenarios
-
-### Contract Testing
-
-Use the AsyncAPI specification with tools like:
-- **AsyncAPI Studio**: https://studio.asyncapi.com
-- **Microcks**: For contract testing and mocking
-- **Spectral**: For linting the AsyncAPI spec
-
----
-
-## Versioning & Changes
-
-### Version 1.0.0 (Current)
-- Initial protocol specification
-- Core message types: user, assistant, tool, status, error
-- Streaming support via chunks
-- Human-in-the-loop approval workflow
-
-### Future Considerations
-- Binary message support (images, files)
-- Multi-modal interactions (voice, video)
-- Presence indicators (typing, recording)
-- Message editing and deletion
-- Reaction support
-
----
-
-## Support & Contact
-
-For questions, issues, or clarifications:
-- **Email**: dev@nvwa.nl
-- **Documentation**: See `asyncapi.yaml` for machine-readable spec
-- **Examples**: See `examples/` directory
-
 ---
 
 **Document Maintained By:** Gradient - NVWA  
 **License:** Proprietary - NVWA
-

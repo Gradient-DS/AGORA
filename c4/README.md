@@ -1,16 +1,16 @@
 # AGORA C4 Architectuur Diagrammen
 
-Deze directory bevat de C4 model architectuur documentatie voor AGORA v1.0, het multi-agent systeem voor NVWA inspecteurs.
+Deze directory bevat de C4-model architectuurdocumentatie voor AGORA v1.0, het multi-agent systeem voor NVWA-inspecteurs.
 
 ## 📋 Wat is C4?
 
-Het [C4 model](https://c4model.com/) beschrijft software architectuur op vier niveaus:
-1. **System Context** - Hoe past AGORA in het grotere systeem?
-2. **Containers** - Welke applicaties en data stores vormen AGORA?
-3. **Components** - Hoe zijn individuele containers intern gestructureerd?
+Het [C4-model](https://c4model.com/) beschrijft softwarearchitectuur op vier niveaus:
+1. **Systeemcontext** - Hoe past AGORA in het grotere systeem?
+2. **Containers** - Welke applicaties en dataopslag vormen AGORA?
+3. **Componenten** - Hoe zijn individuele containers intern gestructureerd?
 4. **Code** - Gedetailleerde implementatie (optioneel)
 
-## 🚀 Quick Start
+## 🚀 Snel aan de slag
 
 ### Vereisten
 - Docker geïnstalleerd
@@ -43,12 +43,12 @@ npm run down
 
 ## 📐 Beschikbare Diagrammen
 
-### 1. System Context
+### 1. Systeemcontext
 Toont AGORA in relatie tot:
 - **Inspecteurs** (gebruikers)
 - **NVWA Systemen** (legacy applicaties)
 - **Regelgeving & Kennis** (externe kennisbronnen)
-- **Externe APIs** (weer, OV, locatie)
+- **Externe API's** (weer, OV, locatie)
 
 ### 2. Container Diagram
 Toont alle AGORA componenten:
@@ -61,16 +61,16 @@ Toont alle AGORA componenten:
 - **User Profile** - PostgreSQL database
 - **Visibility** - Grafana + Prometheus + OpenTelemetry
 
-### 3. Orchestrator Components
-Breakdown van de Orchestrator:
+### 3. Orchestrator Componenten
+Uitsplitsing van de Orchestrator:
 - **Reasoning LLM** - Closed-source LLM
 - **Task Router** - LangChain router
 - **MCP Client** - Model Context Protocol client
 - **Moderation Adapter** - Koppeling naar moderator
 - **Audit Logger** - OpenTelemetry logging
 
-### 4. Stack Manager Components
-Breakdown van de Stack Manager:
+### 4. Stack Manager Componenten
+Uitsplitsing van de Stack Manager:
 - **Context Collector** - Verzamelt gebruiker, situatie, gebeurtenissen
 - **Policy Engine** - Bepaalt beschikbare agents
 - **Catalog Adapter** - Beheert agent stack
@@ -83,18 +83,18 @@ Toont de hybride infrastructuur setup:
 
 ## 🔄 Workflow in Cursor
 
-### Live Editing
+### Live Bewerken
 1. Open `workspace.dsl` in Cursor
 2. Maak wijzigingen
 3. Sla op (Cmd+S / Ctrl+S)
 4. Refresh je browser - Structurizr Lite herlaadt automatisch
 
-### AI-Assisted Editing
+### AI-Ondersteund Bewerken
 Selecteer een blok in `workspace.dsl` en vraag Cursor:
 - "Voeg een deployment view toe voor development environment"
 - "Splits de HAI container uit in componenten"
 - "Voeg een nieuwe agent toe aan de agent stack"
-- "Maak een dynamic diagram voor een inspectie workflow"
+- "Maak een dynamisch diagram voor een inspectie workflow"
 
 ### Diagrammen Exporteren
 In Structurizr UI:
@@ -107,7 +107,7 @@ In Structurizr UI:
 ### Kernprincipes
 - **Modulariteit** - Elk component kan los ontwikkeld en opgeschaald worden
 - **Standaardisering** - MCP protocol voor alle agent koppelingen
-- **Observeerbaarheid** - OpenTelemetry voor complete traceability
+- **Observeerbaarheid** - OpenTelemetry voor complete traceerbaarheid
 - **Veiligheid** - Hybride cloud met gevoelige data in Nederland
 
 ### Belangrijke Koppelingen
@@ -166,7 +166,7 @@ De architectuur is ontworpen met deze kernvereisten:
 - [LangChain](https://www.langchain.com/)
 - [OpenTelemetry](https://opentelemetry.io/)
 
-## 🔧 Advanced Usage
+## 🔧 Geavanceerd Gebruik
 
 ### Meerdere Workspaces
 Voor complexe scenario's kun je meerdere `.dsl` bestanden maken:
@@ -177,10 +177,10 @@ c4/
   workspace-security.dsl # Security view
 ```
 
-### Custom Styling
+### Aangepaste Styling
 Pas kleuren en vormen aan in de `styles` sectie van `workspace.dsl`.
 
-### Dynamic Diagrams
+### Dynamische Diagrammen
 Voeg sequence-achtige diagrammen toe voor workflows:
 ```dsl
 dynamic agora "InspectionFlow" {
@@ -202,7 +202,6 @@ Bij het bijwerken van de architectuur:
 ## 💡 Tips
 
 - **Auto-layout** werkt goed voor nieuwe diagrammen, pas later handmatig aan indien nodig
-- **Deployment diagrammen** zijn krachtig voor infrastructuur discussies
+- **Deployment diagrammen** zijn krachtig voor infrastructuurdiscussies
 - **Component breakdown** alleen waar het waarde toevoegt (niet alles)
-- **Consistency** - gebruik dezelfde terminologie als in technisch ontwerp
-
+- **Consistentie** - gebruik dezelfde terminologie als in technisch ontwerp
