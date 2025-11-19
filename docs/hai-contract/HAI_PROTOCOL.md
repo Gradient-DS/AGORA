@@ -77,6 +77,17 @@ localStorage.setItem('agora_session_id', sessionId);
 const sessionId = localStorage.getItem('agora_session_id') || crypto.randomUUID();
 ```
 
+### Session History & Persistence
+
+The WebSocket protocol is designed for **real-time communication only**. To load past conversation history (e.g., on page reload), clients should use the accompanying REST API.
+
+**Flow:**
+1. **Load History via HTTP:** `GET /sessions/{session_id}/history`
+   - Returns full conversation transcript
+   - Client renders these messages immediately (without animation)
+2. **Connect via WebSocket:** `ws://.../ws`
+   - Establishes real-time channel for *new* messages
+   - Uses the same `session_id`
 ---
 
 ## Message Format

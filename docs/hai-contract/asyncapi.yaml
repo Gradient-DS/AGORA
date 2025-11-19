@@ -9,6 +9,8 @@ info:
     
     **Scope:** Text and control messages only. Audio/Video streaming is out of scope.
     
+    **History:** Conversation history should be loaded via the REST API (`GET /sessions/{id}/history`) before connecting. This protocol handles real-time events only.
+    
     ## Key Features
     - Real-time bidirectional communication
     - Streaming assistant responses

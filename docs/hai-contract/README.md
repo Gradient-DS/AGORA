@@ -21,6 +21,11 @@ Deze directory bevat de volledige API-contractdocumentatie voor het HAI (Human A
     - Client SDK generatie
     - Mock server creatie
 
+- **[openapi.yaml](./openapi.yaml)** - OpenAPI 3.0 specificatie
+  - Formeel contract voor REST API (History & Users)
+  - Complementeert het WebSocket protocol
+  - Definieert HTTP endpoints voor sessiegeschiedenis en gebruikersbeheer
+
 ### Schema's
 
 - **[schemas/messages.json](./schemas/messages.json)** - JSON Schema definities
