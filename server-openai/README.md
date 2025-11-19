@@ -1,63 +1,63 @@
 # AGORA Agent SDK Server
 
-OpenAI Agents SDK implementation for AGORA's multi-agent compliance platform.
+OpenAI Agents SDK implementatie voor het AGORA multi-agent compliance platform.
 
-## Philosophy
+## Filosofie
 
-**Maximize leverage of OpenAI's platform features. Only build what's unique to AGORA's domain.**
+**Maximaliseer het gebruik van OpenAI's platformfuncties. Bouw alleen wat uniek is voor het domein van AGORA.**
 
-This implementation uses:
-- ✅ **OpenAI Agents SDK** - Multi-agent orchestration with handoffs
-- ✅ **Unified Voice & Text** - Same agents for both modalities via VoicePipeline
-- ✅ **Autonomous Handoffs** - Agents transfer control to specialists (text & voice)
-- ✅ **Session Management** - SQLite-based conversation persistence
-- ✅ **Streaming Responses** - Real-time message chunks
-- ✅ **Native MCP Integration** - Single SDK-native tool integration
-- ✅ **Per-Agent TTS Settings** - Customized voice personalities
+Deze implementatie maakt gebruik van:
+- ✅ **OpenAI Agents SDK** - Multi-agent orchestratie met handoffs
+- ✅ **Verenigde Spraak & Tekst** - Zelfde agenten voor beide modaliteiten via VoicePipeline
+- ✅ **Autonome Handoffs** - Agenten dragen controle over aan specialisten (tekst & spraak)
+- ✅ **Sessiebeheer** - Op SQLite gebaseerde gespreksopslag
+- ✅ **Streaming Responses** - Real-time berichtfragmenten
+- ✅ **Native MCP Integratie** - Enkele SDK-native tool integratie
+- ✅ **Per-Agent TTS Instellingen** - Aangepaste stem persoonlijkheden
 
-## What OpenAI Handles
+## Wat OpenAI afhandelt
 
-- Agent orchestration and handoffs (text & voice)
-- Conversation state (SQLiteSession)
-- Tool execution loops
-- Context management and token counting
-- Parallel tool execution
-- Streaming responses (text)
-- Voice I/O (STT & TTS via VoicePipeline)
+- Agent orchestratie en handoffs (tekst & spraak)
+- Gespreksstatus (SQLiteSession)
+- Tool uitvoeringsloops
+- Contextbeheer en token telling
+- Parallelle tool uitvoering
+- Streaming responses (tekst)
+- Spraak I/O (STT & TTS via VoicePipeline)
 
-## What We Build
+## Wat wij bouwen
 
-- HAI protocol implementation (WebSocket)
-- Native MCP tool integration via Agents SDK
-- Domain-specific agent definitions and handoff strategy
-- Unified voice handler with VoicePipeline
-- Per-agent TTS personality settings
-- Audit logging and observability
-- Moderation and validation
+- HAI protocol implementatie (WebSocket)
+- Native MCP tool integratie via Agents SDK
+- Domeinspecifieke agent definities en handoff strategie
+- Verenigde spraakafhandelaar met VoicePipeline
+- Per-agent TTS persoonlijkheidsinstellingen
+- Audit logging en observability
+- Moderatie en validatie
 
-## Architecture
+## Architectuur
 
 ```
 server-openai/
 ├── src/agora_openai/
-│   ├── config.py                  # Pydantic settings
-│   ├── logging_config.py          # Structured logging
-│   ├── core/                      # Domain logic
-│   │   ├── agent_definitions.py  # Agent configs with handoffs
+│   ├── config.py                  # Pydantic instellingen
+│   ├── logging_config.py          # Gestructureerde logging
+│   ├── core/                      # Domein logica
+│   │   ├── agent_definitions.py  # Agent configs met handoffs
 │   │   └── agent_runner.py       # Agent SDK wrapper
-│   ├── adapters/                  # External integrations
+│   ├── adapters/                  # Externe integraties
 │   │   ├── mcp_client.py         # MCP protocol
 │   │   ├── mcp_tools.py          # MCP → Agent SDK tools
 │   │   ├── realtime_client.py    # OpenAI Realtime API
 │   │   └── audit_logger.py       # OpenTelemetry
-│   ├── pipelines/                 # Orchestration
-│   │   ├── orchestrator.py       # Main coordinator
-│   │   └── moderator.py          # Validation
+│   ├── pipelines/                 # Orchestratie
+│   │   ├── orchestrator.py       # Hoofdcoördinator
+│   │   └── moderator.py          # Validatie
 │   └── api/                       # Entry points
 │       ├── server.py              # FastAPI + WebSocket
-│       ├── hai_protocol.py        # HAI messages
-│       └── voice_handler.py       # Voice session handler
-└── common/                        # Shared types
+│       ├── hai_protocol.py        # HAI berichten
+│       └── voice_handler.py       # Spraak sessiebeheerder
+└── common/                        # Gedeelde types
     ├── hai_types.py
     ├── protocols.py
     └── schemas.py
@@ -66,8 +66,8 @@ server-openai/
 ## Agent Flow
 
 ```
-User Message → general-agent (triage)
-                    ↓ handoff when needed
+Gebruikersbericht → general-agent (triage)
+                    ↓ handoff indien nodig
               ┌─────┴─────┐
               ↓           ↓
       history-agent   regulation-agent
@@ -77,56 +77,56 @@ User Message → general-agent (triage)
                  general-agent
 ```
 
-### Agent Roles
+### Agent Rollen
 
-1. **general-agent** (Entry Point)
-   - Handles greetings and general questions
-   - Triages requests to specialist agents
-   - Handoffs to: history, regulation, reporting
+1. **general-agent** (Toegangspunt)
+   - Behandelt begroetingen en algemene vragen
+   - Triages verzoeken naar gespecialiseerde agenten
+   - Handoffs naar: history, regulation, reporting
 
 2. **history-agent**
-   - Company verification (KVK lookup)
-   - Inspection history
-   - Violation patterns
-   - Handoffs to: regulation, reporting, general
+   - Bedrijfsverificatie (KVK opzoeken)
+   - Inspectiegeschiedenis
+   - Overtredingspatronen
+   - Handoffs naar: regulation, reporting, general
 
 3. **regulation-agent**
-   - Regulatory compliance analysis
-   - Rule interpretation
-   - Violation assessment
-   - Handoffs to: reporting, general
+   - Analyse van naleving regelgeving
+   - Interpretatie van regels
+   - Beoordeling van overtredingen
+   - Handoffs naar: reporting, general
 
 4. **reporting-agent**
-   - HAP report generation
-   - Data extraction and verification
-   - PDF/JSON report creation
-   - Handoffs to: general
+   - Generatie van HAP-rapporten
+   - Data-extractie en verificatie
+   - PDF/JSON rapport creatie
+   - Handoffs naar: general
 
-## Setup
+## Installatie
 
-1. Install dependencies:
+1. Installeer afhankelijkheden:
 ```bash
 cd server-openai
 pip install -e .
 ```
 
-2. Configure environment:
+2. Configureer omgeving:
 ```bash
-export APP_OPENAI_API_KEY="your_key"
+export APP_OPENAI_API_KEY="jouw_sleutel"
 export APP_MCP_SERVERS="history=http://localhost:8001,regulation=http://localhost:8002,reporting=http://localhost:8003"
 export APP_GUARDRAILS_ENABLED=true
 ```
 
-3. Run server:
+3. Start server:
 ```bash
 python -m agora_openai.api.server
 ```
 
-## Usage
+## Gebruik
 
-### Text Chat via WebSocket
+### Tekstchat via WebSocket
 
-Connect to `/ws` endpoint using HAI protocol:
+Verbind met `/ws` endpoint via HAI protocol:
 
 ```python
 import asyncio
@@ -150,9 +150,9 @@ async def chat():
 asyncio.run(chat())
 ```
 
-### Voice Mode
+### Spraakmodus
 
-Connect to `/ws/voice` for voice interaction:
+Verbind met `/ws/voice` voor spraakinteractie:
 
 ```python
 message = {
@@ -163,29 +163,29 @@ message = {
 }
 ```
 
-## Key Features
+## Belangrijkste Kenmerken
 
-### 1. Autonomous Agent Handoffs
-Agents automatically transfer control to specialists based on request analysis.
+### 1. Autonome Agent Handoffs
+Agenten dragen automatisch de controle over aan specialisten op basis van verzoekanalyse.
 
-### 2. Session Persistence
-SQLite-based conversation history with automatic context management.
+### 2. Sessiepersistentie
+Op SQLite gebaseerde gespreksgeschiedenis met automatisch contextbeheer.
 
 ### 3. Streaming Responses
-Real-time message chunks via HAI protocol for responsive UI.
+Real-time berichtfragmenten via HAI protocol voor responsieve UI.
 
-### 4. MCP Tool Integration
-Dynamic tool discovery and execution from MCP servers via HTTP.
+### 4. MCP Tool Integratie
+Dynamische tool-ontdekking en uitvoering van MCP servers via HTTP.
 
-### 5. Voice Mode Support
-Realtime API for voice with same agent definitions as text mode.
+### 5. Ondersteuning voor Spraakmodus
+Realtime API voor spraak met dezelfde agent definities als tekstmodus.
 
-### 6. Tool Execution Notifications
-Real-time tool status updates (started/completed/failed) to UI.
+### 6. Meldingen van Tool-uitvoering
+Real-time status updates (gestart/voltooid/mislukt) naar UI.
 
-## Development
+## Ontwikkeling
 
-Run tests:
+Tests uitvoeren:
 ```bash
 pytest
 ```
@@ -200,39 +200,31 @@ Linting:
 ruff check src/
 ```
 
-## Session Management
+## Sessiebeheer
 
-- **Location**: `sessions.db` in working directory
-- **Persistence**: Automatic across server restarts
-- **Scope**: One session per `session_id`
-- **History**: Full conversation context maintained
+- **Locatie**: `sessions.db` in werkmap
+- **Persistentie**: Automatisch over server herstarts heen
+- **Bereik**: Eén sessie per `session_id`
+- **Geschiedenis**: Volledige gesprekscontext behouden
 
-## Performance
+## Prestaties
 
-- Handoff detection: ~500ms
-- Tool execution: ~1-2s (parallel)
-- Response generation: ~500ms
-- **Total: ~2-3 seconds per query**
-
-With parallel tool calling: 3 tools @ 2s each = **2s total** (not 6s!)
+- Handoff detectie: ~500ms
+- Tool uitvoering: ~1-2s (parallel)
+- Responsgeneratie: ~500ms
+- **Totaal: ~2-3 seconden per vraag**
 
 ## Compliance
 
-- **EU AI Act**: Human oversight, transparency, audit logging
-- **AVG/GDPR**: Privacy by design, data minimization
-- **BIO**: Government security standards
-- **OpenTelemetry**: Full observability and tracing
+- **EU AI Act**: Menselijk toezicht, transparantie, audit logging
+- **AVG/GDPR**: Privacy by design, dataminimalisatie
+- **BIO**: Overheidsbeveiligingsstandaarden
+- **OpenTelemetry**: Volledige observability en tracing
 
-## Migration from Assistants API
+## Migratie van Assistants API
 
-See [MIGRATION_TO_AGENTS_SDK.md](MIGRATION_TO_AGENTS_SDK.md) for detailed migration guide.
+Zie [MIGRATION_TO_AGENTS_SDK.md](MIGRATION_TO_AGENTS_SDK.md) voor gedetailleerde migratiegids.
 
-**Key improvements:**
-- Autonomous handoffs (vs centralized routing)
-- Simpler session management (SQLiteSession vs Thread IDs)
-- Code-based agent configs (version controllable)
-- Unified text/voice agent definitions
+## Licentie
 
-## License
-
-Proprietary - NVWA AGORA Platform
+Zie de hoofd-README voor licentie-informatie.

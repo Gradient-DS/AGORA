@@ -1,67 +1,67 @@
-# AGORA HAI Protocol - Contract Documentation
+# AGORA HAI Protocol - Contract Documentatie
 
-This directory contains the complete API contract documentation for the HAI (Human Agent Interface) Protocol used by AGORA.
+Deze directory bevat de volledige API-contractdocumentatie voor het HAI (Human Agent Interface) Protocol dat door AGORA wordt gebruikt.
 
-## 📋 Contents
+## 📋 Inhoud
 
-### Core Documentation
+### Kern Documentatie
 
-- **[HAI_PROTOCOL.md](./HAI_PROTOCOL.md)** - Comprehensive human-readable protocol specification
-  - Message types and formats
-  - Conversation flows
-  - Error handling patterns
-  - Implementation guide with code examples
-  - TypeScript type definitions
+- **[HAI_PROTOCOL.md](./HAI_PROTOCOL.md)** - Uitgebreide leesbare protocolspecificatie
+  - Berichttypes en formaten
+  - Gespreksstromen (flows)
+  - Foutafhandelingspatronen
+  - Implementatiegids met codevoorbeelden
+  - TypeScript type definities
 
-- **[asyncapi.yaml](./asyncapi.yaml)** - Machine-readable AsyncAPI 3.0 specification
-  - Formal contract for WebSocket API
-  - Can be used with AsyncAPI tools for:
-    - Documentation generation
+- **[asyncapi.yaml](./asyncapi.yaml)** - Machine-leesbare AsyncAPI 3.0 specificatie
+  - Formeel contract voor WebSocket API
+  - Kan worden gebruikt met AsyncAPI tools voor:
+    - Documentatiegeneratie
     - Contract testing
-    - Client SDK generation
-    - Mock server creation
+    - Client SDK generatie
+    - Mock server creatie
 
-### Schemas
+### Schema's
 
-- **[schemas/messages.json](./schemas/messages.json)** - JSON Schema definitions
-  - All message type schemas
-  - Can be used for validation
-  - Compatible with code generation tools
+- **[schemas/messages.json](./schemas/messages.json)** - JSON Schema definities
+  - Alle berichttypeschema's
+  - Kan worden gebruikt voor validatie
+  - Compatibel met code generatie tools
 
-### Examples
+### Voorbeelden
 
 - **[examples/basic-conversation.json](./examples/basic-conversation.json)**
-  - Simple Q&A flow
-  - Streaming response handling
-  - Follow-up questions
+  - Eenvoudige V&A flow
+  - Afhandeling van streaming responses
+  - Vervolgvragen
 
 - **[examples/tool-approval-flow.json](./examples/tool-approval-flow.json)**
-  - Human-in-the-loop approval workflow
-  - High-risk tool execution
-  - Approval and rejection paths
+  - Human-in-the-loop goedkeuringsworkflow
+  - Uitvoering van risicovolle tools
+  - Goedkeurings- en afwijzingspaden
 
 - **[examples/error-handling.json](./examples/error-handling.json)**
-  - All error scenarios
-  - Recovery strategies
-  - Reconnection patterns
+  - Alle foutscenario's
+  - Herstelstrategieën
+  - Verbindingspatronen
 
-## 🚀 Quick Start
+## 🚀 Snel aan de slag
 
-### For Frontend Developers
+### Voor Frontend Ontwikkelaars
 
-1. Read [HAI_PROTOCOL.md](./HAI_PROTOCOL.md) for complete protocol documentation
-2. Copy TypeScript types from the Implementation Guide section
-3. Reference [examples/](./examples/) for message flow patterns
-4. Use [schemas/messages.json](./schemas/messages.json) for validation
+1. Lees [HAI_PROTOCOL.md](./HAI_PROTOCOL.md) voor volledige protocoldocumentatie
+2. Kopieer TypeScript types uit de Implementatiegids sectie
+3. Raadpleeg [examples/](./examples/) voor berichtstroompatronen
+4. Gebruik [schemas/messages.json](./schemas/messages.json) voor validatie
 
-### For API Contract Testing
+### Voor API Contract Testing
 
-1. Load [asyncapi.yaml](./asyncapi.yaml) into [AsyncAPI Studio](https://studio.asyncapi.com)
-2. Generate documentation or client SDKs
-3. Use with Microcks for contract testing
-4. Integrate with CI/CD for contract validation
+1. Laad [asyncapi.yaml](./asyncapi.yaml) in [AsyncAPI Studio](https://studio.asyncapi.com)
+2. Genereer documentatie of client SDK's
+3. Gebruik met Microcks voor contract testing
+4. Integreer met CI/CD voor contractvalidatie
 
-## 🔌 Connection Details
+## 🔌 Verbindingsdetails
 
 ### Endpoints
 
@@ -69,109 +69,108 @@ This directory contains the complete API contract documentation for the HAI (Hum
 Development: ws://localhost:8000/ws
 ```
 
-### Authentication
+### Authenticatie
 
-Currently no authentication required. Future versions may include token-based auth.
+Momenteel geen authenticatie vereist. Toekomstige versies kunnen token-gebaseerde authenticatie bevatten.
 
-### Session Management
+### Sessiebeheer
 
-- Client generates UUID as `session_id`
-- Persist in localStorage for conversation continuity
-- Include in all messages
+- Client genereert UUID als `session_id`
+- Opslaan in localStorage voor continuïteit van gesprekken
+- Insluiten in alle berichten
 
-## 📝 Message Types Overview
+## 📝 Overzicht Berichttypes
 
-| Type | Direction | Purpose |
+| Type | Richting | Doel |
 |------|-----------|---------|
-| `user_message` | Client → Server | User input |
-| `assistant_message` | Server → Client | Complete response (non-streaming) |
-| `assistant_message_chunk` | Server → Client | Streaming response chunk ⭐ |
-| `tool_call` | Server → Client | Tool execution notification |
-| `tool_approval_request` | Server → Client | Request permission for tool |
-| `tool_approval_response` | Client → Server | User's approval decision |
-| `status` | Server → Client | Processing status |
-| `error` | Server → Client | Error notification |
+| `user_message` | Client → Server | Gebruikersinvoer |
+| `assistant_message` | Server → Client | Volledig antwoord (niet-streaming) |
+| `assistant_message_chunk` | Server → Client | Streaming antwoordfragment ⭐ |
+| `tool_call` | Server → Client | Melding tool-uitvoering |
+| `tool_approval_request` | Server → Client | Verzoek om toestemming voor tool |
+| `tool_approval_response` | Client → Server | Goedkeuringsbeslissing van gebruiker |
+| `status` | Server → Client | Verwerkingsstatus |
+| `error` | Server → Client | Foutmelding |
 
-## 🛠 Tools & Resources
+## 🛠 Tools & Bronnen
 
-### AsyncAPI Ecosystem
+### AsyncAPI Ecosysteem
 
-- **[AsyncAPI Studio](https://studio.asyncapi.com)** - Online editor and visualizer
-- **[AsyncAPI Generator](https://www.asyncapi.com/tools/generator)** - Generate docs, code, tests
-- **[Microcks](https://microcks.io/)** - Mock server and contract testing
-- **[Spectral](https://stoplight.io/open-source/spectral)** - Linting and validation
+- **[AsyncAPI Studio](https://studio.asyncapi.com)** - Online editor en visualizer
+- **[AsyncAPI Generator](https://www.asyncapi.com/tools/generator)** - Genereer docs, code, tests
+- **[Microcks](https://microcks.io/)** - Mock server en contract testing
+- **[Spectral](https://stoplight.io/open-source/spectral)** - Linting en validatie
 
-### Testing Tools
+### Test Tools
 
 - **[websocat](https://github.com/vi/websocat)** - CLI WebSocket client
   ```bash
   websocat ws://localhost:8000/ws
   ```
-- **[wscat](https://github.com/websockets/wscat)** - Alternative CLI client
+- **[wscat](https://github.com/websockets/wscat)** - Alternatieve CLI client
   ```bash
   wscat -c ws://localhost:8000/ws
   ```
-- **Postman** - GUI with WebSocket support
+- **Postman** - GUI met WebSocket ondersteuning
 
-### Code Generation
+### Code Generatie
 
-Generate TypeScript types from JSON Schema:
+Genereer TypeScript types van JSON Schema:
 ```bash
 npm install -g json-schema-to-typescript
 json2ts schemas/messages.json > types.ts
 ```
 
-## 📖 Documentation Versions
+## 📖 Documentatieversies
 
-| Version | Date | Changes |
+| Versie | Datum | Wijzigingen |
 |---------|------|---------|
-| 1.0.0 | 2025-11-17 | Initial protocol specification |
+| 1.0.0 | 2025-11-17 | Initiële protocolspecificatie |
 
-## 🤝 Integration Checklist
+## 🤝 Integratie Checklist
 
-Use this checklist when integrating the HAI protocol:
+Gebruik deze checklist bij het integreren van het HAI protocol:
 
-### Required Implementation
+### Vereiste Implementatie
 
-- [ ] WebSocket connection to `/ws`
-- [ ] Session ID generation and persistence
-- [ ] User message sending
-- [ ] Streaming chunk handling (concat by `message_id`)
-- [ ] Status indicator mapping
-- [ ] Error message display
-- [ ] Connection loss recovery
+- [ ] WebSocket verbinding naar `/ws`
+- [ ] Generatie en opslag van Sessie ID
+- [ ] Verzenden van gebruikersberichten
+- [ ] Afhandelen van streaming chunks (samenvoegen op `message_id`)
+- [ ] Mapping van statusindicatoren
+- [ ] Weergave van foutmeldingen
+- [ ] Herstel bij verbindingsverlies
 
-### Recommended Implementation
+### Aanbevolen Implementatie
 
-- [ ] Tool execution notifications
-- [ ] Human-in-the-loop approval UI
-- [ ] Reconnection with exponential backoff
-- [ ] Message validation using JSON Schema
-- [ ] Proper error code handling
-- [ ] Loading state management
+- [ ] Meldingen van tool-uitvoering
+- [ ] Human-in-the-loop goedkeurings UI
+- [ ] Opnieuw verbinden met exponentiële backoff
+- [ ] Berichtvalidatie met JSON Schema
+- [ ] Correcte afhandeling van foutcodes
+- [ ] Beheer van laadstatus
 
-### Optional Enhancements
+### Optionele Uitbreidingen
 
-- [ ] Message history persistence
-- [ ] Typing indicators
-- [ ] Read receipts
-- [ ] Message reactions
-- [ ] Rich media support
+- [ ] Opslag van berichthistorie
+- [ ] Typ-indicatoren
+- [ ] Leesbevestigingen
+- [ ] Reacties op berichten
+- [ ] Ondersteuning voor rich media
 
-## 📞 Support
+## 📞 Ondersteuning
 
-For questions or issues with the protocol:
+Voor vragen of problemen met het protocol:
 
-- **Technical Questions**: dev@nvwa.nl
-- **Bug Reports**: Submit via project issue tracker
-- **Protocol Changes**: Propose via RFC process
+- **Technische Vragen**: dev@nvwa.nl
+- **Bug Reports**: Dien in via de project issue tracker
+- **Protocol Wijzigingen**: Stel voor via RFC proces
 
-## 📄 License
+## 📄 Licentie
 
-Proprietary - NVWA
+Zie hoofd-README.
 
 ---
 
-**Maintained by:** Gradient - NVWA  
-**Last Updated:** November 17, 2025
-
+**Onderhouden door:** Gradient - NVWA  
+**Laatst bijgewerkt:** 17 november 2025

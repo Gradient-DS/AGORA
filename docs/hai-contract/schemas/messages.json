@@ -92,13 +92,13 @@
       },
       "additionalProperties": false
     },
-    "ToolCallMessage": {
+    "ToolCallStart": {
       "type": "object",
-      "required": ["type", "tool_call_id", "tool_name", "parameters", "session_id", "status"],
+      "required": ["type", "tool_call_id", "tool_name", "parameters", "session_id"],
       "properties": {
         "type": {
           "type": "string",
-          "const": "tool_call"
+          "const": "tool_call_start"
         },
         "tool_call_id": {
           "type": "string",
@@ -116,14 +116,71 @@
         "session_id": {
           "type": "string"
         },
-        "status": {
+        "agent_id": {
+          "type": ["string", "null"]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToolCallEnd": {
+      "type": "object",
+      "required": ["type", "tool_call_id", "tool_name", "result", "session_id"],
+      "properties": {
+        "type": {
           "type": "string",
-          "enum": ["started", "completed", "failed"],
-          "description": "Execution status"
+          "const": "tool_call_end"
+        },
+        "tool_call_id": {
+          "type": "string",
+          "description": "Unique identifier for this tool call (matches start)"
+        },
+        "tool_name": {
+          "type": "string"
         },
         "result": {
-          "type": ["string", "null"],
-          "description": "Result summary (for completed/failed)"
+          "type": "string",
+          "description": "Result summary of the tool execution"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": ["string", "null"]
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "ToolCallError": {
+      "type": "object",
+      "required": ["type", "tool_call_id", "tool_name", "error", "session_id"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tool_call_error"
+        },
+        "tool_call_id": {
+          "type": "string",
+          "description": "Unique identifier for this tool call (matches start)"
+        },
+        "tool_name": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "session_id": {
+          "type": "string"
         },
         "agent_id": {
           "type": ["string", "null"]
@@ -186,7 +243,7 @@
         },
         "approval_id": {
           "type": "string",
-          "description": "Must match the request"
+          "description": "Must match the approval_id from the request"
         },
         "approved": {
           "type": "boolean",
@@ -259,7 +316,9 @@
         {"$ref": "#/definitions/UserMessage"},
         {"$ref": "#/definitions/AssistantMessage"},
         {"$ref": "#/definitions/AssistantMessageChunk"},
-        {"$ref": "#/definitions/ToolCallMessage"},
+        {"$ref": "#/definitions/ToolCallStart"},
+        {"$ref": "#/definitions/ToolCallEnd"},
+        {"$ref": "#/definitions/ToolCallError"},
         {"$ref": "#/definitions/ToolApprovalRequest"},
         {"$ref": "#/definitions/ToolApprovalResponse"},
         {"$ref": "#/definitions/StatusMessage"},
@@ -272,4 +331,3 @@
   },
   "$ref": "#/definitions/HAIMessage"
 }
-

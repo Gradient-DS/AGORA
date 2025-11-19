@@ -1,141 +1,76 @@
-# HAP Inspection Report Automation Server
+# HAP Inspectierapport Automatisering Server
 
-Automated HAP (Hygiëne en ARBO Protocol) inspection report generation for NVWA inspectors using conversation analysis and structured data extraction.
+Geautomatiseerde generatie van HAP (Hygiëne en ARBO Protocol) inspectierapporten voor NVWA-inspecteurs met behulp van gespreksanalyse en gestructureerde data-extractie.
 
-## Overview
+## Overzicht
 
-This MCP server analyzes inspection conversations, extracts structured HAP form data, verifies missing information with inspectors, and generates comprehensive reports in both JSON and PDF formats.
+Deze MCP server analyseert inspectiegesprekken, haalt gestructureerde HAP-formuliergegevens op, verifieert ontbrekende informatie met inspecteurs, en genereert uitgebreide rapporten in zowel JSON- als PDF-formaat.
 
-## Features
+## Functionaliteiten
 
-- **Conversation Analysis**: Uses GPT-4 to extract inspection data from natural language conversations
-- **Structured Data Extraction**: Maps conversational findings to official HAP form structure
-- **Smart Verification**: Identifies missing/uncertain fields and generates clarifying questions
-- **Dual-Format Reports**: Generates both JSON (for systems) and PDF (for humans)
-- **File-Based Storage**: Temporary session management with organized file structure
-- **Confidence Scoring**: Tracks confidence levels for all extracted fields
+- **Gespreksanalyse**: Gebruikt GPT-4 om inspectiegegevens te extraheren uit natuurlijke taalgesprekken
+- **Gestructureerde Data-extractie**: Mapt bevindingen uit gesprekken naar de officiële HAP-formulierstructuur
+- **Slimme Verificatie**: Identificeert ontbrekende/onzekere velden en genereert verduidelijkende vragen
+- **Dubbel Formaat Rapporten**: Genereert zowel JSON (voor systemen) als PDF (voor mensen)
+- **Bestandsopslag**: Tijdelijk sessiebeheer met georganiseerde bestandsstructuur
+- **Betrouwbaarheidsscore**: Houdt betrouwbaarheidsniveaus bij voor alle geëxtraheerde velden
 
 ## MCP Tools
 
 ### 1. `start_inspection_report`
-Initialize a new HAP inspection report session.
-
-```json
-{
-  "session_id": "unique-session-id",
-  "company_name": "Restaurant Bella Rosa",
-  "company_address": "Haagweg 123, Den Haag",
-  "inspector_name": "Koen van der Berg"
-}
-```
+Initialiseer een nieuwe HAP inspectierapportsessie.
 
 ### 2. `extract_inspection_data`
-Extract structured HAP data from conversation history.
-
-```json
-{
-  "session_id": "unique-session-id",
-  "conversation_history": [
-    {"role": "user", "content": "Start inspectie bij Restaurant Bella Rosa"},
-    {"role": "assistant", "content": "..."}
-  ]
-}
-```
+Extraheer gestructureerde HAP-gegevens uit gespreksgeschiedenis.
 
 ### 3. `verify_inspection_data`
-Generate verification questions for missing fields.
-
-```json
-{
-  "session_id": "unique-session-id",
-  "max_questions": 5
-}
-```
+Genereer verificatievragen voor ontbrekende velden.
 
 ### 4. `submit_verification_answers`
-Process inspector's answers to verification questions.
-
-```json
-{
-  "session_id": "unique-session-id",
-  "answers": {
-    "company_name": "Restaurant Bella Rosa",
-    "hygiene_general.compliant": "Nee"
-  }
-}
-```
+Verwerk antwoorden van de inspecteur op verificatievragen.
 
 ### 5. `generate_final_report`
-Create final JSON and PDF reports.
-
-```json
-{
-  "session_id": "unique-session-id"
-}
-```
+Maak definitieve JSON en PDF rapporten.
 
 ### 6. `get_report_status`
-Check report completion and status.
-
-```json
-{
-  "session_id": "unique-session-id"
-}
-```
+Controleer de voltooiing en status van het rapport.
 
 ## Workflow
 
-### Phase 1: Data Extraction
-1. Inspector completes inspection conversation
-2. System calls `extract_inspection_data` with full conversation history
-3. AI extracts all known HAP fields with confidence scores
-4. Returns draft data + fields needing verification
+### Fase 1: Data-extractie
+1. Inspecteur voltooit inspectiegesprek
+2. Systeem roept `extract_inspection_data` aan met volledige gespreksgeschiedenis
+3. AI extraheert alle bekende HAP-velden met betrouwbaarheidsscores
+4. Retourneert conceptgegevens + velden die verificatie nodig hebben
 
-### Phase 2: Verification
-1. System calls `verify_inspection_data` with draft data
-2. AI generates 3-5 targeted questions for missing critical fields
-3. Inspector answers via chat interface
-4. System calls `submit_verification_answers` to update draft
+### Fase 2: Verificatie
+1. Systeem roept `verify_inspection_data` aan met conceptgegevens
+2. AI genereert 3-5 gerichte vragen voor ontbrekende kritieke velden
+3. Inspecteur antwoordt via chatinterface
+4. Systeem roept `submit_verification_answers` aan om concept bij te werken
 
-### Phase 3: Generation
-1. System calls `generate_final_report`
-2. Generator creates structured JSON matching HAP schema
-3. Generator creates formatted PDF with all sections
-4. Both files saved to `storage/{session_id}/`
-5. Return download links and summary
+### Fase 3: Generatie
+1. Systeem roept `generate_final_report` aan
+2. Generator maakt gestructureerde JSON die overeenkomt met HAP-schema
+3. Generator maakt opgemaakte PDF met alle secties
+4. Beide bestanden opgeslagen in `storage/{session_id}/`
+5. Retourneert downloadlinks en samenvatting
 
-## HAP Report Structure
+## HAP Rapportstructuur
 
-### Categories Covered:
-- **Hygiëne Algemeen**: Cleanliness, facilities, equipment
-- **Ongediertebestrijding**: Pest control and prevention
-- **Veilig Omgaan met Voedsel**: Food safety, storage, temperatures
-- **Allergeneninformatie**: Allergen labeling and information
-- **Aanvullende Informatie**: Inspector notes, hygiene codes, repeat violations
+### Categorieën:
+- **Hygiëne Algemeen**: Schoonmaak, faciliteiten, apparatuur
+- **Ongediertebestrijding**: Preventie en bestrijding
+- **Veilig Omgaan met Voedsel**: Voedselveiligheid, opslag, temperaturen
+- **Allergeneninformatie**: Etikettering en informatie
+- **Aanvullende Informatie**: Notities inspecteur, hygiënecodes, herhaalde overtredingen
 
-### Violation Severity:
-- **Ernstige overtreding** (Serious): Direct food safety risk
-- **Overtreding** (Moderate): Hygiene deficiencies
-- **Geringe overtreding** (Minor): Minor issues
+### Ernst van Overtreding:
+- **Ernstige overtreding**: Direct gevaar voor voedselveiligheid
+- **Overtreding**: Hygiënetekortkomingen
+- **Geringe overtreding**: Kleine problemen
 
-## NVWA Scenario Coverage
-
-### Scenario 1: Koen (Horeca Inspection)
-- Extracts: Restaurant details, hygiene violations, temperature issues
-- Maps to: HAP hygiene categories, food safety fields
-- Generates: Process-verbaal for serious violations
-
-### Scenario 2: Fatima (Product Safety)
-- Extracts: Product scans, CE markings, documentation
-- Maps to: Product compliance fields
-- Generates: Product safety report with items list
-
-### Scenario 3: Jan (Butcher Shop)
-- Extracts: Labeling violations, repeat offenses
-- Maps to: HAP labeling fields, historical flags
-- Generates: Follow-up enforcement report
-
-## Storage Structure
+## Opslagstructuur
 
 ```
 storage/
@@ -148,89 +83,54 @@ storage/
     └── {session_id}.json
 ```
 
-## Dependencies
+## Afhankelijkheden
 
-- **pydantic**: Data validation and schema enforcement
-- **openai**: GPT-4 for conversation analysis
-- **reportlab**: PDF generation
+- **pydantic**: Datavalidatie en schema-afdwinging
+- **openai**: GPT-4 voor gespreksanalyse
+- **reportlab**: PDF-generatie
 - **fastmcp**: MCP server framework
 
-## Configuration
+## Configuratie
 
-Set the following environment variable:
+Stel de volgende omgevingsvariabele in:
 
 ```bash
-export OPENAI_API_KEY="your-openai-api-key"
+export OPENAI_API_KEY="jouw-openai-api-key"
 ```
 
-## Running
+## Draaien
 
-### With Docker
+### Met Docker
 ```bash
 docker build -t mcp-reporting .
 docker run -p 8000:8000 -e OPENAI_API_KEY=$OPENAI_API_KEY mcp-reporting
 ```
 
-### Locally
+### Lokaal
 ```bash
 pip install -r requirements.txt
-export OPENAI_API_KEY="your-key"
+export OPENAI_API_KEY="jouw-sleutel"
 python server.py
 ```
 
-## Health Check
+## Integratie met AGORA
 
-```bash
-curl http://localhost:8000/health
-```
+De rapportage-agent gebruikt deze tools automatisch wanneer inspecteurs rapportgeneratie aanvragen:
 
-## Example Usage
-
-```python
-# 1. Start report
-result = await start_inspection_report(
-    session_id="session-123",
-    company_name="Restaurant Bella Rosa",
-    inspector_name="Koen van der Berg"
-)
-
-# 2. Extract data
-result = await extract_inspection_data(
-    session_id="session-123",
-    conversation_history=messages
-)
-
-# 3. Verify if needed
-if result["completeness"]["needs_verification"]:
-    questions = await verify_inspection_data(session_id="session-123")
-    # Ask inspector questions...
-    await submit_verification_answers(session_id="session-123", answers=answers)
-
-# 4. Generate final report
-report = await generate_final_report(session_id="session-123")
-print(f"Report generated: {report['paths']}")
-```
-
-## Integration with AGORA
-
-The reporting agent automatically uses these tools when inspectors request report generation:
-
-**Trigger phrases:**
+**Trigger zinnen:**
 - "Genereer rapport"
 - "Maak inspectierapport"
 - "Finaliseer documentatie"
-- "Rondt inspectie af"
+- "Rond inspectie af"
 
-## Future Enhancements
+## Toekomstige Verbeteringen
 
-- Database storage (PostgreSQL/Supabase)
-- Photo/evidence attachment handling
-- Digital signature integration
-- Multi-language support (Dutch/English)
-- Offline mode support
-- Real-time collaboration
-- Template customization
+- Database opslag (PostgreSQL/Supabase)
+- Afhandeling van foto/bewijsmateriaal bijlagen
+- Digitale handtekening integratie
+- Meertalige ondersteuning (Nederlands/Engels)
+- Offline modus ondersteuning
 
-## License
+## Licentie
 
-Internal NVWA/AGORA project
+Intern NVWA/AGORA project
