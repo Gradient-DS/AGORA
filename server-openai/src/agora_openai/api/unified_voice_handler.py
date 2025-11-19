@@ -1,13 +1,14 @@
+# NOTE: This file is not used yet, but is a placeholder for future voice handling.
+# TODO: Implement voice handling using STT and TTS with async text gen for both.
+
+
 from __future__ import annotations
-import asyncio
 import base64
 import json
 import logging
 from typing import Any
 import numpy as np
-from numpy.typing import NDArray
 from fastapi import WebSocket
-from agents import Agent
 from agents.voice import (
     AudioInput,
     SingleAgentVoiceWorkflow,
@@ -140,6 +141,52 @@ class UnifiedVoiceHandler:
         else:
             log.warning(f"Unknown client message type: {msg_type}")
 
+    async def _process_pipeline_result(self, result: Any) -> None:
+        """Process streaming results from the voice pipeline."""
+        transcript_parts = []
+
+        async for event in result.stream():
+            if event.type == "voice_stream_event_audio":
+                audio_chunk_base64 = base64.b64encode(event.data).decode("utf-8")
+                await self._send_to_client(
+                    {"type": "audio.response", "audio": audio_chunk_base64}
+                )
+            elif event.type == "voice_stream_event_transcript":
+                transcript_parts.append(event.text)
+                await self._send_to_client(
+                    {"type": "transcript.delta", "text": event.text}
+                )
+            elif event.type == "voice_stream_event_tool_call":
+                await self._send_to_client(
+                    {
+                        "type": "tool.executing",
+                        "tool_name": event.name,
+                        "call_id": (
+                            str(event.call_id) if hasattr(event, "call_id") else None
+                        ),
+                    }
+                )
+            elif event.type == "voice_stream_event_tool_result":
+                await self._send_to_client(
+                    {
+                        "type": "tool.completed",
+                        "tool_name": (
+                            event.name if hasattr(event, "name") else "unknown"
+                        ),
+                        "call_id": (
+                            str(event.call_id) if hasattr(event, "call_id") else None
+                        ),
+                    }
+                )
+
+        full_transcript = "".join(transcript_parts)
+        if full_transcript:
+            await self._send_to_client(
+                {"type": "transcript.assistant", "text": full_transcript}
+            )
+
+        await self._send_to_client({"type": "response.completed"})
+
     async def _handle_audio_data(self, message: dict[str, Any]) -> None:
         """Handle audio data from client using VoicePipeline."""
         audio_base64 = message.get("audio")
@@ -155,51 +202,16 @@ class UnifiedVoiceHandler:
 
             if not self.pipeline:
                 log.error("Pipeline not initialized")
-                await self._send_error("pipeline_error", "Voice pipeline not initialized")
+                await self._send_error(
+                    "pipeline_error", "Voice pipeline not initialized"
+                )
                 return
 
             audio_input = AudioInput(buffer=audio_array)
 
             log.info("Processing audio with VoicePipeline...")
             result = await self.pipeline.run(audio_input)
-
-            transcript_parts = []
-            
-            async for event in result.stream():
-                if event.type == "voice_stream_event_audio":
-                    audio_chunk_base64 = base64.b64encode(event.data).decode("utf-8")
-                    await self._send_to_client(
-                        {"type": "audio.response", "audio": audio_chunk_base64}
-                    )
-                elif event.type == "voice_stream_event_transcript":
-                    transcript_parts.append(event.text)
-                    await self._send_to_client(
-                        {"type": "transcript.delta", "text": event.text}
-                    )
-                elif event.type == "voice_stream_event_tool_call":
-                    await self._send_to_client(
-                        {
-                            "type": "tool.executing",
-                            "tool_name": event.name,
-                            "call_id": str(event.call_id) if hasattr(event, "call_id") else None,
-                        }
-                    )
-                elif event.type == "voice_stream_event_tool_result":
-                    await self._send_to_client(
-                        {
-                            "type": "tool.completed",
-                            "tool_name": event.name if hasattr(event, "name") else "unknown",
-                            "call_id": str(event.call_id) if hasattr(event, "call_id") else None,
-                        }
-                    )
-
-            full_transcript = "".join(transcript_parts)
-            if full_transcript:
-                await self._send_to_client(
-                    {"type": "transcript.assistant", "text": full_transcript}
-                )
-
-            await self._send_to_client({"type": "response.completed"})
+            await self._process_pipeline_result(result)
 
         except Exception as e:
             log.error(f"Error processing audio data: {e}", exc_info=True)
@@ -216,37 +228,18 @@ class UnifiedVoiceHandler:
 
             if not self.pipeline:
                 log.error("Pipeline not initialized")
-                await self._send_error("pipeline_error", "Voice pipeline not initialized")
+                await self._send_error(
+                    "pipeline_error", "Voice pipeline not initialized"
+                )
                 return
 
             empty_audio = np.zeros(AUDIO_CONFIG["samplerate"], dtype=np.int16)
             audio_input = AudioInput(buffer=empty_audio)
 
             log.info(f"Processing text message via pipeline: {text}")
-            
+            # TODO: Check if pipeline.run supports text input directly
             result = await self.pipeline.run(audio_input)
-
-            transcript_parts = []
-
-            async for event in result.stream():
-                if event.type == "voice_stream_event_audio":
-                    audio_chunk_base64 = base64.b64encode(event.data).decode("utf-8")
-                    await self._send_to_client(
-                        {"type": "audio.response", "audio": audio_chunk_base64}
-                    )
-                elif event.type == "voice_stream_event_transcript":
-                    transcript_parts.append(event.text)
-                    await self._send_to_client(
-                        {"type": "transcript.delta", "text": event.text}
-                    )
-
-            full_transcript = "".join(transcript_parts)
-            if full_transcript:
-                await self._send_to_client(
-                    {"type": "transcript.assistant", "text": full_transcript}
-                )
-
-            await self._send_to_client({"type": "response.completed"})
+            await self._process_pipeline_result(result)
 
         except Exception as e:
             log.error(f"Error processing text message: {e}", exc_info=True)
@@ -265,4 +258,3 @@ class UnifiedVoiceHandler:
         await self._send_to_client(
             {"type": "error", "error_code": error_code, "message": message}
         )
-

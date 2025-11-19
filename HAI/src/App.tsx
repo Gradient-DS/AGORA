@@ -3,7 +3,6 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import { ApprovalDialog } from '@/components/approval/ApprovalDialog';
-import { ApprovalQueue } from '@/components/approval/ApprovalQueue';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
 import { useSessionStore, useApprovalStore, useConnectionStore, useVoiceStore, useAgentStore, useUserStore } from '@/stores';
@@ -18,8 +17,12 @@ export default function App() {
   const { toggleVoice } = useVoiceMode();
   const connectionStatus = useConnectionStore((state) => state.status);
   const connectionError = useConnectionStore((state) => state.error);
+  
   const currentApproval = useApprovalStore((state) => state.currentApproval);
+  const pendingApprovals = useApprovalStore((state) => state.pendingApprovals);
   const removeApproval = useApprovalStore((state) => state.removeApproval);
+  const setCurrentApproval = useApprovalStore((state) => state.setCurrentApproval);
+  
   const isVoiceActive = useVoiceStore((state) => state.isActive);
 
   useEffect(() => {
@@ -42,6 +45,18 @@ export default function App() {
     removeApproval(approvalId);
   };
 
+  const currentIndex = currentApproval 
+    ? pendingApprovals.findIndex(a => a.approval_id === currentApproval.approval_id)
+    : -1;
+  
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (currentIndex === -1) return;
+    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex >= 0 && newIndex < pendingApprovals.length) {
+      setCurrentApproval(pendingApprovals[newIndex] ?? null);
+    }
+  };
+
   const isDisabled = connectionStatus !== 'connected';
 
   return (
@@ -55,16 +70,15 @@ export default function App() {
           </Alert>
         )}
 
-        <ApprovalQueue />
-
         {currentApproval && (
-          <div className="flex-shrink-0">
-            <ApprovalDialog
-              approval={currentApproval}
-              onApprove={handleApprove}
-              onReject={handleReject}
-            />
-          </div>
+          <ApprovalDialog
+            approval={currentApproval}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            currentIndex={currentIndex}
+            totalCount={pendingApprovals.length}
+            onNavigate={handleNavigate}
+          />
         )}
 
         <div className="flex-1 flex gap-4 min-h-0">

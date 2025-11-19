@@ -34,7 +34,19 @@ dev = [
     "httpx>=0.26.0",
     "mypy>=1.8.0",
     "ruff>=0.1.14",
+    "black>=24.0.0",
+    "isort>=5.13.0",
 ]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agora_openai"]

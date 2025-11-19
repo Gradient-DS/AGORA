@@ -1,8 +1,9 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import SecretStr, Field
 from functools import lru_cache
-from dotenv import load_dotenv, find_dotenv
 import logging
+
+from dotenv import load_dotenv, find_dotenv
+from pydantic import SecretStr, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # Configure logging for config loading
@@ -18,35 +19,33 @@ if env_file:
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     # Using validation_alias to strictly look for MCP_OPENAI_API_KEY as requested
     openai_api_key: SecretStr = Field(
-        validation_alias="MCP_OPENAI_API_KEY",
-        description="OpenAI API key"
+        validation_alias="MCP_OPENAI_API_KEY", description="OpenAI API key"
     )
     openai_model: str = Field(default="gpt-4o", description="Default OpenAI model")
-    
+
     mcp_servers: str = Field(
         default="",
-        description="Comma-separated MCP servers (name=url,name2=url2). Optional - leave empty for testing without MCP tools."
+        description="Comma-separated MCP servers (name=url,name2=url2). Optional - leave empty for testing without MCP tools.",
     )
-    
+
     guardrails_enabled: bool = Field(default=True, description="Enable moderation")
-    
+
     otel_endpoint: str = Field(
-        default="http://localhost:4317",
-        description="OpenTelemetry endpoint"
+        default="http://localhost:4317", description="OpenTelemetry endpoint"
     )
-    
+
     host: str = Field(default="0.0.0.0", description="Server host")
     port: int = Field(default=8000, description="Server port")
-    
+
     log_level: str = Field(default="INFO", description="Logging level")
-    
+
     model_config = SettingsConfigDict(
         env_prefix="APP_",
         case_sensitive=False,
-        extra='ignore',
+        extra="ignore",
     )
 
 
@@ -58,16 +57,16 @@ def get_settings() -> Settings:
 
 def parse_mcp_servers(servers_str: str) -> dict[str, str]:
     """Parse MCP servers from comma-separated string.
-    
+
     Args:
         servers_str: Format "name1=url1,name2=url2" or empty string for no servers
-    
+
     Returns:
         Dictionary mapping server names to URLs
     """
     if not servers_str or not servers_str.strip():
         return {}
-    
+
     result = {}
     for pair in servers_str.split(","):
         if "=" in pair:
