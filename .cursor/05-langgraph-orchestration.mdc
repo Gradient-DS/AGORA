@@ -1,0 +1,298 @@
+---
+description: LangGraph-based orchestration for open-source alternative to OpenAI Agents SDK
+globs: server-langgraph/**/*
+alwaysApply: false
+---
+
+# LangGraph Orchestration Architecture
+
+**Philosophy**: Use LangGraph for stateful multi-agent orchestration, providing an open-source alternative to the OpenAI Agents SDK backend (`server-openai`). Must implement the same HAI Protocol and support the same MCP tool servers.
+
+## Core Principles
+
+1. **Use LangGraph (`langgraph` package)** - StateGraph-based agent orchestration with explicit control flow.
+2. **ToolNode for ALL tool calls** - Including handoffs, to ensure proper ToolMessage responses.
+3. **Checkpointer Persistence** - AsyncSqliteSaver for conversation history.
+4. **Streaming First** - Use `astream_events` for real-time HAI Protocol messages.
+5. **MCP Integration** - Same MCP tool servers as `server-openai` (regulation, reporting, history).
+6. **OpenAI-compatible LLM** - Use `langchain-openai` ChatOpenAI.
+
+## Project Structure (Implemented)
+
+```
+server-langgraph/
+├── src/agora_langgraph/
+│   ├── __init__.py
+│   ├── config.py                 # Pydantic settings (same env vars as server-openai)
+│   ├── logging_config.py
+│   ├── common/
+│   │   ├── hai_types.py          # HAI Protocol message types (identical to server-openai)
+│   │   └── schemas.py            # ToolCall schema
+│   ├── core/
+│   │   ├── state.py              # AgentState TypedDict
+│   │   ├── agent_definitions.py  # Agent configs (matching server-openai)
+│   │   ├── agents.py             # Agent node functions
+│   │   ├── graph.py              # StateGraph with conditional edges
+│   │   ├── tools.py              # Handoff tools + agent tool configuration
+│   │   └── approval_logic.py     # Human-in-loop rules (same as server-openai)
+│   ├── adapters/
+│   │   ├── mcp_client.py         # MCPClientManager using langchain-mcp-adapters
+│   │   ├── checkpointer.py       # AsyncSqliteSaver with aiosqlite
+│   │   └── audit_logger.py       # OpenTelemetry logging
+│   ├── pipelines/
+│   │   ├── orchestrator.py       # astream_events → HAI Protocol
+│   │   └── moderator.py          # Content moderation
+│   └── api/
+│       ├── server.py             # FastAPI + WebSocket (identical endpoints)
+│       └── hai_protocol.py       # HAI WebSocket handler
+├── pyproject.toml
+├── langgraph.json
+├── Dockerfile
+├── docker-compose.yml
+└── tests/
+```
+
+## Critical: Handoff Pattern
+
+**Problem**: OpenAI API requires every AIMessage with `tool_calls` to be followed by ToolMessages.
+
+**Wrong approach** (causes 400 errors):
+```
+Agent calls transfer_to_history → Route directly to history-agent → ERROR!
+(Missing ToolMessage for the transfer tool call)
+```
+
+**Correct approach**:
+```
+Agent calls transfer_to_history → ToolNode executes it → ToolMessage added → Route to history-agent → OK!
+```
+
+### Routing Implementation
+
+```python
+def route_from_agent(state: AgentState) -> Literal["tools", "end"]:
+    """ALL tool calls go to ToolNode first."""
+    last_message = state["messages"][-1]
+    
+    if not isinstance(last_message, AIMessage):
+        return "end"
+    
+    if getattr(last_message, "tool_calls", None):
+        return "tools"  # Always go through ToolNode!
+    
+    return "end"
+
+
+def route_after_tools(state: AgentState) -> str:
+    """After ToolNode, check if it was a handoff."""
+    for msg in reversed(state["messages"]):
+        if hasattr(msg, "tool_calls") and msg.tool_calls:
+            tool_name = msg.tool_calls[0].get("name", "")
+            if "transfer_to_history" in tool_name:
+                return "history-agent"
+            elif "transfer_to_regulation" in tool_name:
+                return "regulation-agent"
+            elif "transfer_to_reporting" in tool_name:
+                return "reporting-agent"
+            elif "transfer_to_general" in tool_name:
+                return "general-agent"
+            break
+    
+    return state.get("current_agent", "general-agent")
+```
+
+### Graph Construction
+
+```python
+def build_agent_graph(mcp_tools_by_server: dict) -> StateGraph:
+    graph = StateGraph(AgentState)
+    
+    # Agent nodes
+    graph.add_node("general-agent", general_agent)
+    graph.add_node("regulation-agent", regulation_agent)
+    graph.add_node("reporting-agent", reporting_agent)
+    graph.add_node("history-agent", history_agent)
+    
+    # Tool execution node (includes handoff tools!)
+    graph.add_node("tools", ToolNode(all_tools))
+    
+    graph.add_edge(START, "general-agent")
+    
+    # All agents route to tools or end
+    for agent_id in ["general-agent", "regulation-agent", "reporting-agent", "history-agent"]:
+        graph.add_conditional_edges(
+            agent_id,
+            route_from_agent,
+            {"tools": "tools", "end": END}
+        )
+    
+    # After tools, route based on handoff detection
+    graph.add_conditional_edges(
+        "tools",
+        route_after_tools,
+        {
+            "general-agent": "general-agent",
+            "regulation-agent": "regulation-agent",
+            "reporting-agent": "reporting-agent",
+            "history-agent": "history-agent",
+        }
+    )
+    
+    return graph
+```
+
+## Handoff Tools
+
+General-agent has ONLY handoff tools (no MCP tools):
+
+```python
+@tool
+async def transfer_to_history() -> str:
+    """Transfer to Company and Inspection History Specialist."""
+    return "Transferring to history-agent"
+
+@tool
+async def transfer_to_regulation() -> str:
+    """Transfer to Regulation Analysis Expert."""
+    return "Transferring to regulation-agent"
+
+@tool
+async def transfer_to_reporting() -> str:
+    """Transfer to HAP Inspection Report Specialist."""
+    return "Transferring to reporting-agent"
+```
+
+Other agents get `transfer_to_general` + their MCP tools.
+
+## AsyncSqliteSaver Pattern
+
+```python
+from contextlib import asynccontextmanager
+import aiosqlite
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+@asynccontextmanager
+async def create_checkpointer(db_path: str = "sessions.db"):
+    """Create checkpointer as async context manager."""
+    async with aiosqlite.connect(db_path) as conn:
+        checkpointer = AsyncSqliteSaver(conn)
+        await checkpointer.setup()
+        yield checkpointer
+```
+
+Usage in server lifespan:
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with create_checkpointer(settings.sessions_db_path) as checkpointer:
+        compiled_graph = graph.compile(checkpointer=checkpointer)
+        app.state.orchestrator = Orchestrator(graph=compiled_graph, ...)
+        yield
+```
+
+## MCP Integration with langchain-mcp-adapters
+
+Uses `langchain-mcp-adapters` package for native MCP server integration (similar to server-openai's SDK approach).
+
+```python
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
+class MCPClientManager:
+    def __init__(self, server_urls: dict[str, str]):
+        self.server_urls = server_urls
+        self._client: MultiServerMCPClient | None = None
+
+    def _build_server_config(self) -> dict:
+        config = {}
+        for server_name, base_url in self.server_urls.items():
+            mcp_url = base_url if base_url.endswith("/mcp") else f"{base_url}/mcp"
+            config[server_name] = {"url": mcp_url, "transport": "sse"}
+        return config
+
+    async def connect(self) -> None:
+        server_config = self._build_server_config()
+        self._client = MultiServerMCPClient(server_config)
+        await self._client.__aenter__()
+        self._tools = self._client.get_tools()  # Returns LangChain-compatible tools
+```
+
+Usage in server lifespan:
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with create_mcp_client_manager(mcp_servers) as mcp_manager:
+        mcp_tools_by_server = mcp_manager.get_tools_by_server()
+        graph = build_agent_graph(mcp_tools_by_server)
+        # ...
+```
+
+## Agent Node Pattern
+
+```python
+async def _run_agent_node(state: AgentState, agent_id: str) -> dict:
+    """Generic agent execution."""
+    config = get_agent_by_id(agent_id)
+    llm = ChatOpenAI(model=config["model"], temperature=config["temperature"])
+    tools = get_agent_tools(agent_id)
+    
+    if tools:
+        llm = llm.bind_tools(tools)
+    
+    # Add system message with instructions
+    system_message = {"role": "system", "content": config["instructions"]}
+    messages = [system_message] + list(state["messages"])
+    
+    response = await llm.ainvoke(messages)
+    
+    return {
+        "messages": [response],
+        "current_agent": agent_id,
+    }
+```
+
+## API Compatibility with server-openai
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/ws` | WebSocket | HAI Protocol messages |
+| `/health` | GET | Health check |
+| `/` | GET | Service info |
+| `/agents` | GET | List agents |
+| `/sessions/{id}/history` | GET | Conversation history |
+
+## Environment Variables (same as server-openai)
+
+| Variable | Description |
+|----------|-------------|
+| `MCP_OPENAI_API_KEY` | OpenAI API key |
+| `APP_MCP_SERVERS` | MCP servers (name=url,name2=url2) |
+| `APP_GUARDRAILS_ENABLED` | Enable moderation |
+| `APP_LOG_LEVEL` | Logging level |
+
+## Best Practices
+
+**Always:**
+- ✅ Route ALL tool calls through ToolNode (including handoffs)
+- ✅ Use AsyncSqliteSaver with aiosqlite for async checkpointing
+- ✅ Detect handoffs in `route_after_tools`, not `route_from_agent`
+- ✅ Match HAI Protocol message types exactly
+- ✅ Scope tools per agent (general-agent = handoffs only)
+
+**Never:**
+- ❌ Skip ToolNode for handoff tools (causes 400 errors)
+- ❌ Use sync SqliteSaver in async context
+- ❌ Route directly to another agent from `route_from_agent`
+- ❌ Mix tool calls with different routing patterns
+
+## Comparison with server-openai
+
+| Feature | server-openai | server-langgraph |
+|---------|---------------|------------------|
+| Framework | OpenAI Agents SDK | LangGraph |
+| MCP Integration | MCPServerStreamableHttp (agents.mcp) | MultiServerMCPClient (langchain-mcp-adapters) |
+| Handoff Execution | SDK executes handoff tools automatically | ToolNode executes, then route_after_tools |
+| State Management | SQLiteSession | AsyncSqliteSaver checkpointer |
+| Streaming | Runner.run_streamed() | astream_events() |
+| LLM Provider | OpenAI only | Any OpenAI-compatible |
