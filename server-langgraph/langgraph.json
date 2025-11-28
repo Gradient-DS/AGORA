@@ -1,0 +1,14 @@
+{
+  "graphs": {
+    "agent": {
+      "path": "./src/agora_langgraph/core/graph.py:build_agent_graph",
+      "config": {
+        "model": "gpt-4o",
+        "temperature": 0.7
+      }
+    }
+  },
+  "env": ".env",
+  "python_version": "3.11"
+}
+

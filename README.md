@@ -38,7 +38,7 @@ Inspecteur (Browser)
 **Belangrijkste Componenten:**
 - **HAI**: React frontend met tekst/spraak interface (poort 3000)
 - **server-openai**: OpenAI Agents SDK orchestrator met autonome agent handoffs (poort 8000)
-- **server-opensource**: LangGraph orchestrator ⚠️ **TODO - Nog niet geïmplementeerd**
+- **server-langgraph**: LangGraph orchestrator - open-source alternatief (poort 8000)
 - **mcp-servers**: FastMCP tool servers voor domeinoperaties
 - **docs/hai-contract**: WebSocket protocol specificatie (AsyncAPI 3.0)
 - **c4**: Architectuurdiagrammen (Structurizr)
@@ -65,21 +65,29 @@ Servers starten op:
 - http://localhost:5003 (Rapportage)
 - http://localhost:5005 (Inspectiegeschiedenis)
 
-### 2. Start OpenAI Server
+### 2. Start Orchestrator Server
 
+Je kunt kiezen tussen twee backends die dezelfde HAI Protocol API implementeren:
+
+**Optie A: OpenAI Agents SDK (server-openai)**
 ```bash
 cd server-openai
 pip install -e .
-
-# Configureer omgeving
-export APP_OPENAI_API_KEY="jouw_api_key"
-export APP_MCP_SERVERS="regulation-analysis=http://localhost:5002,reporting=http://localhost:5003,inspection-history=http://localhost:5005"
-
-# Start server
+export MCP_OPENAI_API_KEY="jouw_api_key"
+export APP_MCP_SERVERS="regulation=http://localhost:5002,reporting=http://localhost:5003,history=http://localhost:5005"
 python -m agora_openai.api.server
 ```
 
-Server start op http://localhost:8000
+**Optie B: LangGraph (server-langgraph)** - Open-source alternatief
+```bash
+cd server-langgraph
+pip install -e .
+export MCP_OPENAI_API_KEY="jouw_api_key"
+export APP_MCP_SERVERS="regulation=http://localhost:5002,reporting=http://localhost:5003,history=http://localhost:5005"
+python -m agora_langgraph.api.server
+```
+
+Beide servers starten op http://localhost:8000 met identieke WebSocket API
 
 ### 3. Start HAI Frontend
 
@@ -116,7 +124,12 @@ AGORA/
 │   │   ├── pipelines/        # Orchestratie logica
 │   │   └── api/              # FastAPI + WebSocket server
 │   └── common/               # Gedeelde types & protocollen
-├── server-opensource/        # ⚠️ TODO: LangGraph orchestrator
+├── server-langgraph/         # LangGraph orchestrator (open-source)
+│   ├── src/agora_langgraph/
+│   │   ├── core/             # StateGraph, agents, routing
+│   │   ├── adapters/         # MCP client, checkpointer
+│   │   ├── pipelines/        # Orchestratie met astream_events
+│   │   └── api/              # FastAPI + WebSocket (zelfde API)
 ├── mcp-servers/              # FastMCP tool servers
 │   ├── inspection-history/   # KVK + inspectiedata
 │   ├── regulation-analysis/  # Semantische regelgeving zoeken
@@ -175,7 +188,8 @@ cd HAI && docker build -t agora-hai . && docker run -p 80:80 agora-hai
 - **[HAI Protocol](./docs/hai-contract/HAI_PROTOCOL.md)**: Volledige WebSocket API specificatie
 - **[HAI Contract README](./docs/hai-contract/README.md)**: AsyncAPI tooling gids
 - **[MCP Servers](./mcp-servers/README.md)**: FastMCP implementatie & tools
-- **[Server OpenAI](./server-openai/README.md)**: Agent definities & architectuur
+- **[Server OpenAI](./server-openai/README.md)**: OpenAI Agents SDK orchestrator
+- **[Server LangGraph](./server-langgraph/README.md)**: LangGraph orchestrator (open-source)
 - **[HAI Frontend](./HAI/README.md)**: React app setup & features
 - **[C4 Architectuur](./c4/README.md)**: Systeemdiagrammen & ontwerpbeslissingen
 - **[Demo Scenario's](./DEMO_SCENARIOS.md)**: Voorbeeld gespreksflows
@@ -192,14 +206,25 @@ cd HAI && docker build -t agora-hai . && docker run -p 80:80 agora-hai
 | Laag | Technologie |
 |-------|-----------|
 | Frontend | React 18 + TypeScript + Vite + Zustand + shadcn/ui |
-| Orchestrator | OpenAI Agents SDK + FastAPI + WebSocket |
+| Orchestrator | OpenAI Agents SDK of LangGraph + FastAPI + WebSocket |
 | Agenten | OpenAI GPT modellen met autonome handoffs |
 | Tools | FastMCP (HTTP transport) |
 | Protocol | HAI (WebSocket) + MCP (HTTP) |
 | State | SQLite (sessies) + LocalStorage (UI) |
 | Observability | OpenTelemetry + gestructureerde logging |
 
+### Orchestrator Opties
+
+| Feature | server-openai | server-langgraph |
+|---------|---------------|------------------|
+| Framework | OpenAI Agents SDK | LangGraph |
+| State | SQLiteSession | AsyncSqliteSaver |
+| Handoffs | SDK built-in | ToolNode + conditional edges |
+| Streaming | Runner.run_streamed() | astream_events() |
+| LLM Provider | OpenAI | Any OpenAI-compatible |
+
 ## Licentie
 
 Dit project wordt voorbereid voor open source vrijgave. De definitieve licentie is nader te bepalen (Suggestie: MIT of EUPL).
 Zie [CONTRIBUTING.md](CONTRIBUTING.md) voor richtlijnen over bijdragen.
+
