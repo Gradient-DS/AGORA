@@ -36,7 +36,7 @@ from ag_ui.core import (
     StepFinishedEvent,
     Event,
     Message,
-    RunAgentInput as OfficialRunAgentInput,
+    RunAgentInput as OfficialRunAgentInput,  # Keep for completeness...
     State,
 )
 

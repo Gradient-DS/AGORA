@@ -278,7 +278,7 @@ describe('AG-UI Protocol Schemas', () => {
   describe('Helper Functions', () => {
     it('isToolApprovalRequest identifies approval requests', () => {
       const event = {
-        type: EventType.CUSTOM as const,
+        type: EventType.CUSTOM,
         name: AGORA_TOOL_APPROVAL_REQUEST,
         value: {},
       };
@@ -287,7 +287,7 @@ describe('AG-UI Protocol Schemas', () => {
 
     it('parseToolApprovalRequest extracts payload', () => {
       const event = {
-        type: EventType.CUSTOM as const,
+        type: EventType.CUSTOM,
         name: AGORA_TOOL_APPROVAL_REQUEST,
         value: {
           toolName: 'test_tool',
