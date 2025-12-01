@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "agora-ag-ui-events",
-  "title": "AGORA AG-UI Protocol Events",
-  "description": "JSON Schema definitions for AG-UI Protocol events used by AGORA. Uses official ag-ui-protocol types with AGORA extensions.",
+  "title": "AGORA AG-UI Protocol Events v2.1.1",
+  "description": "JSON Schema definitions for AG-UI Protocol events used by AGORA. Uses official ag-ui-protocol types with AGORA extensions. Note: TOOL_CALL_END signals end of argument streaming only; tool results are delivered via TOOL_CALL_RESULT.",
   "definitions": {
     "EventType": {
       "type": "string",

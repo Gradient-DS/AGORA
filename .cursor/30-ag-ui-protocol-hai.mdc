@@ -5,7 +5,7 @@ alwaysApply: false
 
 This project uses the official AG-UI Protocol (`ag-ui-protocol` package) for agent-user communication.
 
-**Status:** ✅ IMPLEMENTED (v2.1.0)
+**Status:** ✅ IMPLEMENTED (v2.1.1)
 
 ## AG-UI Protocol Overview
 
@@ -130,7 +130,7 @@ AGORA uses `CUSTOM` events for human-in-the-loop approval:
 
 ---
 
-## Implementation Checklist (v2.1.0)
+## Implementation Checklist (v2.1.1)
 
 ### Backend (server-langgraph)
 
@@ -155,7 +155,7 @@ AGORA uses `CUSTOM` events for human-in-the-loop approval:
 
 ### Documentation
 
-- [x] Update protocol spec to v2.1.0
+- [x] Update protocol spec to v2.1.1
 - [x] Update JSON schemas with new events
 - [x] Update example files with STATE_SNAPSHOT
 - [x] Document official package usage

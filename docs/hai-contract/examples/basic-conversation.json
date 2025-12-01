@@ -1,5 +1,5 @@
 {
-  "description": "Basic conversation flow using AG-UI Protocol with official types",
+  "description": "Basic conversation flow using AG-UI Protocol v2.1.1",
   "events": [
     {
       "direction": "client → server",

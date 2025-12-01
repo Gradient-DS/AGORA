@@ -1,5 +1,5 @@
 {
-  "description": "Error handling scenarios using AG-UI Protocol",
+  "description": "Error handling scenarios using AG-UI Protocol v2.1.1",
   "scenarios": [
     {
       "name": "Run Error (Official Event)",
@@ -28,6 +28,20 @@
         },
         {
           "direction": "server → client",
+          "description": "Initial state snapshot",
+          "event": {
+            "type": "STATE_SNAPSHOT",
+            "snapshot": {
+              "threadId": "abc123-def456-789",
+              "runId": "run-error-001",
+              "currentAgent": "general-agent",
+              "status": "processing"
+            },
+            "timestamp": 1705318200050
+          }
+        },
+        {
+          "direction": "server → client",
           "event": {
             "type": "STEP_STARTED",
             "stepName": "thinking",
@@ -46,6 +60,7 @@
         },
         {
           "direction": "server → client",
+          "description": "RUN_FINISHED is always sent, even after errors",
           "event": {
             "type": "RUN_FINISHED",
             "threadId": "abc123-def456-789",
@@ -82,7 +97,7 @@
         },
         {
           "direction": "server → client",
-          "description": "AGORA-specific error via CUSTOM event",
+          "description": "AGORA-specific error via CUSTOM event for moderation violations",
           "event": {
             "type": "CUSTOM",
             "name": "agora:error",
@@ -114,6 +129,7 @@
       "events": [
         {
           "direction": "server → client",
+          "description": "Server requests approval for a dangerous operation",
           "event": {
             "type": "CUSTOM",
             "name": "agora:tool_approval_request",
@@ -145,6 +161,23 @@
         },
         {
           "direction": "server → client",
+          "description": "Server transitions back to thinking after rejection",
+          "event": {
+            "type": "STEP_FINISHED",
+            "stepName": "executing_tools",
+            "timestamp": 1705318201500
+          }
+        },
+        {
+          "direction": "server → client",
+          "event": {
+            "type": "STEP_STARTED",
+            "stepName": "thinking",
+            "timestamp": 1705318201550
+          }
+        },
+        {
+          "direction": "server → client",
           "event": {
             "type": "TEXT_MESSAGE_START",
             "messageId": "msg-cancel-001",
@@ -167,6 +200,14 @@
             "type": "TEXT_MESSAGE_END",
             "messageId": "msg-cancel-001",
             "timestamp": 1705318202200
+          }
+        },
+        {
+          "direction": "server → client",
+          "event": {
+            "type": "STEP_FINISHED",
+            "stepName": "thinking",
+            "timestamp": 1705318202300
           }
         }
       ]

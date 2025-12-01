@@ -1,5 +1,5 @@
 {
-  "description": "Tool approval flow with human-in-the-loop using AG-UI Protocol",
+  "description": "Tool approval flow with human-in-the-loop using AG-UI Protocol v2.1.1",
   "events": [
     {
       "direction": "client → server",
