@@ -2,6 +2,44 @@
 alwaysApply: true
 ---
 
+## C4 Architecture Diagram Guidelines
+
+When editing `workspace.dsl`, follow these conventions:
+
+### Tag System
+- `Shared` - Components shared between OpenAI and OpenSource backends
+- `OpenAI` - Specific to OpenAI Agents SDK implementation
+- `OpenSource` - Specific to LangGraph implementation
+- `NotImplemented` - Not yet implemented (renders with dashed border, red tint)
+
+### Naming Conventions
+- Prefix component names with `[Shared]`, `[OpenAI]`, or `[OpenSource]` as appropriate
+- Use `[NOT IMPLEMENTED]` in descriptions for future features
+- Use descriptive technology strings (e.g., "FastAPI + Uvicorn", "agents.Agent")
+
+### Structure
+```
+model {
+  # ACTORS - persons using the system
+  # AGORA SYSTEM - main software system
+    # HAI FRONTEND [Shared]
+    # ORCHESTRATOR - unified (for C2)
+    # ORCHESTRATOR OpenAI (for C3)
+    # ORCHESTRATOR LangGraph (for C3)
+    # MCP AGENT SERVERS [Shared]
+    # MISSING CONTAINERS (NotImplemented)
+  # MCP AGENT ECOSYSTEM - external system
+}
+```
+
+### Available Views
+- `C1_SystemContext` - System context diagram
+- `C2_Containers` - Container diagram (unified orchestrator)
+- `C3_HAI_Components` - HAI frontend components
+- `C3_Orchestrator_OpenAI` - OpenAI implementation details
+- `C3_Orchestrator_OpenSource` - LangGraph implementation details
+- `C3_MCP_Components` - MCP server components
+
 ## Error Checking Protocol
 
 After making ANY changes to files, always check for errors:

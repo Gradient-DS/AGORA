@@ -167,7 +167,7 @@ Gebruik deze checklist bij het integreren van het HAI protocol:
 
 Voor vragen of problemen met het protocol:
 
-- **Technische Vragen**: dev@nvwa.nl
+- **Technische Vragen**: lex@gradient-ds.com
 - **Bug Reports**: Dien in via de project issue tracker
 - **Protocol Wijzigingen**: Stel voor via RFC proces
 

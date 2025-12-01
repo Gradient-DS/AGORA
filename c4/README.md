@@ -5,10 +5,10 @@ Deze directory bevat de C4-model architectuurdocumentatie voor AGORA v1.0, het m
 ## 📋 Wat is C4?
 
 Het [C4-model](https://c4model.com/) beschrijft softwarearchitectuur op vier niveaus:
-1. **Systeemcontext** - Hoe past AGORA in het grotere systeem?
-2. **Containers** - Welke applicaties en dataopslag vormen AGORA?
-3. **Componenten** - Hoe zijn individuele containers intern gestructureerd?
-4. **Code** - Gedetailleerde implementatie (optioneel)
+1. **Systeemcontext (C1)** - Hoe past AGORA in het grotere systeem?
+2. **Containers (C2)** - Welke applicaties en dataopslag vormen AGORA?
+3. **Componenten (C3)** - Hoe zijn individuele containers intern gestructureerd?
+4. **Code (C4)** - Gedetailleerde implementatie (optioneel)
 
 ## 🚀 Snel aan de slag
 
@@ -43,43 +43,71 @@ npm run down
 
 ## 📐 Beschikbare Diagrammen
 
-### 1. Systeemcontext
+### C1: Systeemcontext
 Toont AGORA in relatie tot:
-- **Inspecteurs** (gebruikers)
-- **NVWA Systemen** (legacy applicaties)
-- **Regelgeving & Kennis** (externe kennisbronnen)
-- **Externe API's** (weer, OV, locatie)
+- **NVWA Inspecteur** - Gebruiker van het systeem
+- **AGORA** - Multi-agent compliance platform
+- **MCP Agent Ecosystem** - Uitbreidbare domain agents via MCP Protocol
 
-### 2. Container Diagram
-Toont alle AGORA componenten:
-- **HAI** - React frontend met audio support
-- **Orchestrator** - LangChain + LLM (GPT-5/Sonnet-4.5)
-- **Stack Manager** - Agent selectie en activatie
-- **Agent Stack** - Actieve MCP agents
-- **Unused Agent Stack** - Beschikbare agents (100-1000+)
-- **Moderator** - Guardrails-AI voor governance
-- **User Profile** - PostgreSQL database
-- **Visibility** - Grafana + Prometheus + OpenTelemetry
+### C2: Container Diagram
+Toont alle AGORA containers:
 
-### 3. Orchestrator Componenten
-Uitsplitsing van de Orchestrator:
-- **Reasoning LLM** - Closed-source LLM
-- **Task Router** - LangChain router
-- **MCP Client** - Model Context Protocol client
-- **Moderation Adapter** - Koppeling naar moderator
-- **Audit Logger** - OpenTelemetry logging
+| Container | Status | Beschrijving |
+|-----------|--------|--------------|
+| **HAI** | ✅ Geïmplementeerd | React + Vite + Zustand frontend |
+| **Orchestrator** | ✅ Geïmplementeerd | OpenAI of OpenSource (LangGraph) backend |
+| **MCP Agent Servers** | ✅ Geïmplementeerd | FastMCP domain agents |
+| **User Profile** | 🚧 Niet geïmplementeerd | PostgreSQL voor RBAC |
+| **Memory Service** | 🚧 Niet geïmplementeerd | Vector DB voor long-term memory |
+| **Visibility Stack** | 🚧 Niet geïmplementeerd | Grafana + Prometheus + Jaeger |
+| **Evaluation Service** | 🚧 Niet geïmplementeerd | Langfuse voor LLM tracing |
+| **Auth Service** | 🚧 Niet geïmplementeerd | OAuth2/OIDC authenticatie |
 
-### 4. Stack Manager Componenten
-Uitsplitsing van de Stack Manager:
-- **Context Collector** - Verzamelt gebruiker, situatie, gebeurtenissen
-- **Policy Engine** - Bepaalt beschikbare agents
-- **Catalog Adapter** - Beheert agent stack
+### C3: HAI Componenten (Shared)
+Uitsplitsing van de HAI frontend:
+- **Chat Components** - ChatInterface, ChatMessageList, ChatInput, ToolCallCard
+- **Approval Dialog** - Human-in-the-loop tool approval workflow
+- **Debug Panel** - Tool call visualisatie
+- **State Management** - Zustand stores (messages, sessions, connections, etc.)
+- **WebSocket Client** - HAI Protocol communicatie
+- **Voice Interface** - 🚧 Niet geïmplementeerd (Whisper + ElevenLabs)
 
-### 5. Deployment Diagram (Hybride)
-Toont de hybride infrastructuur setup:
-- **Nederlandse Private Cloud** - Gevoelige componenten (Intermax/Nebul/UbiOps)
-- **Europese Cloud** - Minder gevoelige componenten (Azure/AWS)
-- **Inspector Device** - Web browser op laptop/tablet
+### C3: Orchestrator [OpenAI] Componenten
+Uitsplitsing van de OpenAI Agents SDK implementatie:
+
+| Layer | Componenten |
+|-------|-------------|
+| **API Layer** | FastAPI Server, HAI Protocol Handler, REST Endpoints |
+| **Pipelines Layer** | Orchestrator Pipeline, Moderator |
+| **Core Layer** | Agent Definitions (agents.Agent), Agent Executor (agents.Runner), Handoff Logic (SDK built-in), Approval Logic, Session Persistence (SQLiteSession) |
+| **Adapters Layer** | MCP Adapter (MCPServerStreamableHttp), Audit Logger (OpenTelemetry) |
+
+### C3: Orchestrator [OpenSource] Componenten
+Uitsplitsing van de LangGraph implementatie:
+
+| Layer | Componenten |
+|-------|-------------|
+| **API Layer** | FastAPI Server, HAI Protocol Handler, REST Endpoints |
+| **Pipelines Layer** | Orchestrator Pipeline, Moderator |
+| **Core Layer** | Agent Definitions (async functions), Agent Executor (StateGraph), Tool Executor (ToolNode), Handoff Logic (transfer_to_* tools), Routing Logic, Approval Logic, Session Persistence (AsyncSqliteSaver) |
+| **Adapters Layer** | MCP Adapter (langchain-mcp-adapters), Audit Logger (OpenTelemetry) |
+
+### C3: MCP Agent Servers (Shared)
+Beschikbare MCP servers:
+- **Regulation Agent** (:5002) - search_regulations, analyze_document, lookup_articles
+- **Reporting Agent** (:5003) - start/extract/verify/generate inspection reports
+- **History Agent** (:5005) - company history, violations, repeat checks
+
+## 🏷️ Tag Systeem
+
+De architectuur gebruikt tags om implementatiestatus aan te geven:
+
+| Tag | Kleur | Betekenis |
+|-----|-------|-----------|
+| `Shared` | Lichtblauw | Gedeeld tussen OpenAI en OpenSource backends |
+| `OpenAI` | Groen | Specifiek voor OpenAI Agents SDK implementatie |
+| `OpenSource` | Oranje | Specifiek voor LangGraph implementatie |
+| `NotImplemented` | Rood (dashed) | Nog niet geïmplementeerd |
 
 ## 🔄 Workflow in Cursor
 
@@ -91,10 +119,9 @@ Toont de hybride infrastructuur setup:
 
 ### AI-Ondersteund Bewerken
 Selecteer een blok in `workspace.dsl` en vraag Cursor:
-- "Voeg een deployment view toe voor development environment"
-- "Splits de HAI container uit in componenten"
-- "Voeg een nieuwe agent toe aan de agent stack"
-- "Maak een dynamisch diagram voor een inspectie workflow"
+- "Voeg een nieuwe MCP server toe voor planning"
+- "Markeer de Auth Service als geïmplementeerd"
+- "Voeg een deployment view toe voor productie"
 
 ### Diagrammen Exporteren
 In Structurizr UI:
@@ -104,104 +131,71 @@ In Structurizr UI:
 
 ## 📝 Architectuur Highlights
 
-### Kernprincipes
-- **Modulariteit** - Elk component kan los ontwikkeld en opgeschaald worden
-- **Standaardisering** - MCP protocol voor alle agent koppelingen
-- **Observeerbaarheid** - OpenTelemetry voor complete traceerbaarheid
-- **Veiligheid** - Hybride cloud met gevoelige data in Nederland
+### Twee Backend Implementaties
+AGORA ondersteunt twee backend implementaties met dezelfde HAI frontend:
+
+1. **OpenAI Agents SDK** - Native handoffs, SDK session persistence
+2. **LangGraph** - StateGraph met explicit routing, provider-agnostisch
+
+Beide implementaties delen:
+- HAI Protocol voor frontend communicatie
+- MCP Protocol voor agent communicatie
+- Approval Logic voor human-in-the-loop
+- Moderator voor input/output validatie
 
 ### Belangrijke Koppelingen
 
 #### K.1: HAI Protocol
 - **Van:** HAI → Orchestrator
-- **Type:** Custom JSON over WebSocket
-- **Doel:** Real-time communicatie tussen UI en orchestrator
+- **Type:** WebSocket/JSON op :8001
+- **Messages:** user_message, assistant_message_chunk, tool_call, tool_approval_request/response, status, error
 
 #### K.2: MCP Protocol
-- **Van:** Orchestrator → Agent Stack
-- **Type:** Model Context Protocol
-- **Doel:** Gestandaardiseerde agent communicatie
-- **Voordelen:** Auditeerbaar, observeerbaar, OAuth support
+- **Van:** Orchestrator → MCP Agent Servers
+- **Type:** HTTP POST /mcp (Streamable HTTP)
+- **Voordelen:** Auditeerbaar, observeerbaar, uitbreidbaar
 
 ### Technologie Stack (v1.0)
 
-| Component | Technologie | Rationale |
-|-----------|-------------|-----------|
-| Frontend | React | Uitbreidbaar met React Native, sterk ecosysteem |
-| HAI | Tekst + Audio | Whisper, ElevenLabs (Video in v2.0) |
-| LLM | Closed-source | GPT-5, Sonnet-4.5, Gemini-2.5-pro (hybrid later) |
-| Orchestrator | LangChain | Agent chaining met OAuth support |
-| Agent Protocol | MCP | Auditeerbaar & observeerbaar |
-| Logging | Grafana + Prometheus + OTel | Volledige observability stack |
-| Moderator | Guardrails-AI | Output moderatie (NeMo optioneel) |
-| Infrastructuur | Hybride | NL private cloud + EU hyperscalers |
+| Component | Technologie | Status |
+|-----------|-------------|--------|
+| Frontend | React + Vite + Zustand + TailwindCSS | ✅ |
+| Backend (OpenAI) | FastAPI + OpenAI Agents SDK | ✅ |
+| Backend (OpenSource) | FastAPI + LangGraph | ✅ |
+| Agent Protocol | MCP (FastMCP) | ✅ |
+| Session Persistence | SQLite | ✅ |
+| Logging | OpenTelemetry | ⚠️ Basis |
+| Observability | Grafana + Prometheus + Jaeger | 🚧 |
+| Auth | OAuth2/OIDC | 🚧 |
 
 ## 🛡️ Compliance
 
-AGORA v1.0 voldoet aan:
+AGORA v1.0 is ontworpen voor:
 - **EU AI Act** - Traceerbaarheid, human-in-the-loop, risicobeoordeling
-- **AVG/GDPR** - Encryptie, minimale verwerking, verwerkersovereenkomsten
+- **AVG/GDPR** - Encryptie, minimale verwerking
 - **BIO** - Passende beveiligingsmaatregelen voor overheid
-- **WCAG** - Toegankelijkheidsrichtlijnen, schermlezer support
-- **IAMA** - Impact assessment van algoritmes
-
-## 🎯 Randvoorwaarden
-
-De architectuur is ontworpen met deze kernvereisten:
-1. **Betrouwbaar** - Herleidbare beslissingen en bronnen
-2. **Observeerbaar** - Human-in-the-loop met zichtbare acties
-3. **Auditeerbaar** - Volledig herleidbare resultaten
-4. **Beschikbaar** - Robuust en schaalbaar
-5. **Uitbreidbaar** - Nieuwe agents direct integreerbaar
-6. **Veilig** - Authenticatie, encryptie, cybersecurity
-7. **Compliant** - BIO, AVG, WCAG, IAMA, EU AI Act
-8. **Gebruiksvriendelijk** - Impact op NVWA medewerkers
-9. **Innovatie stimulerend** - Platform voor verdere ontwikkeling
+- **WCAG** - Toegankelijkheidsrichtlijnen
 
 ## 📚 Bronnen
 
 - [C4 Model](https://c4model.com/)
 - [Structurizr DSL](https://github.com/structurizr/dsl)
 - [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
-- [LangChain](https://www.langchain.com/)
-- [OpenTelemetry](https://opentelemetry.io/)
-
-## 🔧 Geavanceerd Gebruik
-
-### Meerdere Workspaces
-Voor complexe scenario's kun je meerdere `.dsl` bestanden maken:
-```
-c4/
-  workspace.dsl          # Hoofd architectuur
-  workspace-dev.dsl      # Development setup
-  workspace-security.dsl # Security view
-```
-
-### Aangepaste Styling
-Pas kleuren en vormen aan in de `styles` sectie van `workspace.dsl`.
-
-### Dynamische Diagrammen
-Voeg sequence-achtige diagrammen toe voor workflows:
-```dsl
-dynamic agora "InspectionFlow" {
-  inspector -> hai "Start inspectie"
-  hai -> orchestrator "Verwerk verzoek"
-  orchestrator -> stackManager "Selecteer agents"
-  // etc.
-}
-```
+- [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
+- [LangGraph](https://langchain-ai.github.io/langgraph/)
+- [FastMCP](https://github.com/jlowin/fastmcp)
 
 ## 🤝 Bijdragen
 
 Bij het bijwerken van de architectuur:
 1. Update eerst `workspace.dsl`
 2. Controleer de diagrammen in Structurizr Lite
-3. Exporteer relevante diagrammen naar `docs/` (indien nodig)
+3. Gebruik correcte tags (`Shared`, `OpenAI`, `OpenSource`, `NotImplemented`)
 4. Commit het `.dsl` bestand - diagrammen zijn reproduceerbaar
 
 ## 💡 Tips
 
-- **Auto-layout** werkt goed voor nieuwe diagrammen, pas later handmatig aan indien nodig
-- **Deployment diagrammen** zijn krachtig voor infrastructuurdiscussies
-- **Component breakdown** alleen waar het waarde toevoegt (niet alles)
+- **Auto-layout** werkt goed voor nieuwe diagrammen
+- **Tags** bepalen kleuren en styling automatisch
+- **[NOT IMPLEMENTED]** in description + `NotImplemented` tag voor toekomstige features
 - **Consistentie** - gebruik dezelfde terminologie als in technisch ontwerp

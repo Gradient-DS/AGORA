@@ -1,22 +1,22 @@
 {
   "name": "agora-c4-architecture",
   "version": "1.0.0",
-  "description": "C4 Architecture diagrams voor AGORA",
-    "scripts": {
-      "up": "docker compose up -d",
-      "down": "docker compose down",
-      "logs": "docker compose logs -f",
-      "restart": "docker compose restart",
-      "up:opensource": "docker compose up -d structurizr-opensource",
-      "up:openai": "docker compose up -d structurizr-openai"
-    },
+  "description": "C4 Architecture diagrams for AGORA (C1-C3 levels, merged OpenAI SDK and LangGraph variants)",
+  "scripts": {
+    "up": "docker compose up -d && echo '\n✅ AGORA Architecture: http://localhost:8085\n\nAvailable diagrams:\n  - C1: System Context\n  - C2: Containers (shared architecture)\n  - C3: HAI Components [Shared]\n  - C3: Orchestrator [OpenAI]\n  - C3: Orchestrator [OpenSource]\n  - C3: MCP Agent Servers [Shared]'",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f",
+    "restart": "docker compose restart",
+    "status": "docker compose ps"
+  },
   "keywords": [
     "c4",
     "architecture",
-    "structurizr"
+    "structurizr",
+    "langgraph",
+    "openai"
   ],
   "author": "NVWA",
   "license": "UNLICENSED",
   "private": true
 }
-
