@@ -78,12 +78,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
   }, [message.id, message.type, message.tool_status, message.agent_id, addToolCall, updateToolCall, setAgentExecutingTools, setAgentActive]);
 
   if (message.type === 'tool_call') {
+    const toolCallId = message.id || `tool-${Date.now()}`;
     return (
       <div className="flex justify-center mb-2">
         <ToolCallReference
           toolName={message.tool_name || message.content}
           status={message.tool_status || 'started'}
-          toolCallId={message.id || `tool-${Date.now()}`}
+          toolCallId={toolCallId}
         />
       </div>
     );

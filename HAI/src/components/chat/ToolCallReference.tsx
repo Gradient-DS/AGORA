@@ -52,6 +52,7 @@ export function ToolCallReference({ toolName, status, toolCallId }: ToolCallRefe
 
   return (
     <button
+      id={`chat-tool-${toolCallId}`}
       onClick={scrollToToolCall}
       className={cn(
         'inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-all hover:scale-105 cursor-pointer',

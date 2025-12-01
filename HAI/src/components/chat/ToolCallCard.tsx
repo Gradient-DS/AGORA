@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Wrench, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Wrench, CheckCircle2, XCircle, Loader2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ToolCallCardProps {
@@ -8,14 +8,27 @@ interface ToolCallCardProps {
   status: 'started' | 'completed' | 'failed';
   parameters?: Record<string, unknown>;
   result?: string;
+  toolCallId?: string;
 }
 
-export function ToolCallCard({ toolName, status, parameters, result }: ToolCallCardProps) {
+export function ToolCallCard({ toolName, status, parameters, result, toolCallId }: ToolCallCardProps) {
   const formatToolName = (name: string) => {
     return name
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  const scrollToChatMessage = () => {
+    if (!toolCallId) return;
+    const element = document.getElementById(`chat-tool-${toolCallId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2', 'rounded-md');
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2', 'rounded-md');
+      }, 2000);
+    }
   };
 
   const statusConfig = {
@@ -50,11 +63,14 @@ export function ToolCallCard({ toolName, status, parameters, result }: ToolCallC
 
   return (
     <Card
+      onClick={toolCallId ? scrollToChatMessage : undefined}
       className={cn(
         'p-3 mb-3 border animate-in fade-in slide-in-from-left-2',
         config.bgColor,
-        config.borderColor
+        config.borderColor,
+        toolCallId && 'cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all'
       )}
+      title={toolCallId ? 'Klik om naar chat bericht te scrollen' : undefined}
     >
       <div className="flex items-start gap-3">
         <div className={cn('mt-0.5', config.color)}>
@@ -71,6 +87,9 @@ export function ToolCallCard({ toolName, status, parameters, result }: ToolCallC
             <Badge variant="secondary" className={cn('text-xs', config.labelColor)}>
               {config.label}
             </Badge>
+            {toolCallId && (
+              <ExternalLink className="h-3 w-3 text-muted-foreground opacity-50" aria-hidden="true" />
+            )}
           </div>
 
           {parameters && Object.keys(parameters).length > 0 && (

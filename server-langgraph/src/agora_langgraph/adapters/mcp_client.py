@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Any
 
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -23,69 +22,49 @@ class MCPClientManager:
                         e.g. {"regulation": "http://localhost:5002", ...}
         """
         self.server_urls = server_urls
-        self._client: MultiServerMCPClient | None = None
+        self._clients: dict[str, MultiServerMCPClient] = {}
         self._tools: list[BaseTool] = []
         self._tools_by_server: dict[str, list[BaseTool]] = {}
 
-    def _build_server_config(self) -> dict[str, dict[str, Any]]:
-        """Build MultiServerMCPClient configuration from server URLs."""
-        config = {}
-        for server_name, base_url in self.server_urls.items():
-            mcp_url = base_url if base_url.endswith("/mcp") else f"{base_url}/mcp"
-            config[server_name] = {
-                "url": mcp_url,
-                "transport": "streamable_http",
-            }
-            log.info(f"Configured MCP server: {server_name} at {mcp_url}")
-        return config
-
     async def connect(self) -> None:
-        """Connect to all MCP servers and load tools."""
+        """Connect to each MCP server individually and track tools by server."""
         if not self.server_urls:
             log.info("No MCP servers configured")
             return
 
-        server_config = self._build_server_config()
-        self._client = MultiServerMCPClient(server_config)
+        for server_name, base_url in self.server_urls.items():
+            mcp_url = base_url if base_url.endswith("/mcp") else f"{base_url}/mcp"
+            log.info(f"Configured MCP server: {server_name} at {mcp_url}")
 
-        self._tools = await self._client.get_tools()
+            config = {
+                server_name: {
+                    "url": mcp_url,
+                    "transport": "streamable_http",
+                }
+            }
+
+            try:
+                client = MultiServerMCPClient(config)
+                tools = await client.get_tools()
+
+                self._clients[server_name] = client
+                self._tools_by_server[server_name] = tools
+                self._tools.extend(tools)
+
+                tool_names = [getattr(t, "name", str(t)) for t in tools]
+                log.info(f"Server '{server_name}' has {len(tools)} tools: {tool_names}")
+            except Exception as e:
+                log.error(f"Failed to connect to MCP server '{server_name}': {e}")
+                self._tools_by_server[server_name] = []
+
         log.info(f"Loaded {len(self._tools)} tools from MCP servers")
-
-        self._organize_tools_by_server()
-
-    def _organize_tools_by_server(self) -> None:
-        """Organize loaded tools by their source server."""
-        for server_name in self.server_urls:
-            self._tools_by_server[server_name] = []
-
-        for tool in self._tools:
-            tool_name = getattr(tool, "name", str(tool))
-            for server_name in self.server_urls:
-                if (
-                    tool_name.startswith(f"{server_name}_")
-                    or server_name in tool_name.lower()
-                ):
-                    self._tools_by_server[server_name].append(tool)
-                    log.debug(f"Tool '{tool_name}' assigned to server '{server_name}'")
-                    break
-            else:
-                if self.server_urls:
-                    first_server = next(iter(self.server_urls))
-                    self._tools_by_server[first_server].append(tool)
-                    log.debug(
-                        f"Tool '{tool_name}' assigned to default server '{first_server}'"
-                    )
-
-        for server_name, tools in self._tools_by_server.items():
-            log.info(f"Server '{server_name}' has {len(tools)} tools")
 
     async def disconnect(self) -> None:
         """Disconnect from all MCP servers."""
-        if self._client:
-            self._client = None
-            self._tools = []
-            self._tools_by_server = {}
-            log.info("Disconnected from MCP servers")
+        self._clients = {}
+        self._tools = []
+        self._tools_by_server = {}
+        log.info("Disconnected from MCP servers")
 
     def get_all_tools(self) -> list[BaseTool]:
         """Get all loaded MCP tools."""
