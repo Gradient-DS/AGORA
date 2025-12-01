@@ -5,110 +5,153 @@
   "description" : "Description",
   "documentation" : { },
   "id" : 1,
-  "lastModifiedDate" : "2025-11-18T07:06:08Z",
+  "lastModifiedAgent" : "structurizr-ui",
+  "lastModifiedDate" : "2025-12-01T12:09:30Z",
   "model" : {
     "people" : [ {
-      "description" : "NVWA medewerker die AGORA gebruikt voor dagelijks werk",
+      "description" : "Food safety inspector using AGORA for daily inspection work",
       "id" : "1",
       "location" : "Unspecified",
-      "name" : "Inspecteur",
+      "name" : "NVWA Inspecteur",
       "properties" : {
         "structurizr.dsl.identifier" : "inspector"
       },
       "relationships" : [ {
-        "description" : "Gebruikt",
+        "description" : "uses for inspections",
         "destinationId" : "2",
-        "id" : "51",
-        "sourceId" : "1",
-        "tags" : "Relationship",
-        "technology" : "Tekst/Spraak/Video"
-      }, {
-        "description" : "Interacteert met",
-        "destinationId" : "3",
-        "id" : "52",
+        "id" : "113",
         "sourceId" : "1",
         "tags" : "Relationship",
         "technology" : "HTTPS/WebSocket"
-      }, {
-        "description" : "Gebruikt interface",
-        "destinationId" : "4",
-        "id" : "53",
-        "sourceId" : "1",
-        "tags" : "Relationship",
-        "technology" : "HTTPS"
-      }, {
-        "description" : "Spreekt met",
-        "destinationId" : "5",
-        "id" : "54",
-        "sourceId" : "1",
-        "tags" : "Relationship",
-        "technology" : "Audio"
       } ],
       "tags" : "Element,Person"
     } ],
     "softwareSystems" : [ {
       "containers" : [ {
         "components" : [ {
-          "description" : "Gebruikersinterface componenten voor chat, voice en visualisaties",
+          "description" : "ChatInterface, ChatMessageList, ChatInput, ChatMessage, ToolCallCard, LoadingIndicator",
           "documentation" : { },
           "id" : "4",
-          "name" : "UI Components",
+          "name" : "[Shared] Chat Components",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.uicomponents"
+            "structurizr.dsl.identifier" : "agora.hai.chatcomponents"
           },
           "relationships" : [ {
-            "description" : "Stuurt berichten via",
-            "destinationId" : "6",
-            "id" : "7",
+            "description" : "reads/writes",
+            "destinationId" : "7",
+            "id" : "10",
             "sourceId" : "4",
-            "tags" : "Relationship"
+            "tags" : "Relationship",
+            "technology" : "Zustand selectors"
           } ],
-          "tags" : "Element,Component",
-          "technology" : "React"
+          "tags" : "Element,Component,Shared"
         }, {
-          "description" : "Spraak-naar-tekst en tekst-naar-spraak conversie",
+          "description" : "ApprovalDialog for human-in-the-loop tool approval workflow",
           "documentation" : { },
           "id" : "5",
-          "name" : "Audio Interface",
+          "name" : "[Shared] Approval Dialog",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.audiointerface"
+            "structurizr.dsl.identifier" : "agora.hai.approvaldialog"
           },
           "relationships" : [ {
-            "description" : "Streamt audio via",
-            "destinationId" : "6",
-            "id" : "8",
+            "description" : "reads/writes",
+            "destinationId" : "7",
+            "id" : "11",
             "sourceId" : "5",
-            "tags" : "Relationship"
+            "tags" : "Relationship",
+            "technology" : "Zustand selectors"
           } ],
-          "tags" : "Element,Component",
-          "technology" : "TypeScript"
+          "tags" : "Element,Component,Shared"
         }, {
-          "description" : "Real-time communicatie met Orchestrator",
+          "description" : "Tool call visualization and debugging interface",
           "documentation" : { },
           "id" : "6",
-          "name" : "WebSocket Client",
+          "name" : "[Shared] Debug Panel",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.hai.debugpanel"
+          },
+          "relationships" : [ {
+            "description" : "reads",
+            "destinationId" : "7",
+            "id" : "12",
+            "sourceId" : "6",
+            "tags" : "Relationship",
+            "technology" : "Zustand selectors"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Client stores: useMessageStore, useSessionStore, useConnectionStore, useApprovalStore, useAgentStore, useToolCallStore",
+          "documentation" : { },
+          "id" : "7",
+          "name" : "[Shared] State Management",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.hai.statemanagement"
+          },
+          "relationships" : [ {
+            "description" : "dispatches messages",
+            "destinationId" : "8",
+            "id" : "13",
+            "sourceId" : "7",
+            "tags" : "Relationship",
+            "technology" : "TypeScript"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "HAI Protocol WebSocket client for real-time bidirectional communication",
+          "documentation" : { },
+          "id" : "8",
+          "name" : "[Shared] WebSocket Client",
           "properties" : {
             "structurizr.dsl.identifier" : "agora.hai.websocketclient"
           },
           "relationships" : [ {
-            "description" : "Communiceert met",
-            "destinationId" : "9",
-            "id" : "34",
-            "sourceId" : "6",
+            "description" : "HAI Protocol",
+            "destinationId" : "14",
+            "id" : "84",
+            "sourceId" : "8",
             "tags" : "Relationship",
             "technology" : "WebSocket"
           }, {
-            "description" : "Stuurt requests naar",
-            "destinationId" : "15",
-            "id" : "35",
-            "sourceId" : "6",
+            "description" : "HAI Protocol",
+            "destinationId" : "16",
+            "id" : "101",
+            "sourceId" : "8",
             "tags" : "Relationship",
             "technology" : "WebSocket"
+          }, {
+            "description" : "HAI Protocol",
+            "destinationId" : "15",
+            "id" : "102",
+            "linkedRelationshipId" : "101",
+            "sourceId" : "8",
+            "technology" : "WebSocket"
+          }, {
+            "description" : "HAI Protocol",
+            "destinationId" : "42",
+            "id" : "105",
+            "sourceId" : "8",
+            "tags" : "Relationship",
+            "technology" : "WebSocket"
+          }, {
+            "description" : "HAI Protocol",
+            "destinationId" : "41",
+            "id" : "106",
+            "linkedRelationshipId" : "105",
+            "sourceId" : "8",
+            "technology" : "WebSocket"
           } ],
-          "tags" : "Element,Component",
-          "technology" : "TypeScript"
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "[NOT IMPLEMENTED] Speech-to-text and text-to-speech interface",
+          "documentation" : { },
+          "id" : "9",
+          "name" : "[Shared] Voice Interface",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.hai.voiceinterface"
+          },
+          "tags" : "Element,Component,NotImplemented,Shared"
         } ],
-        "description" : "Gebruikersinterface voor interactie met AGORA via tekst en spraak",
+        "description" : "[Shared] Web-based user interface for inspector interactions via text",
         "documentation" : { },
         "id" : "3",
         "name" : "Human Agent Interface (HAI)",
@@ -117,348 +160,784 @@
         },
         "relationships" : [ {
           "description" : "HAI Protocol",
-          "destinationId" : "9",
-          "id" : "30",
+          "destinationId" : "14",
+          "id" : "80",
           "sourceId" : "3",
           "tags" : "Relationship",
-          "technology" : "WebSocket/JSON"
+          "technology" : "WebSocket/JSON :8001"
         }, {
-          "description" : "Stuurt requests naar",
+          "description" : "HAI Protocol",
+          "destinationId" : "16",
+          "id" : "103",
+          "linkedRelationshipId" : "101",
+          "sourceId" : "3",
+          "technology" : "WebSocket"
+        }, {
+          "description" : "HAI Protocol",
           "destinationId" : "15",
-          "id" : "36",
-          "linkedRelationshipId" : "35",
+          "id" : "104",
+          "linkedRelationshipId" : "101",
+          "sourceId" : "3",
+          "technology" : "WebSocket"
+        }, {
+          "description" : "HAI Protocol",
+          "destinationId" : "42",
+          "id" : "107",
+          "linkedRelationshipId" : "105",
+          "sourceId" : "3",
+          "technology" : "WebSocket"
+        }, {
+          "description" : "HAI Protocol",
+          "destinationId" : "41",
+          "id" : "108",
+          "linkedRelationshipId" : "105",
           "sourceId" : "3",
           "technology" : "WebSocket"
         } ],
-        "tags" : "Element,Container,Frontend",
-        "technology" : "React"
+        "tags" : "Element,Container,Frontend,Shared",
+        "technology" : "React SPA"
       }, {
-        "components" : [ {
-          "description" : "Krachtig LLM met goede reasoning kwaliteiten en function calling",
-          "documentation" : { },
-          "id" : "10",
-          "name" : "Reasoning LLM",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.reasoningllm"
-          },
-          "relationships" : [ {
-            "description" : "Roept tools aan via",
-            "destinationId" : "11",
-            "id" : "20",
-            "sourceId" : "10",
-            "tags" : "Relationship"
-          }, {
-            "description" : "Controleert output via",
-            "destinationId" : "12",
-            "id" : "21",
-            "sourceId" : "10",
-            "tags" : "Relationship"
-          } ],
-          "tags" : "Element,Component",
-          "technology" : "LLM"
-        }, {
-          "description" : "Communiceert met externe services via MCP standaard",
-          "documentation" : { },
-          "id" : "11",
-          "name" : "MCP Client",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.mcpclient"
-          },
-          "relationships" : [ {
-            "description" : "Roept tools aan",
-            "destinationId" : "50",
-            "id" : "57",
-            "sourceId" : "11",
-            "tags" : "Relationship",
-            "technology" : "MCP"
-          } ],
-          "tags" : "Element,Component",
-          "technology" : "Python"
-        }, {
-          "description" : "AI governance: controleert op hallucinaties, gevoelige inhoud en compliance",
-          "documentation" : { },
-          "id" : "12",
-          "name" : "Moderator",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.moderator"
-          },
-          "tags" : "Element,Component",
-          "technology" : "Python"
-        }, {
-          "description" : "Selecteert en activeert relevante MCP tools op basis van gebruiker, situatie en gebeurtenissen",
-          "documentation" : { },
-          "id" : "13",
-          "name" : "Tool Selector",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.toolselector"
-          },
-          "relationships" : [ {
-            "description" : "Levert beschikbare tools",
-            "destinationId" : "10",
-            "id" : "19",
-            "sourceId" : "13",
-            "tags" : "Relationship"
-          }, {
-            "description" : "Vraagt tool configuraties op",
-            "destinationId" : "22",
-            "id" : "37",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          }, {
-            "description" : "Leest profiel",
-            "destinationId" : "25",
-            "id" : "38",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          }, {
-            "description" : "Leest catalogus",
-            "destinationId" : "23",
-            "id" : "40",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          }, {
-            "description" : "Beheert configuraties",
-            "destinationId" : "24",
-            "id" : "42",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          }, {
-            "description" : "Leest profiel data",
-            "destinationId" : "26",
-            "id" : "44",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          }, {
-            "description" : "Leest voorkeuren",
-            "destinationId" : "27",
-            "id" : "46",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          }, {
-            "description" : "Schrijft geschiedenis",
-            "destinationId" : "28",
-            "id" : "48",
-            "sourceId" : "13",
-            "tags" : "Relationship",
-            "technology" : "SQL"
-          } ],
-          "tags" : "Element,Component",
-          "technology" : "Python"
-        }, {
-          "description" : "Beheert conversatie context en geschiedenis voor de agent",
-          "documentation" : { },
-          "id" : "14",
-          "name" : "Memory Manager",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.memorymanager"
-          },
-          "tags" : "Element,Component",
-          "technology" : "Python"
-        }, {
-          "description" : "Beheert orchestratie state met checkpointing, human-in-the-loop interventie en rollback mogelijkheden",
-          "documentation" : { },
-          "id" : "15",
-          "name" : "State Manager",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.statemanager"
-          },
-          "relationships" : [ {
-            "description" : "Beheert conversatie state",
-            "destinationId" : "14",
-            "id" : "17",
-            "sourceId" : "15",
-            "tags" : "Relationship"
-          }, {
-            "description" : "Orkestreert agent loop",
-            "destinationId" : "10",
-            "id" : "18",
-            "sourceId" : "15",
-            "tags" : "Relationship"
-          } ],
-          "tags" : "Element,Component",
-          "technology" : "Python"
-        }, {
-          "description" : "Audit logging van alle orchestrator beslissingen (ontvangt events van alle componenten)",
-          "documentation" : { },
-          "id" : "16",
-          "name" : "Audit Logger",
-          "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestrator.auditlogger"
-          },
-          "relationships" : [ {
-            "description" : "Stuurt logs",
-            "destinationId" : "29",
-            "id" : "39",
-            "sourceId" : "16",
-            "tags" : "Relationship",
-            "technology" : "OpenTelemetry"
-          } ],
-          "tags" : "Element,Component",
-          "technology" : "Python"
-        } ],
-        "description" : "Centrale orchestratie-engine met reasoning LLM, state management, MCP client, memory management, moderatie en tool selectie",
+        "description" : "Central orchestration for multi-agent coordination. See C3 diagrams for implementation-specific details.",
         "documentation" : { },
-        "id" : "9",
-        "name" : "Orchestrator",
+        "id" : "14",
+        "name" : "Orchestrator [OpenAI/OpenSource]",
         "properties" : {
           "structurizr.dsl.identifier" : "agora.orchestrator"
         },
         "relationships" : [ {
-          "description" : "Haalt profiel op",
-          "destinationId" : "25",
-          "id" : "31",
-          "sourceId" : "9",
+          "description" : "MCP Protocol",
+          "destinationId" : "71",
+          "id" : "81",
+          "sourceId" : "14",
           "tags" : "Relationship",
-          "technology" : "SQL"
+          "technology" : "HTTP/SSE Streamable"
         }, {
-          "description" : "Beheert tools",
-          "destinationId" : "22",
-          "id" : "32",
-          "sourceId" : "9",
+          "description" : "[NOT CONNECTED]",
+          "destinationId" : "77",
+          "id" : "82",
+          "sourceId" : "14",
           "tags" : "Relationship",
-          "technology" : "SQL"
+          "technology" : "OpenTelemetry OTLP"
         }, {
-          "description" : "Traces & decisions",
-          "destinationId" : "29",
-          "id" : "33",
-          "sourceId" : "9",
+          "description" : "[NOT CONNECTED]",
+          "destinationId" : "78",
+          "id" : "83",
+          "sourceId" : "14",
           "tags" : "Relationship",
-          "technology" : "OpenTelemetry"
+          "technology" : "Langfuse SDK"
         }, {
-          "description" : "Leest catalogus",
-          "destinationId" : "23",
-          "id" : "41",
-          "linkedRelationshipId" : "40",
-          "sourceId" : "9",
-          "technology" : "SQL"
-        }, {
-          "description" : "Beheert configuraties",
-          "destinationId" : "24",
-          "id" : "43",
-          "linkedRelationshipId" : "42",
-          "sourceId" : "9",
-          "technology" : "SQL"
-        }, {
-          "description" : "Leest profiel data",
-          "destinationId" : "26",
-          "id" : "45",
-          "linkedRelationshipId" : "44",
-          "sourceId" : "9",
-          "technology" : "SQL"
-        }, {
-          "description" : "Leest voorkeuren",
-          "destinationId" : "27",
-          "id" : "47",
-          "linkedRelationshipId" : "46",
-          "sourceId" : "9",
-          "technology" : "SQL"
-        }, {
-          "description" : "Schrijft geschiedenis",
-          "destinationId" : "28",
-          "id" : "49",
-          "linkedRelationshipId" : "48",
-          "sourceId" : "9",
-          "technology" : "SQL"
-        }, {
-          "description" : "Roept aan via MCP",
-          "destinationId" : "50",
-          "id" : "56",
-          "sourceId" : "9",
+          "description" : "MCP",
+          "destinationId" : "72",
+          "id" : "109",
+          "sourceId" : "14",
           "tags" : "Relationship",
-          "technology" : "MCP Protocol"
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "73",
+          "id" : "110",
+          "sourceId" : "14",
+          "tags" : "Relationship",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "74",
+          "id" : "111",
+          "sourceId" : "14",
+          "tags" : "Relationship",
+          "technology" : "HTTP POST /mcp"
         } ],
         "tags" : "Element,Container,Backend",
         "technology" : "Python"
       }, {
         "components" : [ {
-          "description" : "Catalogus van alle beschikbare MCP tools en resources met hun capabilities",
+          "description" : "HTTP server with WebSocket support at /ws endpoint",
           "documentation" : { },
+          "group" : "API Layer [Shared]",
+          "id" : "16",
+          "name" : "[Shared] FastAPI Server",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaifastapiserver"
+          },
+          "relationships" : [ {
+            "description" : "routes WebSocket",
+            "destinationId" : "17",
+            "id" : "30",
+            "sourceId" : "16",
+            "tags" : "Relationship",
+            "technology" : "WebSocket"
+          }, {
+            "description" : "routes HTTP",
+            "destinationId" : "18",
+            "id" : "31",
+            "sourceId" : "16",
+            "tags" : "Relationship",
+            "technology" : "HTTP/REST"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Processes HAI Protocol messages: user_message, assistant_message_chunk, tool_call, tool_approval_request/response, status, error",
+          "documentation" : { },
+          "group" : "API Layer [Shared]",
+          "id" : "17",
+          "name" : "[Shared] HAI Protocol Handler",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaihaiprotocolhandler"
+          },
+          "relationships" : [ {
+            "description" : "processes messages",
+            "destinationId" : "19",
+            "id" : "32",
+            "sourceId" : "17",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "/health, /agents, /sessions/{id}/history endpoints",
+          "documentation" : { },
+          "group" : "API Layer [Shared]",
+          "id" : "18",
+          "name" : "[Shared] REST Endpoints",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oairestendpoints"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Main message processing with approval flow management using stream callbacks",
+          "documentation" : { },
+          "group" : "Pipelines Layer [Shared]",
+          "id" : "19",
+          "name" : "[Shared] Orchestrator Pipeline",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiorchestratorpipeline"
+          },
+          "relationships" : [ {
+            "description" : "runs agents",
+            "destinationId" : "22",
+            "id" : "33",
+            "sourceId" : "19",
+            "tags" : "Relationship"
+          }, {
+            "description" : "validates I/O",
+            "destinationId" : "20",
+            "id" : "34",
+            "sourceId" : "19",
+            "tags" : "Relationship"
+          }, {
+            "description" : "checks approval",
+            "destinationId" : "24",
+            "id" : "35",
+            "sourceId" : "19",
+            "tags" : "Relationship"
+          }, {
+            "description" : "logs events",
+            "destinationId" : "27",
+            "id" : "40",
+            "sourceId" : "19",
+            "tags" : "Relationship",
+            "technology" : "OpenTelemetry"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Input validation, output filtering, blocked patterns detection",
+          "documentation" : { },
+          "group" : "Pipelines Layer [Shared]",
+          "id" : "20",
+          "name" : "[Shared] Moderator",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaimoderator"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "SDK Agent instances with instructions and handoff configuration",
+          "documentation" : { },
+          "group" : "Core Layer [OpenAI]",
+          "id" : "21",
+          "name" : "[OpenAI] Agent Definitions",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiagentdefinitions"
+          },
+          "relationships" : [ {
+            "description" : "configures tools",
+            "destinationId" : "26",
+            "id" : "39",
+            "sourceId" : "21",
+            "tags" : "Relationship",
+            "technology" : "MCP config"
+          } ],
+          "tags" : "Element,Component,OpenAI"
+        }, {
+          "description" : "Runner.run_streamed() for streaming responses with tool callbacks",
+          "documentation" : { },
+          "group" : "Core Layer [OpenAI]",
+          "id" : "22",
+          "name" : "[OpenAI] Agent Executor",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiagentexecutor"
+          },
+          "relationships" : [ {
+            "description" : "gets agents",
+            "destinationId" : "21",
+            "id" : "36",
+            "sourceId" : "22",
+            "tags" : "Relationship"
+          }, {
+            "description" : "handles handoffs",
+            "destinationId" : "23",
+            "id" : "37",
+            "sourceId" : "22",
+            "tags" : "Relationship"
+          }, {
+            "description" : "persists state",
+            "destinationId" : "25",
+            "id" : "38",
+            "sourceId" : "22",
+            "tags" : "Relationship",
+            "technology" : "SQLite"
+          } ],
+          "tags" : "Element,Component,OpenAI"
+        }, {
+          "description" : "Built-in SDK handoffs via agent.handoffs list - automatic context transfer",
+          "documentation" : { },
+          "group" : "Core Layer [OpenAI]",
           "id" : "23",
-          "name" : "Tool Registry",
+          "name" : "[OpenAI] Handoff Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.toolcatalog.toolregistry"
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaihandofflogic"
           },
-          "tags" : "Element,Component",
-          "technology" : "Database Table"
+          "tags" : "Element,Component,OpenAI"
         }, {
-          "description" : "Configuraties van actieve tools per gebruiker/context",
+          "description" : "Human-in-loop rules for high-risk tools",
           "documentation" : { },
+          "group" : "Core Layer [OpenAI]",
           "id" : "24",
-          "name" : "Tool Config",
+          "name" : "[Shared] Approval Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.toolcatalog.toolconfig"
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiapprovallogic"
           },
-          "tags" : "Element,Component",
-          "technology" : "Database Table"
-        } ],
-        "description" : "Database met beschikbare MCP tools, resources en hun configuraties",
-        "documentation" : { },
-        "id" : "22",
-        "name" : "Tool Catalog",
-        "properties" : {
-          "structurizr.dsl.identifier" : "agora.toolcatalog"
-        },
-        "tags" : "Element,Container,Database",
-        "technology" : "PostgreSQL"
-      }, {
-        "components" : [ {
-          "description" : "Naam, rol, voorkeuren, permissies",
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "SDK SQLiteSession for conversation history (sessions.db)",
           "documentation" : { },
+          "group" : "Core Layer [OpenAI]",
+          "id" : "25",
+          "name" : "[OpenAI] Session Persistence",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaisessionpersistence"
+          },
+          "tags" : "Element,Component,OpenAI"
+        }, {
+          "description" : "Native OpenAI SDK MCP integration with per-agent tool scoping via AGENT_MCP_MAPPING",
+          "documentation" : { },
+          "group" : "Adapters Layer",
           "id" : "26",
-          "name" : "Profile Data",
+          "name" : "[OpenAI] MCP Adapter",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.userprofile.profiledata"
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaimcpadapter"
           },
-          "tags" : "Element,Component",
-          "technology" : "Database Table"
+          "relationships" : [ {
+            "description" : "MCP",
+            "destinationId" : "72",
+            "id" : "85",
+            "sourceId" : "26",
+            "tags" : "Relationship",
+            "technology" : "HTTP POST /mcp"
+          }, {
+            "description" : "MCP",
+            "destinationId" : "71",
+            "id" : "86",
+            "linkedRelationshipId" : "85",
+            "sourceId" : "26",
+            "technology" : "HTTP POST /mcp"
+          }, {
+            "description" : "MCP",
+            "destinationId" : "73",
+            "id" : "89",
+            "sourceId" : "26",
+            "tags" : "Relationship",
+            "technology" : "HTTP POST /mcp"
+          }, {
+            "description" : "MCP",
+            "destinationId" : "74",
+            "id" : "91",
+            "sourceId" : "26",
+            "tags" : "Relationship",
+            "technology" : "HTTP POST /mcp"
+          } ],
+          "tags" : "Element,Component,OpenAI"
         }, {
-          "description" : "Taal, notificaties, agent voorkeuren",
+          "description" : "OpenTelemetry-based audit logging of messages and decisions",
           "documentation" : { },
+          "group" : "Adapters Layer",
           "id" : "27",
-          "name" : "Preferences",
+          "name" : "[Shared] Audit Logger",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.userprofile.preferences"
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiauditlogger"
           },
-          "tags" : "Element,Component",
-          "technology" : "Database Table"
+          "tags" : "Element,Component,Shared"
         }, {
-          "description" : "Interactie geschiedenis en context",
+          "description" : "[NOT IMPLEMENTED] API rate limiting per user/IP",
           "documentation" : { },
           "id" : "28",
-          "name" : "History",
+          "name" : "[Shared] Rate Limiter",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.userprofile.history"
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oairatelimiter"
           },
-          "tags" : "Element,Component",
-          "technology" : "Database Table"
+          "tags" : "Element,Component,NotImplemented,Shared"
+        }, {
+          "description" : "[NOT IMPLEMENTED] Circuit breaker pattern for MCP server calls",
+          "documentation" : { },
+          "id" : "29",
+          "name" : "[Shared] Circuit Breaker",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaicircuitbreaker"
+          },
+          "tags" : "Element,Component,NotImplemented,Shared"
         } ],
-        "description" : "Database met gebruikersprofielen voor personalisatie",
+        "description" : "Central orchestration using OpenAI Agents SDK with native handoffs and MCP support.",
         "documentation" : { },
-        "id" : "25",
+        "id" : "15",
+        "name" : "Orchestrator [OpenAI]",
+        "properties" : {
+          "structurizr.dsl.identifier" : "agora.orchestratoropenai"
+        },
+        "relationships" : [ {
+          "description" : "MCP",
+          "destinationId" : "72",
+          "id" : "87",
+          "linkedRelationshipId" : "85",
+          "sourceId" : "15",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "71",
+          "id" : "88",
+          "linkedRelationshipId" : "85",
+          "sourceId" : "15",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "73",
+          "id" : "90",
+          "linkedRelationshipId" : "89",
+          "sourceId" : "15",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "74",
+          "id" : "92",
+          "linkedRelationshipId" : "91",
+          "sourceId" : "15",
+          "technology" : "HTTP POST /mcp"
+        } ],
+        "tags" : "Element,Container,Backend,OpenAI",
+        "technology" : "Python"
+      }, {
+        "components" : [ {
+          "description" : "HTTP server with WebSocket support at /ws endpoint",
+          "documentation" : { },
+          "group" : "API Layer [Shared]",
+          "id" : "42",
+          "name" : "[Shared] FastAPI Server",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgfastapiserver"
+          },
+          "relationships" : [ {
+            "description" : "routes WebSocket",
+            "destinationId" : "43",
+            "id" : "58",
+            "sourceId" : "42",
+            "tags" : "Relationship",
+            "technology" : "WebSocket"
+          }, {
+            "description" : "routes HTTP",
+            "destinationId" : "44",
+            "id" : "59",
+            "sourceId" : "42",
+            "tags" : "Relationship",
+            "technology" : "HTTP/REST"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Processes HAI Protocol messages: user_message, assistant_message_chunk, tool_call, tool_approval_request/response, status, error",
+          "documentation" : { },
+          "group" : "API Layer [Shared]",
+          "id" : "43",
+          "name" : "[Shared] HAI Protocol Handler",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lghaiprotocolhandler"
+          },
+          "relationships" : [ {
+            "description" : "processes messages",
+            "destinationId" : "45",
+            "id" : "60",
+            "sourceId" : "43",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "/health, /agents, /sessions/{id}/history endpoints",
+          "documentation" : { },
+          "group" : "API Layer [Shared]",
+          "id" : "44",
+          "name" : "[Shared] REST Endpoints",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgrestendpoints"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Main message processing with approval flow management using astream_events",
+          "documentation" : { },
+          "group" : "Pipelines Layer [Shared]",
+          "id" : "45",
+          "name" : "[Shared] Orchestrator Pipeline",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgorchestratorpipeline"
+          },
+          "relationships" : [ {
+            "description" : "invokes graph",
+            "destinationId" : "48",
+            "id" : "61",
+            "sourceId" : "45",
+            "tags" : "Relationship"
+          }, {
+            "description" : "validates I/O",
+            "destinationId" : "46",
+            "id" : "62",
+            "sourceId" : "45",
+            "tags" : "Relationship"
+          }, {
+            "description" : "checks approval",
+            "destinationId" : "52",
+            "id" : "63",
+            "sourceId" : "45",
+            "tags" : "Relationship"
+          }, {
+            "description" : "logs events",
+            "destinationId" : "55",
+            "id" : "70",
+            "sourceId" : "45",
+            "tags" : "Relationship",
+            "technology" : "OpenTelemetry"
+          } ],
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Input validation, output filtering, blocked patterns detection",
+          "documentation" : { },
+          "group" : "Pipelines Layer [Shared]",
+          "id" : "46",
+          "name" : "[Shared] Moderator",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgmoderator"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Async functions (general_agent, regulation_agent, etc.) invoking ChatOpenAI with bound tools",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "47",
+          "name" : "[OpenSource] Agent Definitions",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgagentdefinitions"
+          },
+          "relationships" : [ {
+            "description" : "binds tools",
+            "destinationId" : "54",
+            "id" : "69",
+            "sourceId" : "47",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "StateGraph with AgentState TypedDict, astream_events() for streaming",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "48",
+          "name" : "[OpenSource] Agent Executor",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgagentexecutor"
+          },
+          "relationships" : [ {
+            "description" : "executes tools",
+            "destinationId" : "49",
+            "id" : "64",
+            "sourceId" : "48",
+            "tags" : "Relationship"
+          }, {
+            "description" : "determines next",
+            "destinationId" : "51",
+            "id" : "65",
+            "sourceId" : "48",
+            "tags" : "Relationship"
+          }, {
+            "description" : "persists state",
+            "destinationId" : "53",
+            "id" : "68",
+            "sourceId" : "48",
+            "tags" : "Relationship",
+            "technology" : "SQLite"
+          } ],
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "Prebuilt ToolNode handles all tool calls including handoffs",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "49",
+          "name" : "[OpenSource] Tool Executor",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgtoolexecutor"
+          },
+          "relationships" : [ {
+            "description" : "executes handoffs",
+            "destinationId" : "50",
+            "id" : "66",
+            "sourceId" : "49",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "Explicit transfer_to_* tools that must go through ToolNode first",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "50",
+          "name" : "[OpenSource] Handoff Logic",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lghandofflogic"
+          },
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "route_from_agent() → 'tools'|'end', route_after_tools() → detects handoff → target agent",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "51",
+          "name" : "[OpenSource] Routing Logic",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgroutinglogic"
+          },
+          "relationships" : [ {
+            "description" : "routes to agent",
+            "destinationId" : "47",
+            "id" : "67",
+            "sourceId" : "51",
+            "tags" : "Relationship"
+          } ],
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "Human-in-loop rules for high-risk tools",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "52",
+          "name" : "[Shared] Approval Logic",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgapprovallogic"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "LangGraph checkpointer for conversation state (sessions.db)",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "53",
+          "name" : "[OpenSource] Session Persistence",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgsessionpersistence"
+          },
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "langchain-mcp-adapters for MCP server connections with per-agent tool scoping",
+          "documentation" : { },
+          "group" : "Adapters Layer",
+          "id" : "54",
+          "name" : "[OpenSource] MCP Adapter",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgmcpadapter"
+          },
+          "relationships" : [ {
+            "description" : "MCP",
+            "destinationId" : "72",
+            "id" : "93",
+            "sourceId" : "54",
+            "tags" : "Relationship",
+            "technology" : "HTTP POST /mcp"
+          }, {
+            "description" : "MCP",
+            "destinationId" : "71",
+            "id" : "94",
+            "linkedRelationshipId" : "93",
+            "sourceId" : "54",
+            "technology" : "HTTP POST /mcp"
+          }, {
+            "description" : "MCP",
+            "destinationId" : "73",
+            "id" : "97",
+            "sourceId" : "54",
+            "tags" : "Relationship",
+            "technology" : "HTTP POST /mcp"
+          }, {
+            "description" : "MCP",
+            "destinationId" : "74",
+            "id" : "99",
+            "sourceId" : "54",
+            "tags" : "Relationship",
+            "technology" : "HTTP POST /mcp"
+          } ],
+          "tags" : "Element,Component,OpenSource"
+        }, {
+          "description" : "OpenTelemetry-based audit logging of messages and decisions",
+          "documentation" : { },
+          "group" : "Adapters Layer",
+          "id" : "55",
+          "name" : "[Shared] Audit Logger",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgauditlogger"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "[NOT IMPLEMENTED] API rate limiting per user/IP",
+          "documentation" : { },
+          "id" : "56",
+          "name" : "[Shared] Rate Limiter",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgratelimiter"
+          },
+          "tags" : "Element,Component,NotImplemented,Shared"
+        }, {
+          "description" : "[NOT IMPLEMENTED] Circuit breaker pattern for MCP server calls",
+          "documentation" : { },
+          "id" : "57",
+          "name" : "[Shared] Circuit Breaker",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgcircuitbreaker"
+          },
+          "tags" : "Element,Component,NotImplemented,Shared"
+        } ],
+        "description" : "Central orchestration using LangGraph StateGraph (LLM provider-agnostic).",
+        "documentation" : { },
+        "id" : "41",
+        "name" : "Orchestrator [OpenSource]",
+        "properties" : {
+          "structurizr.dsl.identifier" : "agora.orchestratorlanggraph"
+        },
+        "relationships" : [ {
+          "description" : "MCP",
+          "destinationId" : "72",
+          "id" : "95",
+          "linkedRelationshipId" : "93",
+          "sourceId" : "41",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "71",
+          "id" : "96",
+          "linkedRelationshipId" : "93",
+          "sourceId" : "41",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "73",
+          "id" : "98",
+          "linkedRelationshipId" : "97",
+          "sourceId" : "41",
+          "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "MCP",
+          "destinationId" : "74",
+          "id" : "100",
+          "linkedRelationshipId" : "99",
+          "sourceId" : "41",
+          "technology" : "HTTP POST /mcp"
+        } ],
+        "tags" : "Element,Container,Backend,OpenSource",
+        "technology" : "Python"
+      }, {
+        "components" : [ {
+          "description" : "Tools: search_regulations, get_regulation_context, lookup_regulation_articles, analyze_document",
+          "documentation" : { },
+          "id" : "72",
+          "name" : "[Shared] Regulation Agent",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.mcpservers.regulationserver"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Tools: start_inspection_report, extract_inspection_data, verify_inspection_data, generate_final_report",
+          "documentation" : { },
+          "id" : "73",
+          "name" : "[Shared] Reporting Agent",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.mcpservers.reportingserver"
+          },
+          "tags" : "Element,Component,Shared"
+        }, {
+          "description" : "Tools: check_company_exists, get_inspection_history, get_company_violations, check_repeat_violation",
+          "documentation" : { },
+          "id" : "74",
+          "name" : "[Shared] History Agent",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.mcpservers.historyserver"
+          },
+          "tags" : "Element,Component,Shared"
+        } ],
+        "description" : "[Shared] Domain-specific agent capabilities exposed via MCP Protocol. Extensible by adding new MCP servers.",
+        "documentation" : { },
+        "id" : "71",
+        "name" : "MCP Agent Servers",
+        "properties" : {
+          "structurizr.dsl.identifier" : "agora.mcpservers"
+        },
+        "tags" : "Element,Container,Backend,Extensible,Shared",
+        "technology" : "Docker"
+      }, {
+        "description" : "[Shared] [NOT IMPLEMENTED] User profiles, preferences, roles (RBAC)",
+        "documentation" : { },
+        "id" : "75",
         "name" : "User Profile",
         "properties" : {
           "structurizr.dsl.identifier" : "agora.userprofile"
         },
-        "tags" : "Element,Container,Database",
-        "technology" : "PostgreSQL"
+        "tags" : "Element,Container,Database,NotImplemented,Shared",
+        "technology" : "Database"
       }, {
-        "description" : "Monitoring, logging en observability van het gehele AGORA systeem",
+        "description" : "[Shared] [NOT IMPLEMENTED] Long-term memory, cross-session context",
         "documentation" : { },
-        "id" : "29",
-        "name" : "Visibility",
+        "id" : "76",
+        "name" : "Memory Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "agora.memory"
+        },
+        "tags" : "Element,Container,Backend,NotImplemented,Shared",
+        "technology" : "Service"
+      }, {
+        "description" : "[Shared] [NOT IMPLEMENTED] Monitoring, logging, tracing dashboards",
+        "documentation" : { },
+        "id" : "77",
+        "name" : "Visibility Stack",
         "properties" : {
           "structurizr.dsl.identifier" : "agora.visibility"
         },
-        "tags" : "Element,Container,Observability",
-        "technology" : "Observability Stack"
+        "tags" : "Element,Container,Observability,NotImplemented,Shared",
+        "technology" : "Observability"
+      }, {
+        "description" : "[Shared] [NOT IMPLEMENTED] LLM tracing, quality evaluations, cost tracking",
+        "documentation" : { },
+        "id" : "78",
+        "name" : "Evaluation Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "agora.evalservice"
+        },
+        "tags" : "Element,Container,Observability,NotImplemented,Shared",
+        "technology" : "Observability"
+      }, {
+        "description" : "[Shared] [NOT IMPLEMENTED] OAuth2/OIDC authentication, RBAC",
+        "documentation" : { },
+        "id" : "79",
+        "name" : "Auth Service",
+        "properties" : {
+          "structurizr.dsl.identifier" : "agora.authservice"
+        },
+        "tags" : "Element,Container,Security,NotImplemented,Shared",
+        "technology" : "Security"
       } ],
-      "description" : "Multi-agent systeem voor ondersteuning van NVWA inspecteurs",
+      "description" : "Multi-agent compliance platform for NVWA inspectors",
       "documentation" : { },
       "id" : "2",
       "location" : "Unspecified",
@@ -467,100 +946,188 @@
         "structurizr.dsl.identifier" : "agora"
       },
       "relationships" : [ {
-        "description" : "Communiceert met services",
-        "destinationId" : "50",
-        "id" : "55",
+        "description" : "orchestrates agents",
+        "destinationId" : "112",
+        "id" : "114",
         "sourceId" : "2",
         "tags" : "Relationship",
         "technology" : "MCP Protocol"
       } ],
       "tags" : "Element,Software System"
     }, {
-      "description" : "Collectie van externe services die tools en resources via MCP protocol aanbieden",
+      "description" : "[Shared] Extensible domain agents via Model Context Protocol. Add new capabilities by deploying MCP servers.",
       "documentation" : { },
-      "id" : "50",
+      "id" : "112",
       "location" : "Unspecified",
-      "name" : "External Services",
+      "name" : "MCP Agent Ecosystem",
       "properties" : {
-        "structurizr.dsl.identifier" : "externalservices"
+        "structurizr.dsl.identifier" : "mcpecosystem"
       },
-      "tags" : "Element,Software System"
+      "tags" : "Element,Software System,Extensible"
     } ]
   },
-  "name" : "AGORA v1.0 — Multi-Agent Systeem NVWA",
+  "name" : "AGORA v1.0 — Multi-Agent Platform for NVWA",
   "properties" : {
-    "structurizr.dsl" : "d29ya3NwYWNlICJBR09SQSB2MS4wIOKAlCBNdWx0aS1BZ2VudCBTeXN0ZWVtIE5WV0EiIHsKICAhaWRlbnRpZmllcnMgaGllcmFyY2hpY2FsCiAgCiAgbW9kZWwgewogICAgaW5zcGVjdG9yID0gcGVyc29uICJJbnNwZWN0ZXVyIiAiTlZXQSBtZWRld2Vya2VyIGRpZSBBR09SQSBnZWJydWlrdCB2b29yIGRhZ2VsaWprcyB3ZXJrIgogICAgCiAgICBhZ29yYSA9IHNvZnR3YXJlU3lzdGVtICJBR09SQSIgIk11bHRpLWFnZW50IHN5c3RlZW0gdm9vciBvbmRlcnN0ZXVuaW5nIHZhbiBOVldBIGluc3BlY3RldXJzIiB7CiAgICAgIAogICAgICAvLyBDb3JlIGNvbnRhaW5lcnMKICAgICAgaGFpID0gY29udGFpbmVyICJIdW1hbiBBZ2VudCBJbnRlcmZhY2UgKEhBSSkiICJSZWFjdCArIEF1ZGlvIChXaGlzcGVyLCBFbGV2ZW5MYWJzKSIgIlJlYWN0IiB7CiAgICAgICAgZGVzY3JpcHRpb24gIkdlYnJ1aWtlcnNpbnRlcmZhY2Ugdm9vciBpbnRlcmFjdGllIG1ldCBBR09SQSB2aWEgdGVrc3QgZW4gc3ByYWFrIgogICAgICAgIHRhZ3MgIkZyb250ZW5kIgogICAgICAgIAogICAgICAgIC8vIEhBSSBjb21wb25lbnRzCiAgICAgICAgdWlDb21wb25lbnRzID0gY29tcG9uZW50ICJVSSBDb21wb25lbnRzIiAiUmVhY3QgY29tcG9uZW50ZW4iICJSZWFjdCIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkdlYnJ1aWtlcnNpbnRlcmZhY2UgY29tcG9uZW50ZW4gdm9vciBjaGF0LCB2b2ljZSBlbiB2aXN1YWxpc2F0aWVzIgogICAgICAgIH0KICAgICAgICBhdWRpb0ludGVyZmFjZSA9IGNvbXBvbmVudCAiQXVkaW8gSW50ZXJmYWNlIiAiV2hpc3BlciArIEVsZXZlbkxhYnMiICJUeXBlU2NyaXB0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiU3ByYWFrLW5hYXItdGVrc3QgZW4gdGVrc3QtbmFhci1zcHJhYWsgY29udmVyc2llIgogICAgICAgIH0KICAgICAgICB3ZWJzb2NrZXRDbGllbnQgPSBjb21wb25lbnQgIldlYlNvY2tldCBDbGllbnQiICJXZWJTb2NrZXQgdmVyYmluZGluZyIgIlR5cGVTY3JpcHQiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJSZWFsLXRpbWUgY29tbXVuaWNhdGllIG1ldCBPcmNoZXN0cmF0b3IiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIHVpQ29tcG9uZW50cyAtPiB3ZWJzb2NrZXRDbGllbnQgIlN0dXVydCBiZXJpY2h0ZW4gdmlhIgogICAgICAgIGF1ZGlvSW50ZXJmYWNlIC0+IHdlYnNvY2tldENsaWVudCAiU3RyZWFtdCBhdWRpbyB2aWEiCiAgICAgIH0KICAgICAgCiAgICAgIG9yY2hlc3RyYXRvciA9IGNvbnRhaW5lciAiT3JjaGVzdHJhdG9yIiAiTGFuZ0dyYXBoICsgTExNIChHUFQtNS9Tb25uZXQtNC41KSIgIlB5dGhvbiIgewogICAgICAgIGRlc2NyaXB0aW9uICJDZW50cmFsZSBvcmNoZXN0cmF0aWUtZW5naW5lIG1ldCByZWFzb25pbmcgTExNLCBzdGF0ZSBtYW5hZ2VtZW50LCBNQ1AgY2xpZW50LCBtZW1vcnkgbWFuYWdlbWVudCwgbW9kZXJhdGllIGVuIHRvb2wgc2VsZWN0aWUiCiAgICAgICAgdGFncyAiQmFja2VuZCIKICAgICAgICAKICAgICAgICAvLyBPcmNoZXN0cmF0b3IgY29tcG9uZW50cwogICAgICAgIHJlYXNvbmluZ0xMTSA9IGNvbXBvbmVudCAiUmVhc29uaW5nIExMTSIgIkNsb3NlZC1zb3VyY2UgTExNIChHUFQtNSwgU29ubmV0LTQuNSkiICJMTE0iIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJLcmFjaHRpZyBMTE0gbWV0IGdvZWRlIHJlYXNvbmluZyBrd2FsaXRlaXRlbiBlbiBmdW5jdGlvbiBjYWxsaW5nIgogICAgICAgIH0KICAgICAgICBtY3BDbGllbnQgPSBjb21wb25lbnQgIk1DUCBDbGllbnQiICJNb2RlbCBDb250ZXh0IFByb3RvY29sIGNsaWVudCIgIlB5dGhvbiIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkNvbW11bmljZWVydCBtZXQgZXh0ZXJuZSBzZXJ2aWNlcyB2aWEgTUNQIHN0YW5kYWFyZCIKICAgICAgICB9CiAgICAgICAgbW9kZXJhdG9yID0gY29tcG9uZW50ICJNb2RlcmF0b3IiICJHdWFyZHJhaWxzLUFJIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQUkgZ292ZXJuYW5jZTogY29udHJvbGVlcnQgb3AgaGFsbHVjaW5hdGllcywgZ2V2b2VsaWdlIGluaG91ZCBlbiBjb21wbGlhbmNlIgogICAgICAgIH0KICAgICAgICB0b29sU2VsZWN0b3IgPSBjb21wb25lbnQgIlRvb2wgU2VsZWN0b3IiICJQb2xpY3kgRW5naW5lICsgQ29udGV4dCBDb2xsZWN0b3IiICJQeXRob24iIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJTZWxlY3RlZXJ0IGVuIGFjdGl2ZWVydCByZWxldmFudGUgTUNQIHRvb2xzIG9wIGJhc2lzIHZhbiBnZWJydWlrZXIsIHNpdHVhdGllIGVuIGdlYmV1cnRlbmlzc2VuIgogICAgICAgIH0KICAgICAgICBtZW1vcnlNYW5hZ2VyID0gY29tcG9uZW50ICJNZW1vcnkgTWFuYWdlciIgIkxhbmdDaGFpbiBNZW1vcnkiICJQeXRob24iIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJCZWhlZXJ0IGNvbnZlcnNhdGllIGNvbnRleHQgZW4gZ2VzY2hpZWRlbmlzIHZvb3IgZGUgYWdlbnQiCiAgICAgICAgfQogICAgICAgIHN0YXRlTWFuYWdlciA9IGNvbXBvbmVudCAiU3RhdGUgTWFuYWdlciIgIkxhbmdHcmFwaCBTdGF0ZSArIENoZWNrcG9pbnRlciIgIlB5dGhvbiIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkJlaGVlcnQgb3JjaGVzdHJhdGllIHN0YXRlIG1ldCBjaGVja3BvaW50aW5nLCBodW1hbi1pbi10aGUtbG9vcCBpbnRlcnZlbnRpZSBlbiByb2xsYmFjayBtb2dlbGlqa2hlZGVuIgogICAgICAgIH0KICAgICAgICBhdWRpdExvZ2dlciA9IGNvbXBvbmVudCAiQXVkaXQgTG9nZ2VyIiAiT3BlblRlbGVtZXRyeSBsb2dnZXIiICJQeXRob24iIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJBdWRpdCBsb2dnaW5nIHZhbiBhbGxlIG9yY2hlc3RyYXRvciBiZXNsaXNzaW5nZW4gKG9udHZhbmd0IGV2ZW50cyB2YW4gYWxsZSBjb21wb25lbnRlbikiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIHN0YXRlTWFuYWdlciAtPiBtZW1vcnlNYW5hZ2VyICJCZWhlZXJ0IGNvbnZlcnNhdGllIHN0YXRlIgogICAgICAgIHN0YXRlTWFuYWdlciAtPiByZWFzb25pbmdMTE0gIk9ya2VzdHJlZXJ0IGFnZW50IGxvb3AiCiAgICAgICAgdG9vbFNlbGVjdG9yIC0+IHJlYXNvbmluZ0xMTSAiTGV2ZXJ0IGJlc2NoaWtiYXJlIHRvb2xzIgogICAgICAgIHJlYXNvbmluZ0xMTSAtPiBtY3BDbGllbnQgIlJvZXB0IHRvb2xzIGFhbiB2aWEiCiAgICAgICAgcmVhc29uaW5nTExNIC0+IG1vZGVyYXRvciAiQ29udHJvbGVlcnQgb3V0cHV0IHZpYSIKICAgICAgfQogICAgICAKICAgICAgdG9vbENhdGFsb2cgPSBjb250YWluZXIgIlRvb2wgQ2F0YWxvZyIgIk1DUCB0b29sIGVuIHJlc291cmNlIGNvbmZpZ3VyYXRpZSBkYXRhYmFzZSIgIlBvc3RncmVTUUwiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiRGF0YWJhc2UgbWV0IGJlc2NoaWtiYXJlIE1DUCB0b29scywgcmVzb3VyY2VzIGVuIGh1biBjb25maWd1cmF0aWVzIgogICAgICAgIHRhZ3MgIkRhdGFiYXNlIgogICAgICAgIAogICAgICAgIC8vIFRvb2wgQ2F0YWxvZyBjb21wb25lbnRzCiAgICAgICAgdG9vbFJlZ2lzdHJ5ID0gY29tcG9uZW50ICJUb29sIFJlZ2lzdHJ5IiAiTUNQIHRvb2wgbWV0YWRhdGEgZW4gY29uZmlndXJhdGllcyIgIkRhdGFiYXNlIFRhYmxlIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQ2F0YWxvZ3VzIHZhbiBhbGxlIGJlc2NoaWtiYXJlIE1DUCB0b29scyBlbiByZXNvdXJjZXMgbWV0IGh1biBjYXBhYmlsaXRpZXMiCiAgICAgICAgfQogICAgICAgIHRvb2xDb25maWcgPSBjb21wb25lbnQgIlRvb2wgQ29uZmlnIiAiQWN0aWV2ZSB0b29sIGNvbmZpZ3VyYXRpZXMiICJEYXRhYmFzZSBUYWJsZSIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkNvbmZpZ3VyYXRpZXMgdmFuIGFjdGlldmUgdG9vbHMgcGVyIGdlYnJ1aWtlci9jb250ZXh0IgogICAgICAgIH0KICAgICAgfQogICAgICAKICAgICAgdXNlclByb2ZpbGUgPSBjb250YWluZXIgIlVzZXIgUHJvZmlsZSIgIkdlYnJ1aWtlcnNwcm9maWVsIGRhdGFiYXNlIiAiUG9zdGdyZVNRTCIgewogICAgICAgIGRlc2NyaXB0aW9uICJEYXRhYmFzZSBtZXQgZ2VicnVpa2Vyc3Byb2ZpZWxlbiB2b29yIHBlcnNvbmFsaXNhdGllIgogICAgICAgIHRhZ3MgIkRhdGFiYXNlIgogICAgICAgIAogICAgICAgIC8vIFVzZXIgUHJvZmlsZSBjb21wb25lbnRzCiAgICAgICAgcHJvZmlsZURhdGEgPSBjb21wb25lbnQgIlByb2ZpbGUgRGF0YSIgIkdlYnJ1aWtlciBiYXNpc2dlZ2V2ZW5zIiAiRGF0YWJhc2UgVGFibGUiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJOYWFtLCByb2wsIHZvb3JrZXVyZW4sIHBlcm1pc3NpZXMiCiAgICAgICAgfQogICAgICAgIHByZWZlcmVuY2VzID0gY29tcG9uZW50ICJQcmVmZXJlbmNlcyIgIkdlYnJ1aWtlcnN2b29ya2V1cmVuIiAiRGF0YWJhc2UgVGFibGUiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJUYWFsLCBub3RpZmljYXRpZXMsIGFnZW50IHZvb3JrZXVyZW4iCiAgICAgICAgfQogICAgICAgIGhpc3RvcnkgPSBjb21wb25lbnQgIkhpc3RvcnkiICJHZWJydWlrZXJzZ2VzY2hpZWRlbmlzIiAiRGF0YWJhc2UgVGFibGUiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJJbnRlcmFjdGllIGdlc2NoaWVkZW5pcyBlbiBjb250ZXh0IgogICAgICAgIH0KICAgICAgfQogICAgICAKICAgICAgdmlzaWJpbGl0eSA9IGNvbnRhaW5lciAiVmlzaWJpbGl0eSIgIkdyYWZhbmEgKyBQcm9tZXRoZXVzICsgT3BlblRlbGVtZXRyeSIgIk9ic2VydmFiaWxpdHkgU3RhY2siIHsKICAgICAgICBkZXNjcmlwdGlvbiAiTW9uaXRvcmluZywgbG9nZ2luZyBlbiBvYnNlcnZhYmlsaXR5IHZhbiBoZXQgZ2VoZWxlIEFHT1JBIHN5c3RlZW0iCiAgICAgICAgdGFncyAiT2JzZXJ2YWJpbGl0eSIKICAgICAgfQogICAgICAKICAgICAgLy8gSW50ZXJuYWwgcmVsYXRpb25zaGlwcwogICAgICBoYWkgLT4gb3JjaGVzdHJhdG9yICJIQUkgUHJvdG9jb2wiICJXZWJTb2NrZXQvSlNPTiIKICAgICAgb3JjaGVzdHJhdG9yIC0+IHVzZXJQcm9maWxlICJIYWFsdCBwcm9maWVsIG9wIiAiU1FMIgogICAgICBvcmNoZXN0cmF0b3IgLT4gdG9vbENhdGFsb2cgIkJlaGVlcnQgdG9vbHMiICJTUUwiCiAgICAgIAogICAgICAvLyBWaXNpYmlsaXR5IHJlbGF0aW9uc2hpcHMgKGludGVybmFsIG9ubHkpCiAgICAgIG9yY2hlc3RyYXRvciAtPiB2aXNpYmlsaXR5ICJUcmFjZXMgJiBkZWNpc2lvbnMiICJPcGVuVGVsZW1ldHJ5IgogICAgICAKICAgICAgLy8gQ29tcG9uZW50LWxldmVsIGV4dGVybmFsIHJlbGF0aW9uc2hpcHMKICAgICAgLy8gSEFJIGNvbXBvbmVudHMKICAgICAgYWdvcmEuaGFpLndlYnNvY2tldENsaWVudCAtPiBvcmNoZXN0cmF0b3IgIkNvbW11bmljZWVydCBtZXQiICJXZWJTb2NrZXQiCiAgICAgIGFnb3JhLmhhaS53ZWJzb2NrZXRDbGllbnQgLT4gYWdvcmEub3JjaGVzdHJhdG9yLnN0YXRlTWFuYWdlciAiU3R1dXJ0IHJlcXVlc3RzIG5hYXIiICJXZWJTb2NrZXQiCiAgICAgIAogICAgICAvLyBPcmNoZXN0cmF0b3IgY29tcG9uZW50cyB0byBpbnRlcm5hbCBjb250YWluZXJzCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvci50b29sU2VsZWN0b3IgLT4gYWdvcmEudG9vbENhdGFsb2cgIlZyYWFndCB0b29sIGNvbmZpZ3VyYXRpZXMgb3AiICJTUUwiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvci50b29sU2VsZWN0b3IgLT4gYWdvcmEudXNlclByb2ZpbGUgIkxlZXN0IHByb2ZpZWwiICJTUUwiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvci5hdWRpdExvZ2dlciAtPiBhZ29yYS52aXNpYmlsaXR5ICJTdHV1cnQgbG9ncyIgIk9wZW5UZWxlbWV0cnkiCiAgICAgIAogICAgICAvLyBUb29sIENhdGFsb2cgY29tcG9uZW50cyAoYWNjZXNzZWQgYnkgT3JjaGVzdHJhdG9yKQogICAgICBhZ29yYS5vcmNoZXN0cmF0b3IudG9vbFNlbGVjdG9yIC0+IGFnb3JhLnRvb2xDYXRhbG9nLnRvb2xSZWdpc3RyeSAiTGVlc3QgY2F0YWxvZ3VzIiAiU1FMIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3IudG9vbFNlbGVjdG9yIC0+IGFnb3JhLnRvb2xDYXRhbG9nLnRvb2xDb25maWcgIkJlaGVlcnQgY29uZmlndXJhdGllcyIgIlNRTCIKICAgICAgCiAgICAgIC8vIFVzZXIgUHJvZmlsZSBjb21wb25lbnRzIChhY2Nlc3NlZCBieSBPcmNoZXN0cmF0b3IpCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvci50b29sU2VsZWN0b3IgLT4gYWdvcmEudXNlclByb2ZpbGUucHJvZmlsZURhdGEgIkxlZXN0IHByb2ZpZWwgZGF0YSIgIlNRTCIKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yLnRvb2xTZWxlY3RvciAtPiBhZ29yYS51c2VyUHJvZmlsZS5wcmVmZXJlbmNlcyAiTGVlc3Qgdm9vcmtldXJlbiIgIlNRTCIKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yLnRvb2xTZWxlY3RvciAtPiBhZ29yYS51c2VyUHJvZmlsZS5oaXN0b3J5ICJTY2hyaWpmdCBnZXNjaGllZGVuaXMiICJTUUwiCiAgICB9CiAgICAKICAgIC8vIEV4dGVybmFsIHN5c3RlbXMKICAgIGV4dGVybmFsU2VydmljZXMgPSBzb2Z0d2FyZVN5c3RlbSAiRXh0ZXJuYWwgU2VydmljZXMiICJFeHRlcm5lIE1DUCBzZXJ2ZXJzIChSYXBwb3J0YWdlLCBBUklBLUEgU2Nhbm5lciwgRS1udW1tZXIgRGF0YWJhc2UsIGV0Yy4pIiB7CiAgICAgIGRlc2NyaXB0aW9uICJDb2xsZWN0aWUgdmFuIGV4dGVybmUgc2VydmljZXMgZGllIHRvb2xzIGVuIHJlc291cmNlcyB2aWEgTUNQIHByb3RvY29sIGFhbmJpZWRlbiIKICAgIH0KICAgIAogICAgLy8gUmVsYXRpb25zaGlwcwogICAgaW5zcGVjdG9yIC0+IGFnb3JhICJHZWJydWlrdCIgIlRla3N0L1NwcmFhay9WaWRlbyIKICAgIGluc3BlY3RvciAtPiBhZ29yYS5oYWkgIkludGVyYWN0ZWVydCBtZXQiICJIVFRQUy9XZWJTb2NrZXQiCiAgICBpbnNwZWN0b3IgLT4gYWdvcmEuaGFpLnVpQ29tcG9uZW50cyAiR2VicnVpa3QgaW50ZXJmYWNlIiAiSFRUUFMiCiAgICBpbnNwZWN0b3IgLT4gYWdvcmEuaGFpLmF1ZGlvSW50ZXJmYWNlICJTcHJlZWt0IG1ldCIgIkF1ZGlvIgogICAgCiAgICBhZ29yYSAtPiBleHRlcm5hbFNlcnZpY2VzICJDb21tdW5pY2VlcnQgbWV0IHNlcnZpY2VzIiAiTUNQIFByb3RvY29sIgogICAgYWdvcmEub3JjaGVzdHJhdG9yIC0+IGV4dGVybmFsU2VydmljZXMgIlJvZXB0IGFhbiB2aWEgTUNQIiAiTUNQIFByb3RvY29sIgogICAgYWdvcmEub3JjaGVzdHJhdG9yLm1jcENsaWVudCAtPiBleHRlcm5hbFNlcnZpY2VzICJSb2VwdCB0b29scyBhYW4iICJNQ1AiCiAgfQogIAogIHZpZXdzIHsKICAgIHN5c3RlbUNvbnRleHQgYWdvcmEgIlN5c3RlbUNvbnRleHQiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGRlc2NyaXB0aW9uICJTeXN0ZW0gY29udGV4dCBkaWFncmFtIHZhbiBBR09SQSB2MS4wIC0gSW5zcGVjdGV1ciBnZWJydWlrdCBBR09SQSBvbSBtZXQgZXh0ZXJuZSBhZ2VudHMgdGUgY29tbXVuaWNlcmVuIgogICAgfQogICAgCiAgICBjb250YWluZXIgYWdvcmEgIkNvbnRhaW5lcnMiIHsKICAgICAgaW5jbHVkZSBpbnNwZWN0b3IKICAgICAgaW5jbHVkZSBhZ29yYS5oYWkKICAgICAgaW5jbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3IKICAgICAgaW5jbHVkZSBhZ29yYS51c2VyUHJvZmlsZSAgCiAgICAgIGluY2x1ZGUgYWdvcmEudG9vbENhdGFsb2cKICAgICAgaW5jbHVkZSBhZ29yYS52aXNpYmlsaXR5CiAgICAgIGluY2x1ZGUgZXh0ZXJuYWxTZXJ2aWNlcwogICAgICBkZXNjcmlwdGlvbiAiQ29udGFpbmVyIGRpYWdyYW0gdmFuIEFHT1JBIHYxLjAgLSBIQUksIE9yY2hlc3RyYXRvciwgVXNlciBQcm9maWxlIGVuIFRvb2wgQ2F0YWxvZyBkYXRhYmFzZXMgbWV0IGV4dGVybmUgaW50ZXJhY3RpZXMiCiAgICB9CiAgICAKICAgIGNvbXBvbmVudCBhZ29yYS5vcmNoZXN0cmF0b3IgIk9yY2hlc3RyYXRvckNvbXBvbmVudHMiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGluY2x1ZGUgYWdvcmEuaGFpCiAgICAgIGluY2x1ZGUgYWdvcmEudXNlclByb2ZpbGUKICAgICAgaW5jbHVkZSBhZ29yYS50b29sQ2F0YWxvZwogICAgICBpbmNsdWRlIGFnb3JhLnZpc2liaWxpdHkKICAgICAgaW5jbHVkZSBleHRlcm5hbFNlcnZpY2VzCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgYnJlYWtkb3duIHZhbiBkZSBPcmNoZXN0cmF0b3IgLSBTdGF0ZSBNYW5hZ2VyLCBSZWFzb25pbmcgTExNLCBNZW1vcnkgTWFuYWdlciwgTUNQIENsaWVudCwgTW9kZXJhdG9yLCBUb29sIFNlbGVjdG9yLCBBdWRpdCBMb2dnZXIiCiAgICB9CiAgICAKICAgIGNvbXBvbmVudCBhZ29yYS5oYWkgIkhBSUNvbXBvbmVudHMiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGluY2x1ZGUgaW5zcGVjdG9yCiAgICAgIGluY2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgYnJlYWtkb3duIHZhbiBkZSBIQUkgLSBVSSBDb21wb25lbnRzLCBBdWRpbyBJbnRlcmZhY2UsIFdlYlNvY2tldCBDbGllbnQiCiAgICB9CiAgICAKICAgIGNvbXBvbmVudCBhZ29yYS50b29sQ2F0YWxvZyAiVG9vbENhdGFsb2dDb21wb25lbnRzIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLm9yY2hlc3RyYXRvcgogICAgICBkZXNjcmlwdGlvbiAiQ29tcG9uZW50IGJyZWFrZG93biB2YW4gZGUgVG9vbCBDYXRhbG9nIGRhdGFiYXNlIC0gVG9vbCBSZWdpc3RyeSwgVG9vbCBDb25maWciCiAgICB9CiAgICAKICAgIGNvbXBvbmVudCBhZ29yYS51c2VyUHJvZmlsZSAiVXNlclByb2ZpbGVDb21wb25lbnRzIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLm9yY2hlc3RyYXRvcgogICAgICBkZXNjcmlwdGlvbiAiQ29tcG9uZW50IGJyZWFrZG93biB2YW4gZGUgVXNlciBQcm9maWxlIGRhdGFiYXNlIC0gUHJvZmlsZSBEYXRhLCBQcmVmZXJlbmNlcywgSGlzdG9yeSIKICAgIH0KICAgIAogICAgc3R5bGVzIHsKICAgICAgZWxlbWVudCAiUGVyc29uIiB7CiAgICAgICAgc2hhcGUgcGVyc29uCiAgICAgICAgYmFja2dyb3VuZCAjMDg0MjdiCiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIlNvZnR3YXJlIFN5c3RlbSIgewogICAgICAgIGJhY2tncm91bmQgIzExNjhiZAogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJDb250YWluZXIiIHsKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRnJvbnRlbmQiIHsKICAgICAgICBzaGFwZSBXZWJCcm93c2VyCiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkJhY2tlbmQiIHsKICAgICAgICBzaGFwZSBIZXhhZ29uCiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkRhdGFiYXNlIiB7CiAgICAgICAgc2hhcGUgQ3lsaW5kZXIKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiT2JzZXJ2YWJpbGl0eSIgewogICAgICAgIHNoYXBlIFJvdW5kZWRCb3gKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgZm9udFNpemUgMjAKICAgICAgICBzdHJva2UgI2ZmZmZmZgogICAgICAgIHN0cm9rZVdpZHRoIDMKICAgICAgfQogICAgICBlbGVtZW50ICJDb21wb25lbnQiIHsKICAgICAgICBiYWNrZ3JvdW5kICM4NWJiZjAKICAgICAgICBjb2xvciAjMDAwMDAwCiAgICAgIH0KICAgICAgZWxlbWVudCAiSW5mcmFzdHJ1Y3R1cmUgTm9kZSIgewogICAgICAgIHNoYXBlIFJvdW5kZWRCb3gKICAgICAgfQogICAgICByZWxhdGlvbnNoaXAgIlJlbGF0aW9uc2hpcCIgewogICAgICAgIHJvdXRpbmcgRGlyZWN0CiAgICAgICAgdGhpY2tuZXNzIDIKICAgICAgfQogICAgfQogICAgCiAgICB0aGVtZSBkZWZhdWx0CiAgfQogIAogIGNvbmZpZ3VyYXRpb24gewogICAgc2NvcGUgc29mdHdhcmVzeXN0ZW0KICB9Cn0K"
+    "structurizr.dsl" : "d29ya3NwYWNlICJBR09SQSB2MS4wIOKAlCBNdWx0aS1BZ2VudCBQbGF0Zm9ybSBmb3IgTlZXQSIgewogICFpZGVudGlmaWVycyBoaWVyYXJjaGljYWwKICAKICBtb2RlbCB7CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQUNUT1JTCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGluc3BlY3RvciA9IHBlcnNvbiAiTlZXQSBJbnNwZWN0ZXVyIiAiRm9vZCBzYWZldHkgaW5zcGVjdG9yIHVzaW5nIEFHT1JBIGZvciBkYWlseSBpbnNwZWN0aW9uIHdvcmsiCiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBBR09SQSBTWVNURU0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgYWdvcmEgPSBzb2Z0d2FyZVN5c3RlbSAiQUdPUkEiICJNdWx0aS1hZ2VudCBjb21wbGlhbmNlIHBsYXRmb3JtIGZvciBOVldBIGluc3BlY3RvcnMiIHsKICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBIQUkgRlJPTlRFTkQgW1NoYXJlZF0KICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBoYWkgPSBjb250YWluZXIgIkh1bWFuIEFnZW50IEludGVyZmFjZSAoSEFJKSIgIlJlYWN0ICsgVml0ZSArIFp1c3RhbmQgKyBUYWlsd2luZENTUyIgIlJlYWN0IFNQQSIgewogICAgICAgIGRlc2NyaXB0aW9uICJbU2hhcmVkXSBXZWItYmFzZWQgdXNlciBpbnRlcmZhY2UgZm9yIGluc3BlY3RvciBpbnRlcmFjdGlvbnMgdmlhIHRleHQiCiAgICAgICAgdGFncyAiRnJvbnRlbmQiICJTaGFyZWQiCiAgICAgICAgCiAgICAgICAgY2hhdENvbXBvbmVudHMgPSBjb21wb25lbnQgIltTaGFyZWRdIENoYXQgQ29tcG9uZW50cyIgIlJlYWN0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQ2hhdEludGVyZmFjZSwgQ2hhdE1lc3NhZ2VMaXN0LCBDaGF0SW5wdXQsIENoYXRNZXNzYWdlLCBUb29sQ2FsbENhcmQsIExvYWRpbmdJbmRpY2F0b3IiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIGFwcHJvdmFsRGlhbG9nID0gY29tcG9uZW50ICJbU2hhcmVkXSBBcHByb3ZhbCBEaWFsb2ciICJSZWFjdCIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkFwcHJvdmFsRGlhbG9nIGZvciBodW1hbi1pbi10aGUtbG9vcCB0b29sIGFwcHJvdmFsIHdvcmtmbG93IgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICBkZWJ1Z1BhbmVsID0gY29tcG9uZW50ICJbU2hhcmVkXSBEZWJ1ZyBQYW5lbCIgIlJlYWN0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiVG9vbCBjYWxsIHZpc3VhbGl6YXRpb24gYW5kIGRlYnVnZ2luZyBpbnRlcmZhY2UiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIHN0YXRlTWFuYWdlbWVudCA9IGNvbXBvbmVudCAiW1NoYXJlZF0gU3RhdGUgTWFuYWdlbWVudCIgIlp1c3RhbmQiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJDbGllbnQgc3RvcmVzOiB1c2VNZXNzYWdlU3RvcmUsIHVzZVNlc3Npb25TdG9yZSwgdXNlQ29ubmVjdGlvblN0b3JlLCB1c2VBcHByb3ZhbFN0b3JlLCB1c2VBZ2VudFN0b3JlLCB1c2VUb29sQ2FsbFN0b3JlIgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICB3ZWJzb2NrZXRDbGllbnQgPSBjb21wb25lbnQgIltTaGFyZWRdIFdlYlNvY2tldCBDbGllbnQiICJUeXBlU2NyaXB0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiSEFJIFByb3RvY29sIFdlYlNvY2tldCBjbGllbnQgZm9yIHJlYWwtdGltZSBiaWRpcmVjdGlvbmFsIGNvbW11bmljYXRpb24iCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIHZvaWNlSW50ZXJmYWNlID0gY29tcG9uZW50ICJbU2hhcmVkXSBWb2ljZSBJbnRlcmZhY2UiICJSZWFjdCArIFdoaXNwZXIgKyBFbGV2ZW5MYWJzIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gU3BlZWNoLXRvLXRleHQgYW5kIHRleHQtdG8tc3BlZWNoIGludGVyZmFjZSIKICAgICAgICAgIHRhZ3MgIk5vdEltcGxlbWVudGVkIiAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICAKICAgICAgICBjaGF0Q29tcG9uZW50cyAtPiBzdGF0ZU1hbmFnZW1lbnQgInJlYWRzL3dyaXRlcyIgIlp1c3RhbmQgc2VsZWN0b3JzIgogICAgICAgIGFwcHJvdmFsRGlhbG9nIC0+IHN0YXRlTWFuYWdlbWVudCAicmVhZHMvd3JpdGVzIiAiWnVzdGFuZCBzZWxlY3RvcnMiCiAgICAgICAgZGVidWdQYW5lbCAtPiBzdGF0ZU1hbmFnZW1lbnQgInJlYWRzIiAiWnVzdGFuZCBzZWxlY3RvcnMiCiAgICAgICAgc3RhdGVNYW5hZ2VtZW50IC0+IHdlYnNvY2tldENsaWVudCAiZGlzcGF0Y2hlcyBtZXNzYWdlcyIgIlR5cGVTY3JpcHQiCiAgICAgIH0KICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBPUkNIRVNUUkFUT1IgLSBVbmlmaWVkIChmb3IgQzIgYW5kIGV4dGVybmFsIGFwcGVhcmFuY2VzKQogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgIG9yY2hlc3RyYXRvciA9IGNvbnRhaW5lciAiT3JjaGVzdHJhdG9yIFtPcGVuQUkvT3BlblNvdXJjZV0iICJGYXN0QVBJICsgU1FMaXRlICsgT3BlbkFJIFNESyBvciBMYW5nR3JhcGgiICJQeXRob24iIHsKICAgICAgICBkZXNjcmlwdGlvbiAiQ2VudHJhbCBvcmNoZXN0cmF0aW9uIGZvciBtdWx0aS1hZ2VudCBjb29yZGluYXRpb24uIFNlZSBDMyBkaWFncmFtcyBmb3IgaW1wbGVtZW50YXRpb24tc3BlY2lmaWMgZGV0YWlscy4iCiAgICAgICAgdGFncyAiQmFja2VuZCIKICAgICAgfQogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIE9SQ0hFU1RSQVRPUiAtIE9wZW5BSSBBZ2VudHMgU0RLIChmb3IgQzMgZGV0YWlsIHZpZXcpCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgb3JjaGVzdHJhdG9yT3BlbkFJID0gY29udGFpbmVyICJPcmNoZXN0cmF0b3IgW09wZW5BSV0iICJGYXN0QVBJICsgU1FMaXRlICsgT3BlbkFJIEFnZW50cyBTREsiICJQeXRob24iIHsKICAgICAgICBkZXNjcmlwdGlvbiAiQ2VudHJhbCBvcmNoZXN0cmF0aW9uIHVzaW5nIE9wZW5BSSBBZ2VudHMgU0RLIHdpdGggbmF0aXZlIGhhbmRvZmZzIGFuZCBNQ1Agc3VwcG9ydC4iCiAgICAgICAgdGFncyAiQmFja2VuZCIgIk9wZW5BSSIKICAgICAgICAKICAgICAgICBncm91cCAiQVBJIExheWVyIFtTaGFyZWRdIiB7CiAgICAgICAgICBvYWlGYXN0QXBpU2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBGYXN0QVBJIFNlcnZlciIgIkZhc3RBUEkgKyBVdmljb3JuIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJIVFRQIHNlcnZlciB3aXRoIFdlYlNvY2tldCBzdXBwb3J0IGF0IC93cyBlbmRwb2ludCIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgb2FpSGFpUHJvdG9jb2xIYW5kbGVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBIQUkgUHJvdG9jb2wgSGFuZGxlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJvY2Vzc2VzIEhBSSBQcm90b2NvbCBtZXNzYWdlczogdXNlcl9tZXNzYWdlLCBhc3Npc3RhbnRfbWVzc2FnZV9jaHVuaywgdG9vbF9jYWxsLCB0b29sX2FwcHJvdmFsX3JlcXVlc3QvcmVzcG9uc2UsIHN0YXR1cywgZXJyb3IiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIG9haVJlc3RFbmRwb2ludHMgPSBjb21wb25lbnQgIltTaGFyZWRdIFJFU1QgRW5kcG9pbnRzIiAiRmFzdEFQSSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiL2hlYWx0aCwgL2FnZW50cywgL3Nlc3Npb25zL3tpZH0vaGlzdG9yeSBlbmRwb2ludHMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIlBpcGVsaW5lcyBMYXllciBbU2hhcmVkXSIgewogICAgICAgICAgb2FpT3JjaGVzdHJhdG9yUGlwZWxpbmUgPSBjb21wb25lbnQgIltTaGFyZWRdIE9yY2hlc3RyYXRvciBQaXBlbGluZSIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiTWFpbiBtZXNzYWdlIHByb2Nlc3Npbmcgd2l0aCBhcHByb3ZhbCBmbG93IG1hbmFnZW1lbnQgdXNpbmcgc3RyZWFtIGNhbGxiYWNrcyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgb2FpTW9kZXJhdG9yID0gY29tcG9uZW50ICJbU2hhcmVkXSBNb2RlcmF0b3IiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIklucHV0IHZhbGlkYXRpb24sIG91dHB1dCBmaWx0ZXJpbmcsIGJsb2NrZWQgcGF0dGVybnMgZGV0ZWN0aW9uIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGdyb3VwICJDb3JlIExheWVyIFtPcGVuQUldIiB7CiAgICAgICAgICBvYWlBZ2VudERlZmluaXRpb25zID0gY29tcG9uZW50ICJbT3BlbkFJXSBBZ2VudCBEZWZpbml0aW9ucyIgImFnZW50cy5BZ2VudCIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiU0RLIEFnZW50IGluc3RhbmNlcyB3aXRoIGluc3RydWN0aW9ucyBhbmQgaGFuZG9mZiBjb25maWd1cmF0aW9uIgogICAgICAgICAgICB0YWdzICJPcGVuQUkiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlBZ2VudEV4ZWN1dG9yID0gY29tcG9uZW50ICJbT3BlbkFJXSBBZ2VudCBFeGVjdXRvciIgImFnZW50cy5SdW5uZXIiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlJ1bm5lci5ydW5fc3RyZWFtZWQoKSBmb3Igc3RyZWFtaW5nIHJlc3BvbnNlcyB3aXRoIHRvb2wgY2FsbGJhY2tzIgogICAgICAgICAgICB0YWdzICJPcGVuQUkiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlIYW5kb2ZmTG9naWMgPSBjb21wb25lbnQgIltPcGVuQUldIEhhbmRvZmYgTG9naWMiICJTREsgYnVpbHQtaW4iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkJ1aWx0LWluIFNESyBoYW5kb2ZmcyB2aWEgYWdlbnQuaGFuZG9mZnMgbGlzdCAtIGF1dG9tYXRpYyBjb250ZXh0IHRyYW5zZmVyIgogICAgICAgICAgICB0YWdzICJPcGVuQUkiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlBcHByb3ZhbExvZ2ljID0gY29tcG9uZW50ICJbU2hhcmVkXSBBcHByb3ZhbCBMb2dpYyIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiSHVtYW4taW4tbG9vcCBydWxlcyBmb3IgaGlnaC1yaXNrIHRvb2xzIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlTZXNzaW9uUGVyc2lzdGVuY2UgPSBjb21wb25lbnQgIltPcGVuQUldIFNlc3Npb24gUGVyc2lzdGVuY2UiICJhZ2VudHMuU1FMaXRlU2Vzc2lvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiU0RLIFNRTGl0ZVNlc3Npb24gZm9yIGNvbnZlcnNhdGlvbiBoaXN0b3J5IChzZXNzaW9ucy5kYikiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5BSSIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIkFkYXB0ZXJzIExheWVyIiB7CiAgICAgICAgICBvYWlNY3BBZGFwdGVyID0gY29tcG9uZW50ICJbT3BlbkFJXSBNQ1AgQWRhcHRlciIgIk1DUFNlcnZlclN0cmVhbWFibGVIdHRwIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJOYXRpdmUgT3BlbkFJIFNESyBNQ1AgaW50ZWdyYXRpb24gd2l0aCBwZXItYWdlbnQgdG9vbCBzY29waW5nIHZpYSBBR0VOVF9NQ1BfTUFQUElORyIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpQXVkaXRMb2dnZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIEF1ZGl0IExvZ2dlciIgIk9wZW5UZWxlbWV0cnkiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIk9wZW5UZWxlbWV0cnktYmFzZWQgYXVkaXQgbG9nZ2luZyBvZiBtZXNzYWdlcyBhbmQgZGVjaXNpb25zIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIG9haVJhdGVMaW1pdGVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBSYXRlIExpbWl0ZXIiICJQeXRob24iIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJbTk9UIElNUExFTUVOVEVEXSBBUEkgcmF0ZSBsaW1pdGluZyBwZXIgdXNlci9JUCIKICAgICAgICAgIHRhZ3MgIk5vdEltcGxlbWVudGVkIiAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICBvYWlDaXJjdWl0QnJlYWtlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQ2lyY3VpdCBCcmVha2VyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQ2lyY3VpdCBicmVha2VyIHBhdHRlcm4gZm9yIE1DUCBzZXJ2ZXIgY2FsbHMiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgb2FpRmFzdEFwaVNlcnZlciAtPiBvYWlIYWlQcm90b2NvbEhhbmRsZXIgInJvdXRlcyBXZWJTb2NrZXQiICJXZWJTb2NrZXQiCiAgICAgICAgb2FpRmFzdEFwaVNlcnZlciAtPiBvYWlSZXN0RW5kcG9pbnRzICJyb3V0ZXMgSFRUUCIgIkhUVFAvUkVTVCIKICAgICAgICBvYWlIYWlQcm90b2NvbEhhbmRsZXIgLT4gb2FpT3JjaGVzdHJhdG9yUGlwZWxpbmUgInByb2Nlc3NlcyBtZXNzYWdlcyIKICAgICAgICBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBvYWlBZ2VudEV4ZWN1dG9yICJydW5zIGFnZW50cyIKICAgICAgICBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBvYWlNb2RlcmF0b3IgInZhbGlkYXRlcyBJL08iCiAgICAgICAgb2FpT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gb2FpQXBwcm92YWxMb2dpYyAiY2hlY2tzIGFwcHJvdmFsIgogICAgICAgIG9haUFnZW50RXhlY3V0b3IgLT4gb2FpQWdlbnREZWZpbml0aW9ucyAiZ2V0cyBhZ2VudHMiCiAgICAgICAgb2FpQWdlbnRFeGVjdXRvciAtPiBvYWlIYW5kb2ZmTG9naWMgImhhbmRsZXMgaGFuZG9mZnMiCiAgICAgICAgb2FpQWdlbnRFeGVjdXRvciAtPiBvYWlTZXNzaW9uUGVyc2lzdGVuY2UgInBlcnNpc3RzIHN0YXRlIiAiU1FMaXRlIgogICAgICAgIG9haUFnZW50RGVmaW5pdGlvbnMgLT4gb2FpTWNwQWRhcHRlciAiY29uZmlndXJlcyB0b29scyIgIk1DUCBjb25maWciCiAgICAgICAgb2FpT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gb2FpQXVkaXRMb2dnZXIgImxvZ3MgZXZlbnRzIiAiT3BlblRlbGVtZXRyeSIKICAgICAgfQogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIE9SQ0hFU1RSQVRPUiAtIExhbmdHcmFwaCAoT3BlbiBTb3VyY2UpIChmb3IgQzMgZGV0YWlsIHZpZXcpCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgb3JjaGVzdHJhdG9yTGFuZ0dyYXBoID0gY29udGFpbmVyICJPcmNoZXN0cmF0b3IgW09wZW5Tb3VyY2VdIiAiTGFuZ0dyYXBoICsgRmFzdEFQSSArIFNRTGl0ZSIgIlB5dGhvbiIgewogICAgICAgIGRlc2NyaXB0aW9uICJDZW50cmFsIG9yY2hlc3RyYXRpb24gdXNpbmcgTGFuZ0dyYXBoIFN0YXRlR3JhcGggKExMTSBwcm92aWRlci1hZ25vc3RpYykuIgogICAgICAgIHRhZ3MgIkJhY2tlbmQiICJPcGVuU291cmNlIgogICAgICAgIAogICAgICAgIGdyb3VwICJBUEkgTGF5ZXIgW1NoYXJlZF0iIHsKICAgICAgICAgIGxnRmFzdEFwaVNlcnZlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gRmFzdEFQSSBTZXJ2ZXIiICJGYXN0QVBJICsgVXZpY29ybiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiSFRUUCBzZXJ2ZXIgd2l0aCBXZWJTb2NrZXQgc3VwcG9ydCBhdCAvd3MgZW5kcG9pbnQiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIGxnSGFpUHJvdG9jb2xIYW5kbGVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBIQUkgUHJvdG9jb2wgSGFuZGxlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJvY2Vzc2VzIEhBSSBQcm90b2NvbCBtZXNzYWdlczogdXNlcl9tZXNzYWdlLCBhc3Npc3RhbnRfbWVzc2FnZV9jaHVuaywgdG9vbF9jYWxsLCB0b29sX2FwcHJvdmFsX3JlcXVlc3QvcmVzcG9uc2UsIHN0YXR1cywgZXJyb3IiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIGxnUmVzdEVuZHBvaW50cyA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUkVTVCBFbmRwb2ludHMiICJGYXN0QVBJIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICIvaGVhbHRoLCAvYWdlbnRzLCAvc2Vzc2lvbnMve2lkfS9oaXN0b3J5IGVuZHBvaW50cyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBncm91cCAiUGlwZWxpbmVzIExheWVyIFtTaGFyZWRdIiB7CiAgICAgICAgICBsZ09yY2hlc3RyYXRvclBpcGVsaW5lID0gY29tcG9uZW50ICJbU2hhcmVkXSBPcmNoZXN0cmF0b3IgUGlwZWxpbmUiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIk1haW4gbWVzc2FnZSBwcm9jZXNzaW5nIHdpdGggYXBwcm92YWwgZmxvdyBtYW5hZ2VtZW50IHVzaW5nIGFzdHJlYW1fZXZlbnRzIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBsZ01vZGVyYXRvciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gTW9kZXJhdG9yIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJJbnB1dCB2YWxpZGF0aW9uLCBvdXRwdXQgZmlsdGVyaW5nLCBibG9ja2VkIHBhdHRlcm5zIGRldGVjdGlvbiIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBncm91cCAiQ29yZSBMYXllciBbT3BlblNvdXJjZV0iIHsKICAgICAgICAgIGxnQWdlbnREZWZpbml0aW9ucyA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIEFnZW50IERlZmluaXRpb25zIiAiUHl0aG9uIGFzeW5jIGZ1bmN0aW9ucyIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiQXN5bmMgZnVuY3Rpb25zIChnZW5lcmFsX2FnZW50LCByZWd1bGF0aW9uX2FnZW50LCBldGMuKSBpbnZva2luZyBDaGF0T3BlbkFJIHdpdGggYm91bmQgdG9vbHMiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ0FnZW50RXhlY3V0b3IgPSBjb21wb25lbnQgIltPcGVuU291cmNlXSBBZ2VudCBFeGVjdXRvciIgImxhbmdncmFwaC5TdGF0ZUdyYXBoIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJTdGF0ZUdyYXBoIHdpdGggQWdlbnRTdGF0ZSBUeXBlZERpY3QsIGFzdHJlYW1fZXZlbnRzKCkgZm9yIHN0cmVhbWluZyIKICAgICAgICAgICAgdGFncyAiT3BlblNvdXJjZSIKICAgICAgICAgIH0KICAgICAgICAgIGxnVG9vbEV4ZWN1dG9yID0gY29tcG9uZW50ICJbT3BlblNvdXJjZV0gVG9vbCBFeGVjdXRvciIgImxhbmdncmFwaC5wcmVidWlsdC5Ub29sTm9kZSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJlYnVpbHQgVG9vbE5vZGUgaGFuZGxlcyBhbGwgdG9vbCBjYWxscyBpbmNsdWRpbmcgaGFuZG9mZnMiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ0hhbmRvZmZMb2dpYyA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIEhhbmRvZmYgTG9naWMiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkV4cGxpY2l0IHRyYW5zZmVyX3RvXyogdG9vbHMgdGhhdCBtdXN0IGdvIHRocm91Z2ggVG9vbE5vZGUgZmlyc3QiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ1JvdXRpbmdMb2dpYyA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIFJvdXRpbmcgTG9naWMiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gInJvdXRlX2Zyb21fYWdlbnQoKSDihpIgJ3Rvb2xzJ3wnZW5kJywgcm91dGVfYWZ0ZXJfdG9vbHMoKSDihpIgZGV0ZWN0cyBoYW5kb2ZmIOKGkiB0YXJnZXQgYWdlbnQiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ0FwcHJvdmFsTG9naWMgPSBjb21wb25lbnQgIltTaGFyZWRdIEFwcHJvdmFsIExvZ2ljIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJIdW1hbi1pbi1sb29wIHJ1bGVzIGZvciBoaWdoLXJpc2sgdG9vbHMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIGxnU2Vzc2lvblBlcnNpc3RlbmNlID0gY29tcG9uZW50ICJbT3BlblNvdXJjZV0gU2Vzc2lvbiBQZXJzaXN0ZW5jZSIgIkFzeW5jU3FsaXRlU2F2ZXIiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkxhbmdHcmFwaCBjaGVja3BvaW50ZXIgZm9yIGNvbnZlcnNhdGlvbiBzdGF0ZSAoc2Vzc2lvbnMuZGIpIgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBncm91cCAiQWRhcHRlcnMgTGF5ZXIiIHsKICAgICAgICAgIGxnTWNwQWRhcHRlciA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIE1DUCBBZGFwdGVyIiAiTXVsdGlTZXJ2ZXJNQ1BDbGllbnQiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gImxhbmdjaGFpbi1tY3AtYWRhcHRlcnMgZm9yIE1DUCBzZXJ2ZXIgY29ubmVjdGlvbnMgd2l0aCBwZXItYWdlbnQgdG9vbCBzY29waW5nIgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgICAgbGdBdWRpdExvZ2dlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQXVkaXQgTG9nZ2VyIiAiT3BlblRlbGVtZXRyeSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiT3BlblRlbGVtZXRyeS1iYXNlZCBhdWRpdCBsb2dnaW5nIG9mIG1lc3NhZ2VzIGFuZCBkZWNpc2lvbnMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgbGdSYXRlTGltaXRlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmF0ZSBMaW1pdGVyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQVBJIHJhdGUgbGltaXRpbmcgcGVyIHVzZXIvSVAiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgbGdDaXJjdWl0QnJlYWtlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQ2lyY3VpdCBCcmVha2VyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQ2lyY3VpdCBicmVha2VyIHBhdHRlcm4gZm9yIE1DUCBzZXJ2ZXIgY2FsbHMiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgbGdGYXN0QXBpU2VydmVyIC0+IGxnSGFpUHJvdG9jb2xIYW5kbGVyICJyb3V0ZXMgV2ViU29ja2V0IiAiV2ViU29ja2V0IgogICAgICAgIGxnRmFzdEFwaVNlcnZlciAtPiBsZ1Jlc3RFbmRwb2ludHMgInJvdXRlcyBIVFRQIiAiSFRUUC9SRVNUIgogICAgICAgIGxnSGFpUHJvdG9jb2xIYW5kbGVyIC0+IGxnT3JjaGVzdHJhdG9yUGlwZWxpbmUgInByb2Nlc3NlcyBtZXNzYWdlcyIKICAgICAgICBsZ09yY2hlc3RyYXRvclBpcGVsaW5lIC0+IGxnQWdlbnRFeGVjdXRvciAiaW52b2tlcyBncmFwaCIKICAgICAgICBsZ09yY2hlc3RyYXRvclBpcGVsaW5lIC0+IGxnTW9kZXJhdG9yICJ2YWxpZGF0ZXMgSS9PIgogICAgICAgIGxnT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gbGdBcHByb3ZhbExvZ2ljICJjaGVja3MgYXBwcm92YWwiCiAgICAgICAgbGdBZ2VudEV4ZWN1dG9yIC0+IGxnVG9vbEV4ZWN1dG9yICJleGVjdXRlcyB0b29scyIKICAgICAgICBsZ0FnZW50RXhlY3V0b3IgLT4gbGdSb3V0aW5nTG9naWMgImRldGVybWluZXMgbmV4dCIKICAgICAgICBsZ1Rvb2xFeGVjdXRvciAtPiBsZ0hhbmRvZmZMb2dpYyAiZXhlY3V0ZXMgaGFuZG9mZnMiCiAgICAgICAgbGdSb3V0aW5nTG9naWMgLT4gbGdBZ2VudERlZmluaXRpb25zICJyb3V0ZXMgdG8gYWdlbnQiCiAgICAgICAgbGdBZ2VudEV4ZWN1dG9yIC0+IGxnU2Vzc2lvblBlcnNpc3RlbmNlICJwZXJzaXN0cyBzdGF0ZSIgIlNRTGl0ZSIKICAgICAgICBsZ0FnZW50RGVmaW5pdGlvbnMgLT4gbGdNY3BBZGFwdGVyICJiaW5kcyB0b29scyIKICAgICAgICBsZ09yY2hlc3RyYXRvclBpcGVsaW5lIC0+IGxnQXVkaXRMb2dnZXIgImxvZ3MgZXZlbnRzIiAiT3BlblRlbGVtZXRyeSIKICAgICAgfQogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIE1DUCBBR0VOVCBTRVJWRVJTIFtTaGFyZWRdCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgbWNwU2VydmVycyA9IGNvbnRhaW5lciAiTUNQIEFnZW50IFNlcnZlcnMiICJGYXN0TUNQICsgUHl0aG9uIiAiRG9ja2VyIiB7CiAgICAgICAgZGVzY3JpcHRpb24gIltTaGFyZWRdIERvbWFpbi1zcGVjaWZpYyBhZ2VudCBjYXBhYmlsaXRpZXMgZXhwb3NlZCB2aWEgTUNQIFByb3RvY29sLiBFeHRlbnNpYmxlIGJ5IGFkZGluZyBuZXcgTUNQIHNlcnZlcnMuIgogICAgICAgIHRhZ3MgIkJhY2tlbmQiICJFeHRlbnNpYmxlIiAiU2hhcmVkIgogICAgICAgIAogICAgICAgIHJlZ3VsYXRpb25TZXJ2ZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIFJlZ3VsYXRpb24gQWdlbnQiICJGYXN0TUNQIDo1MDAyIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiVG9vbHM6IHNlYXJjaF9yZWd1bGF0aW9ucywgZ2V0X3JlZ3VsYXRpb25fY29udGV4dCwgbG9va3VwX3JlZ3VsYXRpb25fYXJ0aWNsZXMsIGFuYWx5emVfZG9jdW1lbnQiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIHJlcG9ydGluZ1NlcnZlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmVwb3J0aW5nIEFnZW50IiAiRmFzdE1DUCA6NTAwMyIgewogICAgICAgICAgZGVzY3JpcHRpb24gIlRvb2xzOiBzdGFydF9pbnNwZWN0aW9uX3JlcG9ydCwgZXh0cmFjdF9pbnNwZWN0aW9uX2RhdGEsIHZlcmlmeV9pbnNwZWN0aW9uX2RhdGEsIGdlbmVyYXRlX2ZpbmFsX3JlcG9ydCIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgaGlzdG9yeVNlcnZlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gSGlzdG9yeSBBZ2VudCIgIkZhc3RNQ1AgOjUwMDUiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJUb29sczogY2hlY2tfY29tcGFueV9leGlzdHMsIGdldF9pbnNwZWN0aW9uX2hpc3RvcnksIGdldF9jb21wYW55X3Zpb2xhdGlvbnMsIGNoZWNrX3JlcGVhdF92aW9sYXRpb24iCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgTUlTU0lORyBDT05UQUlORVJTIFtTaGFyZWRdIC0gUHJvZHVjdGlvbiBHYXAgQW5hbHlzaXMKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICB1c2VyUHJvZmlsZSA9IGNvbnRhaW5lciAiVXNlciBQcm9maWxlIiAiUG9zdGdyZVNRTCIgIkRhdGFiYXNlIiB7CiAgICAgICAgZGVzY3JpcHRpb24gIltTaGFyZWRdIFtOT1QgSU1QTEVNRU5URURdIFVzZXIgcHJvZmlsZXMsIHByZWZlcmVuY2VzLCByb2xlcyAoUkJBQykiCiAgICAgICAgdGFncyAiRGF0YWJhc2UiICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgfQogICAgICAKICAgICAgbWVtb3J5ID0gY29udGFpbmVyICJNZW1vcnkgU2VydmljZSIgIlZlY3RvciBEQiArIFBvc3RncmVTUUwiICJTZXJ2aWNlIiB7CiAgICAgICAgZGVzY3JpcHRpb24gIltTaGFyZWRdIFtOT1QgSU1QTEVNRU5URURdIExvbmctdGVybSBtZW1vcnksIGNyb3NzLXNlc3Npb24gY29udGV4dCIKICAgICAgICB0YWdzICJCYWNrZW5kIiAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgIH0KICAgICAgCiAgICAgIHZpc2liaWxpdHkgPSBjb250YWluZXIgIlZpc2liaWxpdHkgU3RhY2siICJHcmFmYW5hICsgUHJvbWV0aGV1cyArIEphZWdlciIgIk9ic2VydmFiaWxpdHkiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gW05PVCBJTVBMRU1FTlRFRF0gTW9uaXRvcmluZywgbG9nZ2luZywgdHJhY2luZyBkYXNoYm9hcmRzIgogICAgICAgIHRhZ3MgIk9ic2VydmFiaWxpdHkiICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgfQogICAgICAKICAgICAgZXZhbFNlcnZpY2UgPSBjb250YWluZXIgIkV2YWx1YXRpb24gU2VydmljZSIgIkxhbmdmdXNlIiAiT2JzZXJ2YWJpbGl0eSIgewogICAgICAgIGRlc2NyaXB0aW9uICJbU2hhcmVkXSBbTk9UIElNUExFTUVOVEVEXSBMTE0gdHJhY2luZywgcXVhbGl0eSBldmFsdWF0aW9ucywgY29zdCB0cmFja2luZyIKICAgICAgICB0YWdzICJPYnNlcnZhYmlsaXR5IiAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgIH0KICAgICAgCiAgICAgIGF1dGhTZXJ2aWNlID0gY29udGFpbmVyICJBdXRoIFNlcnZpY2UiICJBdXRoMC9LZXljbG9hayIgIlNlY3VyaXR5IiB7CiAgICAgICAgZGVzY3JpcHRpb24gIltTaGFyZWRdIFtOT1QgSU1QTEVNRU5URURdIE9BdXRoMi9PSURDIGF1dGhlbnRpY2F0aW9uLCBSQkFDIgogICAgICAgIHRhZ3MgIlNlY3VyaXR5IiAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgIH0KICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBJTlRFUk5BTCBDT05UQUlORVIgUkVMQVRJT05TSElQUyAoVW5pZmllZCBvcmNoZXN0cmF0b3IgZm9yIEMyL2V4dGVybmFsKQogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgSEFJIGNvbm5lY3RzIHRvIHVuaWZpZWQgb3JjaGVzdHJhdG9yCiAgICAgIGhhaSAtPiBvcmNoZXN0cmF0b3IgIkhBSSBQcm90b2NvbCIgIldlYlNvY2tldC9KU09OIDo4MDAxIgogICAgICAKICAgICAgIyBVbmlmaWVkIG9yY2hlc3RyYXRvciBjb25uZWN0cyB0byBzaGFyZWQgTUNQIHNlcnZlcnMKICAgICAgb3JjaGVzdHJhdG9yIC0+IG1jcFNlcnZlcnMgIk1DUCBQcm90b2NvbCIgIkhUVFAvU1NFIFN0cmVhbWFibGUiCiAgICAgIAogICAgICAjIE9ic2VydmFiaWxpdHkgY29ubmVjdGlvbnMgKG5vdCBpbXBsZW1lbnRlZCkKICAgICAgb3JjaGVzdHJhdG9yIC0+IHZpc2liaWxpdHkgIltOT1QgQ09OTkVDVEVEXSIgIk9wZW5UZWxlbWV0cnkgT1RMUCIKICAgICAgb3JjaGVzdHJhdG9yIC0+IGV2YWxTZXJ2aWNlICJbTk9UIENPTk5FQ1RFRF0iICJMYW5nZnVzZSBTREsiCiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgQ09NUE9ORU5ULUxFVkVMIFJFTEFUSU9OU0hJUFMgKGZvciBDMyB2aWV3cykKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIEhBSSB0byB1bmlmaWVkIG9yY2hlc3RyYXRvciAoZm9yIEMzIEhBSSB2aWV3KQogICAgICBhZ29yYS5oYWkud2Vic29ja2V0Q2xpZW50IC0+IGFnb3JhLm9yY2hlc3RyYXRvciAiSEFJIFByb3RvY29sIiAiV2ViU29ja2V0IgogICAgICAKICAgICAgIyBPcGVuQUkgT3JjaGVzdHJhdG9yIE1DUCBjb25uZWN0aW9ucyAoZm9yIEMzIE9wZW5BSSB2aWV3KQogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkub2FpTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlZ3VsYXRpb25TZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkub2FpTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlcG9ydGluZ1NlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvck9wZW5BSS5vYWlNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMuaGlzdG9yeVNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIAogICAgICAjIExhbmdHcmFwaCBPcmNoZXN0cmF0b3IgTUNQIGNvbm5lY3Rpb25zIChmb3IgQzMgT3BlblNvdXJjZSB2aWV3KQogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgubGdNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMucmVndWxhdGlvblNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvckxhbmdHcmFwaC5sZ01jcEFkYXB0ZXIgLT4gYWdvcmEubWNwU2VydmVycy5yZXBvcnRpbmdTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgubGdNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMuaGlzdG9yeVNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIAogICAgICAjIEhBSSBXZWJTb2NrZXQgY29ubmVjdGlvbnMgKGZvciBDMyBvcmNoZXN0cmF0b3IgZGV0YWlsIHZpZXdzKQogICAgICBhZ29yYS5oYWkud2Vic29ja2V0Q2xpZW50IC0+IGFnb3JhLm9yY2hlc3RyYXRvck9wZW5BSS5vYWlGYXN0QXBpU2VydmVyICJIQUkgUHJvdG9jb2wiICJXZWJTb2NrZXQiCiAgICAgIGFnb3JhLmhhaS53ZWJzb2NrZXRDbGllbnQgLT4gYWdvcmEub3JjaGVzdHJhdG9yTGFuZ0dyYXBoLmxnRmFzdEFwaVNlcnZlciAiSEFJIFByb3RvY29sIiAiV2ViU29ja2V0IgogICAgICAKICAgICAgIyBVbmlmaWVkIE9yY2hlc3RyYXRvciB0byBNQ1AgQWdlbnQgY29ubmVjdGlvbnMgKGZvciBDMyBNQ1AgdmlldykKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yIC0+IGFnb3JhLm1jcFNlcnZlcnMucmVndWxhdGlvblNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlcG9ydGluZ1NlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLmhpc3RvcnlTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgTUNQIEFHRU5UIEVDT1NZU1RFTSAoQzEgTGV2ZWwpCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIG1jcEVjb3N5c3RlbSA9IHNvZnR3YXJlU3lzdGVtICJNQ1AgQWdlbnQgRWNvc3lzdGVtIiAiW1NoYXJlZF0gRXh0ZW5zaWJsZSBkb21haW4gYWdlbnRzIHZpYSBNb2RlbCBDb250ZXh0IFByb3RvY29sLiBBZGQgbmV3IGNhcGFiaWxpdGllcyBieSBkZXBsb3lpbmcgTUNQIHNlcnZlcnMuIiB7CiAgICAgIHRhZ3MgIkV4dGVuc2libGUiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMSBSRUxBVElPTlNISVBTCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGluc3BlY3RvciAtPiBhZ29yYSAidXNlcyBmb3IgaW5zcGVjdGlvbnMiICJIVFRQUy9XZWJTb2NrZXQiCiAgICBhZ29yYSAtPiBtY3BFY29zeXN0ZW0gIm9yY2hlc3RyYXRlcyBhZ2VudHMiICJNQ1AgUHJvdG9jb2wiCiAgfQogIAogIHZpZXdzIHsKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMTogU1lTVEVNIENPTlRFWFQKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgc3lzdGVtQ29udGV4dCBhZ29yYSAiQzFfU3lzdGVtQ29udGV4dCIgewogICAgICBpbmNsdWRlIGluc3BlY3RvcgogICAgICBpbmNsdWRlIGFnb3JhCiAgICAgIGluY2x1ZGUgbWNwRWNvc3lzdGVtCiAgICAgIGF1dG9sYXlvdXQgbHIgNDAwIDIwMAogICAgICBkZXNjcmlwdGlvbiAiU3lzdGVtIENvbnRleHQgKEMxKTogSW5zcGVjdG9yIOKGkiBBR09SQSDihpIgTUNQIEFnZW50IEVjb3N5c3RlbSIKICAgIH0KICAgIAogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAjIEMyOiBDT05UQUlORVIgRElBR1JBTSAoVW5pZmllZCBvcmNoZXN0cmF0b3IpCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGNvbnRhaW5lciBhZ29yYSAiQzJfQ29udGFpbmVycyIgewogICAgICBpbmNsdWRlIGFnb3JhLmhhaQogICAgICBpbmNsdWRlIGFnb3JhLm9yY2hlc3RyYXRvcgogICAgICBpbmNsdWRlIGFnb3JhLm1jcFNlcnZlcnMKICAgICAgaW5jbHVkZSBhZ29yYS51c2VyUHJvZmlsZQogICAgICBpbmNsdWRlIGFnb3JhLm1lbW9yeQogICAgICBpbmNsdWRlIGFnb3JhLnZpc2liaWxpdHkKICAgICAgaW5jbHVkZSBhZ29yYS5ldmFsU2VydmljZQogICAgICBpbmNsdWRlIGFnb3JhLmF1dGhTZXJ2aWNlCiAgICAgIGF1dG9sYXlvdXQgdGIgMzUwIDIwMAogICAgICBkZXNjcmlwdGlvbiAiQ29udGFpbmVyIERpYWdyYW0gKEMyKTogSEFJIOKGkiBPcmNoZXN0cmF0b3IgW09wZW5BSS9PcGVuU291cmNlXSDihpIgTUNQIEFnZW50IFNlcnZlcnMgKCsgZnV0dXJlIHNlcnZpY2VzKSIKICAgIH0KICAgIAogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAjIEMzOiBIQUkgQ09NUE9ORU5UUyBbU2hhcmVkXQogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBjb21wb25lbnQgYWdvcmEuaGFpICJDM19IQUlfQ29tcG9uZW50cyIgewogICAgICBpbmNsdWRlICoKICAgICAgaW5jbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3IKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgKICAgICAgYXV0b2xheW91dCB0YiAzMDAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBIQUkgRnJvbnRlbmQgLSBhbGwgW1NoYXJlZF0gYmV0d2VlbiBiYWNrZW5kcyIKICAgIH0KICAgIAogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAjIEMzOiBPUkNIRVNUUkFUT1IgW09wZW5BSV0gLSBEZXRhaWxlZCBpbXBsZW1lbnRhdGlvbiB2aWV3CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGNvbXBvbmVudCBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkgIkMzX09yY2hlc3RyYXRvcl9PcGVuQUkiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGluY2x1ZGUgYWdvcmEuaGFpCiAgICAgIGluY2x1ZGUgYWdvcmEubWNwU2VydmVycwogICAgICBhdXRvbGF5b3V0IHRiIDI1MCAxNTAKICAgICAgZGVzY3JpcHRpb24gIkNvbXBvbmVudCBEaWFncmFtIChDMyk6IE9yY2hlc3RyYXRvciBbT3BlbkFJXSAtIFNESyBBZ2VudC9SdW5uZXIvSGFuZG9mZnMiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMzogT1JDSEVTVFJBVE9SIFtPcGVuU291cmNlXSAtIERldGFpbGVkIGltcGxlbWVudGF0aW9uIHZpZXcKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgY29tcG9uZW50IGFnb3JhLm9yY2hlc3RyYXRvckxhbmdHcmFwaCAiQzNfT3JjaGVzdHJhdG9yX09wZW5Tb3VyY2UiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGluY2x1ZGUgYWdvcmEuaGFpCiAgICAgIGluY2x1ZGUgYWdvcmEubWNwU2VydmVycwogICAgICBhdXRvbGF5b3V0IHRiIDI1MCAxNTAKICAgICAgZGVzY3JpcHRpb24gIkNvbXBvbmVudCBEaWFncmFtIChDMyk6IE9yY2hlc3RyYXRvciBbT3BlblNvdXJjZV0gLSBTdGF0ZUdyYXBoL1Rvb2xOb2RlL1JvdXRpbmciCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMzogTUNQIEFHRU5UIFNFUlZFUlMgW1NoYXJlZF0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgY29tcG9uZW50IGFnb3JhLm1jcFNlcnZlcnMgIkMzX01DUF9Db21wb25lbnRzIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLm9yY2hlc3RyYXRvcgogICAgICBleGNsdWRlIGFnb3JhLm9yY2hlc3RyYXRvck9wZW5BSQogICAgICBleGNsdWRlIGFnb3JhLm9yY2hlc3RyYXRvckxhbmdHcmFwaAogICAgICBhdXRvbGF5b3V0IGxyIDMwMCAxNTAKICAgICAgZGVzY3JpcHRpb24gIkNvbXBvbmVudCBEaWFncmFtIChDMyk6IE1DUCBBZ2VudCBTZXJ2ZXJzIC0gYWxsIFtTaGFyZWRdIGJldHdlZW4gYmFja2VuZHMiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBTVFlMRVMKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgc3R5bGVzIHsKICAgICAgZWxlbWVudCAiUGVyc29uIiB7CiAgICAgICAgc2hhcGUgcGVyc29uCiAgICAgICAgYmFja2dyb3VuZCAjMDg0MjdiCiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIlNvZnR3YXJlIFN5c3RlbSIgewogICAgICAgIGJhY2tncm91bmQgIzExNjhiZAogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJFeHRlcm5hbCIgewogICAgICAgIGJhY2tncm91bmQgIzk5OTk5OQogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJFeHRlbnNpYmxlIiB7CiAgICAgICAgYmFja2dyb3VuZCAjMTE2OGJkCiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkNvbnRhaW5lciIgewogICAgICAgIGJhY2tncm91bmQgIzQzOGRkNQogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJGcm9udGVuZCIgewogICAgICAgIHNoYXBlIFdlYkJyb3dzZXIKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiQmFja2VuZCIgewogICAgICAgIHNoYXBlIEhleGFnb24KICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRGF0YWJhc2UiIHsKICAgICAgICBzaGFwZSBDeWxpbmRlcgogICAgICAgIGJhY2tncm91bmQgIzQzOGRkNQogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJPYnNlcnZhYmlsaXR5IiB7CiAgICAgICAgc2hhcGUgUm91bmRlZEJveAogICAgICAgIGJhY2tncm91bmQgIzQzOGRkNQogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICBib3JkZXIgZGFzaGVkCiAgICAgIH0KICAgICAgZWxlbWVudCAiU2VjdXJpdHkiIHsKICAgICAgICBzaGFwZSBSb3VuZGVkQm94CiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICAgIGJvcmRlciBkYXNoZWQKICAgICAgfQogICAgICBlbGVtZW50ICJDb21wb25lbnQiIHsKICAgICAgICBiYWNrZ3JvdW5kICM4NWJiZjAKICAgICAgICBjb2xvciAjMDAwMDAwCiAgICAgIH0KICAgICAgZWxlbWVudCAiU2hhcmVkIiB7CiAgICAgICAgYmFja2dyb3VuZCAjODViYmYwCiAgICAgICAgY29sb3IgIzAwMDAwMAogICAgICB9CiAgICAgIGVsZW1lbnQgIk9wZW5BSSIgewogICAgICAgIGJhY2tncm91bmQgIzc0YWE5YwogICAgICAgIGNvbG9yICMwMDAwMDAKICAgICAgfQogICAgICBlbGVtZW50ICJPcGVuU291cmNlIiB7CiAgICAgICAgYmFja2dyb3VuZCAjZmY5OTY2CiAgICAgICAgY29sb3IgIzAwMDAwMAogICAgICB9CiAgICAgIGVsZW1lbnQgIk5vdEltcGxlbWVudGVkIiB7CiAgICAgICAgYmFja2dyb3VuZCAjZmZjY2NjCiAgICAgICAgY29sb3IgIzk5MDAwMAogICAgICAgIGJvcmRlciBkYXNoZWQKICAgICAgICBvcGFjaXR5IDcwCiAgICAgIH0KICAgICAgcmVsYXRpb25zaGlwICJSZWxhdGlvbnNoaXAiIHsKICAgICAgICByb3V0aW5nIERpcmVjdAogICAgICAgIHRoaWNrbmVzcyAyCiAgICAgIH0KICAgIH0KICAgIAogICAgdGhlbWUgZGVmYXVsdAogIH0KICAKICBjb25maWd1cmF0aW9uIHsKICAgIHNjb3BlIHNvZnR3YXJlc3lzdGVtCiAgfQp9Cg=="
   },
   "views" : {
     "componentViews" : [ {
-      "containerId" : "9",
-      "description" : "Component breakdown van de Orchestrator - State Manager, Reasoning LLM, Memory Manager, MCP Client, Moderator, Tool Selector, Audit Logger",
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 150,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "containerId" : "3",
+      "description" : "Component Diagram (C3): HAI Frontend - all [Shared] between backends",
+      "elements" : [ {
+        "id" : "4",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "5",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "6",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "7",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "8",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "9",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "14",
+        "x" : 0,
+        "y" : 0
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "C3_HAI_Components",
+      "order" : 3,
+      "relationships" : [ {
+        "id" : "10"
+      }, {
+        "id" : "11"
+      }, {
+        "id" : "12"
+      }, {
+        "id" : "13"
+      }, {
+        "id" : "84"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 150,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 250,
+        "vertices" : false
+      },
+      "containerId" : "15",
+      "description" : "Component Diagram (C3): Orchestrator [OpenAI] - SDK Agent/Runner/Handoffs",
       "dimensions" : {
-        "height" : 3700,
-        "width" : 5371
+        "height" : 4639,
+        "width" : 3031
       },
       "elements" : [ {
         "id" : "3",
-        "x" : 945,
-        "y" : 170
-      }, {
-        "id" : "10",
-        "x" : 925,
-        "y" : 1305
-      }, {
-        "id" : "11",
-        "x" : 1910,
-        "y" : 1795
-      }, {
-        "id" : "12",
-        "x" : 925,
-        "y" : 1790
-      }, {
-        "id" : "13",
-        "x" : 1910,
-        "y" : 770
-      }, {
-        "id" : "14",
-        "x" : 190,
-        "y" : 795
-      }, {
-        "id" : "15",
-        "x" : 935,
-        "y" : 805
+        "x" : 1777,
+        "y" : 152
       }, {
         "id" : "16",
-        "x" : 925,
-        "y" : 2230
+        "x" : 1777,
+        "y" : 702
+      }, {
+        "id" : "17",
+        "x" : 1477,
+        "y" : 1252
+      }, {
+        "id" : "18",
+        "x" : 2077,
+        "y" : 1252
+      }, {
+        "id" : "19",
+        "x" : 323,
+        "y" : 1802
+      }, {
+        "id" : "20",
+        "x" : 323,
+        "y" : 2352
+      }, {
+        "id" : "21",
+        "x" : 1140,
+        "y" : 2902
       }, {
         "id" : "22",
-        "x" : 2795,
-        "y" : 1140
+        "x" : 1740,
+        "y" : 2352
+      }, {
+        "id" : "23",
+        "x" : 1740,
+        "y" : 2902
+      }, {
+        "id" : "24",
+        "x" : 1140,
+        "y" : 2352
       }, {
         "id" : "25",
-        "x" : 2795,
-        "y" : 765
+        "x" : 2340,
+        "y" : 2902
+      }, {
+        "id" : "26",
+        "x" : 1223,
+        "y" : 3452
+      }, {
+        "id" : "27",
+        "x" : 623,
+        "y" : 3452
+      }, {
+        "id" : "28",
+        "x" : 819,
+        "y" : 702
       }, {
         "id" : "29",
-        "x" : 930,
-        "y" : 2825
+        "x" : 219,
+        "y" : 702
       }, {
-        "id" : "50",
-        "x" : 2800,
-        "y" : 1805
+        "id" : "71",
+        "x" : 1223,
+        "y" : 4002
       } ],
       "externalContainerBoundariesVisible" : false,
-      "key" : "OrchestratorComponents",
-      "order" : 3,
+      "key" : "C3_Orchestrator_OpenAI",
+      "order" : 4,
       "relationships" : [ {
-        "id" : "17"
+        "id" : "103"
       }, {
-        "id" : "18"
+        "id" : "30"
       }, {
-        "id" : "19"
+        "id" : "31"
       }, {
-        "id" : "20"
+        "id" : "32"
       }, {
-        "id" : "21"
+        "id" : "33",
+        "vertices" : [ {
+          "x" : 1665,
+          "y" : 2248
+        } ]
+      }, {
+        "id" : "34"
+      }, {
+        "id" : "35"
       }, {
         "id" : "36"
       }, {
@@ -570,116 +1137,196 @@
       }, {
         "id" : "39"
       }, {
-        "id" : "57"
+        "id" : "40",
+        "vertices" : [ {
+          "x" : 848,
+          "y" : 2248
+        } ]
+      }, {
+        "id" : "86"
       } ]
     }, {
-      "containerId" : "3",
-      "description" : "Component breakdown van de HAI - UI Components, Audio Interface, WebSocket Client",
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 150,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 250,
+        "vertices" : false
+      },
+      "containerId" : "41",
+      "description" : "Component Diagram (C3): Orchestrator [OpenSource] - StateGraph/ToolNode/Routing",
       "dimensions" : {
-        "height" : 2689,
-        "width" : 1640
+        "height" : 5189,
+        "width" : 3031
       },
       "elements" : [ {
-        "id" : "1",
-        "x" : 619,
-        "y" : 151
-      }, {
-        "id" : "4",
-        "x" : 969,
-        "y" : 851
-      }, {
-        "id" : "5",
-        "x" : 219,
-        "y" : 851
-      }, {
-        "id" : "6",
-        "x" : 594,
-        "y" : 1451
-      }, {
-        "id" : "9",
-        "x" : 595,
-        "y" : 2050
-      } ],
-      "externalContainerBoundariesVisible" : false,
-      "key" : "HAIComponents",
-      "order" : 4,
-      "relationships" : [ {
-        "id" : "34"
-      }, {
-        "id" : "53"
-      }, {
-        "id" : "54"
-      }, {
-        "id" : "7"
-      }, {
-        "id" : "8"
-      } ]
-    }, {
-      "containerId" : "22",
-      "description" : "Component breakdown van de Tool Catalog database - Tool Registry, Tool Config",
-      "dimensions" : {
-        "height" : 1391,
-        "width" : 1640
-      },
-      "elements" : [ {
-        "id" : "9",
-        "x" : 595,
+        "id" : "3",
+        "x" : 1777,
         "y" : 152
       }, {
-        "id" : "23",
-        "x" : 970,
-        "y" : 752
+        "id" : "42",
+        "x" : 1777,
+        "y" : 702
       }, {
-        "id" : "24",
-        "x" : 220,
-        "y" : 752
+        "id" : "43",
+        "x" : 1477,
+        "y" : 1252
+      }, {
+        "id" : "44",
+        "x" : 2077,
+        "y" : 1252
+      }, {
+        "id" : "45",
+        "x" : 323,
+        "y" : 1802
+      }, {
+        "id" : "46",
+        "x" : 323,
+        "y" : 2352
+      }, {
+        "id" : "47",
+        "x" : 1740,
+        "y" : 3452
+      }, {
+        "id" : "48",
+        "x" : 1740,
+        "y" : 2352
+      }, {
+        "id" : "49",
+        "x" : 1140,
+        "y" : 2902
+      }, {
+        "id" : "50",
+        "x" : 1140,
+        "y" : 3452
+      }, {
+        "id" : "51",
+        "x" : 1740,
+        "y" : 2902
+      }, {
+        "id" : "52",
+        "x" : 1140,
+        "y" : 2352
+      }, {
+        "id" : "53",
+        "x" : 2340,
+        "y" : 2902
+      }, {
+        "id" : "54",
+        "x" : 1519,
+        "y" : 4002
+      }, {
+        "id" : "55",
+        "x" : 919,
+        "y" : 4002
+      }, {
+        "id" : "56",
+        "x" : 819,
+        "y" : 702
+      }, {
+        "id" : "57",
+        "x" : 219,
+        "y" : 702
+      }, {
+        "id" : "71",
+        "x" : 1519,
+        "y" : 4552
       } ],
       "externalContainerBoundariesVisible" : false,
-      "key" : "ToolCatalogComponents",
+      "key" : "C3_Orchestrator_OpenSource",
       "order" : 5,
       "relationships" : [ {
-        "id" : "41"
+        "id" : "107"
       }, {
-        "id" : "43"
+        "id" : "58"
+      }, {
+        "id" : "59"
+      }, {
+        "id" : "60"
+      }, {
+        "id" : "61",
+        "vertices" : [ {
+          "x" : 1665,
+          "y" : 2248
+        } ]
+      }, {
+        "id" : "62"
+      }, {
+        "id" : "63"
+      }, {
+        "id" : "64"
+      }, {
+        "id" : "65"
+      }, {
+        "id" : "66"
+      }, {
+        "id" : "67"
+      }, {
+        "id" : "68"
+      }, {
+        "id" : "69"
+      }, {
+        "id" : "70",
+        "vertices" : [ {
+          "x" : 848,
+          "y" : 2248
+        }, {
+          "x" : 998,
+          "y" : 3856
+        } ]
+      }, {
+        "id" : "94"
       } ]
     }, {
-      "containerId" : "25",
-      "description" : "Component breakdown van de User Profile database - Profile Data, Preferences, History",
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 150,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "containerId" : "71",
+      "description" : "Component Diagram (C3): MCP Agent Servers - all [Shared] between backends",
       "dimensions" : {
-        "height" : 1391,
-        "width" : 2390
+        "height" : 1711,
+        "width" : 1620
       },
       "elements" : [ {
-        "id" : "9",
-        "x" : 970,
-        "y" : 151
+        "id" : "14",
+        "x" : 200,
+        "y" : 622
       }, {
-        "id" : "26",
-        "x" : 1720,
-        "y" : 751
+        "id" : "72",
+        "x" : 950,
+        "y" : 172
       }, {
-        "id" : "27",
-        "x" : 970,
-        "y" : 751
+        "id" : "73",
+        "x" : 950,
+        "y" : 622
       }, {
-        "id" : "28",
-        "x" : 220,
-        "y" : 750
+        "id" : "74",
+        "x" : 950,
+        "y" : 1072
       } ],
       "externalContainerBoundariesVisible" : false,
-      "key" : "UserProfileComponents",
+      "key" : "C3_MCP_Components",
       "order" : 6,
       "relationships" : [ {
-        "id" : "45"
+        "id" : "109"
       }, {
-        "id" : "47"
+        "id" : "110"
       }, {
-        "id" : "49"
+        "id" : "111"
       } ]
     } ],
     "configuration" : {
       "branding" : { },
-      "lastSavedView" : "HAIComponents",
+      "lastSavedView" : "C3_Orchestrator_OpenAI",
+      "metadataSymbols" : "SquareBrackets",
       "styles" : {
         "elements" : [ {
           "background" : "#08427b",
@@ -690,6 +1337,14 @@
           "background" : "#1168bd",
           "color" : "#ffffff",
           "tag" : "Software System"
+        }, {
+          "background" : "#999999",
+          "color" : "#ffffff",
+          "tag" : "External"
+        }, {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "Extensible"
         }, {
           "background" : "#438dd5",
           "color" : "#ffffff",
@@ -711,19 +1366,38 @@
           "tag" : "Database"
         }, {
           "background" : "#438dd5",
+          "border" : "Dashed",
           "color" : "#ffffff",
-          "fontSize" : 20,
           "shape" : "RoundedBox",
-          "stroke" : "#ffffff",
-          "strokeWidth" : 3,
           "tag" : "Observability"
+        }, {
+          "background" : "#438dd5",
+          "border" : "Dashed",
+          "color" : "#ffffff",
+          "shape" : "RoundedBox",
+          "tag" : "Security"
         }, {
           "background" : "#85bbf0",
           "color" : "#000000",
           "tag" : "Component"
         }, {
-          "shape" : "RoundedBox",
-          "tag" : "Infrastructure Node"
+          "background" : "#85bbf0",
+          "color" : "#000000",
+          "tag" : "Shared"
+        }, {
+          "background" : "#74aa9c",
+          "color" : "#000000",
+          "tag" : "OpenAI"
+        }, {
+          "background" : "#ff9966",
+          "color" : "#000000",
+          "tag" : "OpenSource"
+        }, {
+          "background" : "#ffcccc",
+          "border" : "Dashed",
+          "color" : "#990000",
+          "opacity" : 70,
+          "tag" : "NotImplemented"
         } ],
         "relationships" : [ {
           "routing" : "Direct",
@@ -735,89 +1409,94 @@
       "themes" : [ "https://static.structurizr.com/themes/default/theme.json" ]
     },
     "containerViews" : [ {
-      "description" : "Container diagram van AGORA v1.0 - HAI, Orchestrator, User Profile en Tool Catalog databases met externe interacties",
-      "dimensions" : {
-        "height" : 3329,
-        "width" : 2487
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 200,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 350,
+        "vertices" : false
       },
+      "description" : "Container Diagram (C2): HAI → Orchestrator [OpenAI/OpenSource] → MCP Agent Servers (+ future services)",
       "elements" : [ {
-        "id" : "1",
-        "x" : 806,
-        "y" : 151
-      }, {
         "id" : "3",
-        "x" : 770,
-        "y" : 860
+        "x" : 0,
+        "y" : 0
       }, {
-        "id" : "9",
-        "x" : 771,
-        "y" : 1454
+        "id" : "14",
+        "x" : 0,
+        "y" : 0
       }, {
-        "id" : "22",
-        "x" : 1420,
-        "y" : 2200
+        "id" : "71",
+        "x" : 0,
+        "y" : 0
       }, {
-        "id" : "25",
-        "x" : 1420,
-        "y" : 1515
+        "id" : "75",
+        "x" : 0,
+        "y" : 0
       }, {
-        "id" : "29",
-        "x" : 757,
-        "y" : 2689
+        "id" : "76",
+        "x" : 0,
+        "y" : 0
       }, {
-        "id" : "50",
-        "x" : 10,
-        "y" : 1510
+        "id" : "77",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "78",
+        "x" : 0,
+        "y" : 0
+      }, {
+        "id" : "79",
+        "x" : 0,
+        "y" : 0
       } ],
       "externalSoftwareSystemBoundariesVisible" : false,
-      "key" : "Containers",
+      "key" : "C2_Containers",
       "order" : 2,
       "relationships" : [ {
-        "id" : "30"
+        "id" : "80"
       }, {
-        "id" : "31"
+        "id" : "81"
       }, {
-        "id" : "32"
+        "id" : "82"
       }, {
-        "id" : "33",
-        "vertices" : [ {
-          "x" : 991,
-          "y" : 2124
-        } ]
-      }, {
-        "id" : "52"
-      }, {
-        "id" : "56"
+        "id" : "83"
       } ],
       "softwareSystemId" : "2"
     } ],
     "systemContextViews" : [ {
-      "description" : "System context diagram van AGORA v1.0 - Inspecteur gebruikt AGORA om met externe agents te communiceren",
-      "dimensions" : {
-        "height" : 1748,
-        "width" : 2480
+      "automaticLayout" : {
+        "applied" : false,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 200,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 400,
+        "vertices" : false
       },
+      "description" : "System Context (C1): Inspector → AGORA → MCP Agent Ecosystem",
       "elements" : [ {
         "id" : "1",
-        "x" : 175,
-        "y" : 450
+        "x" : 0,
+        "y" : 0
       }, {
         "id" : "2",
-        "x" : 755,
-        "y" : 500
+        "x" : 0,
+        "y" : 0
       }, {
-        "id" : "50",
-        "x" : 1465,
-        "y" : 500
+        "id" : "112",
+        "x" : 0,
+        "y" : 0
       } ],
       "enterpriseBoundaryVisible" : true,
-      "key" : "SystemContext",
+      "key" : "C1_SystemContext",
       "order" : 1,
-      "paperSize" : "A5_Landscape",
       "relationships" : [ {
-        "id" : "51"
+        "id" : "113"
       }, {
-        "id" : "55"
+        "id" : "114"
       } ],
       "softwareSystemId" : "2"
     } ]
