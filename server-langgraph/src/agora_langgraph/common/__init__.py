@@ -1,10 +1,12 @@
 """Common types and schemas for AGORA LangGraph using AG-UI Protocol."""
 
 from agora_langgraph.common.ag_ui_types import (
+    # Official AG-UI types (re-exported)
     EventType,
     BaseEvent,
     RunStartedEvent,
     RunFinishedEvent,
+    RunErrorEvent,
     StepStartedEvent,
     StepFinishedEvent,
     TextMessageStartEvent,
@@ -13,17 +15,20 @@ from agora_langgraph.common.ag_ui_types import (
     ToolCallStartEvent,
     ToolCallArgsEvent,
     ToolCallEndEvent,
+    ToolCallResultEvent,
     StateSnapshotEvent,
     StateDeltaEvent,
     MessagesSnapshotEvent,
     CustomEvent,
     RawEvent,
+    Event,
+    Message,
+    State,
+    # AGORA extensions
+    RunAgentInput,
     ToolApprovalRequestPayload,
     ToolApprovalResponsePayload,
     ErrorPayload,
-    RunAgentInput,
-    Message,
-    AGUIEvent,
     AGORA_TOOL_APPROVAL_REQUEST,
     AGORA_TOOL_APPROVAL_RESPONSE,
     AGORA_ERROR,
@@ -36,6 +41,7 @@ __all__ = [
     "BaseEvent",
     "RunStartedEvent",
     "RunFinishedEvent",
+    "RunErrorEvent",
     "StepStartedEvent",
     "StepFinishedEvent",
     "TextMessageStartEvent",
@@ -44,19 +50,21 @@ __all__ = [
     "ToolCallStartEvent",
     "ToolCallArgsEvent",
     "ToolCallEndEvent",
+    "ToolCallResultEvent",
     "StateSnapshotEvent",
     "StateDeltaEvent",
     "MessagesSnapshotEvent",
     "CustomEvent",
     "RawEvent",
-    # Payloads
+    "Event",
+    "Message",
+    "State",
+    # AGORA Payloads
     "ToolApprovalRequestPayload",
     "ToolApprovalResponsePayload",
     "ErrorPayload",
-    # Input/Output
+    # AGORA Input
     "RunAgentInput",
-    "Message",
-    "AGUIEvent",
     # Constants
     "AGORA_TOOL_APPROVAL_REQUEST",
     "AGORA_TOOL_APPROVAL_RESPONSE",

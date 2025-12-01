@@ -1,6 +1,6 @@
 # AGORA AG-UI Protocol Specification
 
-**Version:** 2.0.0  
+**Version:** 2.1.0  
 **Last Updated:** December 2025  
 **Protocol:** AG-UI (Agent-User Interface Protocol)
 
@@ -13,7 +13,7 @@
 5. [Conversation Flows](#conversation-flows)
 6. [Custom Events (HITL)](#custom-events-hitl)
 7. [Implementation Guide](#implementation-guide)
-8. [Migration from HAI](#migration-from-hai)
+8. [Official AG-UI Package Usage](#official-ag-ui-package-usage)
 
 ---
 
@@ -21,7 +21,8 @@
 
 AGORA uses the open-source **AG-UI Protocol** for communication between the HAI (Human Agent Interface) frontend and the LangGraph orchestrator backend.
 
-**AG-UI Repository:** https://github.com/ag-ui-protocol/ag-ui
+**AG-UI Repository:** https://github.com/ag-ui-protocol/ag-ui  
+**Official Package:** `ag-ui-protocol` (Python), `@ag-ui/core` (TypeScript)
 
 ### Key Features
 
@@ -29,8 +30,9 @@ AGORA uses the open-source **AG-UI Protocol** for communication between the HAI 
 - **Transport agnostic** (WebSocket supported)
 - **Streaming-first** for real-time text and tool call updates
 - **Lifecycle events** for run and step tracking
+- **State synchronization** via `STATE_SNAPSHOT` and `STATE_DELTA` events
 - **Custom events** for protocol extensions (HITL approval)
-- **Type-safe** with full TypeScript/Python support
+- **Type-safe** with full TypeScript/Python support using official packages
 
 ### Architecture Context
 
@@ -78,9 +80,13 @@ All events are JSON-encoded with a `type` discriminator field using SCREAMING_CA
 ```typescript
 interface BaseEvent {
   type: EventType;        // SCREAMING_CASE discriminator
-  timestamp?: string;     // ISO 8601 timestamp
+  timestamp?: number;     // Unix timestamp in milliseconds
 }
 ```
+
+### Naming Convention
+
+The official AG-UI package uses **snake_case** for Python field names with automatic **camelCase** aliases for JSON serialization (via Pydantic's alias generator).
 
 ---
 
@@ -96,7 +102,7 @@ Emitted when an agent run begins.
   "type": "RUN_STARTED",
   "threadId": "abc123-...",
   "runId": "run-456-...",
-  "timestamp": "2025-01-15T10:30:00Z"
+  "timestamp": 1705318200000
 }
 ```
 
@@ -108,7 +114,20 @@ Emitted when an agent run completes.
   "type": "RUN_FINISHED",
   "threadId": "abc123-...",
   "runId": "run-456-...",
-  "timestamp": "2025-01-15T10:30:05Z"
+  "result": null,
+  "timestamp": 1705318205000
+}
+```
+
+#### RUN_ERROR
+Emitted when an agent run encounters an error.
+
+```json
+{
+  "type": "RUN_ERROR",
+  "message": "Error processing request",
+  "code": "processing_error",
+  "timestamp": 1705318205000
 }
 ```
 
@@ -119,8 +138,7 @@ Emitted when a processing step begins.
 {
   "type": "STEP_STARTED",
   "stepName": "thinking",
-  "metadata": { "message": "Analyzing request..." },
-  "timestamp": "2025-01-15T10:30:01Z"
+  "timestamp": 1705318201000
 }
 ```
 
@@ -131,7 +149,7 @@ Emitted when a processing step completes.
 {
   "type": "STEP_FINISHED",
   "stepName": "thinking",
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202000
 }
 ```
 
@@ -147,19 +165,19 @@ Emitted when a text message begins.
   "type": "TEXT_MESSAGE_START",
   "messageId": "msg-789-...",
   "role": "assistant",
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202000
 }
 ```
 
 #### TEXT_MESSAGE_CONTENT
-Emitted for each content chunk during streaming.
+Emitted for each content chunk during streaming. Delta must be non-empty.
 
 ```json
 {
   "type": "TEXT_MESSAGE_CONTENT",
   "messageId": "msg-789-...",
   "delta": "Based on the regulations, ",
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202100
 }
 ```
 
@@ -170,7 +188,7 @@ Emitted when a text message is complete.
 {
   "type": "TEXT_MESSAGE_END",
   "messageId": "msg-789-...",
-  "timestamp": "2025-01-15T10:30:04Z"
+  "timestamp": 1705318204000
 }
 ```
 
@@ -187,7 +205,7 @@ Emitted when a tool call begins.
   "toolCallId": "call-abc-...",
   "toolCallName": "search_regulations",
   "parentMessageId": "msg-789-...",
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202000
 }
 ```
 
@@ -199,20 +217,65 @@ Emitted to stream tool call arguments.
   "type": "TOOL_CALL_ARGS",
   "toolCallId": "call-abc-...",
   "delta": "{\"query\": \"food safety\", \"limit\": 10}",
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202100
 }
 ```
 
 #### TOOL_CALL_END
-Emitted when a tool call completes (success or error).
+Emitted when tool call argument streaming completes.
 
 ```json
 {
   "type": "TOOL_CALL_END",
   "toolCallId": "call-abc-...",
-  "result": "Found 5 relevant regulations",
-  "error": null,
-  "timestamp": "2025-01-15T10:30:03Z"
+  "timestamp": 1705318203000
+}
+```
+
+#### TOOL_CALL_RESULT
+Emitted with the tool execution result.
+
+```json
+{
+  "type": "TOOL_CALL_RESULT",
+  "messageId": "tool-result-abc",
+  "toolCallId": "call-abc-...",
+  "content": "Found 5 relevant regulations",
+  "role": "tool",
+  "timestamp": 1705318203100
+}
+```
+
+---
+
+### State Events
+
+#### STATE_SNAPSHOT
+Emitted for full state synchronization.
+
+```json
+{
+  "type": "STATE_SNAPSHOT",
+  "snapshot": {
+    "threadId": "abc123-...",
+    "runId": "run-456-...",
+    "currentAgent": "regulation-agent",
+    "status": "processing"
+  },
+  "timestamp": 1705318200000
+}
+```
+
+#### STATE_DELTA
+Emitted for incremental state updates (JSON Patch format, RFC 6902).
+
+```json
+{
+  "type": "STATE_DELTA",
+  "delta": [
+    { "op": "replace", "path": "/currentAgent", "value": "reporting-agent" }
+  ],
+  "timestamp": 1705318201000
 }
 ```
 
@@ -229,6 +292,9 @@ Client                                    Server
   |    { threadId, messages: [...] }        |
   |                                         |
   | <------------ RUN_STARTED               |
+  | <------------ STATE_SNAPSHOT            |
+  | <------------ STEP_STARTED (routing)    |
+  | <------------ STEP_FINISHED (routing)   |
   | <------------ STEP_STARTED (thinking)   |
   |                                         |
   | <------------ TEXT_MESSAGE_START        |
@@ -237,6 +303,7 @@ Client                                    Server
   | <------------ TEXT_MESSAGE_END          |
   |                                         |
   | <------------ STEP_FINISHED (thinking)  |
+  | <------------ STATE_SNAPSHOT (final)    |
   | <------------ RUN_FINISHED              |
 ```
 
@@ -248,21 +315,26 @@ Client                                    Server
   |-- RunAgentInput -------------------->   |
   |                                         |
   | <------------ RUN_STARTED               |
+  | <------------ STATE_SNAPSHOT            |
   | <------------ STEP_STARTED (routing)    |
   | <------------ STEP_FINISHED (routing)   |
   | <------------ STEP_STARTED (thinking)   |
   |                                         |
+  | <------------ STEP_FINISHED (thinking)  |
   | <------------ STEP_STARTED (exec_tools) |
   | <------------ TOOL_CALL_START           |
   | <------------ TOOL_CALL_ARGS            |
   | <------------ TOOL_CALL_END             |
+  | <------------ TOOL_CALL_RESULT          |
   | <------------ STEP_FINISHED (exec_tools)|
   |                                         |
+  | <------------ STEP_STARTED (thinking)   |
   | <------------ TEXT_MESSAGE_START        |
   | <------------ TEXT_MESSAGE_CONTENT...   |
   | <------------ TEXT_MESSAGE_END          |
   |                                         |
   | <------------ STEP_FINISHED (thinking)  |
+  | <------------ STATE_SNAPSHOT (final)    |
   | <------------ RUN_FINISHED              |
 ```
 
@@ -283,12 +355,12 @@ Sent by server to request approval for a tool execution.
   "value": {
     "toolName": "generate_final_report",
     "toolDescription": "Generates an official inspection report PDF",
-    "parameters": { "inspection_id": "INS-2024-001" },
+    "parameters": { "inspectionId": "INS-2024-001" },
     "reasoning": "User requested to finalize the inspection report",
     "riskLevel": "high",
     "approvalId": "appr-xyz789"
   },
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202000
 }
 ```
 
@@ -310,7 +382,7 @@ Sent by client with the approval decision.
 
 ### agora:error
 
-Sent by server for protocol errors.
+Sent by server for AGORA-specific protocol errors. For general run errors, use `RUN_ERROR` instead.
 
 ```json
 {
@@ -321,7 +393,7 @@ Sent by server for protocol errors.
     "message": "Your message contains prohibited content",
     "details": { "reason": "profanity" }
   },
-  "timestamp": "2025-01-15T10:30:02Z"
+  "timestamp": 1705318202000
 }
 ```
 
@@ -344,6 +416,8 @@ To start a new run, send a `RunAgentInput`:
 }
 ```
 
+Note: `runId` is optional - the server will generate one if not provided.
+
 ### TypeScript Client Setup
 
 ```typescript
@@ -355,6 +429,14 @@ const client = new AGUIWebSocketClient({
 
 client.onEvent((event) => {
   switch (event.type) {
+    case 'RUN_ERROR':
+      // Handle run error
+      console.error(event.message);
+      break;
+    case 'STATE_SNAPSHOT':
+      // Update local state
+      updateState(event.snapshot);
+      break;
     case 'TEXT_MESSAGE_START':
       // Start new message bubble
       break;
@@ -379,49 +461,79 @@ client.sendRunInput(threadId, 'Hello!');
 ### Python Server Setup
 
 ```python
-from agora_langgraph.api.ag_ui_handler import AGUIProtocolHandler
+from ag_ui.core import (
+    RunStartedEvent,
+    RunFinishedEvent,
+    RunErrorEvent,
+    StateSnapshotEvent,
+    TextMessageStartEvent,
+    TextMessageContentEvent,
+    TextMessageEndEvent,
+)
+from ag_ui.encoder import EventEncoder
+
 from agora_langgraph.common.ag_ui_types import RunAgentInput
 
-handler = AGUIProtocolHandler(websocket)
+encoder = EventEncoder()
 
 # Receive input
 input_data = await handler.receive_message()
 if isinstance(input_data, RunAgentInput):
-    # Process the run
-    await handler.send_run_started(input_data.threadId, input_data.runId)
+    # Process the run using official AG-UI event types
+    await handler.send_run_started(input_data.thread_id, run_id)
+    await handler.send_state_snapshot({"status": "processing"})
     # ... streaming events ...
-    await handler.send_run_finished(input_data.threadId, input_data.runId)
+    await handler.send_run_finished(input_data.thread_id, run_id)
 ```
 
 ---
 
-## Migration from HAI
+## Official AG-UI Package Usage
 
-### Naming Changes
+AGORA uses the official `ag-ui-protocol` Python package for event types:
 
-| HAI (v1) | AG-UI (v2) |
-|----------|------------|
-| `session_id` | `threadId` |
-| `message_id` | `messageId` |
-| `tool_call_id` | `toolCallId` |
-| `approval_id` | `approvalId` |
-| `is_final` | N/A (use TEXT_MESSAGE_END) |
-| snake_case fields | camelCase fields |
+### Installation
 
-### Message Type Mapping
+```bash
+pip install ag-ui-protocol>=0.1.0
+```
 
-| HAI Message Type | AG-UI Event(s) |
-|-----------------|----------------|
-| `user_message` | `RunAgentInput` |
-| `assistant_message_chunk` | `TEXT_MESSAGE_START` → `TEXT_MESSAGE_CONTENT` → `TEXT_MESSAGE_END` |
-| `tool_call` (started) | `TOOL_CALL_START` → `TOOL_CALL_ARGS` |
-| `tool_call` (completed) | `TOOL_CALL_END` |
-| `status` | `STEP_STARTED` / `STEP_FINISHED` |
-| `tool_approval_request` | `CUSTOM` with `agora:tool_approval_request` |
-| `error` | `CUSTOM` with `agora:error` |
+### Import Official Types
+
+```python
+from ag_ui.core import (
+    EventType,
+    RunStartedEvent,
+    RunFinishedEvent,
+    RunErrorEvent,
+    StepStartedEvent,
+    StepFinishedEvent,
+    TextMessageStartEvent,
+    TextMessageContentEvent,
+    TextMessageEndEvent,
+    ToolCallStartEvent,
+    ToolCallArgsEvent,
+    ToolCallEndEvent,
+    ToolCallResultEvent,
+    StateSnapshotEvent,
+    StateDeltaEvent,
+    CustomEvent,
+)
+from ag_ui.encoder import EventEncoder
+```
+
+### AGORA Extensions
+
+AGORA extends the official types with:
+
+- `RunAgentInput` - Simplified input format for the frontend
+- `ToolApprovalRequestPayload` - HITL approval request
+- `ToolApprovalResponsePayload` - HITL approval response
+- `ErrorPayload` - AGORA-specific error details
+
+These are defined in `agora_langgraph.common.ag_ui_types`.
 
 ---
 
 **Document Maintained By:** Gradient - NVWA  
 **Protocol Reference:** https://github.com/ag-ui-protocol/ag-ui
-

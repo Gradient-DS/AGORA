@@ -20,7 +20,20 @@
         "type": "RUN_STARTED",
         "threadId": "abc123-def456-789",
         "runId": "run-002",
-        "timestamp": "2025-01-15T10:30:00.000Z"
+        "timestamp": 1705318200000
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STATE_SNAPSHOT",
+        "snapshot": {
+          "threadId": "abc123-def456-789",
+          "runId": "run-002",
+          "currentAgent": "general-agent",
+          "status": "processing"
+        },
+        "timestamp": 1705318200050
       }
     },
     {
@@ -28,8 +41,7 @@
       "event": {
         "type": "STEP_STARTED",
         "stepName": "routing",
-        "metadata": { "message": "Analyzing request..." },
-        "timestamp": "2025-01-15T10:30:00.100Z"
+        "timestamp": 1705318200100
       }
     },
     {
@@ -37,7 +49,7 @@
       "event": {
         "type": "STEP_FINISHED",
         "stepName": "routing",
-        "timestamp": "2025-01-15T10:30:00.300Z"
+        "timestamp": 1705318200300
       }
     },
     {
@@ -45,7 +57,15 @@
       "event": {
         "type": "STEP_STARTED",
         "stepName": "thinking",
-        "timestamp": "2025-01-15T10:30:00.400Z"
+        "timestamp": 1705318200400
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_FINISHED",
+        "stepName": "thinking",
+        "timestamp": 1705318200900
       }
     },
     {
@@ -53,8 +73,7 @@
       "event": {
         "type": "STEP_STARTED",
         "stepName": "executing_tools",
-        "metadata": { "tool": "generate_final_report" },
-        "timestamp": "2025-01-15T10:30:01.000Z"
+        "timestamp": 1705318201000
       }
     },
     {
@@ -67,15 +86,15 @@
           "toolName": "generate_final_report",
           "toolDescription": "Generates an official inspection report PDF that will be stored permanently in the system",
           "parameters": {
-            "inspection_id": "INS-2024-001",
-            "include_photos": true,
+            "inspectionId": "INS-2024-001",
+            "includePhotos": true,
             "language": "nl"
           },
           "reasoning": "User requested to generate the final inspection report. This is a critical operation that creates an official document.",
           "riskLevel": "critical",
           "approvalId": "appr-xyz789"
         },
-        "timestamp": "2025-01-15T10:30:01.100Z"
+        "timestamp": 1705318201100
       }
     },
     {
@@ -98,7 +117,7 @@
         "toolCallId": "call-report-001",
         "toolCallName": "generate_final_report",
         "parentMessageId": null,
-        "timestamp": "2025-01-15T10:30:02.000Z"
+        "timestamp": 1705318202000
       }
     },
     {
@@ -106,17 +125,29 @@
       "event": {
         "type": "TOOL_CALL_ARGS",
         "toolCallId": "call-report-001",
-        "delta": "{\"inspection_id\": \"INS-2024-001\", \"include_photos\": true, \"language\": \"nl\"}",
-        "timestamp": "2025-01-15T10:30:02.100Z"
+        "delta": "{\"inspectionId\": \"INS-2024-001\", \"includePhotos\": true, \"language\": \"nl\"}",
+        "timestamp": 1705318202100
       }
     },
     {
       "direction": "server → client",
+      "description": "TOOL_CALL_END signals end of argument streaming",
       "event": {
         "type": "TOOL_CALL_END",
         "toolCallId": "call-report-001",
-        "result": "Report generated successfully: report-INS-2024-001.pdf",
-        "timestamp": "2025-01-15T10:30:05.000Z"
+        "timestamp": 1705318204900
+      }
+    },
+    {
+      "direction": "server → client",
+      "description": "TOOL_CALL_RESULT contains the actual execution result",
+      "event": {
+        "type": "TOOL_CALL_RESULT",
+        "messageId": "tool-result-report-001",
+        "toolCallId": "call-report-001",
+        "content": "Report generated successfully: report-INS-2024-001.pdf",
+        "role": "tool",
+        "timestamp": 1705318205000
       }
     },
     {
@@ -124,7 +155,15 @@
       "event": {
         "type": "STEP_FINISHED",
         "stepName": "executing_tools",
-        "timestamp": "2025-01-15T10:30:05.100Z"
+        "timestamp": 1705318205100
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_STARTED",
+        "stepName": "thinking",
+        "timestamp": 1705318205150
       }
     },
     {
@@ -133,7 +172,7 @@
         "type": "TEXT_MESSAGE_START",
         "messageId": "msg-002",
         "role": "assistant",
-        "timestamp": "2025-01-15T10:30:05.200Z"
+        "timestamp": 1705318205200
       }
     },
     {
@@ -142,7 +181,7 @@
         "type": "TEXT_MESSAGE_CONTENT",
         "messageId": "msg-002",
         "delta": "I have successfully generated the inspection report for INS-2024-001. You can download the PDF from the link below.",
-        "timestamp": "2025-01-15T10:30:05.300Z"
+        "timestamp": 1705318205300
       }
     },
     {
@@ -150,7 +189,7 @@
       "event": {
         "type": "TEXT_MESSAGE_END",
         "messageId": "msg-002",
-        "timestamp": "2025-01-15T10:30:05.400Z"
+        "timestamp": 1705318205400
       }
     },
     {
@@ -158,7 +197,20 @@
       "event": {
         "type": "STEP_FINISHED",
         "stepName": "thinking",
-        "timestamp": "2025-01-15T10:30:05.500Z"
+        "timestamp": 1705318205500
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STATE_SNAPSHOT",
+        "snapshot": {
+          "threadId": "abc123-def456-789",
+          "runId": "run-002",
+          "currentAgent": "reporting-agent",
+          "status": "completed"
+        },
+        "timestamp": 1705318205550
       }
     },
     {
@@ -167,7 +219,7 @@
         "type": "RUN_FINISHED",
         "threadId": "abc123-def456-789",
         "runId": "run-002",
-        "timestamp": "2025-01-15T10:30:05.600Z"
+        "timestamp": 1705318205600
       }
     }
   ]

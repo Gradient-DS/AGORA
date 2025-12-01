@@ -1,15 +1,68 @@
 {
-  "description": "Error handling examples using AG-UI Protocol",
-  "examples": [
+  "description": "Error handling scenarios using AG-UI Protocol",
+  "scenarios": [
     {
-      "name": "Moderation Violation",
-      "description": "Server detects content moderation issue",
+      "name": "Run Error (Official Event)",
+      "description": "Using the official RUN_ERROR event type for processing errors",
       "events": [
         {
           "direction": "client → server",
           "event": {
             "threadId": "abc123-def456-789",
-            "runId": "run-003",
+            "messages": [
+              {
+                "role": "user",
+                "content": "Process this request"
+              }
+            ]
+          }
+        },
+        {
+          "direction": "server → client",
+          "event": {
+            "type": "RUN_STARTED",
+            "threadId": "abc123-def456-789",
+            "runId": "run-error-001",
+            "timestamp": 1705318200000
+          }
+        },
+        {
+          "direction": "server → client",
+          "event": {
+            "type": "STEP_STARTED",
+            "stepName": "thinking",
+            "timestamp": 1705318200100
+          }
+        },
+        {
+          "direction": "server → client",
+          "description": "Official RUN_ERROR event for processing failures",
+          "event": {
+            "type": "RUN_ERROR",
+            "message": "Error processing message: LLM rate limit exceeded",
+            "code": "processing_error",
+            "timestamp": 1705318200500
+          }
+        },
+        {
+          "direction": "server → client",
+          "event": {
+            "type": "RUN_FINISHED",
+            "threadId": "abc123-def456-789",
+            "runId": "run-error-001",
+            "timestamp": 1705318200600
+          }
+        }
+      ]
+    },
+    {
+      "name": "AGORA Custom Error (Moderation)",
+      "description": "Using CUSTOM event for AGORA-specific errors like moderation violations",
+      "events": [
+        {
+          "direction": "client → server",
+          "event": {
+            "threadId": "abc123-def456-789",
             "messages": [
               {
                 "role": "user",
@@ -23,24 +76,25 @@
           "event": {
             "type": "RUN_STARTED",
             "threadId": "abc123-def456-789",
-            "runId": "run-003",
-            "timestamp": "2025-01-15T10:30:00.000Z"
+            "runId": "run-mod-001",
+            "timestamp": 1705318200000
           }
         },
         {
           "direction": "server → client",
+          "description": "AGORA-specific error via CUSTOM event",
           "event": {
             "type": "CUSTOM",
             "name": "agora:error",
             "value": {
               "errorCode": "moderation_violation",
-              "message": "Your message contains content that violates our guidelines",
+              "message": "Your message contains prohibited content and cannot be processed",
               "details": {
-                "reason": "profanity",
-                "severity": "medium"
+                "reason": "content_policy_violation",
+                "category": "inappropriate_language"
               }
             },
-            "timestamp": "2025-01-15T10:30:00.100Z"
+            "timestamp": 1705318200100
           }
         },
         {
@@ -48,122 +102,15 @@
           "event": {
             "type": "RUN_FINISHED",
             "threadId": "abc123-def456-789",
-            "runId": "run-003",
-            "timestamp": "2025-01-15T10:30:00.200Z"
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tool Execution Error",
-      "description": "Tool fails during execution",
-      "events": [
-        {
-          "direction": "client → server",
-          "event": {
-            "threadId": "abc123-def456-789",
-            "runId": "run-004",
-            "messages": [
-              {
-                "role": "user",
-                "content": "Search for regulations about HACCP"
-              }
-            ]
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "RUN_STARTED",
-            "threadId": "abc123-def456-789",
-            "runId": "run-004",
-            "timestamp": "2025-01-15T10:30:00.000Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "STEP_STARTED",
-            "stepName": "executing_tools",
-            "metadata": { "tool": "search_regulations" },
-            "timestamp": "2025-01-15T10:30:00.500Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "TOOL_CALL_START",
-            "toolCallId": "call-search-001",
-            "toolCallName": "search_regulations",
-            "timestamp": "2025-01-15T10:30:00.600Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "TOOL_CALL_ARGS",
-            "toolCallId": "call-search-001",
-            "delta": "{\"query\": \"HACCP\", \"limit\": 10}",
-            "timestamp": "2025-01-15T10:30:00.700Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "TOOL_CALL_END",
-            "toolCallId": "call-search-001",
-            "error": "Database connection timeout after 30 seconds",
-            "timestamp": "2025-01-15T10:30:30.700Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "STEP_FINISHED",
-            "stepName": "executing_tools",
-            "timestamp": "2025-01-15T10:30:30.800Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "TEXT_MESSAGE_START",
-            "messageId": "msg-error-001",
-            "role": "assistant",
-            "timestamp": "2025-01-15T10:30:30.900Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "TEXT_MESSAGE_CONTENT",
-            "messageId": "msg-error-001",
-            "delta": "I apologize, but I encountered an error while searching the regulations database. Please try again in a moment.",
-            "timestamp": "2025-01-15T10:30:31.000Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "TEXT_MESSAGE_END",
-            "messageId": "msg-error-001",
-            "timestamp": "2025-01-15T10:30:31.100Z"
-          }
-        },
-        {
-          "direction": "server → client",
-          "event": {
-            "type": "RUN_FINISHED",
-            "threadId": "abc123-def456-789",
-            "runId": "run-004",
-            "timestamp": "2025-01-15T10:30:31.200Z"
+            "runId": "run-mod-001",
+            "timestamp": 1705318200200
           }
         }
       ]
     },
     {
       "name": "Tool Approval Rejected",
-      "description": "User rejects a tool approval request",
+      "description": "User rejects a tool execution request",
       "events": [
         {
           "direction": "server → client",
@@ -171,27 +118,28 @@
             "type": "CUSTOM",
             "name": "agora:tool_approval_request",
             "value": {
-              "toolName": "delete_inspection_record",
-              "toolDescription": "Permanently deletes an inspection record from the system",
+              "toolName": "delete_records",
+              "toolDescription": "Permanently deletes inspection records from the database",
               "parameters": {
-                "inspection_id": "INS-2024-001"
+                "recordIds": ["REC-001", "REC-002"]
               },
-              "reasoning": "User requested to delete the inspection record",
+              "reasoning": "User requested to clean up old records",
               "riskLevel": "critical",
-              "approvalId": "appr-delete-001"
+              "approvalId": "appr-reject-001"
             },
-            "timestamp": "2025-01-15T10:30:01.000Z"
+            "timestamp": 1705318201000
           }
         },
         {
           "direction": "client → server",
+          "description": "User rejects the dangerous operation",
           "event": {
             "type": "CUSTOM",
             "name": "agora:tool_approval_response",
             "value": {
-              "approvalId": "appr-delete-001",
+              "approvalId": "appr-reject-001",
               "approved": false,
-              "feedback": "I don't want to delete this record"
+              "feedback": "I don't want to delete these records"
             }
           }
         },
@@ -201,7 +149,7 @@
             "type": "TEXT_MESSAGE_START",
             "messageId": "msg-cancel-001",
             "role": "assistant",
-            "timestamp": "2025-01-15T10:30:02.000Z"
+            "timestamp": 1705318202000
           }
         },
         {
@@ -209,8 +157,8 @@
           "event": {
             "type": "TEXT_MESSAGE_CONTENT",
             "messageId": "msg-cancel-001",
-            "delta": "I have cancelled the deletion as requested. The inspection record INS-2024-001 remains unchanged.",
-            "timestamp": "2025-01-15T10:30:02.100Z"
+            "delta": "I have cancelled the action as requested.",
+            "timestamp": 1705318202100
           }
         },
         {
@@ -218,7 +166,7 @@
           "event": {
             "type": "TEXT_MESSAGE_END",
             "messageId": "msg-cancel-001",
-            "timestamp": "2025-01-15T10:30:02.200Z"
+            "timestamp": 1705318202200
           }
         }
       ]

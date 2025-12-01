@@ -189,8 +189,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     continue
 
                 if isinstance(message, RunAgentInput):
-                    thread_id = message.threadId
-                    run_id = message.runId or str(uuid.uuid4())
+                    thread_id = message.thread_id
+                    run_id = message.run_id or str(uuid.uuid4())
                     log.info(
                         f"Processing AG-UI run for thread: {thread_id}, run: {run_id}"
                     )
@@ -214,7 +214,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                 f"Got response from orchestrator: role={resp.role}, has_content={bool(resp.content)}"
                             )
                             log.info(
-                                f"Response sent successfully for thread: {agent_input.threadId}"
+                                f"Response sent successfully for thread: {agent_input.thread_id}"
                             )
                         except asyncio.CancelledError:
                             log.info("Processing cancelled")
@@ -227,7 +227,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 elif isinstance(message, ToolApprovalResponsePayload):
                     log.info(
-                        f"Received tool approval response: {message.approved} (id: {message.approvalId})"
+                        f"Received tool approval response: {message.approved} (id: {message.approval_id})"
                     )
                     orchestrator.handle_approval_response(message)
 

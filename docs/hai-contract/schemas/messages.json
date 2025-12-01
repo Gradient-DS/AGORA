@@ -2,13 +2,14 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "agora-ag-ui-events",
   "title": "AGORA AG-UI Protocol Events",
-  "description": "JSON Schema definitions for AG-UI Protocol events used by AGORA",
+  "description": "JSON Schema definitions for AG-UI Protocol events used by AGORA. Uses official ag-ui-protocol types with AGORA extensions.",
   "definitions": {
     "EventType": {
       "type": "string",
       "enum": [
         "RUN_STARTED",
         "RUN_FINISHED",
+        "RUN_ERROR",
         "STEP_STARTED",
         "STEP_FINISHED",
         "TEXT_MESSAGE_START",
@@ -17,6 +18,7 @@
         "TOOL_CALL_START",
         "TOOL_CALL_ARGS",
         "TOOL_CALL_END",
+        "TOOL_CALL_RESULT",
         "STATE_SNAPSHOT",
         "STATE_DELTA",
         "MESSAGES_SNAPSHOT",
@@ -30,15 +32,15 @@
     },
     "MessageRole": {
       "type": "string",
-      "enum": ["user", "assistant", "system", "tool"]
+      "enum": ["user", "assistant", "system", "tool", "developer"]
     },
     "Message": {
       "type": "object",
       "required": ["role", "content"],
       "properties": {
+        "id": { "type": "string" },
         "role": { "$ref": "#/definitions/MessageRole" },
         "content": { "type": "string" },
-        "id": { "type": "string" },
         "toolCallId": { "type": "string" }
       }
     },
@@ -46,13 +48,13 @@
       "type": "object",
       "required": ["threadId", "messages"],
       "properties": {
-        "threadId": { "type": "string" },
-        "runId": { "type": "string" },
+        "threadId": { "type": "string", "description": "Thread/session identifier" },
+        "runId": { "type": "string", "description": "Optional unique run identifier (auto-generated if not provided)" },
         "messages": {
           "type": "array",
           "items": { "$ref": "#/definitions/Message" }
         },
-        "context": { "type": "object" }
+        "context": { "type": "object", "description": "Additional context" }
       }
     },
     "RunStartedEvent": {
@@ -62,7 +64,8 @@
         "type": { "const": "RUN_STARTED" },
         "threadId": { "type": "string" },
         "runId": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "parentRunId": { "type": "string" },
+        "timestamp": { "type": "integer", "description": "Unix timestamp in milliseconds" }
       }
     },
     "RunFinishedEvent": {
@@ -72,7 +75,18 @@
         "type": { "const": "RUN_FINISHED" },
         "threadId": { "type": "string" },
         "runId": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "result": { "type": ["object", "null"] },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "RunErrorEvent": {
+      "type": "object",
+      "required": ["type", "message"],
+      "properties": {
+        "type": { "const": "RUN_ERROR" },
+        "message": { "type": "string" },
+        "code": { "type": ["string", "null"] },
+        "timestamp": { "type": "integer" }
       }
     },
     "StepStartedEvent": {
@@ -81,8 +95,7 @@
       "properties": {
         "type": { "const": "STEP_STARTED" },
         "stepName": { "type": "string" },
-        "metadata": { "type": "object" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "integer" }
       }
     },
     "StepFinishedEvent": {
@@ -91,7 +104,7 @@
       "properties": {
         "type": { "const": "STEP_FINISHED" },
         "stepName": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "integer" }
       }
     },
     "TextMessageStartEvent": {
@@ -100,8 +113,8 @@
       "properties": {
         "type": { "const": "TEXT_MESSAGE_START" },
         "messageId": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "assistant"] },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "role": { "type": "string", "enum": ["user", "assistant", "developer", "system"] },
+        "timestamp": { "type": "integer" }
       }
     },
     "TextMessageContentEvent": {
@@ -110,8 +123,8 @@
       "properties": {
         "type": { "const": "TEXT_MESSAGE_CONTENT" },
         "messageId": { "type": "string" },
-        "delta": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "delta": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "integer" }
       }
     },
     "TextMessageEndEvent": {
@@ -120,7 +133,7 @@
       "properties": {
         "type": { "const": "TEXT_MESSAGE_END" },
         "messageId": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "integer" }
       }
     },
     "ToolCallStartEvent": {
@@ -131,7 +144,7 @@
         "toolCallId": { "type": "string" },
         "toolCallName": { "type": "string" },
         "parentMessageId": { "type": ["string", "null"] },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "integer" }
       }
     },
     "ToolCallArgsEvent": {
@@ -141,7 +154,7 @@
         "type": { "const": "TOOL_CALL_ARGS" },
         "toolCallId": { "type": "string" },
         "delta": { "type": "string" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "integer" }
       }
     },
     "ToolCallEndEvent": {
@@ -150,9 +163,46 @@
       "properties": {
         "type": { "const": "TOOL_CALL_END" },
         "toolCallId": { "type": "string" },
-        "result": { "type": ["string", "null"] },
-        "error": { "type": ["string", "null"] },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "ToolCallResultEvent": {
+      "type": "object",
+      "required": ["type", "messageId", "toolCallId", "content"],
+      "properties": {
+        "type": { "const": "TOOL_CALL_RESULT" },
+        "messageId": { "type": "string" },
+        "toolCallId": { "type": "string" },
+        "content": { "type": "string" },
+        "role": { "const": "tool" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "StateSnapshotEvent": {
+      "type": "object",
+      "required": ["type", "snapshot"],
+      "properties": {
+        "type": { "const": "STATE_SNAPSHOT" },
+        "snapshot": { "type": "object" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "StateDeltaEvent": {
+      "type": "object",
+      "required": ["type", "delta"],
+      "properties": {
+        "type": { "const": "STATE_DELTA" },
+        "delta": { "type": "array", "description": "JSON Patch (RFC 6902) operations" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "MessagesSnapshotEvent": {
+      "type": "object",
+      "required": ["type", "messages"],
+      "properties": {
+        "type": { "const": "MESSAGES_SNAPSHOT" },
+        "messages": { "type": "array", "items": { "$ref": "#/definitions/Message" } },
+        "timestamp": { "type": "integer" }
       }
     },
     "CustomEvent": {
@@ -161,12 +211,23 @@
       "properties": {
         "type": { "const": "CUSTOM" },
         "name": { "type": "string" },
-        "value": { "type": "object" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "value": {},
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "RawEvent": {
+      "type": "object",
+      "required": ["type", "event"],
+      "properties": {
+        "type": { "const": "RAW" },
+        "event": {},
+        "source": { "type": ["string", "null"] },
+        "timestamp": { "type": "integer" }
       }
     },
     "ToolApprovalRequestPayload": {
       "type": "object",
+      "description": "Payload for agora:tool_approval_request custom event",
       "required": ["toolName", "toolDescription", "parameters", "reasoning", "riskLevel", "approvalId"],
       "properties": {
         "toolName": { "type": "string" },
@@ -179,6 +240,7 @@
     },
     "ToolApprovalResponsePayload": {
       "type": "object",
+      "description": "Payload for agora:tool_approval_response custom event",
       "required": ["approvalId", "approved"],
       "properties": {
         "approvalId": { "type": "string" },
@@ -188,6 +250,7 @@
     },
     "ErrorPayload": {
       "type": "object",
+      "description": "Payload for agora:error custom event",
       "required": ["errorCode", "message"],
       "properties": {
         "errorCode": { "type": "string" },
@@ -199,6 +262,7 @@
   "oneOf": [
     { "$ref": "#/definitions/RunStartedEvent" },
     { "$ref": "#/definitions/RunFinishedEvent" },
+    { "$ref": "#/definitions/RunErrorEvent" },
     { "$ref": "#/definitions/StepStartedEvent" },
     { "$ref": "#/definitions/StepFinishedEvent" },
     { "$ref": "#/definitions/TextMessageStartEvent" },
@@ -207,6 +271,11 @@
     { "$ref": "#/definitions/ToolCallStartEvent" },
     { "$ref": "#/definitions/ToolCallArgsEvent" },
     { "$ref": "#/definitions/ToolCallEndEvent" },
-    { "$ref": "#/definitions/CustomEvent" }
+    { "$ref": "#/definitions/ToolCallResultEvent" },
+    { "$ref": "#/definitions/StateSnapshotEvent" },
+    { "$ref": "#/definitions/StateDeltaEvent" },
+    { "$ref": "#/definitions/MessagesSnapshotEvent" },
+    { "$ref": "#/definitions/CustomEvent" },
+    { "$ref": "#/definitions/RawEvent" }
   ]
 }

@@ -11,10 +11,11 @@ from typing import Any
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph.state import CompiledStateGraph
 
+from ag_ui.core import Message as AGUIMessage
+
 from agora_langgraph.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
-    Message,
 )
 from agora_langgraph.common.schemas import ToolCall
 from agora_langgraph.core.approval_logic import requires_human_approval
@@ -102,7 +103,7 @@ class Orchestrator:
 
         Returns True if the approval was handled, False if no matching pending approval.
         """
-        approval_id = response.approvalId
+        approval_id = response.approval_id
         if approval_id in self.pending_approvals:
             future = self.pending_approvals[approval_id]
             if not future.done():
@@ -115,7 +116,7 @@ class Orchestrator:
         self,
         agent_input: RunAgentInput,
         protocol_handler: Any | None = None,
-    ) -> Message:
+    ) -> AGUIMessage:
         """Process a user message through the LangGraph pipeline using AG-UI Protocol.
 
         Args:
@@ -125,8 +126,8 @@ class Orchestrator:
         Returns:
             Assistant response message
         """
-        thread_id = agent_input.threadId
-        run_id = agent_input.runId or str(uuid.uuid4())
+        thread_id = agent_input.thread_id
+        run_id = agent_input.run_id or str(uuid.uuid4())
 
         # Extract user message from input
         user_content = ""
@@ -139,10 +140,8 @@ class Orchestrator:
         is_valid, error = await self.moderator.validate_input(user_content)
         if not is_valid:
             log.warning("Input validation failed: %s", error)
-            return Message(
-                role="assistant",
-                content=f"Input validation failed: {error}",
-                id=str(uuid.uuid4()),
+            return self._create_response_message(
+                f"Input validation failed: {error}", str(uuid.uuid4())
             )
 
         await self.audit.log_message(
@@ -156,9 +155,18 @@ class Orchestrator:
             if protocol_handler:
                 # Emit RUN_STARTED
                 await protocol_handler.send_run_started(thread_id, run_id)
-                await protocol_handler.send_step_started(
-                    "routing", {"message": "Analyzing request..."}
+
+                # Send initial state snapshot
+                await protocol_handler.send_state_snapshot(
+                    {
+                        "thread_id": thread_id,
+                        "run_id": run_id,
+                        "current_agent": "general-agent",
+                        "status": "processing",
+                    }
                 )
+
+                await protocol_handler.send_step_started("routing")
 
             message_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
@@ -199,38 +207,51 @@ class Orchestrator:
             )
 
             if protocol_handler and protocol_handler.is_connected:
+                # Send final state snapshot before finishing
+                await protocol_handler.send_state_snapshot(
+                    {
+                        "thread_id": thread_id,
+                        "run_id": run_id,
+                        "current_agent": active_agent_id,
+                        "status": "completed",
+                    }
+                )
                 # Emit RUN_FINISHED
                 await protocol_handler.send_run_finished(thread_id, run_id)
 
-            return Message(
-                role="assistant",
-                content=response_content,
-                id=message_id,
-            )
+            return self._create_response_message(response_content, message_id)
 
         except Exception as e:
             if str(e) == "Tool execution rejected by user":
                 log.info("Action cancelled by user")
                 if protocol_handler and protocol_handler.is_connected:
                     await protocol_handler.send_run_finished(thread_id, run_id)
-                return Message(
-                    role="assistant",
-                    content="I have cancelled the action as requested.",
-                    id=str(uuid.uuid4()),
+                return self._create_response_message(
+                    "I have cancelled the action as requested.", str(uuid.uuid4())
                 )
 
             log.error("Error processing message: %s", e, exc_info=True)
             if protocol_handler and protocol_handler.is_connected:
-                await protocol_handler.send_error(
-                    "processing_error",
-                    f"Error processing message: {str(e)}",
+                # Use official RUN_ERROR event for errors
+                await protocol_handler.send_run_error(
+                    message=f"Error processing message: {str(e)}",
+                    code="processing_error",
                 )
                 await protocol_handler.send_run_finished(thread_id, run_id)
-            return Message(
-                role="assistant",
-                content="I apologize, but I encountered an error processing your request.",
-                id=str(uuid.uuid4()),
+            return self._create_response_message(
+                "I apologize, but I encountered an error processing your request.",
+                str(uuid.uuid4()),
             )
+
+    def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
+        """Create an AG-UI AssistantMessage response."""
+        from ag_ui.core import AssistantMessage
+
+        return AssistantMessage(
+            id=message_id,
+            role="assistant",
+            content=content,
+        )
 
     async def _run_blocking(
         self,
@@ -262,13 +283,13 @@ class Orchestrator:
         """Stream graph response using astream_events with AG-UI Protocol."""
         full_response: list[str] = []
         current_agent_id = "general-agent"
+        current_step: str | None = "routing"
         active_tool_calls: dict[str, str] = {}
         message_started = False
 
         await protocol_handler.send_step_finished("routing")
-        await protocol_handler.send_step_started(
-            "thinking", {"agentId": current_agent_id}
-        )
+        await protocol_handler.send_step_started("thinking")
+        current_step = "thinking"
 
         async for event in self.graph.astream_events(
             input_state, config=config, version="v2"
@@ -304,9 +325,12 @@ class Orchestrator:
                 active_tool_calls[tool_run_id] = tool_name
                 log.info(f"Tool started: {tool_name} (run_id: {tool_run_id})")
 
-                await protocol_handler.send_step_started(
-                    "executing_tools", {"tool": tool_name, "agentId": current_agent_id}
-                )
+                # Finish current step before starting tool execution
+                if current_step and current_step != "executing_tools":
+                    await protocol_handler.send_step_finished(current_step)
+
+                await protocol_handler.send_step_started("executing_tools")
+                current_step = "executing_tools"
 
                 # Handle approval flow
                 await self._handle_tool_approval_flow(
@@ -334,11 +358,21 @@ class Orchestrator:
                 log.info(f"Tool completed: {tool_name} (run_id: {tool_run_id})")
 
                 if protocol_handler.is_connected:
-                    await protocol_handler.send_tool_call_end(
-                        tool_call_id=tool_run_id,
-                        result=str(output)[:500] if output else None,
-                    )
+                    # Send TOOL_CALL_END to signal end of streaming
+                    await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
+                    # Send TOOL_CALL_RESULT with the actual result
+                    result_str = str(output)[:500] if output else ""
+                    if result_str:
+                        await protocol_handler.send_tool_call_result(
+                            message_id=f"tool-result-{tool_run_id}",
+                            tool_call_id=tool_run_id,
+                            content=result_str,
+                        )
+
+                    # Finish executing_tools step and return to thinking
                     await protocol_handler.send_step_finished("executing_tools")
+                    await protocol_handler.send_step_started("thinking")
+                    current_step = "thinking"
 
             elif kind == "on_tool_error":
                 tool_run_id = event.get("run_id", "")
@@ -348,11 +382,13 @@ class Orchestrator:
                 log.error(f"Tool error: {tool_name} - {error}")
 
                 if protocol_handler.is_connected:
-                    await protocol_handler.send_tool_call_end(
-                        tool_call_id=tool_run_id,
-                        error=str(error),
-                    )
+                    # Send TOOL_CALL_END (no result event for errors)
+                    await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
+
+                    # Finish executing_tools step and return to thinking
                     await protocol_handler.send_step_finished("executing_tools")
+                    await protocol_handler.send_step_started("thinking")
+                    current_step = "thinking"
 
             elif kind == "on_chain_end":
                 output = event.get("data", {}).get("output", {})
@@ -364,16 +400,30 @@ class Orchestrator:
                             thread_id, current_agent_id, new_agent
                         )
                         current_agent_id = new_agent
+
                         if protocol_handler.is_connected:
-                            await protocol_handler.send_step_started(
-                                "thinking", {"agentId": current_agent_id}
+                            # Properly finish current step before starting new one
+                            if current_step:
+                                await protocol_handler.send_step_finished(current_step)
+                            await protocol_handler.send_step_started("thinking")
+                            current_step = "thinking"
+
+                            # Send state delta for agent change
+                            await protocol_handler.send_state_snapshot(
+                                {
+                                    "thread_id": thread_id,
+                                    "run_id": run_id,
+                                    "current_agent": current_agent_id,
+                                    "status": "processing",
+                                }
                             )
 
-        # Finalize message
+        # Finalize message and step
         if protocol_handler.is_connected:
             if message_started:
                 await protocol_handler.send_text_message_end(message_id)
-            await protocol_handler.send_step_finished("thinking")
+            if current_step:
+                await protocol_handler.send_step_finished(current_step)
 
         return "".join(full_response), current_agent_id
 

@@ -1,5 +1,5 @@
 {
-  "description": "Basic conversation flow using AG-UI Protocol",
+  "description": "Basic conversation flow using AG-UI Protocol with official types",
   "events": [
     {
       "direction": "client → server",
@@ -20,7 +20,21 @@
         "type": "RUN_STARTED",
         "threadId": "abc123-def456-789",
         "runId": "run-001",
-        "timestamp": "2025-01-15T10:30:00.000Z"
+        "timestamp": 1705318200000
+      }
+    },
+    {
+      "direction": "server → client",
+      "description": "Initial state snapshot sent at run start",
+      "event": {
+        "type": "STATE_SNAPSHOT",
+        "snapshot": {
+          "threadId": "abc123-def456-789",
+          "runId": "run-001",
+          "currentAgent": "general-agent",
+          "status": "processing"
+        },
+        "timestamp": 1705318200050
       }
     },
     {
@@ -28,8 +42,7 @@
       "event": {
         "type": "STEP_STARTED",
         "stepName": "routing",
-        "metadata": { "message": "Analyzing request..." },
-        "timestamp": "2025-01-15T10:30:00.100Z"
+        "timestamp": 1705318200100
       }
     },
     {
@@ -37,7 +50,7 @@
       "event": {
         "type": "STEP_FINISHED",
         "stepName": "routing",
-        "timestamp": "2025-01-15T10:30:00.500Z"
+        "timestamp": 1705318200500
       }
     },
     {
@@ -45,7 +58,7 @@
       "event": {
         "type": "STEP_STARTED",
         "stepName": "thinking",
-        "timestamp": "2025-01-15T10:30:00.600Z"
+        "timestamp": 1705318200600
       }
     },
     {
@@ -54,7 +67,7 @@
         "type": "TEXT_MESSAGE_START",
         "messageId": "msg-001",
         "role": "assistant",
-        "timestamp": "2025-01-15T10:30:01.000Z"
+        "timestamp": 1705318201000
       }
     },
     {
@@ -63,7 +76,7 @@
         "type": "TEXT_MESSAGE_CONTENT",
         "messageId": "msg-001",
         "delta": "Based on ",
-        "timestamp": "2025-01-15T10:30:01.100Z"
+        "timestamp": 1705318201100
       }
     },
     {
@@ -72,7 +85,7 @@
         "type": "TEXT_MESSAGE_CONTENT",
         "messageId": "msg-001",
         "delta": "the Dutch food safety ",
-        "timestamp": "2025-01-15T10:30:01.200Z"
+        "timestamp": 1705318201200
       }
     },
     {
@@ -81,7 +94,7 @@
         "type": "TEXT_MESSAGE_CONTENT",
         "messageId": "msg-001",
         "delta": "regulations, restaurants must maintain proper temperature control for all perishable items.",
-        "timestamp": "2025-01-15T10:30:01.300Z"
+        "timestamp": 1705318201300
       }
     },
     {
@@ -89,7 +102,7 @@
       "event": {
         "type": "TEXT_MESSAGE_END",
         "messageId": "msg-001",
-        "timestamp": "2025-01-15T10:30:01.400Z"
+        "timestamp": 1705318201400
       }
     },
     {
@@ -97,7 +110,21 @@
       "event": {
         "type": "STEP_FINISHED",
         "stepName": "thinking",
-        "timestamp": "2025-01-15T10:30:01.500Z"
+        "timestamp": 1705318201500
+      }
+    },
+    {
+      "direction": "server → client",
+      "description": "Final state snapshot before run finishes",
+      "event": {
+        "type": "STATE_SNAPSHOT",
+        "snapshot": {
+          "threadId": "abc123-def456-789",
+          "runId": "run-001",
+          "currentAgent": "general-agent",
+          "status": "completed"
+        },
+        "timestamp": 1705318201550
       }
     },
     {
@@ -106,7 +133,7 @@
         "type": "RUN_FINISHED",
         "threadId": "abc123-def456-789",
         "runId": "run-001",
-        "timestamp": "2025-01-15T10:30:01.600Z"
+        "timestamp": 1705318201600
       }
     }
   ]

@@ -1,7 +1,7 @@
 /**
  * AG-UI Protocol event schemas for AGORA HAI.
  *
- * These Zod schemas match the AG-UI Protocol event types used for
+ * These Zod schemas match the official AG-UI Protocol event types used for
  * communication between the HAI frontend and the LangGraph backend.
  *
  * Reference: https://github.com/ag-ui-protocol/ag-ui
@@ -12,6 +12,7 @@ import { z } from 'zod';
 export const EventType = {
   RUN_STARTED: 'RUN_STARTED',
   RUN_FINISHED: 'RUN_FINISHED',
+  RUN_ERROR: 'RUN_ERROR',
   STEP_STARTED: 'STEP_STARTED',
   STEP_FINISHED: 'STEP_FINISHED',
   TEXT_MESSAGE_START: 'TEXT_MESSAGE_START',
@@ -20,6 +21,7 @@ export const EventType = {
   TOOL_CALL_START: 'TOOL_CALL_START',
   TOOL_CALL_ARGS: 'TOOL_CALL_ARGS',
   TOOL_CALL_END: 'TOOL_CALL_END',
+  TOOL_CALL_RESULT: 'TOOL_CALL_RESULT',
   STATE_SNAPSHOT: 'STATE_SNAPSHOT',
   STATE_DELTA: 'STATE_DELTA',
   MESSAGES_SNAPSHOT: 'MESSAGES_SNAPSHOT',
@@ -29,59 +31,61 @@ export const EventType = {
 
 export type EventTypeValue = (typeof EventType)[keyof typeof EventType];
 
-// Base event schema
-const BaseEventSchema = z.object({
-  type: z.string(),
-  timestamp: z.string().nullable().optional(),
-});
-
 // Lifecycle Events
 export const RunStartedEventSchema = z.object({
   type: z.literal(EventType.RUN_STARTED),
   threadId: z.string(),
   runId: z.string(),
-  timestamp: z.string().nullable().optional(),
+  parentRunId: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const RunFinishedEventSchema = z.object({
   type: z.literal(EventType.RUN_FINISHED),
   threadId: z.string(),
   runId: z.string(),
-  timestamp: z.string().nullable().optional(),
+  result: z.unknown().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
+});
+
+export const RunErrorEventSchema = z.object({
+  type: z.literal(EventType.RUN_ERROR),
+  message: z.string(),
+  code: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const StepStartedEventSchema = z.object({
   type: z.literal(EventType.STEP_STARTED),
   stepName: z.string(),
-  metadata: z.record(z.unknown()).nullable().optional(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const StepFinishedEventSchema = z.object({
   type: z.literal(EventType.STEP_FINISHED),
   stepName: z.string(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 // Text Message Events
 export const TextMessageStartEventSchema = z.object({
   type: z.literal(EventType.TEXT_MESSAGE_START),
   messageId: z.string(),
-  role: z.enum(['user', 'assistant']),
-  timestamp: z.string().nullable().optional(),
+  role: z.enum(['user', 'assistant', 'developer', 'system']),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const TextMessageContentEventSchema = z.object({
   type: z.literal(EventType.TEXT_MESSAGE_CONTENT),
   messageId: z.string(),
   delta: z.string(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const TextMessageEndEventSchema = z.object({
   type: z.literal(EventType.TEXT_MESSAGE_END),
   messageId: z.string(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 // Tool Call Events
@@ -90,41 +94,48 @@ export const ToolCallStartEventSchema = z.object({
   toolCallId: z.string(),
   toolCallName: z.string(),
   parentMessageId: z.string().nullable().optional(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const ToolCallArgsEventSchema = z.object({
   type: z.literal(EventType.TOOL_CALL_ARGS),
   toolCallId: z.string(),
   delta: z.string(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const ToolCallEndEventSchema = z.object({
   type: z.literal(EventType.TOOL_CALL_END),
   toolCallId: z.string(),
-  result: z.string().nullable().optional(),
-  error: z.string().nullable().optional(),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
+});
+
+export const ToolCallResultEventSchema = z.object({
+  type: z.literal(EventType.TOOL_CALL_RESULT),
+  messageId: z.string(),
+  toolCallId: z.string(),
+  content: z.string(),
+  role: z.literal('tool').nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 // State Events
 export const StateSnapshotEventSchema = z.object({
   type: z.literal(EventType.STATE_SNAPSHOT),
   snapshot: z.record(z.unknown()),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const StateDeltaEventSchema = z.object({
   type: z.literal(EventType.STATE_DELTA),
   delta: z.array(z.record(z.unknown())),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const MessagesSnapshotEventSchema = z.object({
   type: z.literal(EventType.MESSAGES_SNAPSHOT),
   messages: z.array(z.record(z.unknown())),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 // Custom Events
@@ -132,13 +143,14 @@ export const CustomEventSchema = z.object({
   type: z.literal(EventType.CUSTOM),
   name: z.string(),
   value: z.record(z.unknown()),
-  timestamp: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 export const RawEventSchema = z.object({
   type: z.literal(EventType.RAW),
-  data: z.unknown(),
-  timestamp: z.string().nullable().optional(),
+  event: z.unknown(),
+  source: z.string().nullable().optional(),
+  timestamp: z.number().nullable().optional(),
 });
 
 // AGORA-specific custom event payloads
@@ -172,6 +184,7 @@ export const AGORA_ERROR = 'agora:error';
 export const AGUIEventSchema = z.discriminatedUnion('type', [
   RunStartedEventSchema,
   RunFinishedEventSchema,
+  RunErrorEventSchema,
   StepStartedEventSchema,
   StepFinishedEventSchema,
   TextMessageStartEventSchema,
@@ -180,6 +193,7 @@ export const AGUIEventSchema = z.discriminatedUnion('type', [
   ToolCallStartEventSchema,
   ToolCallArgsEventSchema,
   ToolCallEndEventSchema,
+  ToolCallResultEventSchema,
   StateSnapshotEventSchema,
   StateDeltaEventSchema,
   MessagesSnapshotEventSchema,
@@ -193,7 +207,7 @@ export const RunAgentInputSchema = z.object({
   runId: z.string().optional(),
   messages: z.array(
     z.object({
-      role: z.enum(['user', 'assistant', 'system', 'tool']),
+      role: z.enum(['user', 'assistant', 'system', 'tool', 'developer']),
       content: z.string(),
       id: z.string().optional(),
       toolCallId: z.string().optional(),
@@ -203,7 +217,7 @@ export const RunAgentInputSchema = z.object({
 });
 
 export const MessageSchema = z.object({
-  role: z.enum(['user', 'assistant', 'system', 'tool']),
+  role: z.enum(['user', 'assistant', 'system', 'tool', 'developer']),
   content: z.string(),
   id: z.string().optional(),
   toolCallId: z.string().optional(),
@@ -212,6 +226,7 @@ export const MessageSchema = z.object({
 // Type exports
 export type RunStartedEvent = z.infer<typeof RunStartedEventSchema>;
 export type RunFinishedEvent = z.infer<typeof RunFinishedEventSchema>;
+export type RunErrorEvent = z.infer<typeof RunErrorEventSchema>;
 export type StepStartedEvent = z.infer<typeof StepStartedEventSchema>;
 export type StepFinishedEvent = z.infer<typeof StepFinishedEventSchema>;
 export type TextMessageStartEvent = z.infer<typeof TextMessageStartEventSchema>;
@@ -220,6 +235,7 @@ export type TextMessageEndEvent = z.infer<typeof TextMessageEndEventSchema>;
 export type ToolCallStartEvent = z.infer<typeof ToolCallStartEventSchema>;
 export type ToolCallArgsEvent = z.infer<typeof ToolCallArgsEventSchema>;
 export type ToolCallEndEvent = z.infer<typeof ToolCallEndEventSchema>;
+export type ToolCallResultEvent = z.infer<typeof ToolCallResultEventSchema>;
 export type StateSnapshotEvent = z.infer<typeof StateSnapshotEventSchema>;
 export type StateDeltaEvent = z.infer<typeof StateDeltaEventSchema>;
 export type MessagesSnapshotEvent = z.infer<typeof MessagesSnapshotEventSchema>;

@@ -1,22 +1,23 @@
 """AG-UI Protocol WebSocket handler for AGORA.
 
-Handles bidirectional WebSocket communication using the AG-UI Protocol,
-replacing the previous HAI Protocol implementation.
+Handles bidirectional WebSocket communication using the official AG-UI Protocol types.
+Note: For WebSocket transport, we use plain JSON (not SSE format).
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timezone
+import time
 from typing import Any
 
 from fastapi import WebSocket
 
-from agora_langgraph.common.ag_ui_types import (
+from ag_ui.core import (
     EventType,
     RunStartedEvent,
     RunFinishedEvent,
+    RunErrorEvent,
     StepStartedEvent,
     StepFinishedEvent,
     TextMessageStartEvent,
@@ -25,11 +26,16 @@ from agora_langgraph.common.ag_ui_types import (
     ToolCallStartEvent,
     ToolCallArgsEvent,
     ToolCallEndEvent,
+    ToolCallResultEvent,
+    StateSnapshotEvent,
     CustomEvent,
+)
+
+from agora_langgraph.common.ag_ui_types import (
+    RunAgentInput,
     ToolApprovalRequestPayload,
     ToolApprovalResponsePayload,
     ErrorPayload,
-    RunAgentInput,
     AGORA_TOOL_APPROVAL_REQUEST,
     AGORA_TOOL_APPROVAL_RESPONSE,
     AGORA_ERROR,
@@ -38,13 +44,17 @@ from agora_langgraph.common.ag_ui_types import (
 log = logging.getLogger(__name__)
 
 
-def _now_iso() -> str:
-    """Return current timestamp in ISO 8601 format."""
-    return datetime.now(timezone.utc).isoformat()
+def _now_timestamp() -> int:
+    """Return current timestamp as Unix milliseconds (AG-UI standard)."""
+    return int(time.time() * 1000)
 
 
 class AGUIProtocolHandler:
-    """Handle AG-UI protocol WebSocket communication."""
+    """Handle AG-UI protocol WebSocket communication using official types.
+
+    Uses plain JSON serialization for WebSocket transport (not SSE format).
+    The official EventEncoder is designed for HTTP SSE streaming.
+    """
 
     def __init__(self, websocket: WebSocket):
         """Initialize handler with WebSocket connection."""
@@ -66,7 +76,7 @@ class AGUIProtocolHandler:
             data = await self.websocket.receive_text()
             message_dict = json.loads(data)
 
-            # Check if it's a run input or a custom event (approval response)
+            # Check if it's a custom event (approval response)
             if (
                 "type" in message_dict
                 and message_dict.get("type") == EventType.CUSTOM.value
@@ -78,20 +88,9 @@ class AGUIProtocolHandler:
                 log.warning("Received unknown custom event: %s", name)
                 return None
 
-            # Otherwise treat as RunAgentInput
-            if "threadId" in message_dict:
+            # Handle RunAgentInput (supports both camelCase and snake_case)
+            if "threadId" in message_dict or "thread_id" in message_dict:
                 return RunAgentInput(**message_dict)
-
-            # Legacy support: convert old HAI format to AG-UI
-            if message_dict.get("type") == "user_message":
-                return RunAgentInput(
-                    threadId=message_dict.get("session_id", ""),
-                    runId=message_dict.get("metadata", {}).get("run_id", ""),
-                    messages=[
-                        {"role": "user", "content": message_dict.get("content", "")}
-                    ],
-                    context=message_dict.get("metadata"),
-                )
 
             log.warning("Received unexpected message format: %s", message_dict.keys())
             return None
@@ -106,13 +105,19 @@ class AGUIProtocolHandler:
             return None
 
     async def _send_event(self, event: Any) -> None:
-        """Send an AG-UI event over WebSocket."""
+        """Send an AG-UI event over WebSocket as plain JSON.
+
+        Note: We use model_dump_json() directly instead of EventEncoder
+        because EventEncoder outputs SSE format (data: {...}) which is
+        for HTTP streaming, not WebSocket.
+        """
         if not self.is_connected:
             log.debug("Cannot send event, WebSocket is not connected")
             return
 
         try:
-            event_json = event.model_dump_json(by_alias=True)
+            # Use Pydantic's JSON serialization with camelCase aliases
+            event_json = event.model_dump_json(by_alias=True, exclude_none=True)
             log.debug("Sending event: %s", event.type)
             await self.websocket.send_text(event_json)
         except RuntimeError as e:
@@ -128,40 +133,51 @@ class AGUIProtocolHandler:
 
     # Lifecycle events
 
-    async def send_run_started(self, thread_id: str, run_id: str) -> None:
+    async def send_run_started(
+        self, thread_id: str, run_id: str, input_data: RunAgentInput | None = None
+    ) -> None:
         """Emit RUN_STARTED event."""
         event = RunStartedEvent(
-            threadId=thread_id,
-            runId=run_id,
-            timestamp=_now_iso(),
+            thread_id=thread_id,
+            run_id=run_id,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
-    async def send_run_finished(self, thread_id: str, run_id: str) -> None:
+    async def send_run_finished(
+        self, thread_id: str, run_id: str, result: Any | None = None
+    ) -> None:
         """Emit RUN_FINISHED event."""
         event = RunFinishedEvent(
-            threadId=thread_id,
-            runId=run_id,
-            timestamp=_now_iso(),
+            thread_id=thread_id,
+            run_id=run_id,
+            result=result,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
-    async def send_step_started(
-        self, step_name: str, metadata: dict[str, Any] | None = None
-    ) -> None:
+    async def send_run_error(self, message: str, code: str | None = None) -> None:
+        """Emit RUN_ERROR event (official AG-UI error event)."""
+        event = RunErrorEvent(
+            message=message,
+            code=code,
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    async def send_step_started(self, step_name: str) -> None:
         """Emit STEP_STARTED event."""
         event = StepStartedEvent(
-            stepName=step_name,
-            metadata=metadata,
-            timestamp=_now_iso(),
+            step_name=step_name,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
     async def send_step_finished(self, step_name: str) -> None:
         """Emit STEP_FINISHED event."""
         event = StepFinishedEvent(
-            stepName=step_name,
-            timestamp=_now_iso(),
+            step_name=step_name,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
@@ -172,26 +188,28 @@ class AGUIProtocolHandler:
     ) -> None:
         """Emit TEXT_MESSAGE_START event."""
         event = TextMessageStartEvent(
-            messageId=message_id,
+            message_id=message_id,
             role=role,  # type: ignore
-            timestamp=_now_iso(),
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
     async def send_text_message_content(self, message_id: str, delta: str) -> None:
         """Emit TEXT_MESSAGE_CONTENT event."""
+        if not delta:
+            return  # AG-UI requires non-empty delta
         event = TextMessageContentEvent(
-            messageId=message_id,
+            message_id=message_id,
             delta=delta,
-            timestamp=_now_iso(),
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
     async def send_text_message_end(self, message_id: str) -> None:
         """Emit TEXT_MESSAGE_END event."""
         event = TextMessageEndEvent(
-            messageId=message_id,
-            timestamp=_now_iso(),
+            message_id=message_id,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
@@ -205,34 +223,53 @@ class AGUIProtocolHandler:
     ) -> None:
         """Emit TOOL_CALL_START event."""
         event = ToolCallStartEvent(
-            toolCallId=tool_call_id,
-            toolCallName=tool_call_name,
-            parentMessageId=parent_message_id,
-            timestamp=_now_iso(),
+            tool_call_id=tool_call_id,
+            tool_call_name=tool_call_name,
+            parent_message_id=parent_message_id,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
     async def send_tool_call_args(self, tool_call_id: str, args_json: str) -> None:
         """Emit TOOL_CALL_ARGS event."""
         event = ToolCallArgsEvent(
-            toolCallId=tool_call_id,
+            tool_call_id=tool_call_id,
             delta=args_json,
-            timestamp=_now_iso(),
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
-    async def send_tool_call_end(
-        self,
-        tool_call_id: str,
-        result: str | None = None,
-        error: str | None = None,
-    ) -> None:
-        """Emit TOOL_CALL_END event."""
+    async def send_tool_call_end(self, tool_call_id: str) -> None:
+        """Emit TOOL_CALL_END event (signals end of tool call streaming)."""
         event = ToolCallEndEvent(
-            toolCallId=tool_call_id,
-            result=result,
-            error=error,
-            timestamp=_now_iso(),
+            tool_call_id=tool_call_id,
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    async def send_tool_call_result(
+        self,
+        message_id: str,
+        tool_call_id: str,
+        content: str,
+    ) -> None:
+        """Emit TOOL_CALL_RESULT event with the tool execution result."""
+        event = ToolCallResultEvent(
+            message_id=message_id,
+            tool_call_id=tool_call_id,
+            content=content,
+            role="tool",
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    # State events
+
+    async def send_state_snapshot(self, snapshot: dict[str, Any]) -> None:
+        """Emit STATE_SNAPSHOT event for full state synchronization."""
+        event = StateSnapshotEvent(
+            snapshot=snapshot,
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
@@ -249,17 +286,17 @@ class AGUIProtocolHandler:
     ) -> None:
         """Emit agora:tool_approval_request custom event."""
         payload = ToolApprovalRequestPayload(
-            toolName=tool_name,
-            toolDescription=tool_description,
+            tool_name=tool_name,
+            tool_description=tool_description,
             parameters=parameters,
             reasoning=reasoning,
-            riskLevel=risk_level,  # type: ignore
-            approvalId=approval_id,
+            risk_level=risk_level,  # type: ignore
+            approval_id=approval_id,
         )
         event = CustomEvent(
             name=AGORA_TOOL_APPROVAL_REQUEST,
-            value=payload.model_dump(),
-            timestamp=_now_iso(),
+            value=payload.model_dump(by_alias=True),
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)
 
@@ -269,15 +306,19 @@ class AGUIProtocolHandler:
         message: str,
         details: dict[str, Any] | None = None,
     ) -> None:
-        """Emit agora:error custom event."""
+        """Emit agora:error custom event for AGORA-specific errors.
+
+        For general run errors, prefer send_run_error() which uses the official
+        RUN_ERROR event type.
+        """
         payload = ErrorPayload(
-            errorCode=error_code,
+            error_code=error_code,
             message=message,
             details=details,
         )
         event = CustomEvent(
             name=AGORA_ERROR,
-            value=payload.model_dump(),
-            timestamp=_now_iso(),
+            value=payload.model_dump(by_alias=True),
+            timestamp=_now_timestamp(),
         )
         await self._send_event(event)

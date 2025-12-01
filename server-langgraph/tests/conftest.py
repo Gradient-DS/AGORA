@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, AsyncMock
 def mock_websocket():
     """Create a mock WebSocket for testing AG-UI Protocol."""
     ws = MagicMock()
-    # AG-UI format: RunAgentInput
+    # AG-UI format: RunAgentInput (camelCase for wire format, snake_case for Python)
     ws.receive_text = AsyncMock(
         return_value=json.dumps(
             {
@@ -31,8 +31,8 @@ def sample_run_input():
     from agora_langgraph.common.ag_ui_types import RunAgentInput
 
     return RunAgentInput(
-        threadId="test-session-123",
-        runId="run-789",
+        thread_id="test-session-123",
+        run_id="run-789",
         messages=[{"role": "user", "content": "Hallo, hoe gaat het?"}],
         context={},
     )
@@ -55,7 +55,7 @@ def sample_approval_response():
     from agora_langgraph.common.ag_ui_types import ToolApprovalResponsePayload
 
     return ToolApprovalResponsePayload(
-        approvalId="approval-123",
+        approval_id="approval-123",
         approved=True,
         feedback="Approved by user",
     )

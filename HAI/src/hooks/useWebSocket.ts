@@ -16,6 +16,7 @@ import {
   EventType,
   type AGUIEvent,
   type CustomEvent,
+  type StateSnapshotEvent,
   isToolApprovalRequest,
   isAgoraError,
   parseToolApprovalRequest,
@@ -99,17 +100,21 @@ export function useWebSocket() {
           }
           break;
 
+        case EventType.RUN_ERROR:
+          console.error('[AG-UI] Run error:', event.message, event.code);
+          setError(new Error(event.message));
+          setProcessingStatus(null);
+          break;
+
         case EventType.STEP_STARTED:
-          console.log('[AG-UI] Step started:', event.stepName, event.metadata);
+          console.log('[AG-UI] Step started:', event.stepName);
           setProcessingStatus(event.stepName as 'thinking' | 'routing' | 'executing_tools');
-          if (event.metadata?.agentId) {
-            const agentId = event.metadata.agentId as string;
-            currentAgentId.current = agentId;
-            if (event.stepName === 'executing_tools') {
-              setAgentExecutingTools(agentId);
-            } else {
-              setAgentActive(agentId);
+          if (event.stepName === 'executing_tools') {
+            if (currentAgentId.current) {
+              setAgentExecutingTools(currentAgentId.current);
             }
+          } else if (currentAgentId.current) {
+            setAgentActive(currentAgentId.current);
           }
           break;
 
@@ -175,18 +180,30 @@ export function useWebSocket() {
           break;
 
         case EventType.TOOL_CALL_END:
-          console.log('[AG-UI] Tool call end:', event.toolCallId, event.error ? 'error' : 'success');
+          console.log('[AG-UI] Tool call end:', event.toolCallId);
+          // TOOL_CALL_END now just signals end of streaming, result comes via TOOL_CALL_RESULT
+          break;
+
+        case EventType.TOOL_CALL_RESULT:
+          console.log('[AG-UI] Tool call result:', event.toolCallId);
           updateToolCall(event.toolCallId, {
-            status: event.error ? 'failed' : 'completed',
-            result: event.result ?? undefined,
-            error: event.error ?? undefined,
+            status: 'completed',
+            result: event.content,
           });
           addMessage({
             id: event.toolCallId,
             role: 'tool',
             content: '',
-            toolStatus: event.error ? 'failed' : 'completed',
+            toolStatus: 'completed',
           });
+          break;
+
+        case EventType.STATE_SNAPSHOT:
+          handleStateSnapshot(event);
+          break;
+
+        case EventType.STATE_DELTA:
+          console.log('[AG-UI] State delta received');
           break;
 
         case EventType.CUSTOM:
@@ -194,11 +211,26 @@ export function useWebSocket() {
           break;
 
         case EventType.RAW:
-          console.warn('[AG-UI] Received raw event:', event.data);
+          console.warn('[AG-UI] Received raw event:', event.event);
           break;
 
         default:
           console.log('[AG-UI] Unhandled event type:', (event as AGUIEvent).type);
+      }
+    }
+
+    function handleStateSnapshot(event: StateSnapshotEvent) {
+      console.log('[AG-UI] State snapshot:', event.snapshot);
+      const snapshot = event.snapshot;
+      
+      // Update current agent from state snapshot
+      if (snapshot.current_agent || snapshot.currentAgent) {
+        const newAgentId = (snapshot.current_agent || snapshot.currentAgent) as string;
+        if (newAgentId !== currentAgentId.current) {
+          console.log('[AG-UI] Agent changed via state snapshot:', currentAgentId.current, '→', newAgentId);
+          currentAgentId.current = newAgentId;
+          setAgentActive(newAgentId);
+        }
       }
     }
 
