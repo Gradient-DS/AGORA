@@ -26,6 +26,7 @@ dependencies = [
     "opentelemetry-sdk>=1.22.0",
     "opentelemetry-instrumentation-fastapi>=0.43b0",
     "python-dotenv>=1.0.0",
+    "ag-ui-protocol>=0.1.0",
 ]
 
 [project.optional-dependencies]

@@ -1,34 +1,37 @@
+/**
+ * Message store for AG-UI Protocol messages.
+ */
+
 import { create } from 'zustand';
-import type { Message } from '@/types';
-import type { ProcessingStatus } from '@/types/schemas';
+import type { ChatMessage } from '@/types';
+
+type ProcessingStatus = 'thinking' | 'routing' | 'executing_tools' | null;
 
 interface MessageStore {
-  messages: Message[];
-  currentStatus: ProcessingStatus | null;
+  messages: ChatMessage[];
+  processingStatus: ProcessingStatus;
   isTyping: boolean;
-  addMessage: (message: Omit<Message, 'timestamp'>) => void;
+  addMessage: (message: Omit<ChatMessage, 'timestamp'>) => void;
   updateMessageContent: (messageId: string, content: string, append: boolean) => void;
   finalizeMessage: (messageId: string) => void;
-  updateStatus: (status: ProcessingStatus | null) => void;
+  setProcessingStatus: (status: ProcessingStatus) => void;
   setTyping: (isTyping: boolean) => void;
   clearMessages: () => void;
 }
 
 export const useMessageStore = create<MessageStore>((set) => ({
   messages: [],
-  currentStatus: null,
+  processingStatus: null,
   isTyping: false,
 
   addMessage: (message) => {
-    const newMessage: Message = {
+    const newMessage: ChatMessage = {
       ...message,
       timestamp: new Date(),
     };
     set((state) => {
-      // Check if message already exists (for tool_call updates)
       const existingIndex = state.messages.findIndex((msg) => msg.id === message.id);
       if (existingIndex !== -1) {
-        // Update existing message
         const updatedMessages = [...state.messages];
         updatedMessages[existingIndex] = {
           ...updatedMessages[existingIndex],
@@ -36,7 +39,6 @@ export const useMessageStore = create<MessageStore>((set) => ({
         };
         return { messages: updatedMessages };
       }
-      // Add new message
       return {
         messages: [...state.messages, newMessage],
       };
@@ -61,9 +63,9 @@ export const useMessageStore = create<MessageStore>((set) => ({
     }));
   },
 
-  updateStatus: (status) => {
-    console.log('[MessageStore] Updating status:', status);
-    set({ currentStatus: status });
+  setProcessingStatus: (status) => {
+    console.log('[MessageStore] Processing status:', status);
+    set({ processingStatus: status });
   },
 
   setTyping: (isTyping) => {
@@ -71,7 +73,6 @@ export const useMessageStore = create<MessageStore>((set) => ({
   },
 
   clearMessages: () => {
-    set({ messages: [], currentStatus: null, isTyping: false });
+    set({ messages: [], processingStatus: null, isTyping: false });
   },
 }));
-

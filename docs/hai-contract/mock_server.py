@@ -1,191 +1,281 @@
+#!/usr/bin/env python3
+"""
+Mock server for testing AG-UI Protocol WebSocket communication.
+
+This server simulates the AGORA LangGraph orchestrator for frontend testing.
+
+Usage:
+    python mock_server.py
+
+Connects to: ws://localhost:8765
+"""
+
 import asyncio
 import json
-import logging
 import uuid
+from datetime import datetime, timezone
+
 import websockets
-from typing import Dict, Any
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger("MockServer")
 
-class HAIMockServer:
-    def __init__(self, host: str = "localhost", port: int = 8000):
-        self.host = host
-        self.port = port
+def now_iso() -> str:
+    """Return current timestamp in ISO 8601 format."""
+    return datetime.now(timezone.utc).isoformat()
 
-    async def handle_connection(self, websocket):
-        """Handle individual WebSocket connection."""
-        client_id = str(uuid.uuid4())[:8]
-        logger.info(f"Client connected: {client_id}")
 
-        try:
-            async for message in websocket:
-                try:
-                    data = json.loads(message)
-                    await self.process_message(websocket, data, client_id)
-                except json.JSONDecodeError:
-                    logger.error(f"[{client_id}] Invalid JSON received")
-                    await self.send_error(websocket, "invalid_json", "Message was not valid JSON")
-        except websockets.exceptions.ConnectionClosed:
-            logger.info(f"Client disconnected: {client_id}")
+async def handle_connection(websocket):
+    """Handle incoming WebSocket connections."""
+    print(f"[{now_iso()}] Client connected")
 
-    async def process_message(self, websocket, data: Dict[str, Any], client_id: str):
-        """Process incoming HAI protocol messages."""
-        msg_type = data.get("type")
-        session_id = data.get("session_id", "unknown-session")
-        
-        logger.info(f"[{client_id}] Received: {msg_type}")
+    try:
+        async for message in websocket:
+            data = json.loads(message)
+            print(f"[{now_iso()}] Received: {json.dumps(data, indent=2)}")
 
-        if msg_type == "user_message":
-            content = data.get("content", "").lower()
-            
-            # 1. Acknowledge receipt (Thinking status)
-            await self.send_status(websocket, "thinking", "Processing your request...", session_id)
-            await asyncio.sleep(0.5) # Simulate network delay
+            # Check if it's a custom event (approval response)
+            if data.get("type") == "CUSTOM":
+                name = data.get("name", "")
+                if name == "agora:tool_approval_response":
+                    await handle_approval_response(websocket, data)
+                    continue
 
-            # SCENARIO: User asks for inspection report (triggers Approval Flow)
-            if "report" in content or "rapport" in content:
-                await self.handle_approval_scenario(websocket, session_id)
-            
-            # SCENARIO: User asks for search (triggers Tool Execution)
-            elif "search" in content or "zoek" in content:
-                await self.handle_tool_execution_scenario(websocket, session_id)
-            
-            # SCENARIO: Regular chat
-            else:
-                await self.handle_basic_chat(websocket, session_id)
+            # Otherwise treat as RunAgentInput
+            if "threadId" in data:
+                await handle_run_input(websocket, data)
 
-        elif msg_type == "tool_approval_response":
-            await self.handle_approval_response(websocket, data, session_id)
+    except websockets.exceptions.ConnectionClosed:
+        print(f"[{now_iso()}] Client disconnected")
 
-    async def handle_basic_chat(self, websocket, session_id: str):
-        """Simulate a basic streaming response."""
-        response_text = "Dit is een antwoord van de Mock Server. Ik simuleer de AGORA orchestrator."
-        message_id = str(uuid.uuid4())
 
-        # Stream response in chunks
-        words = response_text.split(" ")
-        for i, word in enumerate(words):
-            is_final = (i == len(words) - 1)
-            chunk = {
-                "type": "assistant_message_chunk",
-                "content": word + (" " if not is_final else ""),
-                "session_id": session_id,
-                "message_id": message_id,
-                "is_final": is_final
-            }
-            await websocket.send(json.dumps(chunk))
-            await asyncio.sleep(0.1) # Simulate typing speed
-        
-        await self.send_status(websocket, "completed", None, session_id)
+async def handle_run_input(websocket, data: dict):
+    """Handle a RunAgentInput and simulate an agent response."""
+    thread_id = data.get("threadId", str(uuid.uuid4()))
+    run_id = data.get("runId", str(uuid.uuid4()))
+    messages = data.get("messages", [])
 
-    async def handle_tool_execution_scenario(self, websocket, session_id: str):
-        """Simulate searching for regulations."""
-        # 1. Routing
-        await self.send_status(websocket, "routing", "Routing to Regulation Specialist...", session_id)
-        await asyncio.sleep(0.8)
+    user_content = ""
+    for msg in messages:
+        if msg.get("role") == "user":
+            user_content = msg.get("content", "")
+            break
 
-        # 2. Tool Start
-        tool_call_id = f"call_{str(uuid.uuid4())[:8]}"
-        await websocket.send(json.dumps({
-            "type": "tool_call_start",
-            "tool_call_id": tool_call_id,
-            "tool_name": "search_regulations",
-            "parameters": {"query": "food safety requirements", "limit": 5},
-            "session_id": session_id,
-            "agent_id": "regulation_agent"
-        }))
-        
-        await self.send_status(websocket, "executing_tools", "Searching regulations...", session_id)
-        await asyncio.sleep(1.5) # Simulate database latency
+    # Send RUN_STARTED
+    await send_event(
+        websocket,
+        {
+            "type": "RUN_STARTED",
+            "threadId": thread_id,
+            "runId": run_id,
+            "timestamp": now_iso(),
+        },
+    )
 
-        # 3. Tool End
-        await websocket.send(json.dumps({
-            "type": "tool_call_end",
-            "tool_call_id": tool_call_id,
-            "tool_name": "search_regulations",
-            "result": "Found 3 relevant articles: 1. Hygiene Code... 2. Temperature...",
-            "session_id": session_id,
-            "agent_id": "regulation_agent"
-        }))
+    # Send STEP_STARTED (routing)
+    await send_event(
+        websocket,
+        {
+            "type": "STEP_STARTED",
+            "stepName": "routing",
+            "metadata": {"message": "Analyzing request..."},
+            "timestamp": now_iso(),
+        },
+    )
+    await asyncio.sleep(0.3)
 
-        # 4. Final Answer
-        await self.handle_basic_chat(websocket, session_id)
+    await send_event(
+        websocket,
+        {
+            "type": "STEP_FINISHED",
+            "stepName": "routing",
+            "timestamp": now_iso(),
+        },
+    )
 
-    async def handle_approval_scenario(self, websocket, session_id: str):
-        """Simulate a Human-in-the-Loop approval request."""
-        approval_id = f"appr_{str(uuid.uuid4())[:8]}"
-        
-        await websocket.send(json.dumps({
-            "type": "tool_approval_request",
-            "tool_name": "generate_final_report",
-            "tool_description": "Genereert het officiële inspectierapport (PDF) en slaat dit op.",
-            "parameters": {"format": "pdf", "include_evidence": True},
-            "reasoning": "U heeft gevraagd de inspectie af te ronden. Hiervoor moet het rapport worden gegenereerd.",
-            "risk_level": "high",
-            "session_id": session_id,
-            "approval_id": approval_id
-        }))
-        
-        logger.info(f"Sent approval request: {approval_id}")
+    # Send STEP_STARTED (thinking)
+    await send_event(
+        websocket,
+        {
+            "type": "STEP_STARTED",
+            "stepName": "thinking",
+            "timestamp": now_iso(),
+        },
+    )
+    await asyncio.sleep(0.2)
 
-    async def handle_approval_response(self, websocket, data: Dict[str, Any], session_id: str):
-        """Handle the user's decision."""
-        approved = data.get("approved", False)
-        
-        if approved:
-            await websocket.send(json.dumps({
-                "type": "assistant_message",
-                "content": "Bedankt voor de goedkeuring. Ik ga het rapport nu genereren.",
-                "session_id": session_id
-            }))
-            # Here you could simulate the tool execution sequence
-        else:
-            await websocket.send(json.dumps({
-                "type": "assistant_message",
-                "content": "Begrepen, ik annuleer de actie. Wat wilt u nu doen?",
-                "session_id": session_id
-            }))
-        
-        await self.send_status(websocket, "completed", None, session_id)
+    # Check for tool approval trigger
+    if "report" in user_content.lower() or "generate" in user_content.lower():
+        await simulate_tool_approval_flow(websocket, thread_id)
 
-    async def send_status(self, websocket, status: str, message: str, session_id: str):
-        await websocket.send(json.dumps({
-            "type": "status",
-            "status": status,
-            "message": message,
-            "session_id": session_id
-        }))
+    # Stream response
+    message_id = f"msg-{uuid.uuid4()}"
+    response_chunks = [
+        "Based on ",
+        "the information ",
+        "you provided, ",
+        "I can help you with your inspection. ",
+        "Here is my response to your query.",
+    ]
 
-    async def send_error(self, websocket, code: str, message: str):
-        await websocket.send(json.dumps({
-            "type": "error",
-            "error_code": code,
-            "message": message
-        }))
+    await send_event(
+        websocket,
+        {
+            "type": "TEXT_MESSAGE_START",
+            "messageId": message_id,
+            "role": "assistant",
+            "timestamp": now_iso(),
+        },
+    )
 
-    def run(self):
-        """Start the WebSocket server."""
-        start_server = websockets.serve(self.handle_connection, self.host, self.port)
-        logger.info(f"Mock Server running on ws://{self.host}:{self.port}/ws")
-        logger.info("Press Ctrl+C to stop")
-        
-        asyncio.get_event_loop().run_until_complete(start_server)
-        asyncio.get_event_loop().run_forever()
+    for chunk in response_chunks:
+        await send_event(
+            websocket,
+            {
+                "type": "TEXT_MESSAGE_CONTENT",
+                "messageId": message_id,
+                "delta": chunk,
+                "timestamp": now_iso(),
+            },
+        )
+        await asyncio.sleep(0.1)
+
+    await send_event(
+        websocket,
+        {
+            "type": "TEXT_MESSAGE_END",
+            "messageId": message_id,
+            "timestamp": now_iso(),
+        },
+    )
+
+    await send_event(
+        websocket,
+        {
+            "type": "STEP_FINISHED",
+            "stepName": "thinking",
+            "timestamp": now_iso(),
+        },
+    )
+
+    await send_event(
+        websocket,
+        {
+            "type": "RUN_FINISHED",
+            "threadId": thread_id,
+            "runId": run_id,
+            "timestamp": now_iso(),
+        },
+    )
+
+
+async def simulate_tool_approval_flow(websocket, thread_id: str):
+    """Simulate a tool approval request flow."""
+    approval_id = f"appr-{uuid.uuid4()}"
+
+    await send_event(
+        websocket,
+        {
+            "type": "STEP_STARTED",
+            "stepName": "executing_tools",
+            "metadata": {"tool": "generate_final_report"},
+            "timestamp": now_iso(),
+        },
+    )
+
+    await send_event(
+        websocket,
+        {
+            "type": "CUSTOM",
+            "name": "agora:tool_approval_request",
+            "value": {
+                "toolName": "generate_final_report",
+                "toolDescription": "Generates an official inspection report PDF",
+                "parameters": {"inspection_id": "INS-2024-MOCK"},
+                "reasoning": "User requested to generate a report",
+                "riskLevel": "high",
+                "approvalId": approval_id,
+            },
+            "timestamp": now_iso(),
+        },
+    )
+
+    print(f"[{now_iso()}] Waiting for approval response (id: {approval_id})")
+
+
+async def handle_approval_response(websocket, data: dict):
+    """Handle a tool approval response."""
+    value = data.get("value", {})
+    approval_id = value.get("approvalId", "")
+    approved = value.get("approved", False)
+    feedback = value.get("feedback", "")
+
+    print(
+        f"[{now_iso()}] Approval response: {approved} (id: {approval_id}, feedback: {feedback})"
+    )
+
+    if approved:
+        tool_call_id = f"call-{uuid.uuid4()}"
+
+        await send_event(
+            websocket,
+            {
+                "type": "TOOL_CALL_START",
+                "toolCallId": tool_call_id,
+                "toolCallName": "generate_final_report",
+                "timestamp": now_iso(),
+            },
+        )
+
+        await send_event(
+            websocket,
+            {
+                "type": "TOOL_CALL_ARGS",
+                "toolCallId": tool_call_id,
+                "delta": json.dumps({"inspection_id": "INS-2024-MOCK"}),
+                "timestamp": now_iso(),
+            },
+        )
+
+        await asyncio.sleep(0.5)
+
+        await send_event(
+            websocket,
+            {
+                "type": "TOOL_CALL_END",
+                "toolCallId": tool_call_id,
+                "result": "Report generated: report-INS-2024-MOCK.pdf",
+                "timestamp": now_iso(),
+            },
+        )
+
+    await send_event(
+        websocket,
+        {
+            "type": "STEP_FINISHED",
+            "stepName": "executing_tools",
+            "timestamp": now_iso(),
+        },
+    )
+
+
+async def send_event(websocket, event: dict):
+    """Send an event over WebSocket."""
+    event_json = json.dumps(event)
+    print(f"[{now_iso()}] Sending: {event['type']}")
+    await websocket.send(event_json)
+
+
+async def main():
+    """Start the mock WebSocket server."""
+    print(f"[{now_iso()}] Starting AG-UI Mock Server on ws://localhost:8765")
+    print("Use Ctrl+C to stop the server")
+    print("-" * 60)
+
+    async with websockets.serve(handle_connection, "localhost", 8765):
+        await asyncio.Future()
+
 
 if __name__ == "__main__":
     try:
-        # Check dependencies
-        import websockets
-    except ImportError:
-        print("Error: 'websockets' library not found.")
-        print("Run: pip install websockets")
-        exit(1)
-
-    server = HAIMockServer()
-    server.run()
-
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print(f"\n[{now_iso()}] Server stopped")

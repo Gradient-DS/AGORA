@@ -1,21 +1,26 @@
+/**
+ * Approval dialog for AG-UI Protocol human-in-the-loop approval flow.
+ */
+
 import { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { ToolApprovalRequest, RiskLevel } from '@/types/schemas';
+import type { RiskLevel } from '@/types/schemas';
+import type { ApprovalRequest } from '@/stores/useApprovalStore';
 
 interface ApprovalDialogProps {
-  approval: ToolApprovalRequest;
+  approval: ApprovalRequest;
   onApprove: (approvalId: string, feedback?: string) => void;
   onReject: (approvalId: string, feedback?: string) => void;
   currentIndex: number;
@@ -30,27 +35,27 @@ const riskLevelConfig: Record<RiskLevel, { color: string; icon: typeof AlertCirc
   critical: { color: 'bg-red-500', icon: XCircle },
 };
 
-export function ApprovalDialog({ 
-  approval, 
-  onApprove, 
+export function ApprovalDialog({
+  approval,
+  onApprove,
   onReject,
   currentIndex,
   totalCount,
-  onNavigate
+  onNavigate,
 }: ApprovalDialogProps) {
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleApprove = async () => {
     setIsSubmitting(true);
-    await onApprove(approval.approval_id, feedback || undefined);
+    await onApprove(approval.approvalId, feedback || undefined);
     setIsSubmitting(false);
     setFeedback('');
   };
 
   const handleReject = async () => {
     setIsSubmitting(true);
-    await onReject(approval.approval_id, feedback || undefined);
+    await onReject(approval.approvalId, feedback || undefined);
     setIsSubmitting(false);
     setFeedback('');
   };
@@ -67,11 +72,11 @@ export function ApprovalDialog({
     }
   };
 
-  const RiskIcon = riskLevelConfig[approval.risk_level].icon;
+  const RiskIcon = riskLevelConfig[approval.riskLevel].icon;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <Card 
+      <Card
         className="w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto"
         role="dialog"
         aria-labelledby="approval-title"
@@ -83,20 +88,24 @@ export function ApprovalDialog({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <CardTitle id="approval-title" className="flex items-center gap-2">
-                {approval.tool_name}
-                <Badge 
-                  variant={approval.risk_level === 'critical' || approval.risk_level === 'high' ? 'destructive' : 'default'}
+                {approval.toolName}
+                <Badge
+                  variant={
+                    approval.riskLevel === 'critical' || approval.riskLevel === 'high'
+                      ? 'destructive'
+                      : 'default'
+                  }
                   className="ml-2"
                 >
                   <RiskIcon className="h-3 w-3 mr-1" aria-hidden="true" />
-                  {approval.risk_level.toUpperCase()}
+                  {approval.riskLevel.toUpperCase()}
                 </Badge>
               </CardTitle>
               <CardDescription id="approval-description">
-                {approval.tool_description}
+                {approval.toolDescription}
               </CardDescription>
             </div>
-            
+
             {totalCount > 1 && (
               <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
                 <Button
@@ -125,65 +134,60 @@ export function ApprovalDialog({
           </div>
         </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Redenering</h4>
-          <p className="text-sm text-muted-foreground">{approval.reasoning}</p>
-        </div>
-
-        <Separator />
-
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Parameters</h4>
-          <div className="bg-muted rounded-md p-3 text-sm font-mono">
-            <pre className="whitespace-pre-wrap break-words">
-              {JSON.stringify(approval.parameters, null, 2)}
-            </pre>
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Redenering</h4>
+            <p className="text-sm text-muted-foreground">{approval.reasoning}</p>
           </div>
-        </div>
 
-        <Separator />
+          <Separator />
 
-        <div>
-          <label htmlFor="feedback" className="text-sm font-semibold mb-2 block">
-            Feedback (Optioneel)
-          </label>
-          <Textarea
-            id="feedback"
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Voeg eventuele feedback of opmerkingen toe..."
-            className="min-h-[80px]"
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Parameters</h4>
+            <div className="bg-muted rounded-md p-3 text-sm font-mono">
+              <pre className="whitespace-pre-wrap break-words">
+                {JSON.stringify(approval.parameters, null, 2)}
+              </pre>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <label htmlFor="feedback" className="text-sm font-semibold mb-2 block">
+              Feedback (Optioneel)
+            </label>
+            <Textarea
+              id="feedback"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Voeg eventuele feedback of opmerkingen toe..."
+              className="min-h-[80px]"
+              disabled={isSubmitting}
+            />
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={handleReject}
             disabled={isSubmitting}
-          />
+            aria-label="Weiger tool uitvoering"
+          >
+            <XCircle className="h-4 w-4 mr-2" aria-hidden="true" />
+            Weigeren
+          </Button>
+          <Button onClick={handleApprove} disabled={isSubmitting} aria-label="Goedkeuren tool uitvoering">
+            <CheckCircle className="h-4 w-4 mr-2" aria-hidden="true" />
+            Goedkeuren
+          </Button>
+        </CardFooter>
+
+        <div className="px-6 pb-4 text-xs text-muted-foreground">
+          Toetsenbord sneltoetsen: <kbd>Enter</kbd> om goed te keuren, <kbd>Esc</kbd> om te weigeren
         </div>
-      </CardContent>
-
-      <CardFooter className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={handleReject}
-          disabled={isSubmitting}
-          aria-label="Weiger tool uitvoering"
-        >
-          <XCircle className="h-4 w-4 mr-2" aria-hidden="true" />
-          Weigeren
-        </Button>
-        <Button
-          onClick={handleApprove}
-          disabled={isSubmitting}
-          aria-label="Goedkeuren tool uitvoering"
-        >
-          <CheckCircle className="h-4 w-4 mr-2" aria-hidden="true" />
-          Goedkeuren
-        </Button>
-      </CardFooter>
-
-      <div className="px-6 pb-4 text-xs text-muted-foreground">
-        Toetsenbord sneltoetsen: <kbd>Enter</kbd> om goed te keuren, <kbd>Esc</kbd> om te weigeren
-      </div>
       </Card>
     </div>
   );
 }
-

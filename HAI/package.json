@@ -15,6 +15,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@ag-ui/core": "^0.0.41",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.0",

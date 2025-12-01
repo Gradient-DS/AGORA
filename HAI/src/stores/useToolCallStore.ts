@@ -1,27 +1,22 @@
-import { create } from 'zustand';
+/**
+ * Tool call store for AG-UI Protocol tool events.
+ */
 
-export interface ToolCall {
-  id: string;
-  toolName: string;
-  status: 'started' | 'completed' | 'failed';
-  parameters?: Record<string, unknown>;
-  result?: string;
-  timestamp: Date;
-  messageId?: string;
-  agentId?: string;
-}
+import { create } from 'zustand';
+import type { ToolCallInfo } from '@/types';
 
 interface ToolCallStore {
-  toolCalls: ToolCall[];
-  addToolCall: (toolCall: Omit<ToolCall, 'timestamp'>) => void;
-  updateToolCall: (id: string, updates: Partial<ToolCall>) => void;
+  toolCalls: ToolCallInfo[];
+  addToolCall: (toolCall: Omit<ToolCallInfo, 'timestamp'>) => void;
+  updateToolCall: (id: string, updates: Partial<ToolCallInfo>) => void;
   clearToolCalls: () => void;
-  getToolCallsByAgent: (agentId: string) => ToolCall[];
+  getToolCallsByMessage: (messageId: string) => ToolCallInfo[];
+  getToolCallsByAgent: (agentId: string) => ToolCallInfo[];
 }
 
 export const useToolCallStore = create<ToolCallStore>((set, get) => ({
   toolCalls: [],
-  
+
   addToolCall: (toolCall) =>
     set((state) => {
       const exists = state.toolCalls.some((tc) => tc.id === toolCall.id);
@@ -29,25 +24,25 @@ export const useToolCallStore = create<ToolCallStore>((set, get) => ({
         console.log('[ToolCallStore] Tool call already exists:', toolCall.id);
         return state;
       }
-      console.log('[ToolCallStore] Adding new tool call:', toolCall.id, toolCall.toolName, 'for agent:', toolCall.agentId);
+      console.log('[ToolCallStore] Adding tool call:', toolCall.id, toolCall.toolName);
       return {
         toolCalls: [...state.toolCalls, { ...toolCall, timestamp: new Date() }],
       };
     }),
-  
+
   updateToolCall: (id, updates) =>
     set((state) => {
       console.log('[ToolCallStore] Updating tool call:', id, updates);
       return {
-        toolCalls: state.toolCalls.map((tc) =>
-          tc.id === id ? { ...tc, ...updates } : tc
-        ),
+        toolCalls: state.toolCalls.map((tc) => (tc.id === id ? { ...tc, ...updates } : tc)),
       };
     }),
-  
+
   clearToolCalls: () => set({ toolCalls: [] }),
-  
+
+  getToolCallsByMessage: (messageId: string) =>
+    get().toolCalls.filter((tc) => tc.parentMessageId === messageId),
+
   getToolCallsByAgent: (agentId: string) =>
     get().toolCalls.filter((tc) => tc.agentId === agentId),
 }));
-

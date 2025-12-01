@@ -1,3 +1,7 @@
+/**
+ * Main application component for AGORA HAI using AG-UI Protocol.
+ */
+
 import { useEffect } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
@@ -5,7 +9,14 @@ import { DebugPanel } from '@/components/debug/DebugPanel';
 import { ApprovalDialog } from '@/components/approval/ApprovalDialog';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
-import { useSessionStore, useApprovalStore, useConnectionStore, useVoiceStore, useAgentStore, useUserStore } from '@/stores';
+import {
+  useSessionStore,
+  useApprovalStore,
+  useConnectionStore,
+  useVoiceStore,
+  useAgentStore,
+  useUserStore,
+} from '@/stores';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -17,12 +28,12 @@ export default function App() {
   const { toggleVoice } = useVoiceMode();
   const connectionStatus = useConnectionStore((state) => state.status);
   const connectionError = useConnectionStore((state) => state.error);
-  
+
   const currentApproval = useApprovalStore((state) => state.currentApproval);
   const pendingApprovals = useApprovalStore((state) => state.pendingApprovals);
   const removeApproval = useApprovalStore((state) => state.removeApproval);
   const setCurrentApproval = useApprovalStore((state) => state.setCurrentApproval);
-  
+
   const isVoiceActive = useVoiceStore((state) => state.isActive);
 
   useEffect(() => {
@@ -45,10 +56,10 @@ export default function App() {
     removeApproval(approvalId);
   };
 
-  const currentIndex = currentApproval 
-    ? pendingApprovals.findIndex(a => a.approval_id === currentApproval.approval_id)
+  const currentIndex = currentApproval
+    ? pendingApprovals.findIndex((a) => a.approvalId === currentApproval.approvalId)
     : -1;
-  
+
   const handleNavigate = (direction: 'prev' | 'next') => {
     if (currentIndex === -1) return;
     const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
@@ -99,4 +110,3 @@ export default function App() {
     </MainLayout>
   );
 }
-

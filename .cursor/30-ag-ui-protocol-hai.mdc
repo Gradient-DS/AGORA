@@ -1,0 +1,166 @@
+---
+alwaysApply: false
+---
+# AG-UI Protocol Implementation Guide
+
+This project has migrated from the custom HAI (Human Agent Interface) Protocol to the standardized AG-UI Protocol for agent-user communication.
+
+**Status:** ✅ IMPLEMENTED
+
+## AG-UI Protocol Overview
+
+AG-UI is an open, lightweight, event-based protocol that standardizes interactions between AI agents and user-facing applications. It uses a streaming event-based architecture with typed events.
+
+**Repository:** https://github.com/ag-ui-protocol/ag-ui
+
+### Core Concepts
+
+1. **Event-Driven Architecture**: All communication happens through typed events
+2. **Transport Agnostic**: Supports SSE, WebSockets, and webhooks (AGORA uses WebSocket)
+3. **Streaming First**: Native support for streaming text and tool calls
+4. **Type Safe**: Full TypeScript support with `@ag-ui/core` package
+
+### AG-UI Event Categories
+
+| Category | Events | Purpose |
+|----------|--------|---------|
+| **Lifecycle** | `RUN_STARTED`, `RUN_FINISHED`, `STEP_STARTED`, `STEP_FINISHED` | Track agent execution lifecycle |
+| **Text Messages** | `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END` | Stream text responses |
+| **Tool Calls** | `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END` | Track tool execution |
+| **State Management** | `STATE_SNAPSHOT`, `STATE_DELTA`, `MESSAGES_SNAPSHOT` | Synchronize state |
+| **Custom** | `CUSTOM` | Extension point for HITL approval |
+
+---
+
+## Implementation Details
+
+### Backend (server-langgraph)
+
+| File | Purpose |
+|------|---------|
+| `common/ag_ui_types.py` | AG-UI event types (Pydantic models) |
+| `api/ag_ui_handler.py` | WebSocket protocol handler |
+| `pipelines/orchestrator.py` | Event emission during LangGraph streaming |
+
+### Frontend (HAI)
+
+| File | Purpose |
+|------|---------|
+| `types/schemas.ts` | AG-UI event Zod schemas |
+| `lib/websocket/client.ts` | AGUIWebSocketClient |
+| `hooks/useWebSocket.ts` | Event handling hook |
+| `stores/*` | Zustand stores for AG-UI state |
+
+### Documentation (docs/hai-contract)
+
+| File | Purpose |
+|------|---------|
+| `AG_UI_PROTOCOL.md` | Protocol specification |
+| `asyncapi.yaml` | AsyncAPI 3.0 spec |
+| `schemas/messages.json` | JSON Schema definitions |
+| `examples/*.json` | Example event sequences |
+| `mock_server.py` | Testing mock server |
+
+---
+
+## AGORA Custom Events
+
+AGORA uses `CUSTOM` events for human-in-the-loop approval:
+
+### agora:tool_approval_request
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:tool_approval_request",
+  "value": {
+    "toolName": "generate_final_report",
+    "toolDescription": "Generates an official inspection report PDF",
+    "parameters": { "inspection_id": "INS-2024-001" },
+    "reasoning": "User requested to finalize the inspection report",
+    "riskLevel": "high",
+    "approvalId": "appr-xyz789"
+  }
+}
+```
+
+### agora:tool_approval_response
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:tool_approval_response",
+  "value": {
+    "approvalId": "appr-xyz789",
+    "approved": true,
+    "feedback": "Looks good, proceed"
+  }
+}
+```
+
+### agora:error
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:error",
+  "value": {
+    "errorCode": "moderation_violation",
+    "message": "Content blocked",
+    "details": { "reason": "profanity" }
+  }
+}
+```
+
+---
+
+## Naming Conventions
+
+| Concept | AG-UI Format |
+|---------|--------------|
+| Session/Thread ID | `threadId` (camelCase) |
+| Message ID | `messageId` |
+| Tool Call ID | `toolCallId` |
+| Approval ID | `approvalId` |
+| Event Type | SCREAMING_CASE (e.g., `RUN_STARTED`) |
+| Custom Event Name | domain:name (e.g., `agora:tool_approval_request`) |
+
+---
+
+## Migration Checklist (Completed)
+
+### Frontend (HAI → AG-UI)
+
+- [x] Install `@ag-ui/core` package
+- [x] Replace `HAIWebSocketClient` with `AGUIWebSocketClient`
+- [x] Update event handlers to use AG-UI EventType
+- [x] Migrate message type discriminators (snake_case → SCREAMING_CASE)
+- [x] Update Zod schemas in `types/schemas.ts`
+- [x] Update stores to handle AG-UI event structure
+- [x] Handle Custom events for HITL approval flow
+- [x] Update components for new types
+
+### Backend (HAI → AG-UI)
+
+- [x] Install `ag-ui-protocol` package
+- [x] Create `ag_ui_types.py` with Pydantic models
+- [x] Create `ag_ui_handler.py` for WebSocket handling
+- [x] Update orchestrator to emit AG-UI events
+- [x] Implement Run/Step lifecycle events
+- [x] Convert approval flow to Custom events
+
+### Documentation
+
+- [x] Rewrite protocol documentation
+- [x] Update AsyncAPI spec
+- [x] Update JSON schemas
+- [x] Update example files
+- [x] Update mock server
+
+---
+
+## Reference
+
+- **AG-UI GitHub**: https://github.com/ag-ui-protocol/ag-ui
+- **Protocol Spec**: `/docs/hai-contract/AG_UI_PROTOCOL.md`
+- **Schemas**: `/docs/hai-contract/schemas/messages.json`

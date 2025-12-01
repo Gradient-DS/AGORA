@@ -1,22 +1,20 @@
 asyncapi: 3.0.0
 info:
-  title: AGORA HAI Protocol API
-  version: 1.1.0
+  title: AGORA AG-UI Protocol API
+  version: 2.0.0
   description: |
     WebSocket protocol for communication between the Human Agent Interface (HAI) 
-    and the AGORA backend orchestrator. This protocol supports real-time chat, 
-    streaming responses, tool execution notifications, and human-in-the-loop approvals.
+    and the AGORA LangGraph orchestrator using the AG-UI Protocol.
     
-    **Scope:** Text and control messages only. Audio/Video streaming is out of scope.
-    
-    **History:** Conversation history should be loaded via the REST API (`GET /sessions/{id}/history`) before connecting. This protocol handles real-time events only.
+    **Protocol:** AG-UI (Agent-User Interface Protocol)
+    **Reference:** https://github.com/ag-ui-protocol/ag-ui
     
     ## Key Features
-    - Real-time bidirectional communication
-    - Streaming assistant responses
-    - Tool execution transparency (Start/End/Error events)
-    - Human-in-the-loop approval workflow
-    - Session-based conversation continuity
+    - Event-driven streaming communication
+    - Lifecycle events for run/step tracking
+    - Text message streaming with START/CONTENT/END pattern
+    - Tool call events with argument streaming
+    - Custom events for human-in-the-loop approval
     
   contact:
     name: AGORA Development Team
@@ -32,513 +30,480 @@ channels:
   /ws:
     address: /ws
     messages:
-      UserMessage:
-        $ref: '#/components/messages/UserMessage'
-      AssistantMessage:
-        $ref: '#/components/messages/AssistantMessage'
-      AssistantMessageChunk:
-        $ref: '#/components/messages/AssistantMessageChunk'
-      ToolCallStart:
-        $ref: '#/components/messages/ToolCallStart'
-      ToolCallEnd:
-        $ref: '#/components/messages/ToolCallEnd'
-      ToolCallError:
-        $ref: '#/components/messages/ToolCallError'
-      ToolApprovalRequest:
-        $ref: '#/components/messages/ToolApprovalRequest'
-      ToolApprovalResponse:
-        $ref: '#/components/messages/ToolApprovalResponse'
-      StatusMessage:
-        $ref: '#/components/messages/StatusMessage'
-      ErrorMessage:
-        $ref: '#/components/messages/ErrorMessage'
+      RunAgentInput:
+        $ref: '#/components/messages/RunAgentInput'
+      RunStartedEvent:
+        $ref: '#/components/messages/RunStartedEvent'
+      RunFinishedEvent:
+        $ref: '#/components/messages/RunFinishedEvent'
+      StepStartedEvent:
+        $ref: '#/components/messages/StepStartedEvent'
+      StepFinishedEvent:
+        $ref: '#/components/messages/StepFinishedEvent'
+      TextMessageStartEvent:
+        $ref: '#/components/messages/TextMessageStartEvent'
+      TextMessageContentEvent:
+        $ref: '#/components/messages/TextMessageContentEvent'
+      TextMessageEndEvent:
+        $ref: '#/components/messages/TextMessageEndEvent'
+      ToolCallStartEvent:
+        $ref: '#/components/messages/ToolCallStartEvent'
+      ToolCallArgsEvent:
+        $ref: '#/components/messages/ToolCallArgsEvent'
+      ToolCallEndEvent:
+        $ref: '#/components/messages/ToolCallEndEvent'
+      CustomEvent:
+        $ref: '#/components/messages/CustomEvent'
 
 operations:
-  sendUserMessage:
+  sendInput:
     action: send
     channel:
       $ref: '#/channels/~1ws'
-    summary: Send user message or approval response
+    summary: Send run input or custom events (approval response)
     messages:
-      - $ref: '#/channels/~1ws/messages/UserMessage'
-      - $ref: '#/channels/~1ws/messages/ToolApprovalResponse'
+      - $ref: '#/channels/~1ws/messages/RunAgentInput'
+      - $ref: '#/channels/~1ws/messages/CustomEvent'
   
-  receiveMessages:
+  receiveEvents:
     action: receive
     channel:
       $ref: '#/channels/~1ws'
-    summary: Receive assistant responses, tool notifications, and status updates
+    summary: Receive AG-UI events from server
     messages:
-      - $ref: '#/channels/~1ws/messages/AssistantMessage'
-      - $ref: '#/channels/~1ws/messages/AssistantMessageChunk'
-      - $ref: '#/channels/~1ws/messages/ToolCallStart'
-      - $ref: '#/channels/~1ws/messages/ToolCallEnd'
-      - $ref: '#/channels/~1ws/messages/ToolCallError'
-      - $ref: '#/channels/~1ws/messages/ToolApprovalRequest'
-      - $ref: '#/channels/~1ws/messages/StatusMessage'
-      - $ref: '#/channels/~1ws/messages/ErrorMessage'
+      - $ref: '#/channels/~1ws/messages/RunStartedEvent'
+      - $ref: '#/channels/~1ws/messages/RunFinishedEvent'
+      - $ref: '#/channels/~1ws/messages/StepStartedEvent'
+      - $ref: '#/channels/~1ws/messages/StepFinishedEvent'
+      - $ref: '#/channels/~1ws/messages/TextMessageStartEvent'
+      - $ref: '#/channels/~1ws/messages/TextMessageContentEvent'
+      - $ref: '#/channels/~1ws/messages/TextMessageEndEvent'
+      - $ref: '#/channels/~1ws/messages/ToolCallStartEvent'
+      - $ref: '#/channels/~1ws/messages/ToolCallArgsEvent'
+      - $ref: '#/channels/~1ws/messages/ToolCallEndEvent'
+      - $ref: '#/channels/~1ws/messages/CustomEvent'
 
 components:
   messages:
-    UserMessage:
-      name: UserMessage
-      title: User Message
-      summary: Message sent from user to the system
+    RunAgentInput:
+      name: RunAgentInput
+      title: Run Agent Input
+      summary: Input to start a new agent run
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/UserMessage'
+        $ref: '#/components/schemas/RunAgentInput'
       examples:
         - name: BasicQuestion
           summary: User asks a question
           payload:
-            type: "user_message"
-            content: "What are the food safety regulations for restaurants?"
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            metadata: {}
-        - name: FollowUp
-          summary: Follow-up question in existing session
+            threadId: "123e4567-e89b-12d3-a456-426614174000"
+            runId: "run-abc123"
+            messages:
+              - role: "user"
+                content: "What are the food safety regulations for restaurants?"
+
+    RunStartedEvent:
+      name: RunStartedEvent
+      title: Run Started
+      summary: Emitted when an agent run begins
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RunStartedEvent'
+      examples:
+        - name: RunStarted
           payload:
-            type: "user_message"
-            content: "Can you create an inspection report for this?"
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
+            type: "RUN_STARTED"
+            threadId: "123e4567-e89b-12d3-a456-426614174000"
+            runId: "run-abc123"
+            timestamp: "2025-01-15T10:30:00Z"
+
+    RunFinishedEvent:
+      name: RunFinishedEvent
+      title: Run Finished
+      summary: Emitted when an agent run completes
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RunFinishedEvent'
+      examples:
+        - name: RunFinished
+          payload:
+            type: "RUN_FINISHED"
+            threadId: "123e4567-e89b-12d3-a456-426614174000"
+            runId: "run-abc123"
+            timestamp: "2025-01-15T10:30:05Z"
+
+    StepStartedEvent:
+      name: StepStartedEvent
+      title: Step Started
+      summary: Emitted when a processing step begins
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StepStartedEvent'
+      examples:
+        - name: ThinkingStep
+          payload:
+            type: "STEP_STARTED"
+            stepName: "thinking"
             metadata:
-              previous_message_id: "msg_xyz789"
+              message: "Analyzing your question..."
+            timestamp: "2025-01-15T10:30:01Z"
 
-    AssistantMessage:
-      name: AssistantMessage
-      title: Assistant Complete Message
-      summary: Complete response from assistant (non-streaming mode)
+    StepFinishedEvent:
+      name: StepFinishedEvent
+      title: Step Finished
+      summary: Emitted when a processing step completes
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/AssistantMessage'
+        $ref: '#/components/schemas/StepFinishedEvent'
       examples:
-        - name: CompleteResponse
-          summary: Full assistant response
+        - name: StepFinished
           payload:
-            type: "assistant_message"
-            content: "Based on the regulations, restaurants must maintain proper temperature control for food storage. Refrigerated items should be kept below 4°C."
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            agent_id: "regulation_agent"
-            metadata: {}
+            type: "STEP_FINISHED"
+            stepName: "thinking"
+            timestamp: "2025-01-15T10:30:02Z"
 
-    AssistantMessageChunk:
-      name: AssistantMessageChunk
-      title: Assistant Streaming Chunk
-      summary: Partial streaming response from assistant (preferred method)
+    TextMessageStartEvent:
+      name: TextMessageStartEvent
+      title: Text Message Start
+      summary: Emitted when a text message begins streaming
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/AssistantMessageChunk'
+        $ref: '#/components/schemas/TextMessageStartEvent'
       examples:
-        - name: FirstChunk
-          summary: First chunk of streaming response
+        - name: AssistantMessageStart
           payload:
-            type: "assistant_message_chunk"
-            content: "Based on the "
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            agent_id: "regulation_agent"
-            message_id: "msg_abc123"
-            is_final: false
-        - name: FinalChunk
-          summary: Last chunk of streaming response
-          payload:
-            type: "assistant_message_chunk"
-            content: "regulations, restaurants must maintain proper temperature control."
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            agent_id: "regulation_agent"
-            message_id: "msg_abc123"
-            is_final: true
+            type: "TEXT_MESSAGE_START"
+            messageId: "msg-abc123"
+            role: "assistant"
+            timestamp: "2025-01-15T10:30:02Z"
 
-    ToolCallStart:
-      name: ToolCallStart
-      title: Tool Execution Started
-      summary: Notification that tool execution has begun
+    TextMessageContentEvent:
+      name: TextMessageContentEvent
+      title: Text Message Content
+      summary: Emitted for each content chunk during streaming
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/ToolCallStart'
+        $ref: '#/components/schemas/TextMessageContentEvent'
       examples:
-        - name: ToolStarted
-          summary: Tool execution started
+        - name: ContentChunk
           payload:
-            type: "tool_call_start"
-            tool_call_id: "call_abc123"
-            tool_name: "search_regulations"
-            parameters:
-              query: "restaurant food safety"
-              limit: 10
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            agent_id: "regulation_agent"
-            metadata: {}
+            type: "TEXT_MESSAGE_CONTENT"
+            messageId: "msg-abc123"
+            delta: "Based on the regulations, "
+            timestamp: "2025-01-15T10:30:02Z"
 
-    ToolCallEnd:
-      name: ToolCallEnd
-      title: Tool Execution Completed
-      summary: Notification that tool execution finished successfully
+    TextMessageEndEvent:
+      name: TextMessageEndEvent
+      title: Text Message End
+      summary: Emitted when a text message is complete
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/ToolCallEnd'
+        $ref: '#/components/schemas/TextMessageEndEvent'
       examples:
-        - name: ToolCompleted
-          summary: Tool execution completed successfully
+        - name: MessageEnd
           payload:
-            type: "tool_call_end"
-            tool_call_id: "call_abc123"
-            tool_name: "search_regulations"
+            type: "TEXT_MESSAGE_END"
+            messageId: "msg-abc123"
+            timestamp: "2025-01-15T10:30:04Z"
+
+    ToolCallStartEvent:
+      name: ToolCallStartEvent
+      title: Tool Call Start
+      summary: Emitted when a tool call begins
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallStartEvent'
+      examples:
+        - name: ToolStart
+          payload:
+            type: "TOOL_CALL_START"
+            toolCallId: "call-abc123"
+            toolCallName: "search_regulations"
+            parentMessageId: "msg-abc123"
+            timestamp: "2025-01-15T10:30:02Z"
+
+    ToolCallArgsEvent:
+      name: ToolCallArgsEvent
+      title: Tool Call Args
+      summary: Emitted to stream tool call arguments
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallArgsEvent'
+      examples:
+        - name: ToolArgs
+          payload:
+            type: "TOOL_CALL_ARGS"
+            toolCallId: "call-abc123"
+            delta: '{"query": "food safety", "limit": 10}'
+            timestamp: "2025-01-15T10:30:02Z"
+
+    ToolCallEndEvent:
+      name: ToolCallEndEvent
+      title: Tool Call End
+      summary: Emitted when a tool call completes
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallEndEvent'
+      examples:
+        - name: ToolSuccess
+          payload:
+            type: "TOOL_CALL_END"
+            toolCallId: "call-abc123"
             result: "Found 5 relevant regulations"
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            agent_id: "regulation_agent"
-            metadata:
-              documents_found: 5
-              search_time_ms: 234
-
-    ToolCallError:
-      name: ToolCallError
-      title: Tool Execution Failed
-      summary: Notification that tool execution failed
-      contentType: application/json
-      payload:
-        $ref: '#/components/schemas/ToolCallError'
-      examples:
-        - name: ToolFailed
-          summary: Tool execution failed
+            timestamp: "2025-01-15T10:30:03Z"
+        - name: ToolError
           payload:
-            type: "tool_call_error"
-            tool_call_id: "call_abc123"
-            tool_name: "search_regulations"
+            type: "TOOL_CALL_END"
+            toolCallId: "call-abc123"
             error: "Database connection timeout"
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            agent_id: "regulation_agent"
-            metadata:
-              retry_allowed: true
+            timestamp: "2025-01-15T10:30:03Z"
 
-    ToolApprovalRequest:
-      name: ToolApprovalRequest
-      title: Tool Approval Request
-      summary: Request user approval before executing sensitive tool
+    CustomEvent:
+      name: CustomEvent
+      title: Custom Event
+      summary: Custom event for protocol extensions (HITL approval, errors)
       contentType: application/json
       payload:
-        $ref: '#/components/schemas/ToolApprovalRequest'
+        $ref: '#/components/schemas/CustomEvent'
       examples:
-        - name: HighRiskTool
+        - name: ToolApprovalRequest
           summary: Request approval for high-risk operation
           payload:
-            type: "tool_approval_request"
-            tool_name: "generate_inspection_report"
-            tool_description: "Generates an official inspection report PDF that will be stored in the system"
-            parameters:
-              inspection_id: "INS-2024-001"
-              include_photos: true
-            reasoning: "User requested to create the final inspection report based on the conversation"
-            risk_level: "high"
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-            approval_id: "appr_xyz789"
-
-    ToolApprovalResponse:
-      name: ToolApprovalResponse
-      title: Tool Approval Response
-      summary: User's decision on tool execution approval
-      contentType: application/json
-      payload:
-        $ref: '#/components/schemas/ToolApprovalResponse'
-      examples:
-        - name: Approved
-          summary: User approves the tool execution
+            type: "CUSTOM"
+            name: "agora:tool_approval_request"
+            value:
+              toolName: "generate_final_report"
+              toolDescription: "Generates an official inspection report PDF"
+              parameters:
+                inspection_id: "INS-2024-001"
+              reasoning: "User requested to finalize the inspection report"
+              riskLevel: "high"
+              approvalId: "appr-xyz789"
+            timestamp: "2025-01-15T10:30:02Z"
+        - name: ToolApprovalResponse
+          summary: Client approval response
           payload:
-            type: "tool_approval_response"
-            approval_id: "appr_xyz789"
-            approved: true
-            feedback: "Looks good, proceed with report generation"
-        - name: Rejected
-          summary: User rejects the tool execution
+            type: "CUSTOM"
+            name: "agora:tool_approval_response"
+            value:
+              approvalId: "appr-xyz789"
+              approved: true
+              feedback: "Looks good, proceed"
+        - name: Error
+          summary: Server error
           payload:
-            type: "tool_approval_response"
-            approval_id: "appr_xyz789"
-            approved: false
-            feedback: "I need to add more details first"
-
-    StatusMessage:
-      name: StatusMessage
-      title: Status Update
-      summary: Processing status update for UI loading indicators
-      contentType: application/json
-      payload:
-        $ref: '#/components/schemas/StatusMessage'
-      examples:
-        - name: Thinking
-          summary: Assistant is processing the request
-          payload:
-            type: "status"
-            status: "thinking"
-            message: "Analyzing your question..."
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-        - name: ExecutingTools
-          summary: Running tool operations
-          payload:
-            type: "status"
-            status: "executing_tools"
-            message: "Searching regulation database..."
-            session_id: "123e4567-e89b-12d3-a456-426614174000"
-
-    ErrorMessage:
-      name: ErrorMessage
-      title: Error Notification
-      summary: Error occurred during processing
-      contentType: application/json
-      payload:
-        $ref: '#/components/schemas/ErrorMessage'
-      examples:
-        - name: ModerationViolation
-          summary: Content moderation blocked the message
-          payload:
-            type: "error"
-            error_code: "moderation_violation"
-            message: "Your message contains prohibited content"
-            details:
-              blocked_pattern: "profanity"
-              severity: "medium"
-        - name: ToolExecutionError
-          summary: Tool execution failed
-          payload:
-            type: "error"
-            error_code: "tool_execution_failed"
-            message: "Failed to generate inspection report"
-            details:
-              tool_name: "generate_inspection_report"
-              reason: "Missing required inspection data"
+            type: "CUSTOM"
+            name: "agora:error"
+            value:
+              errorCode: "moderation_violation"
+              message: "Content blocked"
+              details:
+                reason: "profanity"
+            timestamp: "2025-01-15T10:30:02Z"
 
   schemas:
-    UserMessage:
+    RunAgentInput:
       type: object
-      required: [type, content, session_id]
+      required: [threadId, messages]
+      properties:
+        threadId:
+          type: string
+          description: Thread/session identifier
+        runId:
+          type: string
+          description: Unique run identifier
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+          description: Input messages
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional context
+
+    Message:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, system, tool]
+        content:
+          type: string
+        id:
+          type: string
+        toolCallId:
+          type: string
+
+    RunStartedEvent:
+      type: object
+      required: [type, threadId, runId]
       properties:
         type:
           type: string
-          const: "user_message"
-          description: Message type discriminator
-        content:
+          const: "RUN_STARTED"
+        threadId:
           type: string
-          description: User's message content
-          minLength: 1
-          maxLength: 10000
-        session_id:
+        runId:
           type: string
-          description: Session identifier for conversation continuity (UUID format recommended)
-          pattern: '^[a-zA-Z0-9_-]+$'
+        timestamp:
+          type: string
+          format: date-time
+
+    RunFinishedEvent:
+      type: object
+      required: [type, threadId, runId]
+      properties:
+        type:
+          type: string
+          const: "RUN_FINISHED"
+        threadId:
+          type: string
+        runId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    StepStartedEvent:
+      type: object
+      required: [type, stepName]
+      properties:
+        type:
+          type: string
+          const: "STEP_STARTED"
+        stepName:
+          type: string
         metadata:
           type: object
           additionalProperties: true
-          default: {}
-          description: Optional metadata for tracking and context
+        timestamp:
+          type: string
+          format: date-time
 
-    AssistantMessage:
+    StepFinishedEvent:
       type: object
-      required: [type, content]
+      required: [type, stepName]
       properties:
         type:
           type: string
-          const: "assistant_message"
-        content:
+          const: "STEP_FINISHED"
+        stepName:
           type: string
-          description: Complete assistant response text
-        session_id:
+        timestamp:
           type: string
-          nullable: true
-        agent_id:
-          type: string
-          nullable: true
-          description: Identifier of the agent that generated this response
-        metadata:
-          type: object
-          additionalProperties: true
-          default: {}
+          format: date-time
 
-    AssistantMessageChunk:
+    TextMessageStartEvent:
       type: object
-      required: [type, content, session_id, message_id]
+      required: [type, messageId, role]
       properties:
         type:
           type: string
-          const: "assistant_message_chunk"
-        content:
+          const: "TEXT_MESSAGE_START"
+        messageId:
           type: string
-          description: Partial content chunk (concat with same message_id)
-        session_id:
+        role:
           type: string
-        agent_id:
+          enum: [user, assistant]
+        timestamp:
           type: string
-          nullable: true
-        message_id:
-          type: string
-          description: Unique ID to group chunks belonging to the same message
-        is_final:
-          type: boolean
-          default: false
-          description: True indicates this is the last chunk of the message
+          format: date-time
 
-    ToolCallStart:
+    TextMessageContentEvent:
       type: object
-      required: [type, tool_call_id, tool_name, parameters, session_id]
+      required: [type, messageId, delta]
       properties:
         type:
           type: string
-          const: "tool_call_start"
-        tool_call_id:
+          const: "TEXT_MESSAGE_CONTENT"
+        messageId:
           type: string
-          description: Unique identifier for this tool call
-        tool_name:
+        delta:
           type: string
-          description: Name of the tool being executed
-        parameters:
-          type: object
-          additionalProperties: true
-          description: Tool input parameters
-        session_id:
+        timestamp:
           type: string
-        agent_id:
-          type: string
-          nullable: true
-        metadata:
-          type: object
-          additionalProperties: true
-          default: {}
+          format: date-time
 
-    ToolCallEnd:
+    TextMessageEndEvent:
       type: object
-      required: [type, tool_call_id, tool_name, result, session_id]
+      required: [type, messageId]
       properties:
         type:
           type: string
-          const: "tool_call_end"
-        tool_call_id:
+          const: "TEXT_MESSAGE_END"
+        messageId:
           type: string
-          description: Unique identifier for this tool call (matches start)
-        tool_name:
+        timestamp:
+          type: string
+          format: date-time
+
+    ToolCallStartEvent:
+      type: object
+      required: [type, toolCallId, toolCallName]
+      properties:
+        type:
+          type: string
+          const: "TOOL_CALL_START"
+        toolCallId:
+          type: string
+        toolCallName:
+          type: string
+        parentMessageId:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+
+    ToolCallArgsEvent:
+      type: object
+      required: [type, toolCallId, delta]
+      properties:
+        type:
+          type: string
+          const: "TOOL_CALL_ARGS"
+        toolCallId:
+          type: string
+        delta:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ToolCallEndEvent:
+      type: object
+      required: [type, toolCallId]
+      properties:
+        type:
+          type: string
+          const: "TOOL_CALL_END"
+        toolCallId:
           type: string
         result:
           type: string
-          description: Result summary of the tool execution
-        session_id:
-          type: string
-        agent_id:
-          type: string
           nullable: true
-        metadata:
-          type: object
-          additionalProperties: true
-          default: {}
-
-    ToolCallError:
-      type: object
-      required: [type, tool_call_id, tool_name, error, session_id]
-      properties:
-        type:
-          type: string
-          const: "tool_call_error"
-        tool_call_id:
-          type: string
-          description: Unique identifier for this tool call (matches start)
-        tool_name:
-          type: string
         error:
           type: string
-          description: Error message
-        session_id:
-          type: string
-        agent_id:
-          type: string
           nullable: true
-        metadata:
+        timestamp:
+          type: string
+          format: date-time
+
+    CustomEvent:
+      type: object
+      required: [type, name, value]
+      properties:
+        type:
+          type: string
+          const: "CUSTOM"
+        name:
+          type: string
+          description: Custom event name (e.g., agora:tool_approval_request)
+        value:
           type: object
           additionalProperties: true
-          default: {}
-
-    ToolApprovalRequest:
-      type: object
-      required: [type, tool_name, tool_description, parameters, reasoning, risk_level, session_id, approval_id]
-      properties:
-        type:
+        timestamp:
           type: string
-          const: "tool_approval_request"
-        tool_name:
-          type: string
-          description: Name of the tool requiring approval
-        tool_description:
-          type: string
-          description: Human-readable description of what the tool does
-        parameters:
-          type: object
-          additionalProperties: true
-          description: Parameters that will be passed to the tool
-        reasoning:
-          type: string
-          description: Explanation of why the agent wants to use this tool
-        risk_level:
-          type: string
-          enum: [low, medium, high, critical]
-          description: Risk assessment for this operation
-        session_id:
-          type: string
-        approval_id:
-          type: string
-          description: Unique approval request identifier (must be included in response)
-
-    ToolApprovalResponse:
-      type: object
-      required: [type, approval_id, approved]
-      properties:
-        type:
-          type: string
-          const: "tool_approval_response"
-        approval_id:
-          type: string
-          description: Must match the approval_id from the request
-        approved:
-          type: boolean
-          description: true to proceed with execution, false to cancel
-        feedback:
-          type: string
-          nullable: true
-          description: Optional user comment or reasoning
-
-    StatusMessage:
-      type: object
-      required: [type, status]
-      properties:
-        type:
-          type: string
-          const: "status"
-        status:
-          type: string
-          enum: [thinking, routing, executing_tools, completed]
-          description: Current processing status
-        message:
-          type: string
-          nullable: true
-          description: Optional human-readable status message
-        session_id:
-          type: string
-          nullable: true
-
-    ErrorMessage:
-      type: object
-      required: [type, error_code, message]
-      properties:
-        type:
-          type: string
-          const: "error"
-        error_code:
-          type: string
-          description: Machine-readable error code for programmatic handling
-          examples:
-            - moderation_violation
-            - rate_limit_exceeded
-            - tool_execution_failed
-            - invalid_session
-            - invalid_json
-        message:
-          type: string
-          description: Human-readable error message for display
-        details:
-          type: object
-          additionalProperties: true
-          default: {}
-          description: Additional error context and debugging information
+          format: date-time

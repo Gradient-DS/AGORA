@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Bot, Circle, ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import { Settings, Bot, Circle, ChevronDown, ChevronRight, Lock, Wrench } from 'lucide-react';
 import { useToolCallStore, useAgentStore } from '@/stores';
 import { ToolCallCard } from '@/components/chat/ToolCallCard';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,9 @@ export function DebugPanel() {
   const inactiveAgents = useAgentStore((state) => state.inactiveAgents);
   const [collapsedAgents, setCollapsedAgents] = useState<Set<string>>(new Set());
   const [inactiveCollapsed, setInactiveCollapsed] = useState(true);
+  const [unassignedCollapsed, setUnassignedCollapsed] = useState(false);
+
+  const unassignedToolCalls = toolCalls.filter((tc) => !tc.agentId);
 
   console.log('[DebugPanel] All tool calls:', toolCalls.length, toolCalls);
 
@@ -122,6 +125,48 @@ export function DebugPanel() {
             );
           })}
         </div>
+
+        {/* Unassigned Tool Calls Section */}
+        {unassignedToolCalls.length > 0 && (
+          <>
+            <Separator className="my-4" />
+            <div className="space-y-2">
+              <button
+                onClick={() => setUnassignedCollapsed(!unassignedCollapsed)}
+                className="w-full flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  {unassignedCollapsed ? (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <Wrench className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Tool Aanroepen</span>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {unassignedToolCalls.length} {unassignedToolCalls.length === 1 ? 'aanroep' : 'aanroepen'}
+                </Badge>
+              </button>
+
+              {!unassignedCollapsed && (
+                <div className="ml-4 space-y-2 border-l-2 border-muted pl-3 animate-in fade-in slide-in-from-top-2">
+                  {unassignedToolCalls.map((toolCall) => (
+                    <div key={toolCall.id} id={`tool-call-${toolCall.id}`} className="transition-all">
+                      <ToolCallCard
+                        toolName={toolCall.toolName}
+                        status={toolCall.status}
+                        parameters={toolCall.parameters}
+                        result={toolCall.result}
+                        toolCallId={toolCall.id}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Inactive Agents Section */}
         {inactiveAgents.length > 0 && (

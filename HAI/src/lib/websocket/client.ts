@@ -1,30 +1,44 @@
-import { HAIMessageSchema, type HAIMessage, type UserMessage, type ToolApprovalResponse } from '@/types/schemas';
+/**
+ * AG-UI Protocol WebSocket client for AGORA HAI.
+ *
+ * Handles bidirectional WebSocket communication using the AG-UI Protocol.
+ */
 
-type MessageCallback = (message: HAIMessage) => void;
+import {
+  AGUIEventSchema,
+  type AGUIEvent,
+  type RunAgentInput,
+  type CustomEvent,
+  EventType,
+  AGORA_TOOL_APPROVAL_RESPONSE,
+} from '@/types/schemas';
+import { generateUUID } from '@/lib/utils';
+
+type EventCallback = (event: AGUIEvent) => void;
 type StatusCallback = (status: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error') => void;
 type ErrorCallback = (error: Error) => void;
 
-interface HAIWebSocketConfig {
+interface AGUIWebSocketConfig {
   url: string;
   maxReconnectAttempts?: number;
   reconnectInterval?: number;
   maxReconnectInterval?: number;
 }
 
-export class HAIWebSocketClient {
+export class AGUIWebSocketClient {
   private ws: WebSocket | null = null;
-  private config: Required<HAIWebSocketConfig>;
-  private messageQueue: HAIMessage[] = [];
+  private config: Required<AGUIWebSocketConfig>;
+  private messageQueue: string[] = [];
   private reconnectAttempts = 0;
   private reconnectTimeout: number | null = null;
-  private messageCallbacks: MessageCallback[] = [];
+  private eventCallbacks: EventCallback[] = [];
   private statusCallbacks: StatusCallback[] = [];
   private errorCallbacks: ErrorCallback[] = [];
   private currentStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error' = 'disconnected';
   private isManualClose = false;
   private isConnecting = false;
 
-  constructor(config: HAIWebSocketConfig) {
+  constructor(config: AGUIWebSocketConfig) {
     this.config = {
       url: config.url,
       maxReconnectAttempts: config.maxReconnectAttempts ?? 5,
@@ -35,17 +49,17 @@ export class HAIWebSocketClient {
 
   connect(): void {
     if (this.isConnecting) {
-      console.log('[WebSocket] Connection attempt already in progress, skipping');
+      console.log('[AG-UI WebSocket] Connection attempt already in progress, skipping');
       return;
     }
 
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
-      console.log('[WebSocket] Already connected or connecting, skipping');
+      console.log('[AG-UI WebSocket] Already connected or connecting, skipping');
       return;
     }
 
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('[WebSocket] Max reconnect attempts reached, not attempting connection');
+      console.error('[AG-UI WebSocket] Max reconnect attempts reached, not attempting connection');
       this.updateStatus('error');
       return;
     }
@@ -54,14 +68,16 @@ export class HAIWebSocketClient {
     this.isManualClose = false;
     const status = this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting';
     this.updateStatus(status);
-    
-    console.log(`[WebSocket] ${status === 'connecting' ? 'Connecting' : `Reconnecting (attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts})`} to ${this.config.url}`);
+
+    console.log(
+      `[AG-UI WebSocket] ${status === 'connecting' ? 'Connecting' : `Reconnecting (attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts})`} to ${this.config.url}`
+    );
 
     try {
       this.ws = new WebSocket(this.config.url);
       this.setupEventHandlers();
     } catch (error) {
-      console.error('[WebSocket] Failed to create WebSocket:', error);
+      console.error('[AG-UI WebSocket] Failed to create WebSocket:', error);
       this.isConnecting = false;
       this.handleError(new Error(`Failed to create WebSocket: ${error}`));
       this.scheduleReconnect();
@@ -69,11 +85,11 @@ export class HAIWebSocketClient {
   }
 
   disconnect(): void {
-    console.log('[WebSocket] Manually disconnecting');
+    console.log('[AG-UI WebSocket] Manually disconnecting');
     this.isManualClose = true;
     this.isConnecting = false;
     this.reconnectAttempts = 0;
-    
+
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -85,62 +101,80 @@ export class HAIWebSocketClient {
     this.updateStatus('disconnected');
   }
 
-  send(message: HAIMessage): void {
-    try {
-      const validated = HAIMessageSchema.parse(message);
-      
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        console.log('[WebSocket] Sending message:', message.type);
-        this.ws.send(JSON.stringify(validated));
-      } else {
-        console.log('[WebSocket] Connection not open, queuing message:', message.type);
-        this.messageQueue.push(validated);
-      }
-    } catch (error) {
-      console.error('[WebSocket] Invalid message format:', error);
-      this.handleError(new Error(`Invalid message format: ${error}`));
+  /**
+   * Send a run input to start a new agent run.
+   */
+  sendRunInput(threadId: string, content: string, context?: Record<string, unknown>): string {
+    const runId = generateUUID();
+    const input: RunAgentInput = {
+      threadId,
+      runId,
+      messages: [{ role: 'user', content }],
+      context,
+    };
+
+    this.sendRaw(JSON.stringify(input));
+    return runId;
+  }
+
+  /**
+   * Send a tool approval response.
+   */
+  sendToolApprovalResponse(approvalId: string, approved: boolean, feedback?: string): void {
+    const event: CustomEvent = {
+      type: EventType.CUSTOM,
+      name: AGORA_TOOL_APPROVAL_RESPONSE,
+      value: {
+        approvalId,
+        approved,
+        feedback: feedback ?? null,
+      },
+    };
+
+    this.sendRaw(JSON.stringify(event));
+  }
+
+  /**
+   * Send raw JSON string over WebSocket.
+   */
+  private sendRaw(data: string): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log('[AG-UI WebSocket] Sending message');
+      this.ws.send(data);
+    } else {
+      console.log('[AG-UI WebSocket] Connection not open, queuing message');
+      this.messageQueue.push(data);
     }
   }
 
-  sendUserMessage(content: string, sessionId: string, metadata?: Record<string, unknown>): void {
-    const message: UserMessage = {
-      type: 'user_message',
-      content,
-      session_id: sessionId,
-      metadata: metadata ?? {},
-    };
-    this.send(message);
-  }
-
-  sendToolApproval(approvalId: string, approved: boolean, feedback?: string): void {
-    const message: ToolApprovalResponse = {
-      type: 'tool_approval_response',
-      approval_id: approvalId,
-      approved,
-      feedback: feedback ?? null,
-    };
-    this.send(message);
-  }
-
-  onMessage(callback: MessageCallback): () => void {
-    this.messageCallbacks.push(callback);
+  /**
+   * Subscribe to AG-UI events.
+   */
+  onEvent(callback: EventCallback): () => void {
+    this.eventCallbacks.push(callback);
     return () => {
-      this.messageCallbacks = this.messageCallbacks.filter(cb => cb !== callback);
+      this.eventCallbacks = this.eventCallbacks.filter((cb) => cb !== callback);
     };
   }
 
+  /**
+   * Subscribe to connection status changes.
+   */
   onStatusChange(callback: StatusCallback): () => void {
     this.statusCallbacks.push(callback);
     callback(this.currentStatus);
     return () => {
-      this.statusCallbacks = this.statusCallbacks.filter(cb => cb !== callback);
+      this.statusCallbacks = this.statusCallbacks.filter((cb) => cb !== callback);
     };
   }
 
+  /**
+   * Subscribe to errors.
+   */
   onError(callback: ErrorCallback): () => void {
     this.errorCallbacks.push(callback);
     return () => {
-      this.errorCallbacks = this.errorCallbacks.filter(cb => cb !== callback);
+      this.errorCallbacks = this.errorCallbacks.filter((cb) => cb !== callback);
     };
   }
 
@@ -149,7 +183,7 @@ export class HAIWebSocketClient {
   }
 
   reset(): void {
-    console.log('[WebSocket] Resetting connection state');
+    console.log('[AG-UI WebSocket] Resetting connection state');
     this.disconnect();
     this.reconnectAttempts = 0;
     this.messageQueue = [];
@@ -160,39 +194,50 @@ export class HAIWebSocketClient {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
-      console.log('[WebSocket] Connection established');
+      console.log('[AG-UI WebSocket] Connection established');
       this.isConnecting = false;
       this.updateStatus('connected');
       this.reconnectAttempts = 0;
       this.flushMessageQueue();
     };
 
-    this.ws.onmessage = (event) => {
+    this.ws.onmessage = (wsEvent) => {
       try {
-        const data = JSON.parse(event.data);
-        const message = HAIMessageSchema.parse(data);
-        this.messageCallbacks.forEach(callback => callback(message));
+        const data = JSON.parse(wsEvent.data);
+        const parseResult = AGUIEventSchema.safeParse(data);
+
+        if (parseResult.success) {
+          this.eventCallbacks.forEach((callback) => callback(parseResult.data));
+        } else {
+          console.warn('[AG-UI WebSocket] Invalid event received:', parseResult.error);
+          // Still try to handle it as a raw event
+          this.eventCallbacks.forEach((callback) =>
+            callback({ type: EventType.RAW, data } as AGUIEvent)
+          );
+        }
       } catch (error) {
-        console.error('[WebSocket] Invalid message received:', error);
-        this.handleError(new Error(`Invalid message received: ${error}`));
+        console.error('[AG-UI WebSocket] Error parsing message:', error);
+        this.handleError(new Error(`Error parsing message: ${error}`));
       }
     };
 
-    this.ws.onerror = (event) => {
-      console.error('[WebSocket] Connection error:', event);
+    this.ws.onerror = (wsEvent) => {
+      console.error('[AG-UI WebSocket] Connection error:', wsEvent);
       this.isConnecting = false;
       this.handleError(new Error('WebSocket connection error'));
     };
 
-    this.ws.onclose = (event) => {
-      console.log(`[WebSocket] Connection closed (code: ${event.code}, reason: ${event.reason || 'none'})`);
+    this.ws.onclose = (wsEvent) => {
+      console.log(
+        `[AG-UI WebSocket] Connection closed (code: ${wsEvent.code}, reason: ${wsEvent.reason || 'none'})`
+      );
       this.isConnecting = false;
-      
+
       if (!this.isManualClose) {
-        console.log('[WebSocket] Connection closed unexpectedly, will attempt reconnect');
+        console.log('[AG-UI WebSocket] Connection closed unexpectedly, will attempt reconnect');
         this.scheduleReconnect();
       } else {
-        console.log('[WebSocket] Connection closed manually');
+        console.log('[AG-UI WebSocket] Connection closed manually');
         this.updateStatus('disconnected');
       }
     };
@@ -201,30 +246,32 @@ export class HAIWebSocketClient {
   private flushMessageQueue(): void {
     const queueLength = this.messageQueue.length;
     if (queueLength > 0) {
-      console.log(`[WebSocket] Flushing ${queueLength} queued message(s)`);
+      console.log(`[AG-UI WebSocket] Flushing ${queueLength} queued message(s)`);
     }
-    
+
     while (this.messageQueue.length > 0 && this.ws?.readyState === WebSocket.OPEN) {
       const message = this.messageQueue.shift();
       if (message) {
-        this.ws.send(JSON.stringify(message));
+        this.ws.send(message);
       }
     }
   }
 
   private scheduleReconnect(): void {
     if (this.isManualClose) {
-      console.log('[WebSocket] Manual close detected, skipping reconnect');
+      console.log('[AG-UI WebSocket] Manual close detected, skipping reconnect');
       return;
     }
 
     if (this.reconnectTimeout !== null) {
-      console.log('[WebSocket] Reconnect already scheduled, skipping');
+      console.log('[AG-UI WebSocket] Reconnect already scheduled, skipping');
       return;
     }
 
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error(`[WebSocket] Max reconnect attempts (${this.config.maxReconnectAttempts}) reached, giving up`);
+      console.error(
+        `[AG-UI WebSocket] Max reconnect attempts (${this.config.maxReconnectAttempts}) reached, giving up`
+      );
       this.updateStatus('error');
       this.handleError(new Error(`Failed to connect after ${this.config.maxReconnectAttempts} attempts`));
       return;
@@ -238,7 +285,9 @@ export class HAIWebSocketClient {
     this.reconnectAttempts++;
     this.updateStatus('reconnecting');
 
-    console.log(`[WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts} in ${delay}ms`);
+    console.log(
+      `[AG-UI WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts} in ${delay}ms`
+    );
 
     this.reconnectTimeout = window.setTimeout(() => {
       this.reconnectTimeout = null;
@@ -248,11 +297,10 @@ export class HAIWebSocketClient {
 
   private updateStatus(status: typeof this.currentStatus): void {
     this.currentStatus = status;
-    this.statusCallbacks.forEach(callback => callback(status));
+    this.statusCallbacks.forEach((callback) => callback(status));
   }
 
   private handleError(error: Error): void {
-    this.errorCallbacks.forEach(callback => callback(error));
+    this.errorCallbacks.forEach((callback) => callback(error));
   }
 }
-

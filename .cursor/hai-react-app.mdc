@@ -1,27 +1,28 @@
 ---
 title: HAI React Application Rules
 description: Cursor rules for building the Human Agent Interface (HAI) React application for AGORA
-version: 2.1.0
+version: 3.0.0
 status: implemented
-tags: [react, typescript, accessibility, websocket]
-last_updated: 2025-11-19
+tags: [react, typescript, accessibility, websocket, ag-ui]
+last_updated: 2025-12
 ---
 
 # HAI React Application - Development Rules
 
 ## Implementation Status ✅
 
-**Version 2.1.0 - Core Features Implemented (Voice Disabled)**
+**Version 3.0.0 - AG-UI Protocol Migration Complete**
 
-The HAI application has been implemented with core text-based features. Voice functionality has been disabled/removed for the initial release.
+The HAI application uses the AG-UI Protocol for communication with the LangGraph backend.
 
 - ✅ Project structure and build configuration
-- ✅ HAI Protocol types and Zod schemas
-- ✅ WebSocket client with auto-reconnect
-- ✅ Zustand state management
+- ✅ AG-UI Protocol types and Zod schemas (`@ag-ui/core`)
+- ✅ AGUIWebSocketClient with auto-reconnect
+- ✅ Zustand state management (AG-UI event structure)
 - ✅ shadcn/ui components
-- ✅ Chat interface
-- ✅ Tool approval workflow
+- ✅ Chat interface with TEXT_MESSAGE_* events
+- ✅ Tool call display with TOOL_CALL_* events
+- ✅ Tool approval workflow (CUSTOM events)
 - ✅ Layout components
 - ✅ Accessibility features (WCAG 2.1 AA)
 - ✅ Testing infrastructure
@@ -178,23 +179,23 @@ HAI/
 
 ### Schema Validation (Zod)
 - Define schemas in `types/schemas.ts`
-- Match HAI Protocol types from `server-openai/common/hai_types.py`
+- Match AG-UI Protocol types from `server-langgraph/common/ag_ui_types.py`
+- Use EventType enum for event discrimination
 
-## HAI Protocol Implementation
+## AG-UI Protocol Implementation
 
 ### WebSocket Client
-- Implement in `lib/websocket/client.ts`
+- Implement `AGUIWebSocketClient` in `lib/websocket/client.ts`
 - Auto-reconnect with exponential backoff
 - Message queue for offline messages
-- Validate all incoming messages with Zod
+- Validate all incoming events with Zod
 
-### Message Types
-- `user_message`: User input to orchestrator
-- `assistant_message`: Response from orchestrator (streaming supported)
-- `tool_approval_request`: Request user approval for tool execution
-- `tool_approval_response`: User's approval decision
-- `error`: Error messages
-- `status`: Status updates (routing, completing, etc.)
+### Event Types
+- **Lifecycle**: `RUN_STARTED`, `RUN_FINISHED`, `STEP_STARTED`, `STEP_FINISHED`
+- **Text**: `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END`
+- **Tools**: `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END`
+- **Custom**: `CUSTOM` with `agora:*` names for approval flow
+- Send user messages via `RunAgentInput` format
 
 ## Accessibility Requirements
 
