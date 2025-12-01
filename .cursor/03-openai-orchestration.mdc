@@ -35,7 +35,7 @@ server-openai/
 │       │   └── moderator.py           # Safety validation
 │       └── api/                   # Entry point
 │           ├── server.py              # FastAPI + WebSocket
-│           └── hai_protocol.py        # HAI communication
+│           └── ag_ui_handler.py       # AG-UI communication
 ```
 
 ## Agents SDK Integration
@@ -97,7 +97,7 @@ Coordinates the flow between WebSocket/API and the Agent Runner.
 1.  **Validation**: Checks input using `ModerationPipeline`.
 2.  **Execution**: Calls `AgentRunner.run_agent()` (streaming or blocking).
 3.  **Tool Approval**: Intercepts tool calls to check `approval_logic.requires_human_approval`.
-4.  **Protocol Handling**: Converts Agent SDK events into HAI Protocol messages (`ToolCallMessage`, `AssistantMessageChunk`, etc.).
+4.  **Protocol Handling**: Converts Agent SDK events into AG-UI Protocol messages (`TOOL_CALL_*`, `TEXT_MESSAGE_*`, etc.).
 
 ## Handoff Pattern
 
@@ -128,9 +128,9 @@ def requires_human_approval(tool_calls, context):
 4.  **Persist via SQLite**: Rely on `agents.SQLiteSession` for history.
 5.  **Audit Logging**: Log all messages and tool calls to OpenTelemetry.
 
-## HAI Protocol Mapping
+## AG-UI Protocol Mapping
 
-The Orchestrator maps Agent SDK events to HAI Protocol:
+The Orchestrator maps Agent SDK events to AG-UI Protocol:
 
 *   `ResponseTextDeltaEvent` -> `AssistantMessageChunk`
 *   `ToolCallItem` (started) -> `ToolCallMessage` (status='started')

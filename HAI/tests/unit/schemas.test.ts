@@ -1,159 +1,307 @@
 import { describe, it, expect } from 'vitest';
 import { 
-  UserMessageSchema, 
-  AssistantMessageSchema, 
-  ToolApprovalRequestSchema,
-  StatusMessageSchema,
-  HAIMessageSchema 
+  EventType,
+  RunStartedEventSchema,
+  RunFinishedEventSchema,
+  RunErrorEventSchema,
+  TextMessageStartEventSchema,
+  TextMessageContentEventSchema,
+  TextMessageEndEventSchema,
+  ToolCallStartEventSchema,
+  ToolCallArgsEventSchema,
+  ToolCallEndEventSchema,
+  ToolCallResultEventSchema,
+  CustomEventSchema,
+  StateSnapshotEventSchema,
+  AGUIEventSchema,
+  ToolApprovalRequestPayloadSchema,
+  RunAgentInputSchema,
+  isToolApprovalRequest,
+  parseToolApprovalRequest,
+  AGORA_TOOL_APPROVAL_REQUEST,
 } from '@/types/schemas';
 
-describe('HAI Protocol Schemas', () => {
-  describe('UserMessageSchema', () => {
-    it('validates valid user message', () => {
-      const message = {
-        type: 'user_message',
-        content: 'Hello',
-        session_id: 'session_123',
-        metadata: {},
+describe('AG-UI Protocol Schemas', () => {
+  describe('Lifecycle Events', () => {
+    it('validates RunStartedEvent', () => {
+      const event = {
+        type: EventType.RUN_STARTED,
+        threadId: 'thread_123',
+        runId: 'run_456',
+        timestamp: Date.now(),
       };
-      const result = UserMessageSchema.safeParse(message);
+      const result = RunStartedEventSchema.safeParse(event);
       expect(result.success).toBe(true);
     });
 
-    it('rejects invalid message type', () => {
-      const message = {
-        type: 'invalid_type',
-        content: 'Hello',
-        session_id: 'session_123',
+    it('validates RunFinishedEvent', () => {
+      const event = {
+        type: EventType.RUN_FINISHED,
+        threadId: 'thread_123',
+        runId: 'run_456',
+        result: { success: true },
+        timestamp: Date.now(),
       };
-      const result = UserMessageSchema.safeParse(message);
-      expect(result.success).toBe(false);
-    });
-
-    it('requires content and session_id', () => {
-      const message = {
-        type: 'user_message',
-      };
-      const result = UserMessageSchema.safeParse(message);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('AssistantMessageSchema', () => {
-    it('validates valid assistant message', () => {
-      const message = {
-        type: 'assistant_message',
-        content: 'Hi there!',
-        session_id: 'session_123',
-        agent_id: 'spec_agent',
-        metadata: {},
-      };
-      const result = AssistantMessageSchema.safeParse(message);
+      const result = RunFinishedEventSchema.safeParse(event);
       expect(result.success).toBe(true);
     });
 
-    it('allows null values for optional fields', () => {
-      const message = {
-        type: 'assistant_message',
-        content: 'Hi there!',
-        session_id: null,
-        agent_id: null,
-        metadata: {},
+    it('validates RunErrorEvent', () => {
+      const event = {
+        type: EventType.RUN_ERROR,
+        message: 'Something went wrong',
+        code: 'ERR_001',
+        timestamp: Date.now(),
       };
-      const result = AssistantMessageSchema.safeParse(message);
+      const result = RunErrorEventSchema.safeParse(event);
       expect(result.success).toBe(true);
     });
   });
 
-  describe('ToolApprovalRequestSchema', () => {
-    it('validates valid approval request', () => {
-      const request = {
-        type: 'tool_approval_request',
-        tool_name: 'execute_query',
-        tool_description: 'Execute a database query',
-        parameters: { query: 'SELECT * FROM users' },
-        reasoning: 'Need to fetch user data',
-        risk_level: 'medium',
-        session_id: 'session_123',
-        approval_id: 'approval_456',
+  describe('Text Message Events', () => {
+    it('validates TextMessageStartEvent', () => {
+      const event = {
+        type: EventType.TEXT_MESSAGE_START,
+        messageId: 'msg_123',
+        role: 'assistant',
+        timestamp: Date.now(),
       };
-      const result = ToolApprovalRequestSchema.safeParse(request);
+      const result = TextMessageStartEventSchema.safeParse(event);
       expect(result.success).toBe(true);
     });
 
-    it('validates risk levels', () => {
+    it('validates TextMessageContentEvent', () => {
+      const event = {
+        type: EventType.TEXT_MESSAGE_CONTENT,
+        messageId: 'msg_123',
+        delta: 'Hello, ',
+        timestamp: Date.now(),
+      };
+      const result = TextMessageContentEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates TextMessageEndEvent', () => {
+      const event = {
+        type: EventType.TEXT_MESSAGE_END,
+        messageId: 'msg_123',
+        timestamp: Date.now(),
+      };
+      const result = TextMessageEndEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates all supported roles', () => {
+      const roles = ['user', 'assistant', 'developer', 'system'];
+      roles.forEach(role => {
+        const event = {
+          type: EventType.TEXT_MESSAGE_START,
+          messageId: 'msg_123',
+          role,
+        };
+        const result = TextMessageStartEventSchema.safeParse(event);
+        expect(result.success).toBe(true);
+      });
+    });
+  });
+
+  describe('Tool Call Events', () => {
+    it('validates ToolCallStartEvent', () => {
+      const event = {
+        type: EventType.TOOL_CALL_START,
+        toolCallId: 'call_123',
+        toolCallName: 'search_regulations',
+        parentMessageId: 'msg_123',
+        timestamp: Date.now(),
+      };
+      const result = ToolCallStartEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates ToolCallArgsEvent', () => {
+      const event = {
+        type: EventType.TOOL_CALL_ARGS,
+        toolCallId: 'call_123',
+        delta: '{"query": "voedselveiligheid"}',
+        timestamp: Date.now(),
+      };
+      const result = ToolCallArgsEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates ToolCallEndEvent', () => {
+      const event = {
+        type: EventType.TOOL_CALL_END,
+        toolCallId: 'call_123',
+        timestamp: Date.now(),
+      };
+      const result = ToolCallEndEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates ToolCallResultEvent', () => {
+      const event = {
+        type: EventType.TOOL_CALL_RESULT,
+        messageId: 'msg_456',
+        toolCallId: 'call_123',
+        content: 'Found 3 relevant regulations',
+        role: 'tool',
+        timestamp: Date.now(),
+      };
+      const result = ToolCallResultEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Custom Events (AGORA Extensions)', () => {
+    it('validates CustomEvent structure', () => {
+      const event = {
+        type: EventType.CUSTOM,
+        name: 'agora:tool_approval_request',
+        value: { approvalId: 'apr_123' },
+        timestamp: Date.now(),
+      };
+      const result = CustomEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates tool approval request payload', () => {
+      const payload = {
+        toolName: 'generate_final_report',
+        toolDescription: 'Generates an official inspection report PDF',
+        parameters: { inspection_id: 'INS-2024-001' },
+        reasoning: 'User requested to finalize the inspection report',
+        riskLevel: 'high',
+        approvalId: 'apr_123',
+      };
+      const result = ToolApprovalRequestPayloadSchema.safeParse(payload);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates all risk levels', () => {
       const levels = ['low', 'medium', 'high', 'critical'];
       levels.forEach(level => {
-        const request = {
-          type: 'tool_approval_request',
-          tool_name: 'test',
-          tool_description: 'test',
+        const payload = {
+          toolName: 'test_tool',
+          toolDescription: 'Test tool',
           parameters: {},
-          reasoning: 'test',
-          risk_level: level,
-          session_id: 'session_123',
-          approval_id: 'approval_456',
+          reasoning: 'Test',
+          riskLevel: level,
+          approvalId: 'apr_123',
         };
-        const result = ToolApprovalRequestSchema.safeParse(request);
+        const result = ToolApprovalRequestPayloadSchema.safeParse(payload);
         expect(result.success).toBe(true);
       });
     });
 
     it('rejects invalid risk level', () => {
-      const request = {
-        type: 'tool_approval_request',
-        tool_name: 'test',
-        tool_description: 'test',
+      const payload = {
+        toolName: 'test_tool',
+        toolDescription: 'Test tool',
         parameters: {},
-        reasoning: 'test',
-        risk_level: 'invalid',
-        session_id: 'session_123',
-        approval_id: 'approval_456',
+        reasoning: 'Test',
+        riskLevel: 'invalid',
+        approvalId: 'apr_123',
       };
-      const result = ToolApprovalRequestSchema.safeParse(request);
+      const result = ToolApprovalRequestPayloadSchema.safeParse(payload);
       expect(result.success).toBe(false);
     });
   });
 
-  describe('StatusMessageSchema', () => {
-    it('validates valid status message', () => {
-      const message = {
-        type: 'status',
-        status: 'thinking',
-        message: 'Processing your request',
-        session_id: 'session_123',
+  describe('State Events', () => {
+    it('validates StateSnapshotEvent', () => {
+      const event = {
+        type: EventType.STATE_SNAPSHOT,
+        snapshot: {
+          currentAgent: 'regulation-agent',
+          pendingApproval: null,
+        },
+        timestamp: Date.now(),
       };
-      const result = StatusMessageSchema.safeParse(message);
+      const result = StateSnapshotEventSchema.safeParse(event);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('AGUIEventSchema (discriminated union)', () => {
+    it('discriminates event types correctly', () => {
+      const events = [
+        { type: EventType.RUN_STARTED, threadId: 'th_1', runId: 'run_1' },
+        { type: EventType.TEXT_MESSAGE_START, messageId: 'msg_1', role: 'assistant' },
+        { type: EventType.TOOL_CALL_START, toolCallId: 'tc_1', toolCallName: 'test' },
+        { type: EventType.CUSTOM, name: 'test', value: {} },
+      ];
+
+      events.forEach(event => {
+        const result = AGUIEventSchema.safeParse(event);
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('rejects invalid event types', () => {
+      const event = {
+        type: 'INVALID_EVENT',
+        data: 'test',
+      };
+      const result = AGUIEventSchema.safeParse(event);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('Client Input Schemas', () => {
+    it('validates RunAgentInput', () => {
+      const input = {
+        threadId: 'thread_123',
+        runId: 'run_456',
+        messages: [
+          { role: 'user', content: 'Hello', id: 'msg_1' },
+        ],
+        context: { sessionId: 'sess_123' },
+      };
+      const result = RunAgentInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('validates all status types', () => {
-      const statuses = ['thinking', 'routing', 'executing_tools', 'completed'];
-      statuses.forEach(status => {
-        const message = {
-          type: 'status',
-          status,
-          session_id: 'session_123',
+    it('validates all message roles', () => {
+      const roles = ['user', 'assistant', 'system', 'tool', 'developer'];
+      roles.forEach(role => {
+        const input = {
+          threadId: 'thread_123',
+          messages: [{ role, content: 'Test' }],
         };
-        const result = StatusMessageSchema.safeParse(message);
+        const result = RunAgentInputSchema.safeParse(input);
         expect(result.success).toBe(true);
       });
     });
   });
 
-  describe('HAIMessageSchema', () => {
-    it('discriminates message types correctly', () => {
-      const messages = [
-        { type: 'user_message', content: 'Hi', session_id: '123', metadata: {} },
-        { type: 'assistant_message', content: 'Hello', session_id: '123', agent_id: null, metadata: {} },
-        { type: 'status', status: 'thinking', message: null, session_id: '123' },
-      ];
+  describe('Helper Functions', () => {
+    it('isToolApprovalRequest identifies approval requests', () => {
+      const event = {
+        type: EventType.CUSTOM as const,
+        name: AGORA_TOOL_APPROVAL_REQUEST,
+        value: {},
+      };
+      expect(isToolApprovalRequest(event)).toBe(true);
+    });
 
-      messages.forEach(message => {
-        const result = HAIMessageSchema.safeParse(message);
-        expect(result.success).toBe(true);
-      });
+    it('parseToolApprovalRequest extracts payload', () => {
+      const event = {
+        type: EventType.CUSTOM as const,
+        name: AGORA_TOOL_APPROVAL_REQUEST,
+        value: {
+          toolName: 'test_tool',
+          toolDescription: 'Test',
+          parameters: {},
+          reasoning: 'Test reason',
+          riskLevel: 'medium',
+          approvalId: 'apr_123',
+        },
+      };
+      const payload = parseToolApprovalRequest(event);
+      expect(payload).not.toBeNull();
+      expect(payload?.toolName).toBe('test_tool');
+      expect(payload?.approvalId).toBe('apr_123');
     });
   });
 });
-

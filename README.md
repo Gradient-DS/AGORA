@@ -67,7 +67,7 @@ Servers starten op:
 
 ### 2. Start Orchestrator Server
 
-Je kunt kiezen tussen twee backends die dezelfde HAI Protocol API implementeren:
+Je kunt kiezen tussen twee backends die dezelfde AG-UI Protocol API implementeren:
 
 **Optie A: OpenAI Agents SDK (server-openai)**
 ```bash
@@ -116,7 +116,7 @@ AGORA/
 ├── HAI/                      # React frontend (TypeScript + Vite)
 │   ├── src/components/       # UI componenten (chat, voice, goedkeuring)
 │   ├── src/stores/           # Zustand state management
-│   └── src/lib/websocket/    # HAI protocol client
+│   └── src/lib/websocket/    # AG-UI protocol client
 ├── server-openai/            # OpenAI Agents SDK orchestrator
 │   ├── src/agora_openai/
 │   │   ├── core/             # Agent definities & runner

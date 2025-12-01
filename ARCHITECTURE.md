@@ -20,7 +20,7 @@
 
 ## Overview
 
-AGORA is a multi-agent compliance platform for NVWA (Netherlands Food and Consumer Product Safety Authority) inspectors. It provides two orchestration backends that implement the same HAI (Human Agent Interface) Protocol:
+AGORA is a multi-agent compliance platform for NVWA (Netherlands Food and Consumer Product Safety Authority) inspectors. It provides two orchestration backends that implement the same AG-UI Protocol:
 
 | Backend | Framework | License | LLM Provider |
 |---------|-----------|---------|--------------|
@@ -30,7 +30,7 @@ AGORA is a multi-agent compliance platform for NVWA (Netherlands Food and Consum
 Both backends share:
 - The same frontend (HAI React application)
 - The same MCP tool servers
-- The same HAI WebSocket Protocol
+- The same AG-UI WebSocket Protocol
 - The same agent definitions and handoff patterns
 
 ---
@@ -87,7 +87,7 @@ The OpenAI backend leverages the `openai-agents` SDK which provides native multi
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │                           API Layer                                     │ │
 │  │  ┌───────────────────┐  ┌───────────────────┐  ┌─────────────────────┐  │ │
-│  │  │  FastAPI Server   │  │ HAI Protocol      │  │ REST Endpoints      │  │ │
+│  │  │  FastAPI Server   │  │ AG-UI Protocol    │  │ REST Endpoints      │  │ │
 │  │  │  (WebSocket /ws)  │  │ Handler           │  │ (/agents, /history) │  │ │
 │  │  └───────────────────┘  └───────────────────┘  └─────────────────────┘  │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
@@ -205,7 +205,7 @@ The LangGraph backend provides an open-source alternative using LangChain's Stat
 │  ┌─────────────────────────────────────────────────────────────────────────┐ │
 │  │                           API Layer                                     │ │
 │  │  ┌───────────────────┐  ┌───────────────────┐  ┌─────────────────────┐  │ │
-│  │  │  FastAPI Server   │  │ HAI Protocol      │  │ REST Endpoints      │  │ │
+│  │  │  FastAPI Server   │  │ AG-UI Protocol    │  │ REST Endpoints      │  │ │
 │  │  │  (WebSocket /ws)  │  │ Handler           │  │ (/agents, /history) │  │ │
 │  │  └───────────────────┘  └───────────────────┘  └─────────────────────┘  │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
@@ -216,7 +216,7 @@ The LangGraph backend provides an open-source alternative using LangChain's Stat
 │  │  ┌───────────────────────────────────────┐  ┌─────────────────────────┐ │ │
 │  │  │            Orchestrator               │  │       Moderator         │ │ │
 │  │  │  - astream_events() processing        │  │  - Input validation     │ │ │
-│  │  │  - Event → HAI Protocol mapping       │  │  - Output filtering     │ │ │
+│  │  │  - Event → AG-UI Protocol mapping     │  │  - Output filtering     │ │ │
 │  │  │  - Approval flow management           │  │  - Blocked patterns     │ │ │
 │  │  └───────────────────────────────────────┘  └─────────────────────────┘ │ │
 │  └─────────────────────────────────────────────────────────────────────────┘ │
@@ -345,7 +345,7 @@ Unlike the OpenAI SDK, LangGraph requires explicit handling of handoffs:
 | `core/tools.py` | Handoff tools, agent-tool mapping |
 | `adapters/mcp_client.py` | MCPClientManager with langchain-mcp-adapters |
 | `adapters/checkpointer.py` | AsyncSqliteSaver setup |
-| `pipelines/orchestrator.py` | astream_events → HAI Protocol |
+| `pipelines/orchestrator.py` | astream_events → AG-UI Protocol |
 | `api/server.py` | FastAPI server, WebSocket endpoint |
 
 ---
@@ -423,7 +423,7 @@ HAI/
 │   │   ├── useApprovalStore.ts
 │   │   └── useAgentStore.ts
 │   ├── hooks/
-│   │   ├── useWebSocket.ts    # HAI Protocol WebSocket client
+│   │   ├── useWebSocket.ts    # AG-UI Protocol WebSocket client
 │   │   └── useVoiceMode.ts    # Voice (currently disabled)
 │   └── lib/websocket/         # WebSocket client implementation
 ```
@@ -438,7 +438,7 @@ All three MCP servers are shared between both backends:
 | **reporting** | 5003 | `start_inspection_report`, `extract_inspection_data`, `verify_inspection_data`, `submit_verification_answers`, `generate_final_report` |
 | **inspection-history** | 5005 | `check_company_exists`, `get_inspection_history`, `get_company_violations`, `check_repeat_violation`, `get_follow_up_status` |
 
-### HAI Protocol
+### AG-UI Protocol
 
 Both backends implement the same WebSocket protocol:
 
@@ -466,7 +466,7 @@ Both backends implement the same WebSocket protocol:
 | Human-in-loop approval | ✅ | ✅ | For high-risk tools |
 | Session persistence | ✅ | ✅ | SQLite-based |
 | Content moderation | ✅ | ✅ | Input/output validation |
-| HAI Protocol | ✅ | ✅ | Full specification |
+| AG-UI Protocol | ✅ | ✅ | Full specification |
 | Chat interface | ✅ | ✅ | React frontend |
 | Tool call visualization | ✅ | ✅ | Debug panel |
 | Agent definitions | ✅ | ✅ | 4 agents (general, regulation, reporting, history) |
