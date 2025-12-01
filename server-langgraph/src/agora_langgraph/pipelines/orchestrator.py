@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import uuid
 from typing import Any
@@ -17,6 +18,22 @@ from agora_langgraph.adapters.audit_logger import AuditLogger
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
+
+
+def _sanitize_params(params: dict[str, Any]) -> dict[str, Any]:
+    """Sanitize tool parameters by removing non-JSON-serializable values.
+
+    LangGraph/LangChain events may include internal objects like AsyncCallbackManager
+    that cannot be serialized to JSON. This function filters them out.
+    """
+    sanitized = {}
+    for key, value in params.items():
+        try:
+            json.dumps(value)
+            sanitized[key] = value
+        except (TypeError, ValueError):
+            pass
+    return sanitized
 
 
 class Orchestrator:
@@ -269,7 +286,10 @@ class Orchestrator:
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 run_id = event.get("run_id", str(uuid.uuid4()))
-                tool_input = event.get("data", {}).get("input", {})
+                raw_input = event.get("data", {}).get("input", {})
+                tool_input = (
+                    _sanitize_params(raw_input) if isinstance(raw_input, dict) else {}
+                )
 
                 active_tool_calls[run_id] = tool_name
                 log.info(f"Tool started: {tool_name} (run_id: {run_id})")

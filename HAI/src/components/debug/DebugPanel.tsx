@@ -112,6 +112,7 @@ export function DebugPanel() {
                           status={toolCall.status}
                           parameters={toolCall.parameters}
                           result={toolCall.result}
+                          toolCallId={toolCall.id}
                         />
                       </div>
                     ))}
