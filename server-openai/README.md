@@ -124,7 +124,7 @@ python -m agora_openai.api.server
 
 ## Gebruik
 
-### Tekstchat via WebSocket
+### Tekstchat via WebSocket (AG-UI Protocol)
 
 Verbind met `/ws` endpoint via AG-UI Protocol:
 
@@ -136,19 +136,44 @@ import json
 async def chat():
     uri = "ws://localhost:8000/ws"
     async with websockets.connect(uri) as websocket:
+        # AG-UI RunAgentInput format
         message = {
-            "type": "user_message",
-            "content": "Start inspectie bij KVK 12345678",
-            "session_id": "test-session-123"
+            "threadId": "test-session-123",
+            "messages": [
+                {"role": "user", "content": "Start inspectie bij KVK 12345678"}
+            ]
         }
         await websocket.send(json.dumps(message))
         
+        # Receive AG-UI events
         async for response_text in websocket:
-            response = json.loads(response_text)
-            print(response)
+            event = json.loads(response_text)
+            event_type = event.get("type")
+            
+            if event_type == "TEXT_MESSAGE_CONTENT":
+                print(event.get("delta", ""), end="", flush=True)
+            elif event_type == "RUN_FINISHED":
+                print("\n[Run completed]")
+                break
 
 asyncio.run(chat())
 ```
+
+#### AG-UI Event Types
+
+| Event | Purpose |
+|-------|---------|
+| `RUN_STARTED` | Agent run began |
+| `TEXT_MESSAGE_START` | New message begins |
+| `TEXT_MESSAGE_CONTENT` | Streaming text chunk |
+| `TEXT_MESSAGE_END` | Message complete |
+| `TOOL_CALL_START` | Tool execution began |
+| `TOOL_CALL_ARGS` | Tool arguments |
+| `TOOL_CALL_END` | Tool finished |
+| `STATE_SNAPSHOT` | Current agent state |
+| `RUN_FINISHED` | Run complete |
+| `RUN_ERROR` | Error occurred |
+| `CUSTOM` | HITL approval events |
 
 ### Spraakmodus (TODO)
 

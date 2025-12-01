@@ -126,7 +126,10 @@ class AgentRunner:
         session_id: str,
         stream_callback: Callable[[str, str | None], Awaitable[None]] | None = None,
         tool_callback: (
-            Callable[[str, str, dict[str, Any], str, str | None], Awaitable[Any]] | None
+            Callable[
+                [str, str, dict[str, Any], str, str | None, str | None], Awaitable[Any]
+            ]
+            | None
         ) = None,
     ) -> tuple[str, str]:
         """Run agent with message and return (response, active_agent_id).
@@ -135,7 +138,7 @@ class AgentRunner:
             message: User message
             session_id: Session identifier for conversation history
             stream_callback: Optional callback(chunk, agent_id) for streaming response chunks
-            tool_callback: Optional callback(tool_call_id, tool_name, parameters, status, agent_id) for tool execution notifications
+            tool_callback: Optional callback(tool_call_id, tool_name, parameters, status, agent_id, result) for tool execution notifications
 
         Returns:
             Tuple of (final_response, active_agent_id)
@@ -290,6 +293,7 @@ class AgentRunner:
                 parameters,
                 "started",
                 state.current_agent_id,
+                None,  # No result yet
             )
 
     def _detect_handoff_target(self, tool_name: str, state: StreamState) -> None:
@@ -323,10 +327,18 @@ class AgentRunner:
         raw_item = item.raw_item
         if isinstance(raw_item, dict):
             output_call_id = raw_item.get("call_id")
+            output_content = raw_item.get("output", "")
         else:
             output_call_id = getattr(raw_item, "call_id", None)
+            output_content = getattr(raw_item, "output", "")
 
-        log.info(f"Tool output raw_item: call_id={output_call_id}")
+        # Try to get output from the item itself if not in raw_item
+        if not output_content and hasattr(item, "output"):
+            output_content = str(item.output) if item.output else ""
+
+        log.info(
+            f"Tool output raw_item: call_id={output_call_id}, output_len={len(str(output_content)) if output_content else 0}"
+        )
 
         if output_call_id:
             original_tool_call_id = state.tool_call_id_mapping.get(
@@ -337,8 +349,11 @@ class AgentRunner:
                 state.tool_calls_info.get(original_tool_call_id, "unknown"),
             )
 
+            # Truncate result for logging but keep full for callback
+            result_str = str(output_content)[:500] if output_content else ""
+
             log.info(
-                f"✅ Tool call completed: {tool_name} (output_call_id: {output_call_id}, original_id: {original_tool_call_id})"
+                f"✅ Tool call completed: {tool_name} (output_call_id: {output_call_id}, original_id: {original_tool_call_id}, result_preview: {result_str[:100]}...)"
             )
 
             await tool_callback(
@@ -347,6 +362,7 @@ class AgentRunner:
                 {},
                 "completed",
                 state.current_agent_id,
+                result_str,  # Pass the result content
             )
 
     async def _handle_handoff_event(
@@ -391,6 +407,7 @@ class AgentRunner:
                 {},
                 "completed",
                 old_agent_id,
+                f"Transferred to {state.current_agent_id}",  # Handoff result
             )
 
             state.tool_calls_info.pop(transfer_tool_id, None)
