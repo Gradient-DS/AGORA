@@ -27,7 +27,7 @@ Deze implementatie maakt gebruik van:
 
 ## Wat wij bouwen
 
-- HAI protocol implementatie (WebSocket)
+- AG-UI Protocol implementatie (WebSocket)
 - Native MCP tool integratie via Agents SDK
 - Domeinspecifieke agent definities en handoff strategie
 - Verenigde spraakafhandelaar met VoicePipeline
@@ -55,10 +55,10 @@ server-openai/
 │   │   └── moderator.py          # Validatie
 │   └── api/                       # Entry points
 │       ├── server.py              # FastAPI + WebSocket
-│       ├── hai_protocol.py        # HAI berichten
+│       ├── ag_ui_handler.py       # AG-UI Protocol events
 │       └── voice_handler.py       # Spraak sessiebeheerder
 └── common/                        # Gedeelde types
-    ├── hai_types.py
+    ├── ag_ui_types.py
     ├── protocols.py
     └── schemas.py
 ```
@@ -126,7 +126,7 @@ python -m agora_openai.api.server
 
 ### Tekstchat via WebSocket
 
-Verbind met `/ws` endpoint via HAI protocol:
+Verbind met `/ws` endpoint via AG-UI Protocol:
 
 ```python
 import asyncio
@@ -172,7 +172,7 @@ Agenten dragen automatisch de controle over aan specialisten op basis van verzoe
 Op SQLite gebaseerde gespreksgeschiedenis met automatisch contextbeheer.
 
 ### 3. Streaming Responses
-Real-time berichtfragmenten via HAI protocol voor responsieve UI.
+Real-time berichtfragmenten via AG-UI Protocol voor responsieve UI.
 
 ### 4. MCP Tool Integratie
 Dynamische tool-ontdekking en uitvoering van MCP servers via HTTP.

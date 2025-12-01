@@ -1,6 +1,6 @@
 # AGORA
 
-Multi-agent compliance platform voor NVWA-inspecteurs. Orkestreert gespecialiseerde AI-agenten via het HAI (Human Agent Interface) protocol voor inspectieworkflows, regelgevingsanalyse en rapportage.
+Multi-agent compliance platform voor NVWA-inspecteurs. Orkestreert gespecialiseerde AI-agenten via het AG-UI Protocol voor inspectieworkflows, regelgevingsanalyse en rapportage.
 
 Dit project wordt ontwikkeld in opdracht van de **Nederlandse Voedsel- en Warenautoriteit (NVWA)**.
 
@@ -24,7 +24,7 @@ Na de pilot fase wordt dit uitgebreid tot een multi-agent systeem voor toepassin
 
 ```
 Inspecteur (Browser)
-       ↓ WebSocket (HAI Protocol)
+       ↓ WebSocket (AG-UI Protocol)
     HAI (React UI)
        ↓ 
   server-openai (FastAPI + OpenAI Agents SDK)
@@ -40,7 +40,7 @@ Inspecteur (Browser)
 - **server-openai**: OpenAI Agents SDK orchestrator met autonome agent handoffs (poort 8000)
 - **server-langgraph**: LangGraph orchestrator - open-source alternatief (poort 8000)
 - **mcp-servers**: FastMCP tool servers voor domeinoperaties
-- **docs/hai-contract**: WebSocket protocol specificatie (AsyncAPI 3.0)
+- **docs/hai-contract**: AG-UI Protocol specificatie (AsyncAPI 3.0)
 - **c4**: Architectuurdiagrammen (Structurizr)
 
 ## Snel aan de slag
@@ -134,8 +134,8 @@ AGORA/
 │   ├── inspection-history/   # KVK + inspectiedata
 │   ├── regulation-analysis/  # Semantische regelgeving zoeken
 │   └── reporting/            # HAP rapportgeneratie
-├── docs/hai-contract/        # HAI Protocol specificatie
-│   ├── HAI_PROTOCOL.md       # Leesbare documentatie
+├── docs/hai-contract/        # AG-UI Protocol specificatie
+│   ├── AG_UI_PROTOCOL.md     # Leesbare documentatie
 │   ├── asyncapi.yaml         # Machine-leesbaar contract
 │   └── schemas/              # JSON Schema definities
 └── c4/                       # Architectuurdiagrammen (Structurizr DSL)
@@ -185,7 +185,7 @@ cd HAI && docker build -t agora-hai . && docker run -p 80:80 agora-hai
 
 ## Documentatie
 
-- **[HAI Protocol](./docs/hai-contract/HAI_PROTOCOL.md)**: Volledige WebSocket API specificatie
+- **[AG-UI Protocol](./docs/hai-contract/AG_UI_PROTOCOL.md)**: Volledige WebSocket API specificatie
 - **[HAI Contract README](./docs/hai-contract/README.md)**: AsyncAPI tooling gids
 - **[MCP Servers](./mcp-servers/README.md)**: FastMCP implementatie & tools
 - **[Server OpenAI](./server-openai/README.md)**: OpenAI Agents SDK orchestrator
@@ -209,7 +209,7 @@ cd HAI && docker build -t agora-hai . && docker run -p 80:80 agora-hai
 | Orchestrator | OpenAI Agents SDK of LangGraph + FastAPI + WebSocket |
 | Agenten | OpenAI GPT modellen met autonome handoffs |
 | Tools | FastMCP (HTTP transport) |
-| Protocol | HAI (WebSocket) + MCP (HTTP) |
+| Protocol | AG-UI (WebSocket) + MCP (HTTP) |
 | State | SQLite (sessies) + LocalStorage (UI) |
 | Observability | OpenTelemetry + gestructureerde logging |
 

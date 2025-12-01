@@ -1,6 +1,6 @@
 # Server LangGraph
 
-Open-source LangGraph-based orchestration backend for the AGORA multi-agent system. This is a drop-in replacement for `server-openai`, providing the same HAI Protocol interface while using LangGraph for agent orchestration.
+Open-source LangGraph-based orchestration backend for the AGORA multi-agent system. This is a drop-in replacement for `server-openai`, providing the same AG-UI Protocol interface while using LangGraph for agent orchestration.
 
 ## Overview
 
@@ -8,7 +8,7 @@ This server implements multi-agent orchestration using LangGraph's StateGraph, p
 
 - **StateGraph-based routing** - Conditional edges for agent handoffs
 - **Session persistence** - SQLite checkpointer for conversation history
-- **Real-time streaming** - `astream_events` for HAI Protocol messages
+- **Real-time streaming** - `astream_events` for AG-UI Protocol messages
 - **MCP integration** - Same MCP tool servers as `server-openai`
 - **OpenAI-compatible LLM** - Uses `langchain-openai` for LLM calls
 
@@ -18,15 +18,15 @@ This server implements multi-agent orchestration using LangGraph's StateGraph, p
 ┌─────────────────────────────────────────────────────────────┐
 │                     HAI Frontend                            │
 └─────────────────────┬───────────────────────────────────────┘
-                      │ WebSocket (HAI Protocol)
+                      │ WebSocket (AG-UI Protocol)
 ┌─────────────────────▼───────────────────────────────────────┐
 │                  FastAPI Server                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │              HAI Protocol Handler                     │  │
+│  │             AG-UI Protocol Handler                    │  │
 │  └──────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │                  Orchestrator                         │  │
-│  │   (astream_events → HAI messages)                    │  │
+│  │   (astream_events → AG-UI events)                    │  │
 │  └──────────────────────────────────────────────────────┘  │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │              LangGraph StateGraph                     │  │
@@ -67,7 +67,7 @@ This server provides identical endpoints to `server-openai`:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/ws` | WebSocket | HAI Protocol messages |
+| `/ws` | WebSocket | AG-UI Protocol events |
 | `/health` | GET | Health check |
 | `/` | GET | Service info |
 | `/agents` | GET | List agents |
