@@ -1,12 +1,25 @@
+/**
+ * Approval store for AG-UI Protocol human-in-the-loop approval flow.
+ */
+
 import { create } from 'zustand';
-import type { ToolApprovalRequest } from '@/types/schemas';
+import type { RiskLevel } from '@/types/schemas';
+
+export interface ApprovalRequest {
+  approvalId: string;
+  toolName: string;
+  toolDescription: string;
+  parameters: Record<string, unknown>;
+  reasoning: string;
+  riskLevel: RiskLevel;
+}
 
 interface ApprovalStore {
-  pendingApprovals: ToolApprovalRequest[];
-  currentApproval: ToolApprovalRequest | null;
-  addApproval: (approval: ToolApprovalRequest) => void;
+  pendingApprovals: ApprovalRequest[];
+  currentApproval: ApprovalRequest | null;
+  addApproval: (approval: ApprovalRequest) => void;
   removeApproval: (approvalId: string) => void;
-  setCurrentApproval: (approval: ToolApprovalRequest | null) => void;
+  setCurrentApproval: (approval: ApprovalRequest | null) => void;
   clearApprovals: () => void;
 }
 
@@ -23,8 +36,8 @@ export const useApprovalStore = create<ApprovalStore>((set) => ({
 
   removeApproval: (approvalId) => {
     set((state) => {
-      const filtered = state.pendingApprovals.filter((a) => a.approval_id !== approvalId);
-      const isCurrent = state.currentApproval?.approval_id === approvalId;
+      const filtered = state.pendingApprovals.filter((a) => a.approvalId !== approvalId);
+      const isCurrent = state.currentApproval?.approvalId === approvalId;
       return {
         pendingApprovals: filtered,
         currentApproval: isCurrent ? (filtered[0] ?? null) : state.currentApproval,
@@ -40,4 +53,3 @@ export const useApprovalStore = create<ApprovalStore>((set) => ({
     set({ pendingApprovals: [], currentApproval: null });
   },
 }));
-

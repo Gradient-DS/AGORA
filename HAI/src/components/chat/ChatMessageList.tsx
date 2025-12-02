@@ -1,12 +1,17 @@
+/**
+ * Chat message list component for AG-UI Protocol messages.
+ */
+
 import { useRef, useState, useLayoutEffect } from 'react';
 import { ChatMessage } from './ChatMessage';
 import { LoadingIndicator } from './LoadingIndicator';
-import type { Message } from '@/types';
-import type { ProcessingStatus } from '@/types/schemas';
+import type { ChatMessage as ChatMessageType } from '@/types';
+
+type ProcessingStatus = 'thinking' | 'routing' | 'executing_tools' | null;
 
 interface ChatMessageListProps {
-  messages: Message[];
-  status: ProcessingStatus | null;
+  messages: ChatMessageType[];
+  status: ProcessingStatus;
   isTyping: boolean;
 }
 
@@ -16,18 +21,15 @@ export function ChatMessageList({ messages, status }: ChatMessageListProps) {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const prevMessagesLength = useRef(messages.length);
 
-  // Determine if we should stick to bottom based on user scroll position
   const handleScroll = () => {
     const element = containerRef.current;
     if (!element) return;
 
     const { scrollTop, scrollHeight, clientHeight } = element;
-    // If user is within 100px of bottom, enable auto-scroll
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShouldAutoScroll(isAtBottom);
   };
 
-  // Handle scrolling logic
   useLayoutEffect(() => {
     const element = containerRef.current;
     if (!element || !shouldAutoScroll) return;
@@ -36,13 +38,11 @@ export function ChatMessageList({ messages, status }: ChatMessageListProps) {
     prevMessagesLength.current = messages.length;
 
     if (isNewMessage) {
-      // New message: smooth scroll to bottom
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     } else {
-      // Existing message update (streaming): instant scroll to prevent jitter
       element.scrollTop = element.scrollHeight;
     }
-  }, [messages, shouldAutoScroll, status]); // Added status to dependencies in case loading indicator appears
+  }, [messages, shouldAutoScroll, status]);
 
   return (
     <div
@@ -69,4 +69,3 @@ export function ChatMessageList({ messages, status }: ChatMessageListProps) {
     </div>
   );
 }
-

@@ -1,181 +1,174 @@
-# AGORA HAI Protocol - Contract Documentatie
+# AGORA AG-UI Protocol Contract
 
-Deze directory bevat de volledige API-contractdocumentatie voor het HAI (Human Agent Interface) Protocol dat door AGORA wordt gebruikt.
+This directory contains the contract specification for the AG-UI Protocol used for communication between the HAI (Human Agent Interface) frontend and the AGORA LangGraph orchestrator backend.
 
-## 📋 Inhoud
+## Overview
 
-### Kern Documentatie
+AGORA uses the open-source **AG-UI Protocol** for real-time, event-driven communication between the frontend and backend.
 
-- **[HAI_PROTOCOL.md](./HAI_PROTOCOL.md)** - Uitgebreide leesbare protocolspecificatie
-  - Berichttypes en formaten
-  - Gespreksstromen (flows)
-  - Foutafhandelingspatronen
-  - Implementatiegids met codevoorbeelden
-  - TypeScript type definities
+**AG-UI Repository:** https://github.com/ag-ui-protocol/ag-ui
 
-- **[asyncapi.yaml](./asyncapi.yaml)** - Machine-leesbare AsyncAPI 3.0 specificatie
-  - Formeel contract voor WebSocket API
-  - Kan worden gebruikt met AsyncAPI tools voor:
-    - Documentatiegeneratie
-    - Contract testing
-    - Client SDK generatie
-    - Mock server creatie
+## Key Features
 
-- **[openapi.yaml](./openapi.yaml)** - OpenAPI 3.0 specificatie
-  - Formeel contract voor REST API (History & Users)
-  - Complementeert het WebSocket protocol
-  - Definieert HTTP endpoints voor sessiegeschiedenis en gebruikersbeheer
+- **Event-driven streaming** with typed events
+- **WebSocket transport** for real-time bidirectional communication
+- **Lifecycle events** (`RUN_STARTED`, `RUN_FINISHED`, `STEP_STARTED`, `STEP_FINISHED`)
+- **Text streaming** with `TEXT_MESSAGE_START/CONTENT/END` pattern
+- **Tool call events** with `TOOL_CALL_START/ARGS/END`
+- **Custom events** for AGORA-specific extensions (HITL approval)
+- **Type-safe** with full TypeScript/Python support
 
-### Schema's
+## Directory Contents
 
-- **[schemas/messages.json](./schemas/messages.json)** - JSON Schema definities
-  - Alle berichttypeschema's
-  - Kan worden gebruikt voor validatie
-  - Compatibel met code generatie tools
+| File | Description |
+|------|-------------|
+| `AG_UI_PROTOCOL.md` | Complete protocol specification |
+| `asyncapi.yaml` | AsyncAPI 3.0 specification for WebSocket events |
+| `openapi.yaml` | OpenAPI 3.0 specification for REST endpoints |
+| `schemas/messages.json` | JSON Schema definitions for events |
+| `examples/` | Example event sequences |
+| `mock_server.py` | Python mock server for testing |
 
-### Voorbeelden
+## Quick Start
 
-- **[examples/basic-conversation.json](./examples/basic-conversation.json)**
-  - Eenvoudige V&A flow
-  - Afhandeling van streaming responses
-  - Vervolgvragen
+### Connect via WebSocket
 
-- **[examples/tool-approval-flow.json](./examples/tool-approval-flow.json)**
-  - Human-in-the-loop goedkeuringsworkflow
-  - Uitvoering van risicovolle tools
-  - Goedkeurings- en afwijzingspaden
+```typescript
+import { AGUIWebSocketClient } from '@/lib/websocket';
 
-- **[examples/error-handling.json](./examples/error-handling.json)**
-  - Alle foutscenario's
-  - Herstelstrategieën
-  - Verbindingspatronen
+const client = new AGUIWebSocketClient({
+  url: 'ws://localhost:8000/ws',
+});
 
-## 🚀 Snel aan de slag
+client.onEvent((event) => {
+  console.log('Received:', event.type);
+});
 
-### Voor Frontend Ontwikkelaars
-
-1. Lees [HAI_PROTOCOL.md](./HAI_PROTOCOL.md) voor volledige protocoldocumentatie
-2. Kopieer TypeScript types uit de Implementatiegids sectie
-3. Raadpleeg [examples/](./examples/) voor berichtstroompatronen
-4. Gebruik [schemas/messages.json](./schemas/messages.json) voor validatie
-
-### Voor API Contract Testing
-
-1. Laad [asyncapi.yaml](./asyncapi.yaml) in [AsyncAPI Studio](https://studio.asyncapi.com)
-2. Genereer documentatie of client SDK's
-3. Gebruik met Microcks voor contract testing
-4. Integreer met CI/CD voor contractvalidatie
-
-## 🔌 Verbindingsdetails
-
-### Endpoints
-
-```
-Development: ws://localhost:8000/ws
+client.connect();
+client.sendRunInput('thread-123', 'Hello!');
 ```
 
-### Authenticatie
+### Event Flow Example
 
-Momenteel geen authenticatie vereist. Toekomstige versies kunnen token-gebaseerde authenticatie bevatten.
+```
+Client → Server: RunAgentInput { threadId, runId, messages }
 
-### Sessiebeheer
+Server → Client: RUN_STARTED { threadId, runId }
+Server → Client: STEP_STARTED { stepName: "routing" }
+Server → Client: STEP_FINISHED { stepName: "routing" }
+Server → Client: STEP_STARTED { stepName: "thinking" }
+Server → Client: TEXT_MESSAGE_START { messageId, role: "assistant" }
+Server → Client: TEXT_MESSAGE_CONTENT { messageId, delta: "Based on..." }
+Server → Client: TEXT_MESSAGE_CONTENT { messageId, delta: "the regulations..." }
+Server → Client: TEXT_MESSAGE_END { messageId }
+Server → Client: STEP_FINISHED { stepName: "thinking" }
+Server → Client: RUN_FINISHED { threadId, runId }
+```
 
-- Client genereert UUID als `session_id`
-- Opslaan in localStorage voor continuïteit van gesprekken
-- Insluiten in alle berichten
+## AGORA Custom Events
 
-## 📝 Overzicht Berichttypes
+AGORA extends AG-UI with custom events for human-in-the-loop approval:
 
-| Type | Richting | Doel |
-|------|-----------|---------|
-| `user_message` | Client → Server | Gebruikersinvoer |
-| `assistant_message` | Server → Client | Volledig antwoord (niet-streaming) |
-| `assistant_message_chunk` | Server → Client | Streaming antwoordfragment ⭐ |
-| `tool_call` | Server → Client | Melding tool-uitvoering |
-| `tool_approval_request` | Server → Client | Verzoek om toestemming voor tool |
-| `tool_approval_response` | Client → Server | Goedkeuringsbeslissing van gebruiker |
-| `status` | Server → Client | Verwerkingsstatus |
-| `error` | Server → Client | Foutmelding |
+### Tool Approval Request
 
-## 🛠 Tools & Bronnen
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:tool_approval_request",
+  "value": {
+    "toolName": "generate_final_report",
+    "toolDescription": "Generates an official inspection report PDF",
+    "parameters": { "inspection_id": "INS-2024-001" },
+    "reasoning": "User requested to finalize the inspection report",
+    "riskLevel": "high",
+    "approvalId": "appr-xyz789"
+  }
+}
+```
 
-### AsyncAPI Ecosysteem
+### Tool Approval Response
 
-- **[AsyncAPI Studio](https://studio.asyncapi.com)** - Online editor en visualizer
-- **[AsyncAPI Generator](https://www.asyncapi.com/tools/generator)** - Genereer docs, code, tests
-- **[Microcks](https://microcks.io/)** - Mock server en contract testing
-- **[Spectral](https://stoplight.io/open-source/spectral)** - Linting en validatie
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:tool_approval_response",
+  "value": {
+    "approvalId": "appr-xyz789",
+    "approved": true,
+    "feedback": "Looks good, proceed"
+  }
+}
+```
 
-### Test Tools
+### Error Event
 
-- **[websocat](https://github.com/vi/websocat)** - CLI WebSocket client
-  ```bash
-  websocat ws://localhost:8000/ws
-  ```
-- **[wscat](https://github.com/websockets/wscat)** - Alternatieve CLI client
-  ```bash
-  wscat -c ws://localhost:8000/ws
-  ```
-- **Postman** - GUI met WebSocket ondersteuning
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:error",
+  "value": {
+    "errorCode": "moderation_violation",
+    "message": "Content blocked",
+    "details": { "reason": "profanity" }
+  }
+}
+```
 
-### Code Generatie
+## Testing with Mock Server
 
-Genereer TypeScript types van JSON Schema:
+Start the mock server for frontend development:
+
 ```bash
-npm install -g json-schema-to-typescript
-json2ts schemas/messages.json > types.ts
+cd docs/hai-contract
+python mock_server.py
 ```
 
-## 📖 Documentatieversies
+The mock server runs on `ws://localhost:8000/ws` (same as the real backend).
 
-| Versie | Datum | Wijzigingen |
-|---------|------|---------|
-| 1.0.0 | 2025-11-17 | Initiële protocolspecificatie |
+### Demo Scenario: Inspecteur Koen - Restaurant Bella Rosa
 
-## 🤝 Integratie Checklist
+The mock server supports the full demo scenario with realistic Dutch responses and tool calls:
 
-Gebruik deze checklist bij het integreren van het HAI protocol:
+**Step 1 - Start inspection:**
+```
+Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854
+```
+→ Triggers `get_company_info` and `get_inspection_history` tool calls
 
-### Vereiste Implementatie
+**Step 2 - Document findings:**
+```
+Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten
+```
+→ Triggers `search_regulations` and `check_repeat_violation` tool calls
 
-- [ ] WebSocket verbinding naar `/ws`
-- [ ] Generatie en opslag van Sessie ID
-- [ ] Verzenden van gebruikersberichten
-- [ ] Afhandelen van streaming chunks (samenvoegen op `message_id`)
-- [ ] Mapping van statusindicatoren
-- [ ] Weergave van foutmeldingen
-- [ ] Herstel bij verbindingsverlies
+**Step 3 - Generate report:**
+```
+Genereer rapport
+```
+→ Triggers tool approval dialog for `generate_inspection_report`
 
-### Aanbevolen Implementatie
+### Features
 
-- [ ] Meldingen van tool-uitvoering
-- [ ] Human-in-the-loop goedkeurings UI
-- [ ] Opnieuw verbinden met exponentiële backoff
-- [ ] Berichtvalidatie met JSON Schema
-- [ ] Correcte afhandeling van foutcodes
-- [ ] Beheer van laadstatus
+- **Tool calls**: Simulated MCP tool calls with realistic responses
+- **Tool approval flow**: Human-in-the-loop approval for report generation
+- **Streaming responses**: Realistic text streaming in Dutch
+- **State tracking**: Conversation context maintained per connection
 
-### Optionele Uitbreidingen
+## Migration from HAI Protocol v1
 
-- [ ] Opslag van berichthistorie
-- [ ] Typ-indicatoren
-- [ ] Leesbevestigingen
-- [ ] Reacties op berichten
-- [ ] Ondersteuning voor rich media
+| HAI v1 | AG-UI v2 |
+|--------|----------|
+| `session_id` | `threadId` |
+| `message_id` | `messageId` |
+| snake_case | camelCase |
+| `assistant_message_chunk` | `TEXT_MESSAGE_START/CONTENT/END` |
+| `tool_call` | `TOOL_CALL_START/ARGS/END` |
+| `status` | `STEP_STARTED/FINISHED` |
+| `tool_approval_request` | `CUSTOM` with `agora:tool_approval_request` |
 
-## 📞 Ondersteuning
+## Related Documentation
 
-Voor vragen of problemen met het protocol:
-
-- **Technische Vragen**: lex@gradient-ds.com
-- **Bug Reports**: Dien in via de project issue tracker
-- **Protocol Wijzigingen**: Stel voor via RFC proces
-
-## 📄 Licentie
-
-Zie hoofd-README.
-
----
-
-**Onderhouden door:** Gradient - NVWA  
-**Laatst bijgewerkt:** 17 november 2025
+- [AGORA Architecture](../../ARCHITECTURE.md)
+- [HAI Frontend](../../HAI/README.md)
+- [LangGraph Backend](../../server-langgraph/README.md)
+- [AG-UI Protocol](https://github.com/ag-ui-protocol/ag-ui)

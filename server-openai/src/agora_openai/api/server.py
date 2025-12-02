@@ -14,10 +14,11 @@ from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
-from agora_openai.api.hai_protocol import HAIProtocolHandler
-
-#  from agora_openai.api.unified_voice_handler import UnifiedVoiceHandler
-from agora_openai.common.hai_types import UserMessage, ToolApprovalResponse
+from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
+from agora_openai.common.ag_ui_types import (
+    RunAgentInput,
+    ToolApprovalResponsePayload,
+)
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
 
     configure_logging(settings.log_level)
-    log.info("Starting AGORA Agent SDK Server")
+    log.info("Starting AGORA Agent SDK Server (AG-UI Protocol)")
 
     # Set OPENAI_API_KEY for Agents SDK
     os.environ["OPENAI_API_KEY"] = settings.openai_api_key.get_secret_value()
@@ -72,9 +73,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AGORA Agent SDK Orchestration",
-    description="Agent SDK orchestration for AGORA multi-agent system",
-    version="1.0.0",
+    title="AGORA Agent SDK Orchestration (AG-UI Protocol)",
+    description="Agent SDK orchestration for AGORA multi-agent system using AG-UI Protocol",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -90,7 +91,7 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "agora-agents"}
+    return {"status": "healthy", "service": "agora-agents", "protocol": "ag-ui"}
 
 
 @app.get("/")
@@ -98,10 +99,10 @@ async def root():
     """Root endpoint."""
     return {
         "service": "AGORA Agent SDK Orchestration",
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "protocol": "AG-UI Protocol v2.1.1",
         "docs": "/docs",
         "websocket": "/ws",
-        "voice_websocket": "/ws/voice",
     }
 
 
@@ -161,14 +162,14 @@ async def get_session_history(session_id: str, include_tools: bool = False):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for HAI protocol."""
+    """WebSocket endpoint for AG-UI protocol communication."""
     await websocket.accept()
 
-    handler = HAIProtocolHandler(websocket)
+    handler = AGUIProtocolHandler(websocket)
     orchestrator: Orchestrator = app.state.orchestrator
 
     log.info("=" * 80)
-    log.info("WebSocket connection ESTABLISHED from %s", websocket.client)
+    log.info("AG-UI WebSocket connection ESTABLISHED from %s", websocket.client)
     log.info("=" * 80)
 
     active_task = None
@@ -188,13 +189,13 @@ async def websocket_endpoint(websocket: WebSocket):
                         break
                     continue
 
-                if isinstance(message, UserMessage):
-                    session_id = message.session_id
-                    log.info(f"Processing message for session: {session_id}")
+                if isinstance(message, RunAgentInput):
+                    thread_id = message.thread_id
+                    log.info(f"Processing AG-UI RunAgentInput for thread: {thread_id}")
 
                     if active_task and not active_task.done():
                         log.info(
-                            "New user message received while processing previous one. Cancelling previous."
+                            "New message received while processing previous one. Cancelling."
                         )
                         active_task.cancel()
                         try:
@@ -202,40 +203,33 @@ async def websocket_endpoint(websocket: WebSocket):
                         except asyncio.CancelledError:
                             pass
 
-                    async def process_wrapper(msg, sess_id):
+                    async def process_wrapper(agent_input: RunAgentInput):
                         try:
                             resp = await orchestrator.process_message(
-                                msg, sess_id, handler
+                                agent_input, handler
                             )
                             log.info(
-                                f"Got response from orchestrator: type={resp.type}, has_content={bool(resp.content)}"
+                                f"Got response from orchestrator: role={resp.role}"
                             )
                             log.info(
-                                f"Response sent successfully for session: {sess_id}"
+                                f"Response sent successfully for thread: {agent_input.thread_id}"
                             )
                         except asyncio.CancelledError:
                             log.info("Processing cancelled")
                         except Exception as e:
                             log.error("Error in processing task: %s", e, exc_info=True)
                             if handler.is_connected:
-                                await handler.send_error("processing_error", str(e))
+                                await handler.send_run_error(
+                                    message=str(e), code="processing_error"
+                                )
 
-                    active_task = asyncio.create_task(
-                        process_wrapper(message, session_id)
-                    )
+                    active_task = asyncio.create_task(process_wrapper(message))
 
-                elif isinstance(message, ToolApprovalResponse):
+                elif isinstance(message, ToolApprovalResponsePayload):
                     log.info(
                         f"Received tool approval response: {message.approved} (id: {message.approval_id})"
                     )
-                    if message.approval_id in orchestrator.pending_approvals:
-                        future = orchestrator.pending_approvals[message.approval_id]
-                        if not future.done():
-                            future.set_result(message.approved)
-                    else:
-                        log.warning(
-                            f"Received approval for unknown ID: {message.approval_id}"
-                        )
+                    orchestrator.handle_approval_response(message)
 
             except WebSocketDisconnect:
                 log.info("WebSocket disconnected by client")
@@ -252,8 +246,9 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if handler.is_connected:
                     try:
-                        await handler.send_error(
-                            "processing_error", f"Error processing message: {str(e)}"
+                        await handler.send_run_error(
+                            message=f"Error processing message: {str(e)}",
+                            code="processing_error",
                         )
                         if handler.is_connected:
                             log.info(
@@ -275,7 +270,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         log.info("=" * 80)
-        log.info("WebSocket connection CLOSED")
+        log.info("AG-UI WebSocket connection CLOSED")
         log.info("=" * 80)
     except Exception as e:
         log.error("=" * 80)
@@ -284,78 +279,11 @@ async def websocket_endpoint(websocket: WebSocket):
         log.error("Fatal WebSocket error: %s", e, exc_info=True)
         log.error("=" * 80)
         try:
-            await handler.send_error("internal_error", "Internal server error")
+            await handler.send_run_error(
+                message="Internal server error", code="internal_error"
+            )
         except Exception:
             pass
-
-
-# TODO: Figure out how to integrate with STT and TTS.
-# @app.websocket("/ws/voice")
-# async def voice_websocket_endpoint(websocket: WebSocket):
-#     """WebSocket endpoint for unified voice mode using Agents SDK VoicePipeline."""
-#     await websocket.accept()
-
-#     log.info("=" * 80)
-#     log.info("Unified Voice WebSocket connection ESTABLISHED from %s", websocket.client)
-#     log.info("=" * 80)
-
-#     agent_registry: AgentRegistry = app.state.agent_registry
-
-#     handler = UnifiedVoiceHandler(websocket, agent_registry)
-
-#     try:
-#         while True:
-#             try:
-#                 data = await websocket.receive_text()
-#                 message = json.loads(data)
-
-#                 if message.get("type") == "session.start":
-#                     session_id = message.get("session_id", "default")
-#                     agent_id = message.get("agent_id", "general-agent")
-#                     conversation_history = message.get("conversation_history", [])
-#                     await handler.start(session_id, agent_id, conversation_history)
-
-#                 elif message.get("type") == "session.stop":
-#                     await handler.stop()
-#                     break
-
-#                 elif handler.is_active:
-#                     await handler.handle_client_message(message)
-#                 else:
-#                     log.warning("Received message but session not active")
-
-#             except WebSocketDisconnect:
-#                 log.info("Unified Voice WebSocket disconnected by client")
-#                 break
-#             except json.JSONDecodeError as e:
-#                 log.error("Invalid JSON received: %s", e)
-#             except Exception as e:
-#                 log.error("Error processing voice message: %s", e, exc_info=True)
-#                 try:
-#                     await websocket.send_text(
-#                         json.dumps(
-#                             {
-#                                 "type": "error",
-#                                 "error_code": "processing_error",
-#                                 "message": str(e),
-#                             }
-#                         )
-#                     )
-#                 except Exception:
-#                     break
-
-#     except WebSocketDisconnect:
-#         log.info("=" * 80)
-#         log.info("Unified Voice WebSocket connection CLOSED")
-#         log.info("=" * 80)
-#     except Exception as e:
-#         log.error("=" * 80)
-#         log.error("FATAL Unified Voice WebSocket error - connection will close")
-#         log.error("=" * 80)
-#         log.error("Fatal error: %s", e, exc_info=True)
-#     finally:
-#         if handler.is_active:
-#             await handler.stop()
 
 
 if __name__ == "__main__":

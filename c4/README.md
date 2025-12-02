@@ -69,7 +69,7 @@ Uitsplitsing van de HAI frontend:
 - **Approval Dialog** - Human-in-the-loop tool approval workflow
 - **Debug Panel** - Tool call visualisatie
 - **State Management** - Zustand stores (messages, sessions, connections, etc.)
-- **WebSocket Client** - HAI Protocol communicatie
+- **WebSocket Client** - AG-UI Protocol communicatie
 - **Voice Interface** - 🚧 Niet geïmplementeerd (Whisper + ElevenLabs)
 
 ### C3: Orchestrator [OpenAI] Componenten
@@ -77,7 +77,7 @@ Uitsplitsing van de OpenAI Agents SDK implementatie:
 
 | Layer | Componenten |
 |-------|-------------|
-| **API Layer** | FastAPI Server, HAI Protocol Handler, REST Endpoints |
+| **API Layer** | FastAPI Server, AG-UI Protocol Handler, REST Endpoints |
 | **Pipelines Layer** | Orchestrator Pipeline, Moderator |
 | **Core Layer** | Agent Definitions (agents.Agent), Agent Executor (agents.Runner), Handoff Logic (SDK built-in), Approval Logic, Session Persistence (SQLiteSession) |
 | **Adapters Layer** | MCP Adapter (MCPServerStreamableHttp), Audit Logger (OpenTelemetry) |
@@ -87,7 +87,7 @@ Uitsplitsing van de LangGraph implementatie:
 
 | Layer | Componenten |
 |-------|-------------|
-| **API Layer** | FastAPI Server, HAI Protocol Handler, REST Endpoints |
+| **API Layer** | FastAPI Server, AG-UI Protocol Handler, REST Endpoints |
 | **Pipelines Layer** | Orchestrator Pipeline, Moderator |
 | **Core Layer** | Agent Definitions (async functions), Agent Executor (StateGraph), Tool Executor (ToolNode), Handoff Logic (transfer_to_* tools), Routing Logic, Approval Logic, Session Persistence (AsyncSqliteSaver) |
 | **Adapters Layer** | MCP Adapter (langchain-mcp-adapters), Audit Logger (OpenTelemetry) |
@@ -138,17 +138,17 @@ AGORA ondersteunt twee backend implementaties met dezelfde HAI frontend:
 2. **LangGraph** - StateGraph met explicit routing, provider-agnostisch
 
 Beide implementaties delen:
-- HAI Protocol voor frontend communicatie
+- AG-UI Protocol voor frontend communicatie
 - MCP Protocol voor agent communicatie
 - Approval Logic voor human-in-the-loop
 - Moderator voor input/output validatie
 
 ### Belangrijke Koppelingen
 
-#### K.1: HAI Protocol
+#### K.1: AG-UI Protocol
 - **Van:** HAI → Orchestrator
 - **Type:** WebSocket/JSON op :8001
-- **Messages:** user_message, assistant_message_chunk, tool_call, tool_approval_request/response, status, error
+- **Events:** RUN_STARTED/FINISHED, TEXT_MESSAGE_*, TOOL_CALL_*, STATE_SNAPSHOT, CUSTOM (approval)
 
 #### K.2: MCP Protocol
 - **Van:** Orchestrator → MCP Agent Servers
@@ -180,6 +180,7 @@ AGORA v1.0 is ontworpen voor:
 
 - [C4 Model](https://c4model.com/)
 - [Structurizr DSL](https://github.com/structurizr/dsl)
+- [AG-UI Protocol](https://github.com/ag-ui-protocol/ag-ui)
 - [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
 - [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
 - [LangGraph](https://langchain-ai.github.io/langgraph/)

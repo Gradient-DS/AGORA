@@ -1,10 +1,11 @@
-"""FastAPI server with WebSocket endpoint - matching server-openai API."""
+"""FastAPI server with WebSocket endpoint using AG-UI Protocol."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 import os
+import uuid
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -13,15 +14,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agora_langgraph.config import get_settings, parse_mcp_servers
 from agora_langgraph.logging_config import configure_logging
-from agora_langgraph.core.agent_definitions import AGENT_CONFIGS, list_all_agents
+from agora_langgraph.core.agent_definitions import list_all_agents
 from agora_langgraph.core.graph import build_agent_graph
 from agora_langgraph.adapters.mcp_client import create_mcp_client_manager
 from agora_langgraph.adapters.checkpointer import create_checkpointer
 from agora_langgraph.adapters.audit_logger import AuditLogger
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 from agora_langgraph.pipelines.orchestrator import Orchestrator
-from agora_langgraph.api.hai_protocol import HAIProtocolHandler
-from agora_langgraph.common.hai_types import UserMessage, ToolApprovalResponse
+from agora_langgraph.api.ag_ui_handler import AGUIProtocolHandler
+from agora_langgraph.common.ag_ui_types import (
+    RunAgentInput,
+    ToolApprovalResponsePayload,
+)
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +36,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
 
     configure_logging(settings.log_level)
-    log.info("Starting AGORA LangGraph Server")
+    log.info("Starting AGORA LangGraph Server (AG-UI Protocol)")
 
     os.environ["OPENAI_API_KEY"] = settings.openai_api_key.get_secret_value()
     log.info("Configured OpenAI API key")
@@ -70,8 +74,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AGORA LangGraph Orchestration",
-    description="LangGraph orchestration for AGORA multi-agent system",
-    version="1.0.0",
+    description="LangGraph orchestration for AGORA multi-agent system using AG-UI Protocol",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -87,7 +91,7 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "agora-langgraph"}
+    return {"status": "healthy", "service": "agora-langgraph", "protocol": "ag-ui"}
 
 
 @app.get("/")
@@ -95,7 +99,8 @@ async def root():
     """Root endpoint."""
     return {
         "service": "AGORA LangGraph Orchestration",
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "protocol": "AG-UI",
         "docs": "/docs",
         "websocket": "/ws",
     }
@@ -121,10 +126,10 @@ async def get_agents():
 
 @app.get("/sessions/{session_id}/history")
 async def get_session_history(session_id: str, include_tools: bool = False):
-    """Get conversation history for a session.
+    """Get conversation history for a session (thread).
 
     Args:
-        session_id: Session identifier
+        session_id: Session/thread identifier
         include_tools: If True, includes tool calls and results in the history
 
     Returns:
@@ -134,34 +139,36 @@ async def get_session_history(session_id: str, include_tools: bool = False):
 
     try:
         history = await orchestrator.get_conversation_history(
-            session_id=session_id, include_tool_calls=include_tools
+            thread_id=session_id, include_tool_calls=include_tools
         )
 
         return {
             "success": True,
-            "session_id": session_id,
+            "threadId": session_id,
             "history": history,
-            "message_count": len(history),
+            "messageCount": len(history),
         }
     except Exception as e:
         log.error(f"Error retrieving session history: {e}", exc_info=True)
         return {
             "success": False,
             "error": str(e),
-            "message": f"Failed to retrieve history for session {session_id}",
+            "message": f"Failed to retrieve history for thread {session_id}",
         }
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for HAI protocol."""
+    """WebSocket endpoint for AG-UI protocol."""
     await websocket.accept()
 
-    handler = HAIProtocolHandler(websocket)
+    handler = AGUIProtocolHandler(websocket)
     orchestrator: Orchestrator = app.state.orchestrator
 
     log.info("=" * 80)
-    log.info("WebSocket connection ESTABLISHED from %s", websocket.client)
+    log.info(
+        "WebSocket connection ESTABLISHED from %s (AG-UI Protocol)", websocket.client
+    )
     log.info("=" * 80)
 
     active_task = None
@@ -181,13 +188,16 @@ async def websocket_endpoint(websocket: WebSocket):
                         break
                     continue
 
-                if isinstance(message, UserMessage):
-                    session_id = message.session_id
-                    log.info(f"Processing message for session: {session_id}")
+                if isinstance(message, RunAgentInput):
+                    thread_id = message.thread_id
+                    run_id = message.run_id or str(uuid.uuid4())
+                    log.info(
+                        f"Processing AG-UI run for thread: {thread_id}, run: {run_id}"
+                    )
 
                     if active_task and not active_task.done():
                         log.info(
-                            "New user message received while processing previous one. Cancelling previous."
+                            "New run received while processing previous one. Cancelling previous."
                         )
                         active_task.cancel()
                         try:
@@ -195,16 +205,16 @@ async def websocket_endpoint(websocket: WebSocket):
                         except asyncio.CancelledError:
                             pass
 
-                    async def process_wrapper(msg, sess_id):
+                    async def process_wrapper(agent_input: RunAgentInput):
                         try:
                             resp = await orchestrator.process_message(
-                                msg, sess_id, handler
+                                agent_input, handler
                             )
                             log.info(
-                                f"Got response from orchestrator: type={resp.type}, has_content={bool(resp.content)}"
+                                f"Got response from orchestrator: role={resp.role}, has_content={bool(resp.content)}"
                             )
                             log.info(
-                                f"Response sent successfully for session: {sess_id}"
+                                f"Response sent successfully for thread: {agent_input.thread_id}"
                             )
                         except asyncio.CancelledError:
                             log.info("Processing cancelled")
@@ -213,22 +223,13 @@ async def websocket_endpoint(websocket: WebSocket):
                             if handler.is_connected:
                                 await handler.send_error("processing_error", str(e))
 
-                    active_task = asyncio.create_task(
-                        process_wrapper(message, session_id)
-                    )
+                    active_task = asyncio.create_task(process_wrapper(message))
 
-                elif isinstance(message, ToolApprovalResponse):
+                elif isinstance(message, ToolApprovalResponsePayload):
                     log.info(
                         f"Received tool approval response: {message.approved} (id: {message.approval_id})"
                     )
-                    if message.approval_id in orchestrator.pending_approvals:
-                        future = orchestrator.pending_approvals[message.approval_id]
-                        if not future.done():
-                            future.set_result(message.approved)
-                    else:
-                        log.warning(
-                            f"Received approval for unknown ID: {message.approval_id}"
-                        )
+                    orchestrator.handle_approval_response(message)
 
             except WebSocketDisconnect:
                 log.info("WebSocket disconnected by client")

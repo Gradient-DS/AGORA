@@ -57,10 +57,10 @@ AGORA is a multi-agent system for NVWA inspectors, built using an OpenAI-native 
 
 ```
 Inspector (HAI)
-  ↓ WebSocket (HAI Protocol)
+  ↓ WebSocket (AG-UI Protocol)
 Orchestrator (server-openai)
   ↓
-HAIProtocolHandler
+AGUIProtocolHandler
   ↓
 Orchestrator Pipeline (Validation & Approval)
   ↓
@@ -121,7 +121,7 @@ agora/
 
 ## Development Principles
 
-1.  **Protocol-First**: HAI Protocol defines the contract between Frontend and Backend.
+1.  **Protocol-First**: AG-UI Protocol defines the contract between Frontend and Backend.
 2.  **Scoped Capabilities**: Agents only see the MCP tools relevant to their domain.
 3.  **Human-in-the-loop**: Critical tools require explicit user approval via the Orchestrator.
 4.  **Auditability**: All actions and messages are logged via OpenTelemetry.

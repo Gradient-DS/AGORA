@@ -1,333 +1,281 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AGORA HAI Protocol Message Schemas",
-  "description": "JSON Schema definitions for all HAI Protocol message types",
+  "$id": "agora-ag-ui-events",
+  "title": "AGORA AG-UI Protocol Events v2.1.1",
+  "description": "JSON Schema definitions for AG-UI Protocol events used by AGORA. Uses official ag-ui-protocol types with AGORA extensions. Note: TOOL_CALL_END signals end of argument streaming only; tool results are delivered via TOOL_CALL_RESULT.",
   "definitions": {
-    "UserMessage": {
-      "type": "object",
-      "required": ["type", "content", "session_id"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "user_message",
-          "description": "Message type discriminator"
-        },
-        "content": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 10000,
-          "description": "User's message content"
-        },
-        "session_id": {
-          "type": "string",
-          "pattern": "^[a-zA-Z0-9_-]+$",
-          "description": "Session identifier for conversation continuity"
-        },
-        "metadata": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {},
-          "description": "Optional metadata"
-        }
-      },
-      "additionalProperties": false
+    "EventType": {
+      "type": "string",
+      "enum": [
+        "RUN_STARTED",
+        "RUN_FINISHED",
+        "RUN_ERROR",
+        "STEP_STARTED",
+        "STEP_FINISHED",
+        "TEXT_MESSAGE_START",
+        "TEXT_MESSAGE_CONTENT",
+        "TEXT_MESSAGE_END",
+        "TOOL_CALL_START",
+        "TOOL_CALL_ARGS",
+        "TOOL_CALL_END",
+        "TOOL_CALL_RESULT",
+        "STATE_SNAPSHOT",
+        "STATE_DELTA",
+        "MESSAGES_SNAPSHOT",
+        "CUSTOM",
+        "RAW"
+      ]
     },
-    "AssistantMessage": {
-      "type": "object",
-      "required": ["type", "content"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "assistant_message"
-        },
-        "content": {
-          "type": "string",
-          "description": "Complete assistant response"
-        },
-        "session_id": {
-          "type": ["string", "null"],
-          "description": "Session identifier"
-        },
-        "agent_id": {
-          "type": ["string", "null"],
-          "description": "Agent that generated this response"
-        },
-        "metadata": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {}
-        }
-      },
-      "additionalProperties": false
+    "RiskLevel": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
     },
-    "AssistantMessageChunk": {
-      "type": "object",
-      "required": ["type", "content", "session_id", "message_id"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "assistant_message_chunk"
-        },
-        "content": {
-          "type": "string",
-          "description": "Partial content chunk"
-        },
-        "session_id": {
-          "type": "string",
-          "description": "Session identifier"
-        },
-        "agent_id": {
-          "type": ["string", "null"],
-          "description": "Agent that generated this chunk"
-        },
-        "message_id": {
-          "type": "string",
-          "description": "Unique ID to group chunks"
-        },
-        "is_final": {
-          "type": "boolean",
-          "default": false,
-          "description": "True if this is the last chunk"
-        }
-      },
-      "additionalProperties": false
+    "MessageRole": {
+      "type": "string",
+      "enum": ["user", "assistant", "system", "tool", "developer"]
     },
-    "ToolCallStart": {
+    "Message": {
       "type": "object",
-      "required": ["type", "tool_call_id", "tool_name", "parameters", "session_id"],
+      "required": ["role", "content"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "tool_call_start"
-        },
-        "tool_call_id": {
-          "type": "string",
-          "description": "Unique identifier for this tool call"
-        },
-        "tool_name": {
-          "type": "string",
-          "description": "Name of the tool"
-        },
-        "parameters": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tool input parameters"
-        },
-        "session_id": {
-          "type": "string"
-        },
-        "agent_id": {
-          "type": ["string", "null"]
-        },
-        "metadata": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {}
-        }
-      },
-      "additionalProperties": false
+        "id": { "type": "string" },
+        "role": { "$ref": "#/definitions/MessageRole" },
+        "content": { "type": "string" },
+        "toolCallId": { "type": "string" }
+      }
     },
-    "ToolCallEnd": {
+    "RunAgentInput": {
       "type": "object",
-      "required": ["type", "tool_call_id", "tool_name", "result", "session_id"],
+      "required": ["threadId", "messages"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "tool_call_end"
+        "threadId": { "type": "string", "description": "Thread/session identifier" },
+        "runId": { "type": "string", "description": "Optional unique run identifier (auto-generated if not provided)" },
+        "messages": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Message" }
         },
-        "tool_call_id": {
-          "type": "string",
-          "description": "Unique identifier for this tool call (matches start)"
-        },
-        "tool_name": {
-          "type": "string"
-        },
-        "result": {
-          "type": "string",
-          "description": "Result summary of the tool execution"
-        },
-        "session_id": {
-          "type": "string"
-        },
-        "agent_id": {
-          "type": ["string", "null"]
-        },
-        "metadata": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {}
-        }
-      },
-      "additionalProperties": false
+        "context": { "type": "object", "description": "Additional context" }
+      }
     },
-    "ToolCallError": {
+    "RunStartedEvent": {
       "type": "object",
-      "required": ["type", "tool_call_id", "tool_name", "error", "session_id"],
+      "required": ["type", "threadId", "runId"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "tool_call_error"
-        },
-        "tool_call_id": {
-          "type": "string",
-          "description": "Unique identifier for this tool call (matches start)"
-        },
-        "tool_name": {
-          "type": "string"
-        },
-        "error": {
-          "type": "string",
-          "description": "Error message"
-        },
-        "session_id": {
-          "type": "string"
-        },
-        "agent_id": {
-          "type": ["string", "null"]
-        },
-        "metadata": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {}
-        }
-      },
-      "additionalProperties": false
+        "type": { "const": "RUN_STARTED" },
+        "threadId": { "type": "string" },
+        "runId": { "type": "string" },
+        "parentRunId": { "type": "string" },
+        "timestamp": { "type": "integer", "description": "Unix timestamp in milliseconds" }
+      }
     },
-    "ToolApprovalRequest": {
+    "RunFinishedEvent": {
       "type": "object",
-      "required": ["type", "tool_name", "tool_description", "parameters", "reasoning", "risk_level", "session_id", "approval_id"],
+      "required": ["type", "threadId", "runId"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "tool_approval_request"
-        },
-        "tool_name": {
-          "type": "string",
-          "description": "Name of tool requiring approval"
-        },
-        "tool_description": {
-          "type": "string",
-          "description": "What the tool does"
-        },
-        "parameters": {
-          "type": "object",
-          "additionalProperties": true,
-          "description": "Tool parameters"
-        },
-        "reasoning": {
-          "type": "string",
-          "description": "Why the agent wants to use this tool"
-        },
-        "risk_level": {
-          "type": "string",
-          "enum": ["low", "medium", "high", "critical"],
-          "description": "Risk assessment"
-        },
-        "session_id": {
-          "type": "string"
-        },
-        "approval_id": {
-          "type": "string",
-          "description": "Unique approval request ID"
-        }
-      },
-      "additionalProperties": false
+        "type": { "const": "RUN_FINISHED" },
+        "threadId": { "type": "string" },
+        "runId": { "type": "string" },
+        "result": { "type": ["object", "null"] },
+        "timestamp": { "type": "integer" }
+      }
     },
-    "ToolApprovalResponse": {
+    "RunErrorEvent": {
       "type": "object",
-      "required": ["type", "approval_id", "approved"],
+      "required": ["type", "message"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "tool_approval_response"
-        },
-        "approval_id": {
-          "type": "string",
-          "description": "Must match the approval_id from the request"
-        },
-        "approved": {
-          "type": "boolean",
-          "description": "true to proceed, false to cancel"
-        },
-        "feedback": {
-          "type": ["string", "null"],
-          "description": "Optional user comment"
-        }
-      },
-      "additionalProperties": false
+        "type": { "const": "RUN_ERROR" },
+        "message": { "type": "string" },
+        "code": { "type": ["string", "null"] },
+        "timestamp": { "type": "integer" }
+      }
     },
-    "StatusMessage": {
+    "StepStartedEvent": {
       "type": "object",
-      "required": ["type", "status"],
+      "required": ["type", "stepName"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "status"
-        },
-        "status": {
-          "type": "string",
-          "enum": ["thinking", "routing", "executing_tools", "completed"],
-          "description": "Processing status"
-        },
-        "message": {
-          "type": ["string", "null"],
-          "description": "Optional status message"
-        },
-        "session_id": {
-          "type": ["string", "null"]
-        }
-      },
-      "additionalProperties": false
+        "type": { "const": "STEP_STARTED" },
+        "stepName": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      }
     },
-    "ErrorMessage": {
+    "StepFinishedEvent": {
       "type": "object",
-      "required": ["type", "error_code", "message"],
+      "required": ["type", "stepName"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "error"
-        },
-        "error_code": {
-          "type": "string",
-          "description": "Machine-readable error code",
-          "examples": [
-            "moderation_violation",
-            "rate_limit_exceeded",
-            "tool_execution_failed",
-            "invalid_session",
-            "invalid_json"
-          ]
-        },
-        "message": {
-          "type": "string",
-          "description": "Human-readable error message"
-        },
-        "details": {
-          "type": "object",
-          "additionalProperties": true,
-          "default": {},
-          "description": "Additional error context"
-        }
-      },
-      "additionalProperties": false
+        "type": { "const": "STEP_FINISHED" },
+        "stepName": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      }
     },
-    "HAIMessage": {
-      "oneOf": [
-        {"$ref": "#/definitions/UserMessage"},
-        {"$ref": "#/definitions/AssistantMessage"},
-        {"$ref": "#/definitions/AssistantMessageChunk"},
-        {"$ref": "#/definitions/ToolCallStart"},
-        {"$ref": "#/definitions/ToolCallEnd"},
-        {"$ref": "#/definitions/ToolCallError"},
-        {"$ref": "#/definitions/ToolApprovalRequest"},
-        {"$ref": "#/definitions/ToolApprovalResponse"},
-        {"$ref": "#/definitions/StatusMessage"},
-        {"$ref": "#/definitions/ErrorMessage"}
-      ],
-      "discriminator": {
-        "propertyName": "type"
+    "TextMessageStartEvent": {
+      "type": "object",
+      "required": ["type", "messageId", "role"],
+      "properties": {
+        "type": { "const": "TEXT_MESSAGE_START" },
+        "messageId": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "assistant", "developer", "system"] },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "TextMessageContentEvent": {
+      "type": "object",
+      "required": ["type", "messageId", "delta"],
+      "properties": {
+        "type": { "const": "TEXT_MESSAGE_CONTENT" },
+        "messageId": { "type": "string" },
+        "delta": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "TextMessageEndEvent": {
+      "type": "object",
+      "required": ["type", "messageId"],
+      "properties": {
+        "type": { "const": "TEXT_MESSAGE_END" },
+        "messageId": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "ToolCallStartEvent": {
+      "type": "object",
+      "required": ["type", "toolCallId", "toolCallName"],
+      "properties": {
+        "type": { "const": "TOOL_CALL_START" },
+        "toolCallId": { "type": "string" },
+        "toolCallName": { "type": "string" },
+        "parentMessageId": { "type": ["string", "null"] },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "ToolCallArgsEvent": {
+      "type": "object",
+      "required": ["type", "toolCallId", "delta"],
+      "properties": {
+        "type": { "const": "TOOL_CALL_ARGS" },
+        "toolCallId": { "type": "string" },
+        "delta": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "ToolCallEndEvent": {
+      "type": "object",
+      "required": ["type", "toolCallId"],
+      "properties": {
+        "type": { "const": "TOOL_CALL_END" },
+        "toolCallId": { "type": "string" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "ToolCallResultEvent": {
+      "type": "object",
+      "required": ["type", "messageId", "toolCallId", "content"],
+      "properties": {
+        "type": { "const": "TOOL_CALL_RESULT" },
+        "messageId": { "type": "string" },
+        "toolCallId": { "type": "string" },
+        "content": { "type": "string" },
+        "role": { "const": "tool" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "StateSnapshotEvent": {
+      "type": "object",
+      "required": ["type", "snapshot"],
+      "properties": {
+        "type": { "const": "STATE_SNAPSHOT" },
+        "snapshot": { "type": "object" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "StateDeltaEvent": {
+      "type": "object",
+      "required": ["type", "delta"],
+      "properties": {
+        "type": { "const": "STATE_DELTA" },
+        "delta": { "type": "array", "description": "JSON Patch (RFC 6902) operations" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "MessagesSnapshotEvent": {
+      "type": "object",
+      "required": ["type", "messages"],
+      "properties": {
+        "type": { "const": "MESSAGES_SNAPSHOT" },
+        "messages": { "type": "array", "items": { "$ref": "#/definitions/Message" } },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "CustomEvent": {
+      "type": "object",
+      "required": ["type", "name", "value"],
+      "properties": {
+        "type": { "const": "CUSTOM" },
+        "name": { "type": "string" },
+        "value": {},
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "RawEvent": {
+      "type": "object",
+      "required": ["type", "event"],
+      "properties": {
+        "type": { "const": "RAW" },
+        "event": {},
+        "source": { "type": ["string", "null"] },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "ToolApprovalRequestPayload": {
+      "type": "object",
+      "description": "Payload for agora:tool_approval_request custom event",
+      "required": ["toolName", "toolDescription", "parameters", "reasoning", "riskLevel", "approvalId"],
+      "properties": {
+        "toolName": { "type": "string" },
+        "toolDescription": { "type": "string" },
+        "parameters": { "type": "object" },
+        "reasoning": { "type": "string" },
+        "riskLevel": { "$ref": "#/definitions/RiskLevel" },
+        "approvalId": { "type": "string" }
+      }
+    },
+    "ToolApprovalResponsePayload": {
+      "type": "object",
+      "description": "Payload for agora:tool_approval_response custom event",
+      "required": ["approvalId", "approved"],
+      "properties": {
+        "approvalId": { "type": "string" },
+        "approved": { "type": "boolean" },
+        "feedback": { "type": ["string", "null"] }
+      }
+    },
+    "ErrorPayload": {
+      "type": "object",
+      "description": "Payload for agora:error custom event",
+      "required": ["errorCode", "message"],
+      "properties": {
+        "errorCode": { "type": "string" },
+        "message": { "type": "string" },
+        "details": { "type": ["object", "null"] }
       }
     }
   },
-  "$ref": "#/definitions/HAIMessage"
+  "oneOf": [
+    { "$ref": "#/definitions/RunStartedEvent" },
+    { "$ref": "#/definitions/RunFinishedEvent" },
+    { "$ref": "#/definitions/RunErrorEvent" },
+    { "$ref": "#/definitions/StepStartedEvent" },
+    { "$ref": "#/definitions/StepFinishedEvent" },
+    { "$ref": "#/definitions/TextMessageStartEvent" },
+    { "$ref": "#/definitions/TextMessageContentEvent" },
+    { "$ref": "#/definitions/TextMessageEndEvent" },
+    { "$ref": "#/definitions/ToolCallStartEvent" },
+    { "$ref": "#/definitions/ToolCallArgsEvent" },
+    { "$ref": "#/definitions/ToolCallEndEvent" },
+    { "$ref": "#/definitions/ToolCallResultEvent" },
+    { "$ref": "#/definitions/StateSnapshotEvent" },
+    { "$ref": "#/definitions/StateDeltaEvent" },
+    { "$ref": "#/definitions/MessagesSnapshotEvent" },
+    { "$ref": "#/definitions/CustomEvent" },
+    { "$ref": "#/definitions/RawEvent" }
+  ]
 }

@@ -1,226 +1,226 @@
 {
-  "name": "Tool Approval Flow (Human-in-the-Loop)",
-  "description": "User requests sensitive operation requiring approval before execution",
-  "messages": [
+  "description": "Tool approval flow with human-in-the-loop using AG-UI Protocol v2.1.1",
+  "events": [
     {
-      "direction": "client_to_server",
-      "message": {
-        "type": "user_message",
-        "content": "Please generate the final inspection report for INS-2024-001",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000",
-        "metadata": {}
-      },
-      "notes": "User requests report generation (high-risk operation)"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "status",
-        "status": "thinking",
-        "message": "Processing your request...",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000"
-      },
-      "notes": "Backend is analyzing the request"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "tool_approval_request",
-        "tool_name": "generate_inspection_report",
-        "tool_description": "Generates an official inspection report PDF that will be stored in the system and marked as final",
-        "parameters": {
-          "inspection_id": "INS-2024-001",
-          "include_photos": true,
-          "include_lab_results": true,
-          "inspector_name": "J. de Vries",
-          "report_type": "final"
-        },
-        "reasoning": "User requested to create the final inspection report. This will generate an official document that cannot be modified after creation.",
-        "risk_level": "high",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000",
-        "approval_id": "appr_xyz789"
-      },
-      "notes": "Backend requests approval - SHOW MODAL DIALOG to user"
-    },
-    {
-      "ui_action": "SHOW_APPROVAL_MODAL",
-      "modal_content": {
-        "title": "Approval Required: Generate Inspection Report",
-        "risk_level": "high",
-        "risk_color": "orange",
-        "tool_description": "Generates an official inspection report PDF that will be stored in the system and marked as final",
-        "reasoning": "User requested to create the final inspection report. This will generate an official document that cannot be modified after creation.",
-        "parameters_display": [
-          {"label": "Inspection ID", "value": "INS-2024-001"},
-          {"label": "Include Photos", "value": "Yes"},
-          {"label": "Include Lab Results", "value": "Yes"},
-          {"label": "Inspector Name", "value": "J. de Vries"},
-          {"label": "Report Type", "value": "Final"}
-        ],
-        "buttons": ["Approve", "Reject"],
-        "feedback_textarea": "Optional: Add feedback or comments"
-      },
-      "notes": "Modal blocks UI until user makes decision"
-    },
-    {
-      "direction": "client_to_server",
-      "message": {
-        "type": "tool_approval_response",
-        "approval_id": "appr_xyz789",
-        "approved": true,
-        "feedback": "All details are correct, proceed with generation"
-      },
-      "notes": "User clicks 'Approve' button - close modal, show loading"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "status",
-        "status": "executing_tools",
-        "message": "Generating inspection report...",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000"
-      },
-      "notes": "Tool execution begins - show progress indicator"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "tool_call",
-        "tool_call_id": "call_abc123",
-        "tool_name": "generate_inspection_report",
-        "parameters": {
-          "inspection_id": "INS-2024-001",
-          "include_photos": true,
-          "include_lab_results": true,
-          "inspector_name": "J. de Vries",
-          "report_type": "final"
-        },
-        "session_id": "123e4567-e89b-12d3-a456-426614174000",
-        "status": "started",
-        "agent_id": "reporting_agent",
-        "metadata": {}
-      },
-      "notes": "Tool execution started notification"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "tool_call",
-        "tool_call_id": "call_abc123",
-        "tool_name": "generate_inspection_report",
-        "parameters": {
-          "inspection_id": "INS-2024-001",
-          "include_photos": true,
-          "include_lab_results": true,
-          "inspector_name": "J. de Vries",
-          "report_type": "final"
-        },
-        "session_id": "123e4567-e89b-12d3-a456-426614174000",
-        "status": "completed",
-        "result": "Report generated successfully: rapport_INS-2024-001_final.pdf (2.3 MB)",
-        "agent_id": "reporting_agent",
-        "metadata": {
-          "file_path": "/reports/2024/rapport_INS-2024-001_final.pdf",
-          "file_size_bytes": 2411724,
-          "pages": 12
-        }
-      },
-      "notes": "Tool execution completed - show success badge"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "assistant_message_chunk",
-        "content": "I've successfully generated ",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000",
-        "agent_id": "reporting_agent",
-        "message_id": "msg_report_1",
-        "is_final": false
-      },
-      "notes": "Assistant provides confirmation message"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "assistant_message_chunk",
-        "content": "the final inspection report for INS-2024-001. The report is 12 pages and includes all photos and lab results. You can download it here: rapport_INS-2024-001_final.pdf (2.3 MB)",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000",
-        "agent_id": "reporting_agent",
-        "message_id": "msg_report_1",
-        "is_final": true
-      },
-      "notes": "Complete confirmation with download link"
-    },
-    {
-      "direction": "server_to_client",
-      "message": {
-        "type": "status",
-        "status": "completed",
-        "session_id": "123e4567-e89b-12d3-a456-426614174000"
-      },
-      "notes": "All processing complete"
-    }
-  ],
-  "alternative_flow_rejected": {
-    "description": "What happens if user rejects the approval",
-    "messages": [
-      {
-        "direction": "client_to_server",
-        "message": {
-          "type": "tool_approval_response",
-          "approval_id": "appr_xyz789",
-          "approved": false,
-          "feedback": "I need to add more inspection details first"
-        },
-        "notes": "User clicks 'Reject' button"
-      },
-      {
-        "direction": "server_to_client",
-        "message": {
-          "type": "assistant_message_chunk",
-          "content": "Understood. ",
-          "session_id": "123e4567-e89b-12d3-a456-426614174000",
-          "agent_id": "reporting_agent",
-          "message_id": "msg_reject_1",
-          "is_final": false
-        },
-        "notes": "Assistant acknowledges rejection"
-      },
-      {
-        "direction": "server_to_client",
-        "message": {
-          "type": "assistant_message_chunk",
-          "content": "I won't generate the report yet. Please let me know what additional details you'd like to add to the inspection, and we can generate the report once everything is complete.",
-          "session_id": "123e4567-e89b-12d3-a456-426614174000",
-          "agent_id": "reporting_agent",
-          "message_id": "msg_reject_1",
-          "is_final": true
-        },
-        "notes": "Assistant provides helpful next steps"
-      },
-      {
-        "direction": "server_to_client",
-        "message": {
-          "type": "status",
-          "status": "completed",
-          "session_id": "123e4567-e89b-12d3-a456-426614174000"
-        },
-        "notes": "Conversation continues normally"
+      "direction": "client → server",
+      "event": {
+        "threadId": "abc123-def456-789",
+        "runId": "run-002",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Generate the inspection report for INS-2024-001"
+          }
+        ]
       }
-    ]
-  },
-  "expected_ui_behavior": {
-    "on_approval_request": "Show modal dialog with tool details, block background interaction",
-    "risk_level_colors": {
-      "low": "#22c55e (green)",
-      "medium": "#eab308 (yellow)",
-      "high": "#f97316 (orange)",
-      "critical": "#ef4444 (red)"
     },
-    "on_approve": "Close modal, send approval_response, show 'Processing...' indicator",
-    "on_reject": "Close modal, send rejection_response, show rejection confirmation",
-    "on_tool_started": "Show tool execution progress badge",
-    "on_tool_completed": "Show success badge with result summary"
-  }
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "RUN_STARTED",
+        "threadId": "abc123-def456-789",
+        "runId": "run-002",
+        "timestamp": 1705318200000
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STATE_SNAPSHOT",
+        "snapshot": {
+          "threadId": "abc123-def456-789",
+          "runId": "run-002",
+          "currentAgent": "general-agent",
+          "status": "processing"
+        },
+        "timestamp": 1705318200050
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_STARTED",
+        "stepName": "routing",
+        "timestamp": 1705318200100
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_FINISHED",
+        "stepName": "routing",
+        "timestamp": 1705318200300
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_STARTED",
+        "stepName": "thinking",
+        "timestamp": 1705318200400
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_FINISHED",
+        "stepName": "thinking",
+        "timestamp": 1705318200900
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_STARTED",
+        "stepName": "executing_tools",
+        "timestamp": 1705318201000
+      }
+    },
+    {
+      "direction": "server → client",
+      "description": "Tool approval request - server pauses and waits for client response",
+      "event": {
+        "type": "CUSTOM",
+        "name": "agora:tool_approval_request",
+        "value": {
+          "toolName": "generate_final_report",
+          "toolDescription": "Generates an official inspection report PDF that will be stored permanently in the system",
+          "parameters": {
+            "inspectionId": "INS-2024-001",
+            "includePhotos": true,
+            "language": "nl"
+          },
+          "reasoning": "User requested to generate the final inspection report. This is a critical operation that creates an official document.",
+          "riskLevel": "critical",
+          "approvalId": "appr-xyz789"
+        },
+        "timestamp": 1705318201100
+      }
+    },
+    {
+      "direction": "client → server",
+      "description": "User approves the tool execution",
+      "event": {
+        "type": "CUSTOM",
+        "name": "agora:tool_approval_response",
+        "value": {
+          "approvalId": "appr-xyz789",
+          "approved": true,
+          "feedback": "Looks good, proceed with report generation"
+        }
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "TOOL_CALL_START",
+        "toolCallId": "call-report-001",
+        "toolCallName": "generate_final_report",
+        "parentMessageId": null,
+        "timestamp": 1705318202000
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "TOOL_CALL_ARGS",
+        "toolCallId": "call-report-001",
+        "delta": "{\"inspectionId\": \"INS-2024-001\", \"includePhotos\": true, \"language\": \"nl\"}",
+        "timestamp": 1705318202100
+      }
+    },
+    {
+      "direction": "server → client",
+      "description": "TOOL_CALL_END signals end of argument streaming",
+      "event": {
+        "type": "TOOL_CALL_END",
+        "toolCallId": "call-report-001",
+        "timestamp": 1705318204900
+      }
+    },
+    {
+      "direction": "server → client",
+      "description": "TOOL_CALL_RESULT contains the actual execution result",
+      "event": {
+        "type": "TOOL_CALL_RESULT",
+        "messageId": "tool-result-report-001",
+        "toolCallId": "call-report-001",
+        "content": "Report generated successfully: report-INS-2024-001.pdf",
+        "role": "tool",
+        "timestamp": 1705318205000
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_FINISHED",
+        "stepName": "executing_tools",
+        "timestamp": 1705318205100
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_STARTED",
+        "stepName": "thinking",
+        "timestamp": 1705318205150
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "TEXT_MESSAGE_START",
+        "messageId": "msg-002",
+        "role": "assistant",
+        "timestamp": 1705318205200
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "TEXT_MESSAGE_CONTENT",
+        "messageId": "msg-002",
+        "delta": "I have successfully generated the inspection report for INS-2024-001. You can download the PDF from the link below.",
+        "timestamp": 1705318205300
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "TEXT_MESSAGE_END",
+        "messageId": "msg-002",
+        "timestamp": 1705318205400
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STEP_FINISHED",
+        "stepName": "thinking",
+        "timestamp": 1705318205500
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "STATE_SNAPSHOT",
+        "snapshot": {
+          "threadId": "abc123-def456-789",
+          "runId": "run-002",
+          "currentAgent": "reporting-agent",
+          "status": "completed"
+        },
+        "timestamp": 1705318205550
+      }
+    },
+    {
+      "direction": "server → client",
+      "event": {
+        "type": "RUN_FINISHED",
+        "threadId": "abc123-def456-789",
+        "runId": "run-002",
+        "timestamp": 1705318205600
+      }
+    }
+  ]
 }
-

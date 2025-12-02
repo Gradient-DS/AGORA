@@ -1,2 +1,1 @@
-"""API layer for HAI protocol and WebSocket communication."""
-
+"""API layer for AG-UI protocol and WebSocket communication."""

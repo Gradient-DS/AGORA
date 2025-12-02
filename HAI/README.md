@@ -7,7 +7,7 @@ Een moderne, op React gebaseerde webapplicatie die inspecteurs een intuïtieve i
 - **Real-time Chat Interface**: Tekstgebaseerde communicatie met de AGORA orchestrator
 - **Spraakinterface**: Spraakinvoer met visuele feedback en audiovisualisatie
 - **Tool Goedkeuringsworkflow**: Veilig goedkeuringssysteem voor het uitvoeren van agent-tools
-- **WebSocket Communicatie**: Real-time bidirectionele communicatie met behulp van het HAI Protocol
+- **WebSocket Communicatie**: Real-time bidirectionele communicatie met behulp van het AG-UI Protocol
 - **Toegankelijkheid Eerst**: Voldoet aan WCAG 2.1 AA met volledige toetsenbordnavigatie en ondersteuning voor schermlezers
 - **Moderne UI**: Gebouwd met shadcn/ui en Tailwind CSS voor een mooie, responsieve ervaring
 
@@ -138,18 +138,18 @@ HAI/
 └── public/              # Statische assets
 ```
 
-## HAI Protocol
+## AG-UI Protocol
 
-De applicatie communiceert met de AGORA orchestrator via het HAI Protocol over WebSocket. Het protocol ondersteunt de volgende berichttypen:
+De applicatie communiceert met de AGORA orchestrator via het AG-UI Protocol over WebSocket. AG-UI is een open, event-gebaseerd protocol voor agent-gebruiker communicatie.
 
-- `user_message`: Gebruikersinvoer naar orchestrator
-- `assistant_message`: Antwoord van orchestrator
-- `tool_approval_request`: Verzoek om gebruikersgoedkeuring voor tool-uitvoering
-- `tool_approval_response`: Goedkeuringsbeslissing van de gebruiker
-- `status`: Status updates (denken, routeren, uitvoeren_tools, voltooid)
-- `error`: Foutmeldingen
+**Event Types:**
+- **Lifecycle**: `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED`
+- **Text Messages**: `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END`
+- **Tool Calls**: `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END`, `TOOL_CALL_RESULT`
+- **State**: `STATE_SNAPSHOT`, `STATE_DELTA`
+- **Custom**: `CUSTOM` (voor HITL goedkeuringsflow)
 
-Zie `src/types/schemas.ts` voor gedetailleerde berichtschema's.
+Zie `src/types/schemas.ts` voor Zod schemas en `/docs/hai-contract/AG_UI_PROTOCOL.md` voor de volledige specificatie.
 
 ## Toegankelijkheid
 

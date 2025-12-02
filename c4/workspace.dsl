@@ -36,7 +36,7 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
           tags "Shared"
         }
         websocketClient = component "[Shared] WebSocket Client" "TypeScript" {
-          description "HAI Protocol WebSocket client for real-time bidirectional communication"
+          description "AG-UI Protocol WebSocket client for real-time bidirectional communication"
           tags "Shared"
         }
         voiceInterface = component "[Shared] Voice Interface" "React + Whisper + ElevenLabs" {
@@ -70,8 +70,8 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
             description "HTTP server with WebSocket support at /ws endpoint"
             tags "Shared"
           }
-          oaiHaiProtocolHandler = component "[Shared] HAI Protocol Handler" "Python" {
-            description "Processes HAI Protocol messages: user_message, assistant_message_chunk, tool_call, tool_approval_request/response, status, error"
+          oaiAgUiHandler = component "[Shared] AG-UI Protocol Handler" "Python" {
+            description "Processes AG-UI Protocol events: RUN_STARTED/FINISHED, TEXT_MESSAGE_*, TOOL_CALL_*, STATE_SNAPSHOT, CUSTOM (approval)"
             tags "Shared"
           }
           oaiRestEndpoints = component "[Shared] REST Endpoints" "FastAPI" {
@@ -134,9 +134,9 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
           tags "NotImplemented" "Shared"
         }
         
-        oaiFastApiServer -> oaiHaiProtocolHandler "routes WebSocket" "WebSocket"
+        oaiFastApiServer -> oaiAgUiHandler "routes WebSocket" "WebSocket"
         oaiFastApiServer -> oaiRestEndpoints "routes HTTP" "HTTP/REST"
-        oaiHaiProtocolHandler -> oaiOrchestratorPipeline "processes messages"
+        oaiAgUiHandler -> oaiOrchestratorPipeline "processes messages"
         oaiOrchestratorPipeline -> oaiAgentExecutor "runs agents"
         oaiOrchestratorPipeline -> oaiModerator "validates I/O"
         oaiOrchestratorPipeline -> oaiApprovalLogic "checks approval"
@@ -159,8 +159,8 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
             description "HTTP server with WebSocket support at /ws endpoint"
             tags "Shared"
           }
-          lgHaiProtocolHandler = component "[Shared] HAI Protocol Handler" "Python" {
-            description "Processes HAI Protocol messages: user_message, assistant_message_chunk, tool_call, tool_approval_request/response, status, error"
+          lgAgUiHandler = component "[Shared] AG-UI Protocol Handler" "Python" {
+            description "Processes AG-UI Protocol events: RUN_STARTED/FINISHED, TEXT_MESSAGE_*, TOOL_CALL_*, STATE_SNAPSHOT, CUSTOM (approval)"
             tags "Shared"
           }
           lgRestEndpoints = component "[Shared] REST Endpoints" "FastAPI" {
@@ -231,9 +231,9 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
           tags "NotImplemented" "Shared"
         }
         
-        lgFastApiServer -> lgHaiProtocolHandler "routes WebSocket" "WebSocket"
+        lgFastApiServer -> lgAgUiHandler "routes WebSocket" "WebSocket"
         lgFastApiServer -> lgRestEndpoints "routes HTTP" "HTTP/REST"
-        lgHaiProtocolHandler -> lgOrchestratorPipeline "processes messages"
+        lgAgUiHandler -> lgOrchestratorPipeline "processes messages"
         lgOrchestratorPipeline -> lgAgentExecutor "invokes graph"
         lgOrchestratorPipeline -> lgModerator "validates I/O"
         lgOrchestratorPipeline -> lgApprovalLogic "checks approval"
@@ -299,7 +299,7 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       # INTERNAL CONTAINER RELATIONSHIPS (Unified orchestrator for C2/external)
       # =======================================================================
       # HAI connects to unified orchestrator
-      hai -> orchestrator "HAI Protocol" "WebSocket/JSON :8001"
+      hai -> orchestrator "AG-UI Protocol" "WebSocket/JSON :8001"
       
       # Unified orchestrator connects to shared MCP servers
       orchestrator -> mcpServers "MCP Protocol" "HTTP/SSE Streamable"
@@ -312,7 +312,7 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       # COMPONENT-LEVEL RELATIONSHIPS (for C3 views)
       # =======================================================================
       # HAI to unified orchestrator (for C3 HAI view)
-      agora.hai.websocketClient -> agora.orchestrator "HAI Protocol" "WebSocket"
+      agora.hai.websocketClient -> agora.orchestrator "AG-UI Protocol" "WebSocket"
       
       # OpenAI Orchestrator MCP connections (for C3 OpenAI view)
       agora.orchestratorOpenAI.oaiMcpAdapter -> agora.mcpServers.regulationServer "MCP" "HTTP POST /mcp"
@@ -325,8 +325,8 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       agora.orchestratorLangGraph.lgMcpAdapter -> agora.mcpServers.historyServer "MCP" "HTTP POST /mcp"
       
       # HAI WebSocket connections (for C3 orchestrator detail views)
-      agora.hai.websocketClient -> agora.orchestratorOpenAI.oaiFastApiServer "HAI Protocol" "WebSocket"
-      agora.hai.websocketClient -> agora.orchestratorLangGraph.lgFastApiServer "HAI Protocol" "WebSocket"
+      agora.hai.websocketClient -> agora.orchestratorOpenAI.oaiFastApiServer "AG-UI Protocol" "WebSocket"
+      agora.hai.websocketClient -> agora.orchestratorLangGraph.lgFastApiServer "AG-UI Protocol" "WebSocket"
       
       # Unified Orchestrator to MCP Agent connections (for C3 MCP view)
       agora.orchestrator -> agora.mcpServers.regulationServer "MCP" "HTTP POST /mcp"

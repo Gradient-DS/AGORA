@@ -1,23 +1,47 @@
 export * from './schemas';
 
-export interface Message {
+// UI message representation (rendered in chat)
+export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant' | 'tool_call';
+  role: 'user' | 'assistant' | 'tool';
   content: string;
   timestamp: Date;
-  agent_id?: string;
+  agentId?: string;
   metadata?: Record<string, unknown>;
   isStreaming?: boolean;
-  tool_name?: string;
-  tool_status?: 'started' | 'completed' | 'failed';
+  toolName?: string;
+  toolStatus?: 'started' | 'completed' | 'failed';
 }
 
+// Tool call UI representation
+export interface ToolCallInfo {
+  id: string;
+  toolName: string;
+  parameters?: Record<string, unknown>;
+  result?: string;
+  error?: string;
+  status: 'started' | 'completed' | 'failed';
+  parentMessageId?: string;
+  agentId?: string;
+  timestamp: Date;
+}
+
+// Session/Thread info
 export interface Session {
   id: string;
   startedAt: Date;
   lastActivity: Date;
 }
 
+// Run state
+export interface RunState {
+  runId: string | null;
+  threadId: string | null;
+  isRunning: boolean;
+  currentStep: string | null;
+}
+
+// Voice state (retained for future use)
 export interface VoiceState {
   isActive: boolean;
   isListening: boolean;
@@ -29,4 +53,3 @@ export interface AudioVisualizerData {
   frequencies: number[];
   waveform: number[];
 }
-

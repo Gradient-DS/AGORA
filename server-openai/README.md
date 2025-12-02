@@ -27,7 +27,7 @@ Deze implementatie maakt gebruik van:
 
 ## Wat wij bouwen
 
-- HAI protocol implementatie (WebSocket)
+- AG-UI Protocol implementatie (WebSocket)
 - Native MCP tool integratie via Agents SDK
 - Domeinspecifieke agent definities en handoff strategie
 - Verenigde spraakafhandelaar met VoicePipeline
@@ -55,10 +55,10 @@ server-openai/
 │   │   └── moderator.py          # Validatie
 │   └── api/                       # Entry points
 │       ├── server.py              # FastAPI + WebSocket
-│       ├── hai_protocol.py        # HAI berichten
+│       ├── ag_ui_handler.py       # AG-UI Protocol events
 │       └── voice_handler.py       # Spraak sessiebeheerder
 └── common/                        # Gedeelde types
-    ├── hai_types.py
+    ├── ag_ui_types.py
     ├── protocols.py
     └── schemas.py
 ```
@@ -124,9 +124,9 @@ python -m agora_openai.api.server
 
 ## Gebruik
 
-### Tekstchat via WebSocket
+### Tekstchat via WebSocket (AG-UI Protocol)
 
-Verbind met `/ws` endpoint via HAI protocol:
+Verbind met `/ws` endpoint via AG-UI Protocol:
 
 ```python
 import asyncio
@@ -136,19 +136,44 @@ import json
 async def chat():
     uri = "ws://localhost:8000/ws"
     async with websockets.connect(uri) as websocket:
+        # AG-UI RunAgentInput format
         message = {
-            "type": "user_message",
-            "content": "Start inspectie bij KVK 12345678",
-            "session_id": "test-session-123"
+            "threadId": "test-session-123",
+            "messages": [
+                {"role": "user", "content": "Start inspectie bij KVK 12345678"}
+            ]
         }
         await websocket.send(json.dumps(message))
         
+        # Receive AG-UI events
         async for response_text in websocket:
-            response = json.loads(response_text)
-            print(response)
+            event = json.loads(response_text)
+            event_type = event.get("type")
+            
+            if event_type == "TEXT_MESSAGE_CONTENT":
+                print(event.get("delta", ""), end="", flush=True)
+            elif event_type == "RUN_FINISHED":
+                print("\n[Run completed]")
+                break
 
 asyncio.run(chat())
 ```
+
+#### AG-UI Event Types
+
+| Event | Purpose |
+|-------|---------|
+| `RUN_STARTED` | Agent run began |
+| `TEXT_MESSAGE_START` | New message begins |
+| `TEXT_MESSAGE_CONTENT` | Streaming text chunk |
+| `TEXT_MESSAGE_END` | Message complete |
+| `TOOL_CALL_START` | Tool execution began |
+| `TOOL_CALL_ARGS` | Tool arguments |
+| `TOOL_CALL_END` | Tool finished |
+| `STATE_SNAPSHOT` | Current agent state |
+| `RUN_FINISHED` | Run complete |
+| `RUN_ERROR` | Error occurred |
+| `CUSTOM` | HITL approval events |
 
 ### Spraakmodus (TODO)
 
@@ -172,7 +197,7 @@ Agenten dragen automatisch de controle over aan specialisten op basis van verzoe
 Op SQLite gebaseerde gespreksgeschiedenis met automatisch contextbeheer.
 
 ### 3. Streaming Responses
-Real-time berichtfragmenten via HAI protocol voor responsieve UI.
+Real-time berichtfragmenten via AG-UI Protocol voor responsieve UI.
 
 ### 4. MCP Tool Integratie
 Dynamische tool-ontdekking en uitvoering van MCP servers via HTTP.

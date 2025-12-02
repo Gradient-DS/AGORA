@@ -1,15 +1,23 @@
 """Pytest configuration and fixtures for AGORA LangGraph tests."""
 
+import json
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 
 
 @pytest.fixture
 def mock_websocket():
-    """Create a mock WebSocket for testing."""
+    """Create a mock WebSocket for testing AG-UI Protocol."""
     ws = MagicMock()
+    # AG-UI format: RunAgentInput (camelCase for wire format, snake_case for Python)
     ws.receive_text = AsyncMock(
-        return_value='{"type": "user_message", "content": "test", "session_id": "test-123"}'
+        return_value=json.dumps(
+            {
+                "threadId": "test-123",
+                "runId": "run-456",
+                "messages": [{"role": "user", "content": "test"}],
+            }
+        )
     )
     ws.send_text = AsyncMock()
     ws.accept = AsyncMock()
@@ -18,14 +26,15 @@ def mock_websocket():
 
 
 @pytest.fixture
-def sample_user_message():
-    """Create a sample user message."""
-    from agora_langgraph.common.hai_types import UserMessage
+def sample_run_input():
+    """Create a sample AG-UI run input."""
+    from agora_langgraph.common.ag_ui_types import RunAgentInput
 
-    return UserMessage(
-        content="Hallo, hoe gaat het?",
-        session_id="test-session-123",
-        metadata={},
+    return RunAgentInput(
+        thread_id="test-session-123",
+        run_id="run-789",
+        messages=[{"role": "user", "content": "Hallo, hoe gaat het?"}],
+        context={},
     )
 
 
@@ -37,4 +46,16 @@ def sample_tool_call():
     return ToolCall(
         tool_name="search_regulations",
         parameters={"query": "HACCP", "top_k": 5},
+    )
+
+
+@pytest.fixture
+def sample_approval_response():
+    """Create a sample tool approval response."""
+    from agora_langgraph.common.ag_ui_types import ToolApprovalResponsePayload
+
+    return ToolApprovalResponsePayload(
+        approval_id="approval-123",
+        approved=True,
+        feedback="Approved by user",
     )

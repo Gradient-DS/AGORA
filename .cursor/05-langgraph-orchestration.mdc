@@ -6,14 +6,14 @@ alwaysApply: false
 
 # LangGraph Orchestration Architecture
 
-**Philosophy**: Use LangGraph for stateful multi-agent orchestration, providing an open-source alternative to the OpenAI Agents SDK backend (`server-openai`). Must implement the same HAI Protocol and support the same MCP tool servers.
+**Philosophy**: Use LangGraph for stateful multi-agent orchestration, providing an open-source alternative to the OpenAI Agents SDK backend (`server-openai`). Must implement the same AG-UI Protocol and support the same MCP tool servers.
 
 ## Core Principles
 
 1. **Use LangGraph (`langgraph` package)** - StateGraph-based agent orchestration with explicit control flow.
 2. **ToolNode for ALL tool calls** - Including handoffs, to ensure proper ToolMessage responses.
 3. **Checkpointer Persistence** - AsyncSqliteSaver for conversation history.
-4. **Streaming First** - Use `astream_events` for real-time HAI Protocol messages.
+4. **Streaming First** - Use `astream_events` for real-time AG-UI Protocol messages.
 5. **MCP Integration** - Same MCP tool servers as `server-openai` (regulation, reporting, history).
 6. **OpenAI-compatible LLM** - Use `langchain-openai` ChatOpenAI.
 
@@ -26,7 +26,7 @@ server-langgraph/
 │   ├── config.py                 # Pydantic settings (same env vars as server-openai)
 │   ├── logging_config.py
 │   ├── common/
-│   │   ├── hai_types.py          # HAI Protocol message types (identical to server-openai)
+│   │   ├── ag_ui_types.py        # AG-UI Protocol message types (identical to server-openai)
 │   │   └── schemas.py            # ToolCall schema
 │   ├── core/
 │   │   ├── state.py              # AgentState TypedDict
@@ -40,11 +40,11 @@ server-langgraph/
 │   │   ├── checkpointer.py       # AsyncSqliteSaver with aiosqlite
 │   │   └── audit_logger.py       # OpenTelemetry logging
 │   ├── pipelines/
-│   │   ├── orchestrator.py       # astream_events → HAI Protocol
+│   │   ├── orchestrator.py       # astream_events → AG-UI Protocol
 │   │   └── moderator.py          # Content moderation
 │   └── api/
 │       ├── server.py             # FastAPI + WebSocket (identical endpoints)
-│       └── hai_protocol.py       # HAI WebSocket handler
+│       └── ag_ui_handler.py      # AG-UI WebSocket handler
 ├── pyproject.toml
 ├── langgraph.json
 ├── Dockerfile
@@ -256,7 +256,7 @@ async def _run_agent_node(state: AgentState, agent_id: str) -> dict:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/ws` | WebSocket | HAI Protocol messages |
+| `/ws` | WebSocket | AG-UI Protocol messages |
 | `/health` | GET | Health check |
 | `/` | GET | Service info |
 | `/agents` | GET | List agents |
@@ -277,7 +277,7 @@ async def _run_agent_node(state: AgentState, agent_id: str) -> dict:
 - ✅ Route ALL tool calls through ToolNode (including handoffs)
 - ✅ Use AsyncSqliteSaver with aiosqlite for async checkpointing
 - ✅ Detect handoffs in `route_after_tools`, not `route_from_agent`
-- ✅ Match HAI Protocol message types exactly
+- ✅ Match AG-UI Protocol message types exactly
 - ✅ Scope tools per agent (general-agent = handoffs only)
 
 **Never:**

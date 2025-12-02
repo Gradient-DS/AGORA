@@ -1,0 +1,169 @@
+---
+alwaysApply: false
+---
+# AG-UI Protocol Implementation Guide
+
+This project uses the official AG-UI Protocol (`ag-ui-protocol` package) for agent-user communication.
+
+**Status:** ✅ IMPLEMENTED (v2.1.1)
+
+## AG-UI Protocol Overview
+
+AG-UI is an open, lightweight, event-based protocol that standardizes interactions between AI agents and user-facing applications. It uses a streaming event-based architecture with typed events.
+
+**Repository:** https://github.com/ag-ui-protocol/ag-ui  
+**Python Package:** `ag-ui-protocol>=0.1.0`  
+**TypeScript Package:** `@ag-ui/core`
+
+### Core Concepts
+
+1. **Event-Driven Architecture**: All communication happens through typed events
+2. **Transport Agnostic**: Supports SSE, WebSockets, and webhooks (AGORA uses WebSocket)
+3. **Streaming First**: Native support for streaming text and tool calls
+4. **Type Safe**: Uses official package types (Python: `ag_ui.core`, TS: Zod schemas)
+5. **State Sync**: Bi-directional state synchronization via `STATE_SNAPSHOT`
+
+### AG-UI Event Categories
+
+| Category | Events | Purpose |
+|----------|--------|---------|
+| **Lifecycle** | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED` | Track agent execution lifecycle |
+| **Text Messages** | `TEXT_MESSAGE_START`, `TEXT_MESSAGE_CONTENT`, `TEXT_MESSAGE_END` | Stream text responses |
+| **Tool Calls** | `TOOL_CALL_START`, `TOOL_CALL_ARGS`, `TOOL_CALL_END`, `TOOL_CALL_RESULT` | Track tool execution |
+| **State Management** | `STATE_SNAPSHOT`, `STATE_DELTA`, `MESSAGES_SNAPSHOT` | Synchronize state |
+| **Custom** | `CUSTOM` | Extension point for HITL approval |
+
+---
+
+## Implementation Details
+
+### Backend (server-langgraph)
+
+| File | Purpose |
+|------|---------|
+| `common/ag_ui_types.py` | Re-exports official `ag_ui.core` types + AGORA extensions |
+| `api/ag_ui_handler.py` | WebSocket protocol handler using official types |
+| `pipelines/orchestrator.py` | Event emission with proper step lifecycle |
+
+### Frontend (HAI)
+
+| File | Purpose |
+|------|---------|
+| `types/schemas.ts` | AG-UI event Zod schemas matching official types |
+| `lib/websocket/client.ts` | AGUIWebSocketClient |
+| `hooks/useWebSocket.ts` | Event handling with RUN_ERROR, STATE_SNAPSHOT support |
+| `stores/*` | Zustand stores for AG-UI state |
+
+### Documentation (docs/hai-contract)
+
+| File | Purpose |
+|------|---------|
+| `AG_UI_PROTOCOL.md` | Protocol specification (v2.1.0) |
+| `asyncapi.yaml` | AsyncAPI 3.0 spec |
+| `schemas/messages.json` | JSON Schema definitions |
+| `examples/*.json` | Example event sequences |
+| `mock_server.py` | Testing mock server |
+
+---
+
+## AGORA Custom Events
+
+AGORA uses `CUSTOM` events for human-in-the-loop approval:
+
+### agora:tool_approval_request
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:tool_approval_request",
+  "value": {
+    "toolName": "generate_final_report",
+    "toolDescription": "Generates an official inspection report PDF",
+    "parameters": { "inspection_id": "INS-2024-001" },
+    "reasoning": "User requested to finalize the inspection report",
+    "riskLevel": "high",
+    "approvalId": "appr-xyz789"
+  }
+}
+```
+
+### agora:tool_approval_response
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:tool_approval_response",
+  "value": {
+    "approvalId": "appr-xyz789",
+    "approved": true,
+    "feedback": "Looks good, proceed"
+  }
+}
+```
+
+### agora:error
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:error",
+  "value": {
+    "errorCode": "moderation_violation",
+    "message": "Content blocked",
+    "details": { "reason": "profanity" }
+  }
+}
+```
+
+---
+
+## Naming Conventions
+
+| Concept | AG-UI Format |
+|---------|--------------|
+| Session/Thread ID | `threadId` (camelCase) |
+| Message ID | `messageId` |
+| Tool Call ID | `toolCallId` |
+| Approval ID | `approvalId` |
+| Event Type | SCREAMING_CASE (e.g., `RUN_STARTED`) |
+| Custom Event Name | domain:name (e.g., `agora:tool_approval_request`) |
+
+---
+
+## Implementation Checklist (v2.1.1)
+
+### Backend (server-langgraph)
+
+- [x] Use official `ag-ui-protocol` package types via `ag_ui.core`
+- [x] Re-export types with AGORA extensions in `ag_ui_types.py`
+- [x] Use `EventEncoder` from `ag_ui.encoder` for serialization
+- [x] Implement `STATE_SNAPSHOT` events at run start/end
+- [x] Implement `RUN_ERROR` for processing failures
+- [x] Implement `TOOL_CALL_RESULT` for tool outputs
+- [x] Fix step lifecycle (STEP_FINISHED before new STEP_STARTED)
+- [x] Remove legacy HAI protocol support
+- [x] Use snake_case field names with camelCase aliases
+
+### Frontend (HAI)
+
+- [x] Handle `RUN_ERROR` event type
+- [x] Handle `TOOL_CALL_RESULT` event type
+- [x] Handle `STATE_SNAPSHOT` for agent state sync
+- [x] Use integer timestamps (Unix ms)
+- [x] Make `runId` optional in schemas
+- [x] Add `developer` role support
+
+### Documentation
+
+- [x] Update protocol spec to v2.1.1
+- [x] Update JSON schemas with new events
+- [x] Update example files with STATE_SNAPSHOT
+- [x] Document official package usage
+
+---
+
+## Reference
+
+- **AG-UI GitHub**: https://github.com/ag-ui-protocol/ag-ui
+- **Protocol Spec**: `/docs/hai-contract/AG_UI_PROTOCOL.md`
+- **Schemas**: `/docs/hai-contract/schemas/messages.json`
