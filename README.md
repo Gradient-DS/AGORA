@@ -49,10 +49,42 @@ Inspecteur (Browser)
 
 - Node.js 20+
 - Python 3.11+
-- Docker & Docker Compose
+- Docker & Docker Compose (alleen voor volledige setup)
 - pnpm 8+
 
-### 1. Start MCP Servers
+### Quick Demo (Mock Server)
+
+Test de HAI frontend zonder backend services voor UI ontwikkeling
+
+**Terminal 1 - Mock Server:**
+```bash
+cd docs/hai-contract
+pip install websockets
+python mock_server.py
+```
+
+**Terminal 2 - HAI Frontend:**
+```bash
+cd HAI
+pnpm install
+echo "VITE_WS_URL=ws://localhost:8000/ws
+VITE_OPENAI_API_KEY=mock-not-needed
+VITE_APP_NAME=AGORA HAI" > .env.local
+pnpm run dev
+```
+
+Open http://localhost:3000 en volg het demo scenario:
+1. `Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854`
+2. `Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?`
+3. `Genereer rapport`
+
+De mock server simuleert het volledige AG-UI Protocol met agent handoffs en tool approval flows.
+
+---
+
+### Volledige Setup
+
+#### 1. Start MCP Server
 
 ```bash
 cd mcp-servers
@@ -65,7 +97,7 @@ Servers starten op:
 - http://localhost:5003 (Rapportage)
 - http://localhost:5005 (Inspectiegeschiedenis)
 
-### 2. Start Orchestrator Server
+#### 2. Start Orchestrator Server
 
 Je kunt kiezen tussen twee backends die dezelfde AG-UI Protocol API implementeren:
 
@@ -89,7 +121,7 @@ python -m agora_langgraph.api.server
 
 Beide servers starten op http://localhost:8000 met identieke WebSocket API
 
-### 3. Start HAI Frontend
+#### 3. Start HAI Frontend
 
 ```bash
 cd HAI
@@ -100,7 +132,7 @@ pnpm run dev
 
 Frontend beschikbaar op http://localhost:3000
 
-### 4. Bekijk Architectuurdiagrammen
+#### 4. Bekijk Architectuurdiagrammen
 
 ```bash
 cd c4
