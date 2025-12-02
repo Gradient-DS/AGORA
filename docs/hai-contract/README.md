@@ -123,9 +123,36 @@ cd docs/hai-contract
 python mock_server.py
 ```
 
-The mock server runs on `ws://localhost:8765` and simulates:
-- Basic conversation flow with streaming responses
-- Tool approval flow (triggered by messages containing "report" or "generate")
+The mock server runs on `ws://localhost:8000/ws` (same as the real backend).
+
+### Demo Scenario: Inspecteur Koen - Restaurant Bella Rosa
+
+The mock server supports the full demo scenario with realistic Dutch responses and tool calls:
+
+**Step 1 - Start inspection:**
+```
+Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854
+```
+→ Triggers `get_company_info` and `get_inspection_history` tool calls
+
+**Step 2 - Document findings:**
+```
+Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten
+```
+→ Triggers `search_regulations` and `check_repeat_violation` tool calls
+
+**Step 3 - Generate report:**
+```
+Genereer rapport
+```
+→ Triggers tool approval dialog for `generate_inspection_report`
+
+### Features
+
+- **Tool calls**: Simulated MCP tool calls with realistic responses
+- **Tool approval flow**: Human-in-the-loop approval for report generation
+- **Streaming responses**: Realistic text streaming in Dutch
+- **State tracking**: Conversation context maintained per connection
 
 ## Migration from HAI Protocol v1
 
