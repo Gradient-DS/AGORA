@@ -1,6 +1,6 @@
 # AGORA AG-UI Protocol Specification
 
-**Version:** 2.1.1  
+**Version:** 2.2.0  
 **Last Updated:** December 2025  
 **Protocol:** AG-UI (Agent-User Interface Protocol)
 
@@ -13,8 +13,9 @@
 5. [Event Lifecycle Rules](#event-lifecycle-rules)
 6. [Conversation Flows](#conversation-flows)
 7. [Custom Events (HITL)](#custom-events-hitl)
-8. [Implementation Guide](#implementation-guide)
-9. [Official AG-UI Package Usage](#official-ag-ui-package-usage)
+8. [Future: Voice Support](#future-voice-support)
+9. [Implementation Guide](#implementation-guide)
+10. [Official AG-UI Package Usage](#official-ag-ui-package-usage)
 
 ---
 
@@ -471,6 +472,161 @@ Sent by server for AGORA-specific protocol errors (e.g., moderation violations).
 
 ---
 
+## Future: Voice Support
+
+> **Status:** Planned  
+> **AG-UI Tracking:** [github.com/ag-ui-protocol/ag-ui/issues/126](https://github.com/ag-ui-protocol/ag-ui/issues/126)
+
+### Overview
+
+AGORA will support voice input/output for hands-free inspector interactions. The AG-UI protocol does not currently support audio natively, but multimodal support (audio, images, files) is on the AG-UI roadmap.
+
+### Migration Strategy
+
+1. **Phase 1 (Current):** Implement voice using AGORA `CUSTOM` events
+2. **Phase 2 (Future):** Migrate to native AG-UI audio events when available
+
+This approach ensures compatibility with the current AG-UI protocol while allowing seamless migration to native support.
+
+### Planned Custom Events
+
+#### agora:audio_input_start
+
+Sent by client when user starts speaking.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:audio_input_start",
+  "value": {
+    "messageId": "audio-input-123",
+    "format": "pcm",
+    "sampleRate": 16000,
+    "channels": 1
+  }
+}
+```
+
+#### agora:audio_input_chunk
+
+Sent by client with audio data chunks during recording.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:audio_input_chunk",
+  "value": {
+    "messageId": "audio-input-123",
+    "data": "<base64-encoded-audio>",
+    "sequence": 0
+  }
+}
+```
+
+#### agora:audio_input_end
+
+Sent by client when user stops speaking.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:audio_input_end",
+  "value": {
+    "messageId": "audio-input-123"
+  }
+}
+```
+
+#### agora:audio_output_start
+
+Sent by server when starting audio response.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:audio_output_start",
+  "value": {
+    "messageId": "audio-output-456",
+    "format": "pcm",
+    "sampleRate": 24000,
+    "channels": 1
+  },
+  "timestamp": 1705318202000
+}
+```
+
+#### agora:audio_output_chunk
+
+Sent by server with audio response chunks.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:audio_output_chunk",
+  "value": {
+    "messageId": "audio-output-456",
+    "data": "<base64-encoded-audio>",
+    "sequence": 0
+  },
+  "timestamp": 1705318202100
+}
+```
+
+#### agora:audio_output_end
+
+Sent by server when audio response is complete.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:audio_output_end",
+  "value": {
+    "messageId": "audio-output-456"
+  },
+  "timestamp": 1705318203000
+}
+```
+
+### Audio Format Considerations
+
+| Property | Input (Client → Server) | Output (Server → Client) |
+|----------|------------------------|--------------------------|
+| Format | PCM, WebM, Opus | PCM, MP3, Opus |
+| Sample Rate | 16000 Hz | 24000 Hz |
+| Channels | 1 (mono) | 1 (mono) |
+| Encoding | Base64 | Base64 |
+
+### Flow: Voice Conversation
+
+```
+Client                                    Server
+  |                                         |
+  |-- agora:audio_input_start ---------->   |
+  |-- agora:audio_input_chunk ---------->   |
+  |-- agora:audio_input_chunk ---------->   |
+  |-- agora:audio_input_end ------------>   |
+  |                                         |
+  | <------------ RUN_STARTED               |
+  | <------------ STATE_SNAPSHOT            |
+  | <------------ STEP_STARTED (processing) |
+  |                                         |
+  | <------------ agora:audio_output_start  |
+  | <------------ agora:audio_output_chunk  |
+  | <------------ agora:audio_output_chunk  |
+  | <------------ agora:audio_output_end    |
+  |                                         |
+  | <------------ TEXT_MESSAGE_START        |
+  | <------------ TEXT_MESSAGE_CONTENT      |  (transcript)
+  | <------------ TEXT_MESSAGE_END          |
+  |                                         |
+  | <------------ STEP_FINISHED             |
+  | <------------ RUN_FINISHED              |
+```
+
+> **Note:** Text transcript events are sent alongside audio for accessibility and chat history.
+
+---
+
 ## Implementation Guide
 
 ### Client Input Format
@@ -631,6 +787,11 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ---
 
 ## Changelog
+
+### v2.2.0 (December 2025)
+- Added "Future: Voice Support" section with planned `CUSTOM` event specifications
+- Documented migration strategy: AGORA custom events → native AG-UI audio (when available)
+- Added audio input/output event definitions and flow diagram
 
 ### v2.1.1 (December 2025)
 - Clarified `TOOL_CALL_END` does not contain result (result is in `TOOL_CALL_RESULT`)
