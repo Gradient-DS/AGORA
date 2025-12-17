@@ -10,6 +10,7 @@ from agents.stream_events import RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
 from agora_openai.core.agent_definitions import AgentConfig
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
+from agora_openai.config import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -57,10 +58,14 @@ class AgentRegistry:
 
         # Agent SDK doesn't support temperature parameter directly
         # Temperature is set at the Runner.run level or via model string
+        # Use model from config if specified, otherwise fall back to settings
+        settings = get_settings()
+        model = config.get("model") or settings.openai_model
+
         agent = Agent(
             name=config["name"],
             instructions=config["instructions"],
-            model=config["model"],
+            model=model,
             mcp_servers=agent_mcp_servers,
         )
 

@@ -35,7 +35,8 @@ def get_llm_for_agent(agent_id: str) -> ChatOpenAI:
         config = get_agent_by_id(agent_id)
 
         if config:
-            model = config.get("model", settings.openai_model)
+            # Use model from config if specified, otherwise fall back to settings
+            model = config.get("model") or settings.openai_model
             temperature = config.get("temperature", 0.7)
         else:
             model = settings.openai_model
@@ -45,6 +46,7 @@ def get_llm_for_agent(agent_id: str) -> ChatOpenAI:
             model=model,
             temperature=temperature,
             streaming=True,
+            api_key=settings.openai_api_key.get_secret_value(),
             base_url=settings.openai_base_url,
         )
 

@@ -6,7 +6,7 @@ class AgentConfig(TypedDict):
     id: str
     name: str
     instructions: str
-    model: str
+    model: str | None  # None = use model from settings
     tools: list[str]
     temperature: float
     handoffs: list[str]
@@ -61,7 +61,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "FORMAT:\n"
             "Keep it conversational and natural in Dutch"
         ),
-        "model": "gpt-4o",
+        "model": None,  # Use OPENAI_AGENTS_OPENAI_MODEL from settings
         "tools": [],
         "temperature": 0.7,
         "handoffs": ["history-agent", "regulation-agent", "reporting-agent"],
@@ -103,7 +103,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "FORMAT:\n"
             "Structure responses with: Samenvatting, Details, Aanbevelingen, Bronnen"
         ),
-        "model": "gpt-4o",
+        "model": None,  # Use OPENAI_AGENTS_OPENAI_MODEL from settings
         "tools": ["file_search", "code_interpreter"],
         "temperature": 0.3,
         "handoffs": ["reporting-agent", "general-agent"],
@@ -175,7 +175,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "FORMAT:\n"
             "Data Extractie → Verificatie (bij incomplete data) → Rapport Generatie → Download Links"
         ),
-        "model": "gpt-4o",
+        "model": None,  # Use OPENAI_AGENTS_OPENAI_MODEL from settings
         "tools": ["file_search", "code_interpreter"],
         "temperature": 0.3,
         "handoffs": ["general-agent"],
@@ -226,7 +226,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "FORMAT:\n"
             "Bedrijfsgegevens → Historisch Overzicht → Overtredingen → Follow-up Status"
         ),
-        "model": "gpt-4o",
+        "model": None,  # Use OPENAI_AGENTS_OPENAI_MODEL from settings
         "tools": ["file_search", "code_interpreter"],
         "temperature": 0.2,
         "handoffs": ["regulation-agent", "reporting-agent", "general-agent"],
