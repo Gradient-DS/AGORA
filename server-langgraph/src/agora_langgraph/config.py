@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = Field(
         validation_alias="MCP_OPENAI_API_KEY", description="OpenAI API key"
     )
+    openai_base_url: str = Field(description="Base URL for OpenAI-compatible API")
     openai_model: str = Field(default="gpt-4o", description="Default OpenAI model")
 
     mcp_servers: str = Field(
