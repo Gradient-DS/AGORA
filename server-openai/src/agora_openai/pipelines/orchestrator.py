@@ -18,6 +18,7 @@ from agora_openai.common.schemas import ToolCall
 from agora_openai.core.approval_logic import requires_human_approval
 from agora_openai.core.agent_runner import AgentRunner
 from agora_openai.adapters.audit_logger import AuditLogger
+from agora_openai.adapters.session_metadata import SessionMetadataManager
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
 
@@ -32,11 +33,13 @@ class Orchestrator:
         agent_runner: AgentRunner,
         moderator: ModerationPipeline,
         audit_logger: AuditLogger,
+        session_metadata: SessionMetadataManager | None = None,
     ):
         """Initialize orchestrator with dependencies."""
         self.agent_runner = agent_runner
         self.moderator = moderator
         self.audit = audit_logger
+        self.session_metadata = session_metadata
         self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
 
     async def _handle_tool_approval_flow(
@@ -114,6 +117,20 @@ class Orchestrator:
             if msg.get("role") == "user":
                 user_content = msg.get("content", "")
                 break
+
+        # Extract user_id from context (default to anonymous)
+        user_id = (agent_input.context or {}).get("user_id", "anonymous")
+
+        # Create or update session metadata
+        if self.session_metadata:
+            try:
+                await self.session_metadata.create_or_update_metadata(
+                    session_id=thread_id,
+                    user_id=user_id,
+                    first_message=user_content,
+                )
+            except Exception as e:
+                log.warning(f"Failed to update session metadata: {e}")
 
         # Validate input
         is_valid, error = await self.moderator.validate_input(user_content)
@@ -289,6 +306,13 @@ class Orchestrator:
                 content=response_content,
                 metadata={"agent_id": active_agent_id},
             )
+
+            # Increment message count for successful response
+            if self.session_metadata:
+                try:
+                    await self.session_metadata.increment_message_count(thread_id)
+                except Exception as e:
+                    log.warning(f"Failed to increment message count: {e}")
 
             if protocol_handler and protocol_handler.is_connected:
                 # Send final state snapshot before finishing

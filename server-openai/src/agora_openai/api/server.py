@@ -4,7 +4,7 @@ import os
 import uvicorn
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from agora_openai.config import get_settings, parse_mcp_servers
 from agora_openai.logging_config import configure_logging
@@ -12,6 +12,7 @@ from agora_openai.core.agent_definitions import AGENT_CONFIGS, list_all_agents
 from agora_openai.core.agent_runner import AgentRegistry, AgentRunner
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.adapters.audit_logger import AuditLogger
+from agora_openai.adapters.session_metadata import SessionMetadataManager
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
 from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
@@ -56,19 +57,25 @@ async def lifespan(app: FastAPI):
     moderator = ModerationPipeline(enabled=settings.guardrails_enabled)
     audit_logger = AuditLogger(otel_endpoint=settings.otel_endpoint)
 
+    session_metadata = SessionMetadataManager(db_path="sessions.db")
+    await session_metadata.initialize()
+
     orchestrator = Orchestrator(
         agent_runner=agent_runner,
         moderator=moderator,
         audit_logger=audit_logger,
+        session_metadata=session_metadata,
     )
 
     app.state.orchestrator = orchestrator
     app.state.agent_registry = agent_registry
     app.state.mcp_tool_registry = mcp_tool_registry
+    app.state.session_metadata = session_metadata
 
     yield
 
     log.info("Shutting down AGORA Agent SDK Server")
+    await session_metadata.close()
     await mcp_tool_registry.disconnect_all()
 
 
@@ -158,6 +165,64 @@ async def get_session_history(session_id: str, include_tools: bool = False):
             "error": str(e),
             "message": f"Failed to retrieve history for session {session_id}",
         }
+
+
+@app.get("/sessions")
+async def list_sessions(
+    user_id: str = Query(..., description="User/inspector persona ID"),
+    limit: int = Query(50, ge=1, le=100, description="Max sessions to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+):
+    """List all sessions for a user, ordered by last activity."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    sessions, total_count = await session_metadata.list_sessions(
+        user_id=user_id,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "success": True,
+        "sessions": sessions,
+        "totalCount": total_count,
+    }
+
+
+@app.get("/sessions/{session_id}/metadata")
+async def get_session_metadata(session_id: str):
+    """Get session metadata by ID."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    session = await session_metadata.get_session(session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "success": True,
+        "session": session,
+    }
+
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a session and its metadata.
+
+    Note: This deletes the metadata. Session conversation data
+    deletion depends on the backend implementation.
+    """
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    deleted = await session_metadata.delete_session(session_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "success": True,
+        "message": "Session deleted",
+    }
 
 
 @app.websocket("/ws")
