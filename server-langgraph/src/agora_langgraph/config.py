@@ -16,10 +16,12 @@ if env_file:
 
 
 class Settings(BaseSettings):
-    """Application settings - compatible with server-openai."""
+    """Application settings for LangGraph orchestrator."""
 
-    openai_api_key: SecretStr = Field(
-        validation_alias="MCP_OPENAI_API_KEY", description="OpenAI API key"
+    openai_api_key: SecretStr = Field(description="OpenAI-compatible API key")
+    openai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        description="Base URL for OpenAI-compatible API",
     )
     openai_model: str = Field(default="gpt-4o", description="Default OpenAI model")
 
@@ -44,7 +46,7 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_prefix="APP_",
+        env_prefix="LANGGRAPH_",
         case_sensitive=False,
         extra="ignore",
     )

@@ -18,12 +18,9 @@ if env_file:
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Application settings for OpenAI Agents SDK orchestrator."""
 
-    # Using validation_alias to strictly look for MCP_OPENAI_API_KEY as requested
-    openai_api_key: SecretStr = Field(
-        validation_alias="MCP_OPENAI_API_KEY", description="OpenAI API key"
-    )
+    openai_api_key: SecretStr = Field(description="OpenAI API key")
     openai_model: str = Field(default="gpt-4o", description="Default OpenAI model")
 
     mcp_servers: str = Field(
@@ -43,7 +40,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", description="Logging level")
 
     model_config = SettingsConfigDict(
-        env_prefix="APP_",
+        env_prefix="OPENAI_AGENTS_",
         case_sensitive=False,
         extra="ignore",
     )

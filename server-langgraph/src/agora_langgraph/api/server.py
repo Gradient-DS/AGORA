@@ -9,7 +9,7 @@ import uuid
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from agora_langgraph.config import get_settings, parse_mcp_servers
@@ -19,6 +19,7 @@ from agora_langgraph.core.graph import build_agent_graph
 from agora_langgraph.adapters.mcp_client import create_mcp_client_manager
 from agora_langgraph.adapters.checkpointer import create_checkpointer
 from agora_langgraph.adapters.audit_logger import AuditLogger
+from agora_langgraph.adapters.session_metadata import SessionMetadataManager
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 from agora_langgraph.pipelines.orchestrator import Orchestrator
 from agora_langgraph.api.ag_ui_handler import AGUIProtocolHandler
@@ -57,17 +58,24 @@ async def lifespan(app: FastAPI):
             moderator = ModerationPipeline(enabled=settings.guardrails_enabled)
             audit_logger = AuditLogger(otel_endpoint=settings.otel_endpoint)
 
+            session_metadata = SessionMetadataManager(db_path=settings.sessions_db_path)
+            await session_metadata.initialize()
+
             orchestrator = Orchestrator(
                 graph=compiled_graph,
                 moderator=moderator,
                 audit_logger=audit_logger,
+                session_metadata=session_metadata,
             )
 
             app.state.orchestrator = orchestrator
             app.state.mcp_manager = mcp_manager
             app.state.checkpointer = checkpointer
+            app.state.session_metadata = session_metadata
 
             yield
+
+            await session_metadata.close()
 
     log.info("Shutting down AGORA LangGraph Server")
 
@@ -155,6 +163,64 @@ async def get_session_history(session_id: str, include_tools: bool = False):
             "error": str(e),
             "message": f"Failed to retrieve history for thread {session_id}",
         }
+
+
+@app.get("/sessions")
+async def list_sessions(
+    user_id: str = Query(..., description="User/inspector persona ID"),
+    limit: int = Query(50, ge=1, le=100, description="Max sessions to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+):
+    """List all sessions for a user, ordered by last activity."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    sessions, total_count = await session_metadata.list_sessions(
+        user_id=user_id,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "success": True,
+        "sessions": sessions,
+        "totalCount": total_count,
+    }
+
+
+@app.get("/sessions/{session_id}/metadata")
+async def get_session_metadata(session_id: str):
+    """Get session metadata by ID."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    session = await session_metadata.get_session(session_id)
+
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "success": True,
+        "session": session,
+    }
+
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a session and its metadata.
+
+    Note: This deletes the metadata. Session conversation data
+    deletion depends on the backend implementation.
+    """
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    deleted = await session_metadata.delete_session(session_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return {
+        "success": True,
+        "message": "Session deleted",
+    }
 
 
 @app.websocket("/ws")

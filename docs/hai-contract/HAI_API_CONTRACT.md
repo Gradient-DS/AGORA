@@ -1,30 +1,196 @@
-# AGORA AG-UI Protocol Specification
+# AGORA HAI API Contract
 
-**Version:** 2.2.0  
-**Last Updated:** December 2025  
-**Protocol:** AG-UI (Agent-User Interface Protocol)
+**Version:** 2.3.0
+**Last Updated:** December 2025
+
+This document defines the complete API contract between the HAI (Human Agent Interface) frontend and the AGORA orchestrator backend. It covers both real-time WebSocket communication and REST endpoints.
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [Connection](#connection)
-3. [Event Format](#event-format)
-4. [Event Types](#event-types)
-5. [Event Lifecycle Rules](#event-lifecycle-rules)
-6. [Conversation Flows](#conversation-flows)
-7. [Custom Events (HITL)](#custom-events-hitl)
-8. [Future: Voice Support](#future-voice-support)
-9. [Implementation Guide](#implementation-guide)
-10. [Official AG-UI Package Usage](#official-ag-ui-package-usage)
+### REST API
+1. [Session Management](#session-management-rest-api)
+
+### WebSocket Protocol (AG-UI)
+2. [Overview](#overview)
+3. [Connection](#connection)
+4. [Event Format](#event-format)
+5. [Event Types](#event-types)
+6. [Event Lifecycle Rules](#event-lifecycle-rules)
+7. [Conversation Flows](#conversation-flows)
+8. [Custom Events (HITL)](#custom-events-hitl)
+9. [Future: Voice Support](#future-voice-support)
+10. [Implementation Guide](#implementation-guide)
+11. [Official AG-UI Package Usage](#official-ag-ui-package-usage)
+
+---
+
+# REST API
+
+The REST API handles non-real-time operations such as session management, conversation history retrieval, and user preferences.
+
+---
+
+## Session Management (REST API)
+
+The REST endpoints manage conversation sessions and history. These are called before establishing WebSocket connections or when switching between conversations.
+
+### Endpoints
+
+#### GET /sessions
+
+List all sessions for a user, ordered by last activity (most recent first).
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `user_id` | string | Yes | - | Inspector persona ID (e.g., "koen", "fatima") |
+| `limit` | integer | No | 50 | Max sessions to return (1-100) |
+| `offset` | integer | No | 0 | Pagination offset |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "sessions": [
+    {
+      "sessionId": "abc-123-def-456",
+      "userId": "koen",
+      "title": "Inspectie bij Restaurant Bella Rosa",
+      "firstMessagePreview": "Start inspectie bij Restaurant...",
+      "messageCount": 12,
+      "createdAt": "2025-12-01T10:30:00Z",
+      "lastActivity": "2025-12-01T11:45:00Z"
+    }
+  ],
+  "totalCount": 42
+}
+```
+
+#### GET /sessions/{session_id}/history
+
+Retrieve the full conversation history for a session, including messages and optionally tool calls.
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `session_id` | string | Session/thread identifier |
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `include_tools` | boolean | No | false | Include tool calls and results in history |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "threadId": "abc-123-def-456",
+  "history": [
+    {"role": "user", "content": "Start inspectie bij Restaurant Bella Rosa"},
+    {"role": "assistant", "content": "Inspectie gestart...", "agent_id": "history-agent"},
+    {"role": "tool_call", "tool_call_id": "tc-1", "tool_name": "get_company_info", "content": "{\"kvk_number\": \"92251854\"}", "agent_id": "history-agent"},
+    {"role": "tool", "tool_call_id": "tc-1", "tool_name": "get_company_info", "content": "{\"name\": \"Restaurant Bella Rosa\", ...}"}
+  ],
+  "messageCount": 4
+}
+```
+
+**History Message Roles:**
+
+| Role | Description |
+|------|-------------|
+| `user` | User input message |
+| `assistant` | Agent response (includes `agent_id` field) |
+| `tool_call` | Tool invocation (includes `tool_call_id`, `tool_name`, `agent_id`) |
+| `tool` | Tool result (includes `tool_call_id`, `tool_name`) |
+
+#### GET /sessions/{session_id}/metadata
+
+Get session metadata without the full conversation history.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "session": {
+    "sessionId": "abc-123-def-456",
+    "userId": "koen",
+    "title": "Inspectie bij Restaurant Bella Rosa",
+    "firstMessagePreview": "Start inspectie bij Restaurant...",
+    "messageCount": 12,
+    "createdAt": "2025-12-01T10:30:00Z",
+    "lastActivity": "2025-12-01T11:45:00Z"
+  }
+}
+```
+
+#### DELETE /sessions/{session_id}
+
+Delete a session and all its associated data.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Session deleted"
+}
+```
+
+**Error Response (404):**
+
+```json
+{
+  "detail": "Session not found"
+}
+```
+
+### Session Restoration Flow
+
+When a user returns to the application or switches between conversations:
+
+```
+Client                                    Server
+  |                                         |
+  |-- GET /sessions?user_id=koen -------->  |
+  |                                         |
+  | <-------- Session list                  |
+  |                                         |
+  |-- GET /sessions/{id}/history?include_tools=true -->
+  |                                         |
+  | <-------- Messages + Tool Calls         |
+  |                                         |
+  |  [Populate UI with history]             |
+  |                                         |
+  |-- WebSocket /ws ----------------------> |
+  |                                         |
+  |  [Continue conversation via WebSocket]  |
+```
+
+1. **Page Load**: Fetch session list via `GET /sessions?user_id={userId}`
+2. **Session Selection**: User selects a past conversation from sidebar
+3. **Load History**: Fetch full history via `GET /sessions/{id}/history?include_tools=true`
+4. **Populate UI**: Load messages into chat and tool calls into debug panel
+5. **Connect WebSocket**: Establish connection for new messages using the same `threadId`
+
+---
+
+# WebSocket Protocol (AG-UI)
+
+Real-time communication uses the open-source **AG-UI Protocol** for streaming events between the HAI frontend and the orchestrator backend.
+
+**AG-UI Repository:** https://github.com/ag-ui-protocol/ag-ui
+**Official Package:** `ag-ui-protocol` (Python), `@ag-ui/core` (TypeScript)
 
 ---
 
 ## Overview
-
-AGORA uses the open-source **AG-UI Protocol** for communication between the HAI (Human Agent Interface) frontend and the LangGraph orchestrator backend.
-
-**AG-UI Repository:** https://github.com/ag-ui-protocol/ag-ui  
-**Official Package:** `ag-ui-protocol` (Python), `@ag-ui/core` (TypeScript)
 
 ### Key Features
 
@@ -788,6 +954,13 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 
 ## Changelog
 
+### v2.3.0 (December 2025)
+- **Renamed**: `AG_UI_PROTOCOL.md` → `HAI_API_CONTRACT.md` to reflect unified REST + WebSocket contract
+- **Restructured**: Document now has clear REST API and WebSocket Protocol sections
+- Added Session Management REST API endpoints: `GET /sessions`, `GET /sessions/{id}/history`, `GET /sessions/{id}/metadata`, `DELETE /sessions/{id}`
+- Documented history message roles including `tool_call` for tool invocations
+- Added Session Restoration Flow diagram
+
 ### v2.2.0 (December 2025)
 - Added "Future: Voice Support" section with planned `CUSTOM` event specifications
 - Documented migration strategy: AGORA custom events → native AG-UI audio (when available)
@@ -800,7 +973,7 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 - Added STATE_SNAPSHOT pattern recommendations
 - Updated mock_server.py to match protocol exactly
 
-### v2.1.0 (December 2025)
+### v2.1.0 (November 2025)
 - Added `RUN_ERROR` event handling
 - Added `TOOL_CALL_RESULT` event
 - Added `STATE_SNAPSHOT` at run start/end

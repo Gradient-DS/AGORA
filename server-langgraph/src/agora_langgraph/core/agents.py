@@ -8,6 +8,7 @@ from typing import Any
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
+from agora_langgraph.config import get_settings
 from agora_langgraph.core.state import AgentState
 from agora_langgraph.core.agent_definitions import AGENT_CONFIGS, get_agent_by_id
 
@@ -30,18 +31,23 @@ def get_agent_tools(agent_id: str) -> list[Any]:
 def get_llm_for_agent(agent_id: str) -> ChatOpenAI:
     """Get or create LLM instance for an agent."""
     if agent_id not in _llm_cache:
+        settings = get_settings()
         config = get_agent_by_id(agent_id)
+
         if config:
-            model = config.get("model", "gpt-4o")
+            # Use model from config if specified, otherwise fall back to settings
+            model = config.get("model") or settings.openai_model
             temperature = config.get("temperature", 0.7)
         else:
-            model = "gpt-4o"
+            model = settings.openai_model
             temperature = 0.7
 
         _llm_cache[agent_id] = ChatOpenAI(
             model=model,
             temperature=temperature,
             streaming=True,
+            api_key=settings.openai_api_key.get_secret_value(),
+            base_url=settings.openai_base_url,
         )
 
     return _llm_cache[agent_id]
@@ -102,6 +108,10 @@ async def _run_agent_node(
             f"Agent {agent_id} response: content={str(response.content)[:100]!r}, "
             f"tool_calls={response_tool_calls}"
         )
+
+        # Add agent_id to additional_kwargs for history tracking
+        if hasattr(response, "additional_kwargs"):
+            response.additional_kwargs["agent_id"] = agent_id
 
         return {
             "messages": [response],

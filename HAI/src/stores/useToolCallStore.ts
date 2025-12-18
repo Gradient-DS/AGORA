@@ -10,6 +10,7 @@ interface ToolCallStore {
   addToolCall: (toolCall: Omit<ToolCallInfo, 'timestamp'>) => void;
   updateToolCall: (id: string, updates: Partial<ToolCallInfo>) => void;
   clearToolCalls: () => void;
+  replaceToolCalls: (toolCalls: ToolCallInfo[]) => void;
   getToolCallsByMessage: (messageId: string) => ToolCallInfo[];
   getToolCallsByAgent: (agentId: string) => ToolCallInfo[];
 }
@@ -39,6 +40,11 @@ export const useToolCallStore = create<ToolCallStore>((set, get) => ({
     }),
 
   clearToolCalls: () => set({ toolCalls: [] }),
+
+  replaceToolCalls: (toolCalls) => {
+    console.log('[ToolCallStore] Replacing tool calls with', toolCalls.length, 'items');
+    set({ toolCalls });
+  },
 
   getToolCallsByMessage: (messageId: string) =>
     get().toolCalls.filter((tc) => tc.parentMessageId === messageId),

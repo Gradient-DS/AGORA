@@ -20,6 +20,7 @@ from agora_langgraph.common.ag_ui_types import (
 from agora_langgraph.common.schemas import ToolCall
 from agora_langgraph.core.approval_logic import requires_human_approval
 from agora_langgraph.adapters.audit_logger import AuditLogger
+from agora_langgraph.adapters.session_metadata import SessionMetadataManager
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
@@ -49,11 +50,13 @@ class Orchestrator:
         graph: CompiledStateGraph,
         moderator: ModerationPipeline,
         audit_logger: AuditLogger,
+        session_metadata: SessionMetadataManager | None = None,
     ):
         """Initialize orchestrator."""
         self.graph = graph
         self.moderator = moderator
         self.audit = audit_logger
+        self.session_metadata = session_metadata
         self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
 
     async def _handle_tool_approval_flow(
@@ -136,6 +139,22 @@ class Orchestrator:
                 user_content = msg.get("content", "")
                 break
 
+        # Extract user_id from context (default to anonymous)
+        user_id = (agent_input.context or {}).get("user_id", "anonymous")
+
+        # Create or update session metadata
+        if self.session_metadata:
+            try:
+                log.info(f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}")
+                await self.session_metadata.create_or_update_metadata(
+                    session_id=thread_id,
+                    user_id=user_id,
+                    first_message=user_content,
+                )
+                log.info(f"Session metadata created/updated successfully for {thread_id}")
+            except Exception as e:
+                log.warning(f"Failed to update session metadata: {e}")
+
         # Validate input
         is_valid, error = await self.moderator.validate_input(user_content)
         if not is_valid:
@@ -205,6 +224,13 @@ class Orchestrator:
                 content=response_content,
                 metadata={"agent_id": active_agent_id},
             )
+
+            # Increment message count for successful response
+            if self.session_metadata:
+                try:
+                    await self.session_metadata.increment_message_count(thread_id)
+                except Exception as e:
+                    log.warning(f"Failed to increment message count: {e}")
 
             if protocol_handler and protocol_handler.is_connected:
                 # Send final state snapshot before finishing
@@ -451,11 +477,17 @@ class Orchestrator:
                             }
                         )
                     elif msg.type == "ai":
+                        # Extract agent_id from additional_kwargs if present
+                        agent_id = None
+                        if hasattr(msg, "additional_kwargs"):
+                            agent_id = msg.additional_kwargs.get("agent_id")
+
                         if msg.content:
                             history.append(
                                 {
                                     "role": "assistant",
                                     "content": str(msg.content),
+                                    "agent_id": agent_id,
                                 }
                             )
                         if include_tool_calls and hasattr(msg, "tool_calls"):
@@ -463,14 +495,17 @@ class Orchestrator:
                                 history.append(
                                     {
                                         "role": "tool_call",
+                                        "tool_call_id": tc.get("id", ""),
                                         "tool_name": tc.get("name", "unknown"),
                                         "content": str(tc.get("args", {})),
+                                        "agent_id": agent_id,
                                     }
                                 )
                     elif include_tool_calls and msg.type == "tool":
                         history.append(
                             {
                                 "role": "tool",
+                                "tool_call_id": getattr(msg, "tool_call_id", ""),
                                 "tool_name": getattr(msg, "name", "unknown"),
                                 "content": str(msg.content),
                             }

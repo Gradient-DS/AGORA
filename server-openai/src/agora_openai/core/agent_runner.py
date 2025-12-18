@@ -10,6 +10,7 @@ from agents.stream_events import RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
 from agora_openai.core.agent_definitions import AgentConfig
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
+from agora_openai.config import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -57,10 +58,14 @@ class AgentRegistry:
 
         # Agent SDK doesn't support temperature parameter directly
         # Temperature is set at the Runner.run level or via model string
+        # Use model from config if specified, otherwise fall back to settings
+        settings = get_settings()
+        model = config.get("model") or settings.openai_model
+
         agent = Agent(
             name=config["name"],
             instructions=config["instructions"],
-            model=config["model"],
+            model=model,
             mcp_servers=agent_mcp_servers,
         )
 
@@ -420,71 +425,171 @@ class AgentRunner:
         return "general-agent"
 
     async def get_conversation_history(
-        self, session_id: str, include_tool_calls: bool = False
+        self,
+        session_id: str,
+        include_tool_calls: bool = False,
+        stored_tool_calls: list[dict[str, Any]] | None = None,
     ) -> list[dict[str, Any]]:
         """Get conversation history for a session.
 
         Args:
             session_id: Session identifier
             include_tool_calls: If True, includes tool calls and their results in the history
+            stored_tool_calls: Full tool call data from session_metadata storage
 
         Returns:
-            List of conversation items with role and content
+            List of conversation items with role, content, and agent_id
         """
         if session_id not in self.sessions:
-            return []
+            self.get_or_create_session(session_id)
 
         session = self.sessions[session_id]
         items = await session.get_items()
+        stored_tool_calls = stored_tool_calls or []
+
+        # Build lookup for tool calls by ID
+        tool_calls_by_id = {tc["tool_call_id"]: tc for tc in stored_tool_calls}
+
+        # Track which tool calls we've added (to avoid duplicates)
+        added_tool_calls: set[str] = set()
 
         history = []
+        current_agent_id = "general-agent"
+
+        # Build mapping from call_id to tool_call_id and tool_name during first pass
+        # This is needed because function_call has both 'id' (fc_...) and 'call_id' (call_...)
+        # but function_call_output only has 'call_id'
+        call_id_to_info: dict[str, dict[str, str]] = {}
+        for item in items:
+            if item.get("type") == "function_call":
+                call_id = item.get("call_id", "")
+                tool_call_id = item.get("id", call_id)
+                tool_name = item.get("name", "unknown_tool")
+                if call_id:
+                    call_id_to_info[call_id] = {
+                        "tool_call_id": tool_call_id,
+                        "tool_name": tool_name,
+                    }
+
         for item in items:
             role = item.get("role")
+            item_type = item.get("type")
 
-            if role in ["user", "assistant"]:
-                content = ""
-                if isinstance(item.get("content"), list):
-                    for content_item in item["content"]:
-                        if isinstance(content_item, dict):
-                            if "text" in content_item:
-                                content += content_item["text"]
-                            elif "input_text" in content_item:
-                                content += content_item["input_text"]
-                            elif "output_text" in content_item:
-                                content += content_item["output_text"]
-                elif isinstance(item.get("content"), str):
-                    content = item["content"]
-
+            if role == "user":
+                content = self._extract_content(item)
                 if content:
-                    history.append(
-                        {
-                            "role": role,
-                            "content": content,
-                        }
-                    )
+                    history.append({"role": "user", "content": content})
 
-            elif include_tool_calls and role == "tool":
-                tool_name = item.get("name", "unknown_tool")
-                tool_call_id = item.get("tool_call_id", "unknown")
-
-                content = ""
-                if isinstance(item.get("content"), list):
-                    for content_item in item["content"]:
-                        if isinstance(content_item, dict):
-                            if "text" in content_item:
-                                content += content_item["text"]
-                            elif "output_text" in content_item:
-                                content += content_item["output_text"]
-                elif isinstance(item.get("content"), str):
-                    content = item["content"]
-
-                history.append(
-                    {
-                        "role": "tool",
-                        "tool_name": tool_name,
-                        "tool_call_id": tool_call_id,
+            elif role == "assistant":
+                content = self._extract_content(item)
+                if content:
+                    history.append({
+                        "role": "assistant",
                         "content": content,
-                    }
-                )
+                        "agent_id": current_agent_id,
+                    })
+
+            elif item_type == "function_call" and include_tool_calls:
+                # OpenAI SDK stores tool calls with type="function_call"
+                # call_id is used to correlate with function_call_output
+                call_id = item.get("call_id", "unknown")
+                tool_call_id = item.get("id", call_id)  # 'id' field has the full ID
+                tool_name = item.get("name", "unknown_tool")
+                arguments = item.get("arguments", "{}")
+
+                # Look up stored tool call data (keyed by the full ID)
+                stored_tc = tool_calls_by_id.get(tool_call_id)
+
+                if tool_call_id not in added_tool_calls:
+                    # Update current agent from stored data
+                    if stored_tc and stored_tc.get("agent_id"):
+                        current_agent_id = stored_tc["agent_id"]
+
+                    history.append({
+                        "role": "tool_call",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": stored_tc.get("tool_name", tool_name) if stored_tc else tool_name,
+                        "content": stored_tc.get("parameters", arguments) if stored_tc else arguments,
+                        "agent_id": stored_tc.get("agent_id", current_agent_id) if stored_tc else current_agent_id,
+                    })
+                    added_tool_calls.add(tool_call_id)
+
+            elif item_type == "function_call_output" and include_tool_calls:
+                # OpenAI SDK stores tool results with type="function_call_output"
+                call_id = item.get("call_id", "unknown")
+                output = item.get("output", "")
+
+                # Look up the full tool_call_id and tool_name from our mapping
+                call_info = call_id_to_info.get(call_id, {})
+                tool_call_id = call_info.get("tool_call_id", call_id)
+                tool_name = call_info.get("tool_name", "unknown_tool")
+
+                # Also check stored data for additional info
+                stored_tc = tool_calls_by_id.get(tool_call_id)
+                if stored_tc:
+                    tool_name = stored_tc.get("tool_name", tool_name)
+
+                history.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call_id,
+                    "tool_name": tool_name,
+                    "content": output,
+                })
+
+            elif role == "tool" and include_tool_calls:
+                # Legacy format: Tool result with role="tool"
+                tool_call_id = item.get("tool_call_id", "unknown")
+                tool_name = item.get("name", "unknown_tool")
+                result_content = self._extract_content(item)
+
+                # Get stored tool call data if available
+                stored_tc = tool_calls_by_id.get(tool_call_id)
+
+                if stored_tc and tool_call_id not in added_tool_calls:
+                    # Update current agent from stored data
+                    if stored_tc.get("agent_id"):
+                        current_agent_id = stored_tc["agent_id"]
+
+                    # Add tool_call entry BEFORE the tool result
+                    history.append({
+                        "role": "tool_call",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": stored_tc.get("tool_name", tool_name),
+                        "content": stored_tc.get("parameters", "{}"),
+                        "agent_id": stored_tc.get("agent_id", current_agent_id),
+                    })
+                    added_tool_calls.add(tool_call_id)
+
+                # Add tool result
+                history.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call_id,
+                    "tool_name": tool_name,
+                    "content": result_content,
+                })
 
         return history
+
+    def _extract_content(self, item: dict) -> str:
+        """Extract text content from a session item.
+
+        Args:
+            item: Session item dict
+
+        Returns:
+            Extracted text content
+        """
+        content_raw = item.get("content")
+        if isinstance(content_raw, str):
+            return content_raw
+        if isinstance(content_raw, list):
+            parts = []
+            for part in content_raw:
+                if isinstance(part, dict):
+                    parts.append(
+                        part.get("text", "")
+                        or part.get("input_text", "")
+                        or part.get("output_text", "")
+                    )
+            return "".join(parts)
+        return ""

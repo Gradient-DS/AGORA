@@ -7,18 +7,20 @@ interface SessionStore {
   initializeSession: () => void;
   updateActivity: () => void;
   clearSession: () => void;
+  switchToSession: (sessionId: string) => void;
+  startNewSession: () => void;
 }
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
   session: null,
 
   initializeSession: () => {
-    const existingSessionId = sessionStorage.getItem('session_id');
-    
+    const existingSessionId = localStorage.getItem('session_id');
+
     if (existingSessionId) {
       const session: Session = {
         id: existingSessionId,
-        startedAt: new Date(sessionStorage.getItem('session_started') || Date.now()),
+        startedAt: new Date(localStorage.getItem('session_started') || Date.now()),
         lastActivity: new Date(),
       };
       set({ session });
@@ -29,8 +31,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         startedAt: new Date(),
         lastActivity: new Date(),
       };
-      sessionStorage.setItem('session_id', newSessionId);
-      sessionStorage.setItem('session_started', session.startedAt.toISOString());
+      localStorage.setItem('session_id', newSessionId);
+      localStorage.setItem('session_started', session.startedAt.toISOString());
       set({ session });
     }
   },
@@ -43,9 +45,32 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   clearSession: () => {
-    sessionStorage.removeItem('session_id');
-    sessionStorage.removeItem('session_started');
+    localStorage.removeItem('session_id');
+    localStorage.removeItem('session_started');
     set({ session: null });
+  },
+
+  switchToSession: (sessionId: string) => {
+    const session: Session = {
+      id: sessionId,
+      startedAt: new Date(), // Will be overridden by actual history if needed
+      lastActivity: new Date(),
+    };
+    localStorage.setItem('session_id', sessionId);
+    localStorage.setItem('session_started', session.startedAt.toISOString());
+    set({ session });
+  },
+
+  startNewSession: () => {
+    const newSessionId = generateSessionId();
+    const session: Session = {
+      id: newSessionId,
+      startedAt: new Date(),
+      lastActivity: new Date(),
+    };
+    localStorage.setItem('session_id', newSessionId);
+    localStorage.setItem('session_started', session.startedAt.toISOString());
+    set({ session });
   },
 }));
 

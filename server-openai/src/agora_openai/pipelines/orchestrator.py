@@ -18,6 +18,7 @@ from agora_openai.common.schemas import ToolCall
 from agora_openai.core.approval_logic import requires_human_approval
 from agora_openai.core.agent_runner import AgentRunner
 from agora_openai.adapters.audit_logger import AuditLogger
+from agora_openai.adapters.session_metadata import SessionMetadataManager
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
 
@@ -32,11 +33,13 @@ class Orchestrator:
         agent_runner: AgentRunner,
         moderator: ModerationPipeline,
         audit_logger: AuditLogger,
+        session_metadata: SessionMetadataManager | None = None,
     ):
         """Initialize orchestrator with dependencies."""
         self.agent_runner = agent_runner
         self.moderator = moderator
         self.audit = audit_logger
+        self.session_metadata = session_metadata
         self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
 
     async def _handle_tool_approval_flow(
@@ -114,6 +117,20 @@ class Orchestrator:
             if msg.get("role") == "user":
                 user_content = msg.get("content", "")
                 break
+
+        # Extract user_id from context (default to anonymous)
+        user_id = (agent_input.context or {}).get("user_id", "anonymous")
+
+        # Create or update session metadata
+        if self.session_metadata:
+            try:
+                await self.session_metadata.create_or_update_metadata(
+                    session_id=thread_id,
+                    user_id=user_id,
+                    first_message=user_content,
+                )
+            except Exception as e:
+                log.warning(f"Failed to update session metadata: {e}")
 
         # Validate input
         is_valid, error = await self.moderator.validate_input(user_content)
@@ -220,6 +237,19 @@ class Orchestrator:
                             tool_name, parameters, thread_id, protocol_handler
                         )
 
+                        # Record full tool call data for history retrieval
+                        if self.session_metadata and agent_id:
+                            try:
+                                await self.session_metadata.record_tool_call_agent(
+                                    tool_call_id=tool_call_id,
+                                    session_id=thread_id,
+                                    agent_id=agent_id,
+                                    tool_name=tool_name,
+                                    parameters=json.dumps(parameters) if parameters else None,
+                                )
+                            except Exception as e:
+                                log.warning(f"Failed to record tool call: {e}")
+
                         # Transition to executing_tools step
                         if current_step != "executing_tools":
                             await protocol_handler.send_step_finished(current_step)
@@ -239,6 +269,16 @@ class Orchestrator:
                             )
 
                     elif status == "completed":
+                        # Store tool call result for history retrieval
+                        if self.session_metadata and result:
+                            try:
+                                await self.session_metadata.update_tool_call_result(
+                                    tool_call_id=tool_call_id,
+                                    result=result,
+                                )
+                            except Exception as e:
+                                log.warning(f"Failed to store tool call result: {e}")
+
                         # Send TOOL_CALL_END first (signals end of streaming)
                         await protocol_handler.send_tool_call_end(
                             tool_call_id=tool_call_id
@@ -290,6 +330,13 @@ class Orchestrator:
                 metadata={"agent_id": active_agent_id},
             )
 
+            # Increment message count for successful response
+            if self.session_metadata:
+                try:
+                    await self.session_metadata.increment_message_count(thread_id)
+                except Exception as e:
+                    log.warning(f"Failed to increment message count: {e}")
+
             if protocol_handler and protocol_handler.is_connected:
                 # Send final state snapshot before finishing
                 await protocol_handler.send_state_snapshot(
@@ -325,6 +372,37 @@ class Orchestrator:
                 "I apologize, but I encountered an error processing your request.",
                 str(uuid.uuid4()),
             )
+
+    async def get_conversation_history(
+        self, thread_id: str, include_tool_calls: bool = False
+    ) -> list[dict[str, Any]]:
+        """Get conversation history with tool calls and agent_id tracking.
+
+        Retrieves the conversation history from the agent runner and enriches
+        it with full tool call data from storage.
+
+        Args:
+            thread_id: Session/thread identifier
+            include_tool_calls: If True, includes tool calls and results
+
+        Returns:
+            List of conversation items with role, content, and agent_id
+        """
+        # Get full tool call data from storage
+        stored_tool_calls: list[dict[str, Any]] = []
+        if self.session_metadata and include_tool_calls:
+            try:
+                stored_tool_calls = await self.session_metadata.get_tool_calls_for_session(
+                    thread_id
+                )
+            except Exception as e:
+                log.warning(f"Failed to get tool calls: {e}")
+
+        return await self.agent_runner.get_conversation_history(
+            session_id=thread_id,
+            include_tool_calls=include_tool_calls,
+            stored_tool_calls=stored_tool_calls,
+        )
 
     def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
         """Create an AG-UI AssistantMessage response."""

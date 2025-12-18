@@ -2,7 +2,7 @@
  * Main application component for AGORA HAI using AG-UI Protocol.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { DebugPanel } from '@/components/debug/DebugPanel';
@@ -16,14 +16,24 @@ import {
   useVoiceStore,
   useAgentStore,
   useUserStore,
+  useMessageStore,
+  useToolCallStore,
 } from '@/stores';
+import { useHistoryStore } from '@/stores/useHistoryStore';
+import { fetchSessionHistory } from '@/lib/api/sessions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function App() {
   const initializeSession = useSessionStore((state) => state.initializeSession);
+  const session = useSessionStore((state) => state.session);
   const initializeUser = useUserStore((state) => state.initializeUser);
+  const currentUser = useUserStore((state) => state.currentUser);
   const loadAgentsFromAPI = useAgentStore((state) => state.loadAgentsFromAPI);
+  const fetchSessions = useHistoryStore((state) => state.fetchSessions);
+  const messages = useMessageStore((state) => state.messages);
+  const replaceMessages = useMessageStore((state) => state.replaceMessages);
+  const replaceToolCalls = useToolCallStore((state) => state.replaceToolCalls);
   const { sendMessage, sendToolApproval, reconnect } = useWebSocket();
   const { toggleVoice } = useVoiceMode();
   const connectionStatus = useConnectionStore((state) => state.status);
@@ -41,6 +51,51 @@ export default function App() {
     initializeUser();
     loadAgentsFromAPI();
   }, [initializeSession, initializeUser, loadAgentsFromAPI]);
+
+  // Track which session we've loaded history for to avoid duplicate loads
+  const loadedHistoryForSession = useRef<string | null>(null);
+
+  // Load history for restored session on page refresh
+  useEffect(() => {
+    const loadSessionHistory = async () => {
+      // Skip if we've already loaded history for this session
+      if (!session?.id || loadedHistoryForSession.current === session.id) {
+        return;
+      }
+
+      // Only load if messages are empty (page was refreshed or session switched)
+      if (messages.length > 0) {
+        // Mark as loaded since there's already content
+        loadedHistoryForSession.current = session.id;
+        return;
+      }
+
+      // Mark as loading to prevent duplicate requests
+      loadedHistoryForSession.current = session.id;
+
+      try {
+        console.log('[App] Loading history for session:', session.id);
+        const { messages: historyMessages, toolCalls } = await fetchSessionHistory(session.id);
+        if (historyMessages.length > 0) {
+          replaceMessages(historyMessages);
+          replaceToolCalls(toolCalls);
+          console.log('[App] Loaded', historyMessages.length, 'messages and', toolCalls.length, 'tool calls');
+        }
+      } catch (error) {
+        // Session might not have history yet (new session), that's ok
+        console.log('[App] No history found for session (may be new):', error);
+      }
+    };
+
+    loadSessionHistory();
+  }, [session?.id, messages.length, replaceMessages, replaceToolCalls]);
+
+  // Fetch sessions when user changes
+  useEffect(() => {
+    if (currentUser) {
+      fetchSessions(currentUser.id);
+    }
+  }, [currentUser, fetchSessions]);
 
   const handleSendMessage = (message: string) => {
     sendMessage(message);

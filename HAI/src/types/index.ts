@@ -53,3 +53,14 @@ export interface AudioVisualizerData {
   frequencies: number[];
   waveform: number[];
 }
+
+// Session metadata for history listing
+export interface SessionMetadata {
+  sessionId: string;
+  userId: string;
+  title: string;
+  firstMessagePreview: string | null;
+  messageCount: number;
+  createdAt: string;  // ISO string from backend
+  lastActivity: string;  // ISO string from backend
+}
