@@ -1,6 +1,6 @@
 # AGORA HAI API Contract
 
-**Version:** 2.3.0
+**Version:** 2.4.0
 **Last Updated:** December 2025
 
 This document defines the complete API contract between the HAI (Human Agent Interface) frontend and the AGORA orchestrator backend. It covers both real-time WebSocket communication and REST endpoints.
@@ -241,7 +241,7 @@ All events are JSON-encoded with a `type` discriminator field using SCREAMING_CA
 | Direction | Event Types |
 |-----------|-------------|
 | **Client → Server** | `RunAgentInput`, `CUSTOM` (approval response) |
-| **Server → Client** | All other event types |
+| **Server → Client** | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED`, `TEXT_MESSAGE_*`, `TEXT_SPOKEN_MESSAGE_*`, `TOOL_CALL_*`, `STATE_SNAPSHOT`, `STATE_DELTA`, `CUSTOM` (approval request, error) |
 
 ### Base Event Structure
 
@@ -373,6 +373,47 @@ Emitted when a text message is complete.
 
 ---
 
+### Text Spoken Message Events
+
+These events stream text optimized for text-to-speech (TTS). They run **in parallel** with regular text message events and share the same `messageId`. The spoken text may be simplified, abbreviations expanded, or formatted differently for natural speech.
+
+#### TEXT_SPOKEN_MESSAGE_START
+Emitted when a spoken text message begins (same timing as TEXT_MESSAGE_START).
+
+```json
+{
+  "type": "TEXT_SPOKEN_MESSAGE_START",
+  "messageId": "msg-789-...",
+  "role": "assistant",
+  "timestamp": 1705318202000
+}
+```
+
+#### TEXT_SPOKEN_MESSAGE_CONTENT
+Emitted for each spoken content chunk during streaming.
+
+```json
+{
+  "type": "TEXT_SPOKEN_MESSAGE_CONTENT",
+  "messageId": "msg-789-...",
+  "delta": "Based on the regulations, ",
+  "timestamp": 1705318202100
+}
+```
+
+#### TEXT_SPOKEN_MESSAGE_END
+Emitted when a spoken text message is complete.
+
+```json
+{
+  "type": "TEXT_SPOKEN_MESSAGE_END",
+  "messageId": "msg-789-...",
+  "timestamp": 1705318204000
+}
+```
+
+---
+
 ### Tool Call Events
 
 #### TOOL_CALL_START
@@ -383,10 +424,18 @@ Emitted when a tool call begins.
   "type": "TOOL_CALL_START",
   "toolCallId": "call-abc-...",
   "toolCallName": "search_regulations",
+  "toolSpokenName": "Ik ga de regelgeving doorzoeken",
   "parentMessageId": "msg-789-...",
   "timestamp": 1705318202000
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `toolCallId` | string | Yes | Unique identifier for this tool call |
+| `toolCallName` | string | Yes | Technical name of the tool |
+| `toolSpokenName` | string | No | Human-readable spoken description for TTS |
+| `parentMessageId` | string | No | ID of the parent message |
 
 #### TOOL_CALL_ARGS
 Emitted to stream tool call arguments.
@@ -522,14 +571,20 @@ Client                                    Server
   | <------------ STEP_STARTED (thinking)   |
   |                                         |
   | <------------ TEXT_MESSAGE_START        |
+  | <------------ TEXT_SPOKEN_MESSAGE_START |  (parallel TTS stream)
   | <------------ TEXT_MESSAGE_CONTENT      |
+  | <------------ TEXT_SPOKEN_MESSAGE_CONTENT|
   | <------------ TEXT_MESSAGE_CONTENT      |
+  | <------------ TEXT_SPOKEN_MESSAGE_CONTENT|
   | <------------ TEXT_MESSAGE_END          |
+  | <------------ TEXT_SPOKEN_MESSAGE_END   |
   |                                         |
   | <------------ STEP_FINISHED (thinking)  |
   | <------------ STATE_SNAPSHOT (final)    |
   | <------------ RUN_FINISHED              |
 ```
+
+> **Note:** `TEXT_SPOKEN_MESSAGE_*` events share the same `messageId` as their `TEXT_MESSAGE_*` counterparts and are sent in parallel for TTS processing.
 
 ### Flow 2: Tool Execution
 
@@ -546,7 +601,7 @@ Client                                    Server
   | <------------ STEP_FINISHED (thinking)  |
   |                                         |
   | <------------ STEP_STARTED (exec_tools) |
-  | <------------ TOOL_CALL_START           |
+  | <------------ TOOL_CALL_START           |  (includes toolSpokenName)
   | <------------ TOOL_CALL_ARGS            |
   | <------------ TOOL_CALL_END             |
   | <------------ TOOL_CALL_RESULT          |
@@ -554,8 +609,11 @@ Client                                    Server
   |                                         |
   | <------------ STEP_STARTED (thinking)   |
   | <------------ TEXT_MESSAGE_START        |
+  | <------------ TEXT_SPOKEN_MESSAGE_START |
   | <------------ TEXT_MESSAGE_CONTENT...   |
+  | <------------ TEXT_SPOKEN_MESSAGE_CONTENT...|
   | <------------ TEXT_MESSAGE_END          |
+  | <------------ TEXT_SPOKEN_MESSAGE_END   |
   | <------------ STEP_FINISHED (thinking)  |
   |                                         |
   | <------------ STATE_SNAPSHOT (final)    |
@@ -953,6 +1011,11 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ---
 
 ## Changelog
+
+### v2.4.0 (December 2025)
+- Added `TEXT_SPOKEN_MESSAGE_*` events for TTS support (`TEXT_SPOKEN_MESSAGE_START`, `TEXT_SPOKEN_MESSAGE_CONTENT`, `TEXT_SPOKEN_MESSAGE_END`)
+- Spoken message events stream in parallel with regular text messages, sharing the same `messageId`
+- Added `toolSpokenName` optional field to `TOOL_CALL_START` for human-readable spoken tool descriptions
 
 ### v2.3.0 (December 2025)
 - **Renamed**: `AG_UI_PROTOCOL.md` → `HAI_API_CONTRACT.md` to reflect unified REST + WebSocket contract
