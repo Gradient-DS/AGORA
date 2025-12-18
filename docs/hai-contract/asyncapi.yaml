@@ -219,6 +219,7 @@ components:
             type: "TOOL_CALL_START"
             toolCallId: "call-abc123"
             toolCallName: "search_regulations"
+            toolSpokenName: "Ik ga hem nu aan de regulation agent geven"
             parentMessageId: "msg-abc123"
             timestamp: "2025-01-15T10:30:02Z"
 
@@ -300,6 +301,32 @@ components:
               details:
                 reason: "profanity"
             timestamp: "2025-01-15T10:30:02Z"
+        - name: SpokenTextStart
+          summary: Start of spoken text stream (TTS-optimized parallel to TEXT_MESSAGE)
+          payload:
+            type: "CUSTOM"
+            name: "agora:spoken_text_start"
+            value:
+              messageId: "msg-abc123"
+              role: "assistant"
+            timestamp: "2025-01-15T10:30:02Z"
+        - name: SpokenTextContent
+          summary: Spoken text content chunk (TTS-optimized)
+          payload:
+            type: "CUSTOM"
+            name: "agora:spoken_text_content"
+            value:
+              messageId: "msg-abc123"
+              delta: "Based on the regulations, "
+            timestamp: "2025-01-15T10:30:02Z"
+        - name: SpokenTextEnd
+          summary: End of spoken text stream
+          payload:
+            type: "CUSTOM"
+            name: "agora:spoken_text_end"
+            value:
+              messageId: "msg-abc123"
+            timestamp: "2025-01-15T10:30:04Z"
 
   schemas:
     RunAgentInput:
@@ -450,6 +477,10 @@ components:
           type: string
         toolCallName:
           type: string
+        toolSpokenName:
+          type: string
+          nullable: true
+          description: Human-readable spoken description of the tool action
         parentMessageId:
           type: string
           nullable: true

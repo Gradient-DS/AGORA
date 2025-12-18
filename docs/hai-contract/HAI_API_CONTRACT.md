@@ -1,6 +1,6 @@
 # AGORA HAI API Contract
 
-**Version:** 2.4.0
+**Version:** 2.4.1
 **Last Updated:** December 2025
 
 This document defines the complete API contract between the HAI (Human Agent Interface) frontend and the AGORA orchestrator backend. It covers both real-time WebSocket communication and REST endpoints.
@@ -241,7 +241,7 @@ All events are JSON-encoded with a `type` discriminator field using SCREAMING_CA
 | Direction | Event Types |
 |-----------|-------------|
 | **Client → Server** | `RunAgentInput`, `CUSTOM` (approval response) |
-| **Server → Client** | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED`, `TEXT_MESSAGE_*`, `TEXT_SPOKEN_MESSAGE_*`, `TOOL_CALL_*`, `STATE_SNAPSHOT`, `STATE_DELTA`, `CUSTOM` (approval request, error) |
+| **Server → Client** | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR`, `STEP_STARTED`, `STEP_FINISHED`, `TEXT_MESSAGE_*`, `TOOL_CALL_*`, `STATE_SNAPSHOT`, `STATE_DELTA`, `CUSTOM` (spoken text, approval request, error) |
 
 ### Base Event Structure
 
@@ -366,47 +366,6 @@ Emitted when a text message is complete.
 ```json
 {
   "type": "TEXT_MESSAGE_END",
-  "messageId": "msg-789-...",
-  "timestamp": 1705318204000
-}
-```
-
----
-
-### Text Spoken Message Events
-
-These events stream text optimized for text-to-speech (TTS). They run **in parallel** with regular text message events and share the same `messageId`. The spoken text may be simplified, abbreviations expanded, or formatted differently for natural speech.
-
-#### TEXT_SPOKEN_MESSAGE_START
-Emitted when a spoken text message begins (same timing as TEXT_MESSAGE_START).
-
-```json
-{
-  "type": "TEXT_SPOKEN_MESSAGE_START",
-  "messageId": "msg-789-...",
-  "role": "assistant",
-  "timestamp": 1705318202000
-}
-```
-
-#### TEXT_SPOKEN_MESSAGE_CONTENT
-Emitted for each spoken content chunk during streaming.
-
-```json
-{
-  "type": "TEXT_SPOKEN_MESSAGE_CONTENT",
-  "messageId": "msg-789-...",
-  "delta": "Based on the regulations, ",
-  "timestamp": 1705318202100
-}
-```
-
-#### TEXT_SPOKEN_MESSAGE_END
-Emitted when a spoken text message is complete.
-
-```json
-{
-  "type": "TEXT_SPOKEN_MESSAGE_END",
   "messageId": "msg-789-...",
   "timestamp": 1705318204000
 }
@@ -571,20 +530,20 @@ Client                                    Server
   | <------------ STEP_STARTED (thinking)   |
   |                                         |
   | <------------ TEXT_MESSAGE_START        |
-  | <------------ TEXT_SPOKEN_MESSAGE_START |  (parallel TTS stream)
+  | <------------ agora:spoken_text_start   |  (CUSTOM, parallel TTS)
   | <------------ TEXT_MESSAGE_CONTENT      |
-  | <------------ TEXT_SPOKEN_MESSAGE_CONTENT|
+  | <------------ agora:spoken_text_content |
   | <------------ TEXT_MESSAGE_CONTENT      |
-  | <------------ TEXT_SPOKEN_MESSAGE_CONTENT|
+  | <------------ agora:spoken_text_content |
   | <------------ TEXT_MESSAGE_END          |
-  | <------------ TEXT_SPOKEN_MESSAGE_END   |
+  | <------------ agora:spoken_text_end     |
   |                                         |
   | <------------ STEP_FINISHED (thinking)  |
   | <------------ STATE_SNAPSHOT (final)    |
   | <------------ RUN_FINISHED              |
 ```
 
-> **Note:** `TEXT_SPOKEN_MESSAGE_*` events share the same `messageId` as their `TEXT_MESSAGE_*` counterparts and are sent in parallel for TTS processing.
+> **Note:** `agora:spoken_text_*` CUSTOM events share the same `messageId` as their `TEXT_MESSAGE_*` counterparts and are sent in parallel for TTS processing.
 
 ### Flow 2: Tool Execution
 
@@ -609,11 +568,11 @@ Client                                    Server
   |                                         |
   | <------------ STEP_STARTED (thinking)   |
   | <------------ TEXT_MESSAGE_START        |
-  | <------------ TEXT_SPOKEN_MESSAGE_START |
+  | <------------ agora:spoken_text_start   |
   | <------------ TEXT_MESSAGE_CONTENT...   |
-  | <------------ TEXT_SPOKEN_MESSAGE_CONTENT...|
+  | <------------ agora:spoken_text_content...|
   | <------------ TEXT_MESSAGE_END          |
-  | <------------ TEXT_SPOKEN_MESSAGE_END   |
+  | <------------ agora:spoken_text_end     |
   | <------------ STEP_FINISHED (thinking)  |
   |                                         |
   | <------------ STATE_SNAPSHOT (final)    |
@@ -691,6 +650,57 @@ Sent by server for AGORA-specific protocol errors (e.g., moderation violations).
     "details": { "reason": "profanity" }
   },
   "timestamp": 1705318202000
+}
+```
+
+### Spoken Text Events
+
+These events stream text optimized for text-to-speech (TTS). They run **in parallel** with regular text message events and share the same `messageId`. The spoken text may be simplified, abbreviations expanded, or formatted differently for natural speech.
+
+#### agora:spoken_text_start
+
+Emitted when a spoken text message begins (same timing as TEXT_MESSAGE_START).
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:spoken_text_start",
+  "value": {
+    "messageId": "msg-789-...",
+    "role": "assistant"
+  },
+  "timestamp": 1705318202000
+}
+```
+
+#### agora:spoken_text_content
+
+Emitted for each spoken content chunk during streaming.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:spoken_text_content",
+  "value": {
+    "messageId": "msg-789-...",
+    "delta": "Based on the regulations, "
+  },
+  "timestamp": 1705318202100
+}
+```
+
+#### agora:spoken_text_end
+
+Emitted when a spoken text message is complete.
+
+```json
+{
+  "type": "CUSTOM",
+  "name": "agora:spoken_text_end",
+  "value": {
+    "messageId": "msg-789-..."
+  },
+  "timestamp": 1705318204000
 }
 ```
 
@@ -1012,8 +1022,14 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 
 ## Changelog
 
+### v2.4.1 (December 2025)
+- **BREAKING**: Migrated spoken text events from top-level event types to CUSTOM events
+- Old events `TEXT_SPOKEN_MESSAGE_START/CONTENT/END` replaced with `agora:spoken_text_start/content/end`
+- Follows AG-UI protocol extension pattern (same as HITL approval and error events)
+- Spoken text event payloads are now nested under the `value` field
+
 ### v2.4.0 (December 2025)
-- Added `TEXT_SPOKEN_MESSAGE_*` events for TTS support (`TEXT_SPOKEN_MESSAGE_START`, `TEXT_SPOKEN_MESSAGE_CONTENT`, `TEXT_SPOKEN_MESSAGE_END`)
+- Added spoken text events for TTS support (now migrated to CUSTOM events in v2.4.1)
 - Spoken message events stream in parallel with regular text messages, sharing the same `messageId`
 - Added `toolSpokenName` optional field to `TOOL_CALL_START` for human-readable spoken tool descriptions
 
