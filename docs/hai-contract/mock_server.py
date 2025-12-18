@@ -3,11 +3,11 @@
 Mock server for testing AG-UI Protocol WebSocket communication and REST API.
 
 This server simulates the AGORA orchestrator for frontend testing.
-Implements the AG-UI Protocol v2.3.0 with proper event lifecycle.
+Implements the AG-UI Protocol v2.4.0 with proper event lifecycle.
 
 Features:
 - WebSocket: AG-UI Protocol events for real-time communication
-- REST API: Session management endpoints for conversation history
+- REST API: Session and user management endpoints
 
 Supports Demo Scenario 1: Inspecteur Koen - Restaurant Bella Rosa
 
@@ -16,11 +16,19 @@ Usage:
 
 Endpoints:
     WebSocket: ws://localhost:8000/ws
-    REST API:
+    REST API - Sessions:
         GET  /sessions?user_id={user_id}
         GET  /sessions/{session_id}/history?include_tools=true
         GET  /sessions/{session_id}/metadata
         DELETE /sessions/{session_id}
+    REST API - Users:
+        GET  /users/me
+        PUT  /users/me/preferences
+        POST /users
+        GET  /users
+        GET  /users/{user_id}
+        PUT  /users/{user_id}
+        DELETE /users/{user_id}
 """
 
 import asyncio
@@ -86,6 +94,7 @@ DEMO_REGULATIONS = [
 # MOCK SESSION DATA FOR TESTING
 # ---------------------------------------------------------------------------
 
+
 def get_mock_sessions() -> dict:
     """Return mock session data for demo personas."""
     now = datetime.now()
@@ -136,17 +145,23 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
     """Return mock conversation history for a session."""
     if session_id == "session-koen-bella-rosa":
         history = [
-            {"role": "user", "content": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854"},
+            {
+                "role": "user",
+                "content": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+            },
             {
                 "role": "assistant",
                 "content": "Inspectie gestart voor **Restaurant Bella Rosa**.\n\n**Bedrijfsgegevens:**\n- KVK: 92251854\n- Rechtsvorm: Besloten Vennootschap\n- Status: Actief\n\n**Inspectiehistorie:**\n⚠️ Er is 1 openstaande overtreding uit 15 mei 2022.",
-                "agent_id": Agents.HISTORY
+                "agent_id": Agents.HISTORY,
             },
-            {"role": "user", "content": "Ik zie een geopende ton met rauwe vis op kamertemperatuur"},
+            {
+                "role": "user",
+                "content": "Ik zie een geopende ton met rauwe vis op kamertemperatuur",
+            },
             {
                 "role": "assistant",
                 "content": "🚨 **ERNSTIGE OVERTREDING GECONSTATEERD**\n\nRauwe vis op kamertemperatuur is een direct risico voor voedselvergiftiging. Bederfelijke levensmiddelen moeten onder 7°C bewaard worden.\n\n**Toepasselijke regelgeving:**\n- Hygiënecode Horeca artikel 4.2\n- Warenwetregeling Hygiëne van Levensmiddelen",
-                "agent_id": Agents.REGULATION
+                "agent_id": Agents.REGULATION,
             },
         ]
 
@@ -154,14 +169,51 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
             # Insert tool calls at appropriate positions
             history = [
                 history[0],  # user message
-                {"role": "tool_call", "tool_call_id": "call-001", "tool_name": "get_company_info", "content": '{"kvk_number": "92251854"}', "agent_id": Agents.HISTORY},
-                {"role": "tool", "tool_call_id": "call-001", "tool_name": "get_company_info", "content": json.dumps(DEMO_COMPANY, ensure_ascii=False)},
-                {"role": "tool_call", "tool_call_id": "call-002", "tool_name": "get_inspection_history", "content": '{"kvk_number": "92251854"}', "agent_id": Agents.HISTORY},
-                {"role": "tool", "tool_call_id": "call-002", "tool_name": "get_inspection_history", "content": json.dumps({"violations": [DEMO_VIOLATION]}, ensure_ascii=False)},
+                {
+                    "role": "tool_call",
+                    "tool_call_id": "call-001",
+                    "tool_name": "get_company_info",
+                    "content": '{"kvk_number": "92251854"}',
+                    "agent_id": Agents.HISTORY,
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call-001",
+                    "tool_name": "get_company_info",
+                    "content": json.dumps(DEMO_COMPANY, ensure_ascii=False),
+                },
+                {
+                    "role": "tool_call",
+                    "tool_call_id": "call-002",
+                    "tool_name": "get_inspection_history",
+                    "content": '{"kvk_number": "92251854"}',
+                    "agent_id": Agents.HISTORY,
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call-002",
+                    "tool_name": "get_inspection_history",
+                    "content": json.dumps(
+                        {"violations": [DEMO_VIOLATION]}, ensure_ascii=False
+                    ),
+                },
                 history[1],  # assistant response
                 history[2],  # user message
-                {"role": "tool_call", "tool_call_id": "call-003", "tool_name": "search_regulations", "content": '{"query": "rauwe vis temperatuur"}', "agent_id": Agents.REGULATION},
-                {"role": "tool", "tool_call_id": "call-003", "tool_name": "search_regulations", "content": json.dumps({"regulations": DEMO_REGULATIONS}, ensure_ascii=False)},
+                {
+                    "role": "tool_call",
+                    "tool_call_id": "call-003",
+                    "tool_name": "search_regulations",
+                    "content": '{"query": "rauwe vis temperatuur"}',
+                    "agent_id": Agents.REGULATION,
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "call-003",
+                    "tool_name": "search_regulations",
+                    "content": json.dumps(
+                        {"regulations": DEMO_REGULATIONS}, ensure_ascii=False
+                    ),
+                },
                 history[3],  # assistant response
             ]
 
@@ -169,24 +221,56 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
 
     elif session_id == "session-koen-hotel-sunset":
         return [
-            {"role": "user", "content": "Start inspectie bij Hotel Sunset, kvk: 12345678"},
-            {"role": "assistant", "content": "Inspectie gestart voor Hotel Sunset. Bedrijfsgegevens worden opgehaald...", "agent_id": Agents.HISTORY},
-            {"role": "user", "content": "Wat zijn de regels voor ontbijtbuffet temperaturen?"},
-            {"role": "assistant", "content": "Voor ontbijtbuffetten gelden de volgende temperatuurregels...", "agent_id": Agents.REGULATION},
+            {
+                "role": "user",
+                "content": "Start inspectie bij Hotel Sunset, kvk: 12345678",
+            },
+            {
+                "role": "assistant",
+                "content": "Inspectie gestart voor Hotel Sunset. Bedrijfsgegevens worden opgehaald...",
+                "agent_id": Agents.HISTORY,
+            },
+            {
+                "role": "user",
+                "content": "Wat zijn de regels voor ontbijtbuffet temperaturen?",
+            },
+            {
+                "role": "assistant",
+                "content": "Voor ontbijtbuffetten gelden de volgende temperatuurregels...",
+                "agent_id": Agents.REGULATION,
+            },
         ]
 
     elif session_id == "session-fatima-bakery":
         return [
-            {"role": "user", "content": "Ik wil een inspectie starten bij Bakkerij De Gouden Korenschoof"},
-            {"role": "assistant", "content": "Prima, ik help u graag met de inspectie. Heeft u het KVK-nummer?", "agent_id": Agents.GENERAL},
+            {
+                "role": "user",
+                "content": "Ik wil een inspectie starten bij Bakkerij De Gouden Korenschoof",
+            },
+            {
+                "role": "assistant",
+                "content": "Prima, ik help u graag met de inspectie. Heeft u het KVK-nummer?",
+                "agent_id": Agents.GENERAL,
+            },
             {"role": "user", "content": "Ja, het is 87654321"},
-            {"role": "assistant", "content": "Inspectie gestart voor Bakkerij De Gouden Korenschoof.", "agent_id": Agents.HISTORY},
+            {
+                "role": "assistant",
+                "content": "Inspectie gestart voor Bakkerij De Gouden Korenschoof.",
+                "agent_id": Agents.HISTORY,
+            },
         ]
 
     elif session_id == "session-jan-supermarket":
         return [
-            {"role": "user", "content": "Controle bij Supermarkt Plus, ik heb vragen over de koelketen"},
-            {"role": "assistant", "content": "Welkom! Ik help u graag met vragen over de koelketen. Wat wilt u weten?", "agent_id": Agents.GENERAL},
+            {
+                "role": "user",
+                "content": "Controle bij Supermarkt Plus, ik heb vragen over de koelketen",
+            },
+            {
+                "role": "assistant",
+                "content": "Welkom! Ik help u graag met vragen over de koelketen. Wat wilt u weten?",
+                "agent_id": Agents.GENERAL,
+            },
         ]
 
     return []
@@ -196,9 +280,98 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
 MOCK_SESSIONS = get_mock_sessions()
 
 
+# ---------------------------------------------------------------------------
+# MOCK USER DATA FOR TESTING
+# ---------------------------------------------------------------------------
+
+
+def get_mock_users() -> dict:
+    """Return mock user data for demo personas."""
+    now = datetime.now()
+    return {
+        "550e8400-e29b-41d4-a716-446655440001": {
+            "id": "550e8400-e29b-41d4-a716-446655440001",
+            "email": "koen.vandenberg@nvwa.nl",
+            "name": "Koen van den Berg",
+            "preferences": {
+                "theme": "light",
+                "notifications_enabled": True,
+                "default_agent_id": "general-agent",
+                "language": "nl-NL",
+            },
+            "createdAt": "2024-06-15T09:00:00Z",
+            "lastActivity": (now - timedelta(minutes=30)).isoformat() + "Z",
+        },
+        "550e8400-e29b-41d4-a716-446655440002": {
+            "id": "550e8400-e29b-41d4-a716-446655440002",
+            "email": "fatima.el-amrani@nvwa.nl",
+            "name": "Fatima El-Amrani",
+            "preferences": {
+                "theme": "dark",
+                "notifications_enabled": True,
+                "default_agent_id": "general-agent",
+                "language": "nl-NL",
+            },
+            "createdAt": "2024-08-20T14:30:00Z",
+            "lastActivity": (now - timedelta(days=1)).isoformat() + "Z",
+        },
+        "550e8400-e29b-41d4-a716-446655440003": {
+            "id": "550e8400-e29b-41d4-a716-446655440003",
+            "email": "jan.devries@nvwa.nl",
+            "name": "Jan de Vries",
+            "preferences": {
+                "theme": "system",
+                "notifications_enabled": False,
+                "default_agent_id": "general-agent",
+                "language": "nl-NL",
+            },
+            "createdAt": "2024-01-10T08:00:00Z",
+            "lastActivity": (now - timedelta(days=3)).isoformat() + "Z",
+        },
+    }
+
+
+# In-memory storage for users (can be modified by CRUD operations)
+MOCK_USERS = get_mock_users()
+
+# Map of legacy userIds to new UUID-based user IDs (for session compatibility)
+USER_ID_MAP = {
+    "koen": "550e8400-e29b-41d4-a716-446655440001",
+    "fatima": "550e8400-e29b-41d4-a716-446655440002",
+    "jan": "550e8400-e29b-41d4-a716-446655440003",
+}
+
+# Default "current user" for /users/me endpoint (simulates authenticated user)
+CURRENT_USER_ID = "550e8400-e29b-41d4-a716-446655440001"
+
+
 def now_timestamp() -> int:
     """Return current timestamp as Unix milliseconds (AG-UI standard)."""
     return int(time.time() * 1000)
+
+
+def to_spoken_text(text: str) -> str:
+    """Convert markdown text to speech-friendly text with Dutch expansions."""
+    # Remove markdown formatting
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)  # Bold
+    text = re.sub(r"\*([^*]+)\*", r"\1", text)  # Italic
+    text = re.sub(r"`([^`]+)`", r"\1", text)  # Code
+    text = text.replace("- ", "")  # List bullets
+
+    # Emoji replacements
+    text = text.replace("⚠️", "Let op: ")
+    text = text.replace("🚨", "Waarschuwing: ")
+    text = text.replace("✅", "")
+
+    # Dutch abbreviation expansions
+    text = text.replace("KVK", "Kamer van Koophandel")
+    text = text.replace("NVWA", "Nederlandse Voedsel- en Warenautoriteit")
+    text = text.replace("°C", " graden Celsius")
+    text = text.replace("EU", "Europese Unie")
+    text = text.replace("PDF", "P D F")
+    text = text.replace("ID", "I D")
+
+    return text.strip()
 
 
 def log_event(direction: str, event_type: str, detail: str = "") -> None:
@@ -290,7 +463,7 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
 
     # Routing step under algemene-assistent
     await send_step(websocket, "routing", start=True)
-    await asyncio.sleep(0.2)
+    await asyncio.sleep(0.5)
     await send_step(websocket, "routing", start=False)
 
     # If routing to a specialist, do a handoff tool call
@@ -397,6 +570,12 @@ async def send_handoff_tool_call(
         Agents.REPORTING: "Specialist voor het genereren van inspectierapporten",
     }
 
+    tool_descriptions = {
+        Agents.HISTORY: "Ik schakel de bedrijfsinformatie specialist in",
+        Agents.REGULATION: "Ik schakel de regelgeving specialist in",
+        Agents.REPORTING: "Ik schakel de rapportage specialist in",
+    }
+
     await send_tool_call(
         websocket,
         tool_call_id,
@@ -412,6 +591,9 @@ async def send_handoff_tool_call(
                 "message": f"Overgedragen aan {target_agent}",
             },
             ensure_ascii=False,
+        ),
+        tool_description=tool_descriptions.get(
+            target_agent, "Ik schakel een specialist in"
         ),
     )
 
@@ -723,6 +905,7 @@ async def send_tool_call(
     tool_name: str,
     args: dict,
     result: str,
+    tool_description: str | None = None,
 ) -> None:
     """Send complete tool call sequence."""
     await send_event(
@@ -731,6 +914,7 @@ async def send_tool_call(
             "type": "TOOL_CALL_START",
             "toolCallId": tool_call_id,
             "toolCallName": tool_name,
+            "toolDescription": tool_description,
             "parentMessageId": None,
             "timestamp": now_timestamp(),
         },
@@ -774,9 +958,10 @@ async def send_tool_call(
 async def stream_response(
     websocket, thread_id: str, run_id: str, content_chunks: list[str], agent: str
 ) -> None:
-    """Stream a text response and finish the run."""
+    """Stream a text response with parallel spoken text and finish the run."""
     message_id = f"msg-{uuid.uuid4()}"
 
+    # Start both text and spoken message streams
     await send_event(
         websocket,
         {
@@ -787,7 +972,22 @@ async def stream_response(
         },
     )
 
+    await send_event(
+        websocket,
+        {
+            "type": "CUSTOM",
+            "name": "agora:spoken_text_start",
+            "value": {
+                "messageId": message_id,
+                "role": "assistant",
+            },
+            "timestamp": now_timestamp(),
+        },
+        "agora:spoken_text_start",
+    )
+
     for chunk in content_chunks:
+        # Send regular text chunk
         await send_event(
             websocket,
             {
@@ -797,8 +997,26 @@ async def stream_response(
                 "timestamp": now_timestamp(),
             },
         )
-        await asyncio.sleep(0.03)
 
+        # Send spoken text chunk (simplified for TTS)
+        spoken_chunk = to_spoken_text(chunk)
+        if spoken_chunk:
+            await send_event(
+                websocket,
+                {
+                    "type": "CUSTOM",
+                    "name": "agora:spoken_text_content",
+                    "value": {
+                        "messageId": message_id,
+                        "delta": spoken_chunk,
+                    },
+                    "timestamp": now_timestamp(),
+                },
+            )
+
+        await asyncio.sleep(0.1)
+
+    # End both text and spoken message streams
     await send_event(
         websocket,
         {
@@ -806,6 +1024,19 @@ async def stream_response(
             "messageId": message_id,
             "timestamp": now_timestamp(),
         },
+    )
+
+    await send_event(
+        websocket,
+        {
+            "type": "CUSTOM",
+            "name": "agora:spoken_text_end",
+            "value": {
+                "messageId": message_id,
+            },
+            "timestamp": now_timestamp(),
+        },
+        "agora:spoken_text_end",
     )
 
     await send_step(websocket, "thinking", start=False)
@@ -851,17 +1082,19 @@ def process_request(connection, request):
         return None  # Let WebSocket handler take over
 
     path = request.path
-    method = request.method if hasattr(request, 'method') else "GET"
+    method = request.method if hasattr(request, "method") else "GET"
     parsed = urlparse(path)
     query_params = parse_qs(parsed.query)
 
     # CORS headers for all responses
-    cors_headers = websockets.Headers([
-        ("Access-Control-Allow-Origin", "*"),
-        ("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS"),
-        ("Access-Control-Allow-Headers", "Content-Type"),
-        ("Content-Type", "application/json"),
-    ])
+    cors_headers = websockets.Headers(
+        [
+            ("Access-Control-Allow-Origin", "*"),
+            ("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
+            ("Access-Control-Allow-Headers", "Content-Type"),
+            ("Content-Type", "application/json"),
+        ]
+    )
 
     # Handle OPTIONS (CORS preflight)
     if method == "OPTIONS":
@@ -869,21 +1102,27 @@ def process_request(connection, request):
 
     # Health check
     if parsed.path == "/health":
-        body = json.dumps({"status": "healthy", "service": "agora-mock", "protocol": "ag-ui"})
+        body = json.dumps(
+            {"status": "healthy", "service": "agora-mock", "protocol": "ag-ui"}
+        )
         return Response(200, "OK", cors_headers, body.encode())
 
     # Root endpoint
     if parsed.path == "/":
-        body = json.dumps({
-            "service": "AGORA Mock Server",
-            "version": "2.3.0",
-            "protocol": "AG-UI Protocol v2.3.0",
-            "endpoints": {
-                "websocket": "/ws",
-                "sessions": "/sessions?user_id={user_id}",
-                "history": "/sessions/{id}/history?include_tools=true",
+        body = json.dumps(
+            {
+                "service": "AGORA Mock Server",
+                "version": "2.4.0",
+                "protocol": "AG-UI Protocol v2.4.0",
+                "endpoints": {
+                    "websocket": "/ws",
+                    "sessions": "/sessions?user_id={user_id}",
+                    "history": "/sessions/{id}/history?include_tools=true",
+                    "users": "/users",
+                    "currentUser": "/users/me",
+                },
             }
-        })
+        )
         return Response(200, "OK", cors_headers, body.encode())
 
     # GET /sessions - List sessions for a user
@@ -895,38 +1134,55 @@ def process_request(connection, request):
 
         # Filter sessions by user_id
         user_sessions = [
-            session for session in MOCK_SESSIONS.values()
+            session
+            for session in MOCK_SESSIONS.values()
             if session["userId"] == user_id
         ]
         # Sort by lastActivity descending
         user_sessions.sort(key=lambda s: s["lastActivity"], reverse=True)
 
-        body = json.dumps({
-            "success": True,
-            "sessions": user_sessions,
-            "totalCount": len(user_sessions),
-        }, ensure_ascii=False)
-        log_event("send", "HTTP", f"GET /sessions?user_id={user_id} -> {len(user_sessions)} sessions")
+        body = json.dumps(
+            {
+                "success": True,
+                "sessions": user_sessions,
+                "totalCount": len(user_sessions),
+            },
+            ensure_ascii=False,
+        )
+        log_event(
+            "send",
+            "HTTP",
+            f"GET /sessions?user_id={user_id} -> {len(user_sessions)} sessions",
+        )
         return Response(200, "OK", cors_headers, body.encode())
 
     # Match /sessions/{session_id}/history
     history_match = re.match(r"^/sessions/([^/]+)/history$", parsed.path)
     if history_match and method == "GET":
         session_id = history_match.group(1)
-        include_tools = query_params.get("include_tools", ["false"])[0].lower() == "true"
+        include_tools = (
+            query_params.get("include_tools", ["false"])[0].lower() == "true"
+        )
 
         if session_id not in MOCK_SESSIONS:
             body = json.dumps({"success": False, "error": "Session not found"})
             return Response(404, "Not Found", cors_headers, body.encode())
 
         history = get_mock_history(session_id, include_tools)
-        body = json.dumps({
-            "success": True,
-            "threadId": session_id,
-            "history": history,
-            "messageCount": len(history),
-        }, ensure_ascii=False)
-        log_event("send", "HTTP", f"GET /sessions/{session_id}/history -> {len(history)} messages")
+        body = json.dumps(
+            {
+                "success": True,
+                "threadId": session_id,
+                "history": history,
+                "messageCount": len(history),
+            },
+            ensure_ascii=False,
+        )
+        log_event(
+            "send",
+            "HTTP",
+            f"GET /sessions/{session_id}/history -> {len(history)} messages",
+        )
         return Response(200, "OK", cors_headers, body.encode())
 
     # Match /sessions/{session_id}/metadata
@@ -938,10 +1194,13 @@ def process_request(connection, request):
             body = json.dumps({"success": False, "error": "Session not found"})
             return Response(404, "Not Found", cors_headers, body.encode())
 
-        body = json.dumps({
-            "success": True,
-            "session": MOCK_SESSIONS[session_id],
-        }, ensure_ascii=False)
+        body = json.dumps(
+            {
+                "success": True,
+                "session": MOCK_SESSIONS[session_id],
+            },
+            ensure_ascii=False,
+        )
         log_event("send", "HTTP", f"GET /sessions/{session_id}/metadata")
         return Response(200, "OK", cors_headers, body.encode())
 
@@ -955,12 +1214,249 @@ def process_request(connection, request):
             return Response(404, "Not Found", cors_headers, body.encode())
 
         del MOCK_SESSIONS[session_id]
-        body = json.dumps({
-            "success": True,
-            "message": "Session deleted",
-        })
+        body = json.dumps(
+            {
+                "success": True,
+                "message": "Session deleted",
+            }
+        )
         log_event("send", "HTTP", f"DELETE /sessions/{session_id}")
         return Response(200, "OK", cors_headers, body.encode())
+
+    # ---------------------------------------------------------------------------
+    # USER MANAGEMENT ENDPOINTS
+    # ---------------------------------------------------------------------------
+
+    # Helper to parse request body
+    def get_request_body() -> dict:
+        """Parse JSON request body if present."""
+        try:
+            if hasattr(request, "body") and request.body:
+                return json.loads(request.body.decode("utf-8"))
+        except (json.JSONDecodeError, AttributeError):
+            pass
+        return {}
+
+    # GET /users/me - Get current user profile
+    if parsed.path == "/users/me" and method == "GET":
+        if CURRENT_USER_ID not in MOCK_USERS:
+            body = json.dumps(
+                {"success": False, "error": "unauthorized", "message": "User not found"}
+            )
+            return Response(401, "Unauthorized", cors_headers, body.encode())
+
+        user = MOCK_USERS[CURRENT_USER_ID]
+        body = json.dumps(user, ensure_ascii=False)
+        log_event("send", "HTTP", f"GET /users/me -> {user['name']}")
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # PUT /users/me/preferences - Update user preferences
+    if parsed.path == "/users/me/preferences" and method == "PUT":
+        if CURRENT_USER_ID not in MOCK_USERS:
+            body = json.dumps(
+                {"success": False, "error": "unauthorized", "message": "User not found"}
+            )
+            return Response(401, "Unauthorized", cors_headers, body.encode())
+
+        request_body = get_request_body()
+        user = MOCK_USERS[CURRENT_USER_ID]
+
+        # Update preferences with provided values
+        if "preferences" not in user:
+            user["preferences"] = {}
+
+        for key in ["theme", "notifications_enabled", "default_agent_id", "language"]:
+            if key in request_body:
+                user["preferences"][key] = request_body[key]
+
+        body = json.dumps(
+            {"success": True, "preferences": user["preferences"]},
+            ensure_ascii=False,
+        )
+        log_event("send", "HTTP", "PUT /users/me/preferences")
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # POST /users - Create a new user
+    if parsed.path == "/users" and method == "POST":
+        request_body = get_request_body()
+
+        # Validate required fields
+        if not request_body.get("email") or not request_body.get("name"):
+            body = json.dumps(
+                {
+                    "success": False,
+                    "error": "bad_request",
+                    "message": "email and name are required",
+                }
+            )
+            return Response(400, "Bad Request", cors_headers, body.encode())
+
+        # Check email uniqueness
+        email = request_body["email"]
+        for existing_user in MOCK_USERS.values():
+            if existing_user["email"] == email:
+                body = json.dumps(
+                    {
+                        "success": False,
+                        "error": "conflict",
+                        "message": "Email already exists",
+                    }
+                )
+                return Response(409, "Conflict", cors_headers, body.encode())
+
+        # Create new user
+        new_user_id = str(uuid.uuid4())
+        now = datetime.now()
+        new_user = {
+            "id": new_user_id,
+            "email": email,
+            "name": request_body["name"],
+            "preferences": {
+                "theme": "system",
+                "notifications_enabled": True,
+                "default_agent_id": "general-agent",
+                "language": "nl-NL",
+            },
+            "createdAt": now.isoformat() + "Z",
+            "lastActivity": now.isoformat() + "Z",
+        }
+        MOCK_USERS[new_user_id] = new_user
+
+        body = json.dumps({"success": True, "user": new_user}, ensure_ascii=False)
+        log_event("send", "HTTP", f"POST /users -> created {new_user['email']}")
+        return Response(201, "Created", cors_headers, body.encode())
+
+    # GET /users - List all users (paginated)
+    if parsed.path == "/users" and method == "GET":
+        limit = int(query_params.get("limit", [50])[0])
+        offset = int(query_params.get("offset", [0])[0])
+
+        # Get all users sorted by createdAt descending
+        all_users = list(MOCK_USERS.values())
+        all_users.sort(key=lambda u: u["createdAt"], reverse=True)
+
+        # Apply pagination
+        paginated_users = all_users[offset : offset + limit]
+
+        body = json.dumps(
+            {
+                "success": True,
+                "users": paginated_users,
+                "totalCount": len(all_users),
+            },
+            ensure_ascii=False,
+        )
+        log_event(
+            "send",
+            "HTTP",
+            f"GET /users -> {len(paginated_users)} of {len(all_users)} users",
+        )
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # Match /users/{user_id} - GET, PUT, DELETE
+    user_match = re.match(r"^/users/([^/]+)$", parsed.path)
+    if user_match:
+        user_id = user_match.group(1)
+
+        # GET /users/{user_id}
+        if method == "GET":
+            if user_id not in MOCK_USERS:
+                body = json.dumps(
+                    {
+                        "success": False,
+                        "error": "not_found",
+                        "message": "User not found",
+                    }
+                )
+                return Response(404, "Not Found", cors_headers, body.encode())
+
+            body = json.dumps(
+                {"success": True, "user": MOCK_USERS[user_id]},
+                ensure_ascii=False,
+            )
+            log_event("send", "HTTP", f"GET /users/{user_id}")
+            return Response(200, "OK", cors_headers, body.encode())
+
+        # PUT /users/{user_id}
+        if method == "PUT":
+            if user_id not in MOCK_USERS:
+                body = json.dumps(
+                    {
+                        "success": False,
+                        "error": "not_found",
+                        "message": "User not found",
+                    }
+                )
+                return Response(404, "Not Found", cors_headers, body.encode())
+
+            request_body = get_request_body()
+            user = MOCK_USERS[user_id]
+
+            # Update allowed fields
+            if "name" in request_body:
+                user["name"] = request_body["name"]
+            if "preferences" in request_body:
+                if "preferences" not in user:
+                    user["preferences"] = {}
+                for key in [
+                    "theme",
+                    "notifications_enabled",
+                    "default_agent_id",
+                    "language",
+                ]:
+                    if key in request_body["preferences"]:
+                        user["preferences"][key] = request_body["preferences"][key]
+
+            body = json.dumps({"success": True, "user": user}, ensure_ascii=False)
+            log_event("send", "HTTP", f"PUT /users/{user_id}")
+            return Response(200, "OK", cors_headers, body.encode())
+
+        # DELETE /users/{user_id}
+        if method == "DELETE":
+            if user_id not in MOCK_USERS:
+                body = json.dumps(
+                    {
+                        "success": False,
+                        "error": "not_found",
+                        "message": "User not found",
+                    }
+                )
+                return Response(404, "Not Found", cors_headers, body.encode())
+
+            # Find legacy userId for this user (if any) to cascade session deletes
+            legacy_user_id = None
+            for legacy_id, uuid_id in USER_ID_MAP.items():
+                if uuid_id == user_id:
+                    legacy_user_id = legacy_id
+                    break
+
+            # Delete associated sessions
+            deleted_sessions_count = 0
+            sessions_to_delete = []
+            for session_id, session in MOCK_SESSIONS.items():
+                if session["userId"] == legacy_user_id or session["userId"] == user_id:
+                    sessions_to_delete.append(session_id)
+
+            for session_id in sessions_to_delete:
+                del MOCK_SESSIONS[session_id]
+                deleted_sessions_count += 1
+
+            # Delete the user
+            del MOCK_USERS[user_id]
+
+            body = json.dumps(
+                {
+                    "success": True,
+                    "message": "User and associated sessions deleted",
+                    "deletedSessionsCount": deleted_sessions_count,
+                }
+            )
+            log_event(
+                "send",
+                "HTTP",
+                f"DELETE /users/{user_id} -> {deleted_sessions_count} sessions deleted",
+            )
+            return Response(200, "OK", cors_headers, body.encode())
 
     # Default: Unknown endpoint
     body = json.dumps({"error": "Not found", "path": parsed.path})
@@ -971,7 +1467,7 @@ async def main():
     """Start the mock WebSocket server with REST API support."""
     print()
     print("╔════════════════════════════════════════════════════════════════╗")
-    print("║       AG-UI Protocol Mock Server v2.3.0 - Demo Mode            ║")
+    print("║       AG-UI Protocol Mock Server v2.4.0 - Demo Mode            ║")
     print("╠════════════════════════════════════════════════════════════════╣")
     print("║  WebSocket: ws://localhost:8000/ws                             ║")
     print("║  REST API:  http://localhost:8000                              ║")
@@ -979,19 +1475,39 @@ async def main():
     print("╚════════════════════════════════════════════════════════════════╝")
     print()
     print("REST API Endpoints:")
-    print("  GET  /sessions?user_id={user_id}       - List sessions")
-    print("  GET  /sessions/{id}/history            - Get conversation history")
-    print("  GET  /sessions/{id}/metadata           - Get session metadata")
-    print("  DELETE /sessions/{id}                  - Delete session")
     print()
-    print("Mock Sessions (for testing):")
-    print("  • koen: 2 sessions (Bella Rosa, Hotel Sunset)")
-    print("  • fatima: 1 session (Bakkerij)")
-    print("  • jan: 1 session (Supermarkt)")
+    print("  Sessions:")
+    print("    GET  /sessions?user_id={user_id}       - List sessions")
+    print("    GET  /sessions/{id}/history            - Get conversation history")
+    print("    GET  /sessions/{id}/metadata           - Get session metadata")
+    print("    DELETE /sessions/{id}                  - Delete session")
+    print()
+    print("  Users:")
+    print("    GET  /users/me                         - Get current user")
+    print("    PUT  /users/me/preferences             - Update preferences")
+    print("    POST /users                            - Create new user")
+    print("    GET  /users                            - List all users")
+    print("    GET  /users/{id}                       - Get user by ID")
+    print("    PUT  /users/{id}                       - Update user")
+    print("    DELETE /users/{id}                     - Delete user")
+    print()
+    print("Mock Data (for testing):")
+    print("  Sessions:")
+    print("    • koen: 2 sessions (Bella Rosa, Hotel Sunset)")
+    print("    • fatima: 1 session (Bakkerij)")
+    print("    • jan: 1 session (Supermarkt)")
+    print("  Users:")
+    print("    • Koen van den Berg (koen.vandenberg@nvwa.nl)")
+    print("    • Fatima El-Amrani (fatima.el-amrani@nvwa.nl)")
+    print("    • Jan de Vries (jan.devries@nvwa.nl)")
     print()
     print("Test the REST API:")
     print("  curl http://localhost:8000/sessions?user_id=koen")
-    print("  curl http://localhost:8000/sessions/session-koen-bella-rosa/history?include_tools=true")
+    print("  curl http://localhost:8000/users/me")
+    print("  curl http://localhost:8000/users")
+    print(
+        "  curl http://localhost:8000/sessions/session-koen-bella-rosa/history?include_tools=true"
+    )
     print()
     print("─" * 64)
     print()

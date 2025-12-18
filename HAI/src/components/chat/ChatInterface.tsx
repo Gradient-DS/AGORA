@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatInput } from './ChatInput';
 import { useMessageStore, useUserStore } from '@/stores';
+import { useTTS } from '@/hooks/useTTS';
 
 interface ChatInterfaceProps {
   onSendMessage: (message: string) => void;
@@ -24,6 +25,9 @@ export function ChatInterface({
   const processingStatus = useMessageStore((state) => state.processingStatus);
   const isTyping = useMessageStore((state) => state.isTyping);
   const currentUser = useUserStore((state) => state.currentUser);
+
+  // Initialize TTS hook to handle spoken text events
+  useTTS();
 
   return (
     <Card className="flex flex-col h-full overflow-hidden">

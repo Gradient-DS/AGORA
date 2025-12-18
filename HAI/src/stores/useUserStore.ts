@@ -1,60 +1,66 @@
+/**
+ * User store for managing current user and available users from API.
+ */
+
 import { create } from 'zustand';
-
-export interface UserProfile {
-  id: string;
-  name: string;
-  age: number;
-  title: string;
-  location: string;
-  experience: string;
-  specialty: string;
-}
-
-export const PERSONAS: Record<string, UserProfile> = {
-  koen: {
-    id: 'koen',
-    name: 'Koen',
-    age: 40,
-    title: 'Inspecteur Voedselveiligheid Horeca',
-    location: 'Regio Randstad',
-    experience: '15 jaar',
-    specialty: 'horeca',
-  },
-  fatima: {
-    id: 'fatima',
-    name: 'Fatima',
-    age: 32,
-    title: 'Inspecteur Productveiligheid',
-    location: 'Regio Randstad',
-    experience: '4 jaar',
-    specialty: 'productveiligheid',
-  },
-  jan: {
-    id: 'jan',
-    name: 'Jan',
-    age: 58,
-    title: 'Senior inspecteur Voedselveiligheid',
-    location: 'Regio Noord-Nederland',
-    experience: '30+ jaar',
-    specialty: 'voedselveiligheid',
-  },
-};
+import type { UserProfile } from '@/types/user';
+import { fetchUsers as apiFetchUsers } from '@/lib/api/users';
 
 interface UserStore {
+  // State
   currentUser: UserProfile | null;
+  users: UserProfile[];
+  isLoading: boolean;
+  error: string | null;
+
+  // Actions
   setUser: (userId: string) => void;
   clearUser: () => void;
   initializeUser: () => void;
+  loadUsers: () => Promise<void>;
 }
 
-export const useUserStore = create<UserStore>((set) => ({
+export const useUserStore = create<UserStore>((set, get) => ({
   currentUser: null,
+  users: [],
+  isLoading: false,
+  error: null,
+
+  loadUsers: async () => {
+    console.log('[UserStore] Loading users from API');
+    set({ isLoading: true, error: null });
+
+    try {
+      const { users } = await apiFetchUsers();
+      console.log('[UserStore] Loaded users:', users.length);
+      set({ users, isLoading: false });
+
+      // If we have a saved user ID, try to restore it
+      const savedUserId = localStorage.getItem('current_user');
+      if (savedUserId) {
+        const savedUser = users.find((u) => u.id === savedUserId);
+        if (savedUser) {
+          set({ currentUser: savedUser });
+        } else {
+          // Saved user no longer exists, clear it
+          localStorage.removeItem('current_user');
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load users';
+      console.error('[UserStore] Error loading users:', message);
+      set({ error: message, isLoading: false });
+    }
+  },
 
   setUser: (userId: string) => {
-    const user = PERSONAS[userId];
+    const { users } = get();
+    const user = users.find((u) => u.id === userId);
     if (user) {
       localStorage.setItem('current_user', userId);
       set({ currentUser: user });
+    } else {
+      console.warn('[UserStore] User not found:', userId);
     }
   },
 
@@ -64,10 +70,7 @@ export const useUserStore = create<UserStore>((set) => ({
   },
 
   initializeUser: () => {
-    const savedUserId = localStorage.getItem('current_user');
-    if (savedUserId && PERSONAS[savedUserId]) {
-      set({ currentUser: PERSONAS[savedUserId] });
-    }
+    // Load users from API - this will also restore the saved user if exists
+    get().loadUsers();
   },
 }));
-

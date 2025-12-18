@@ -5,6 +5,8 @@ const envSchema = z.object({
   VITE_OPENAI_API_KEY: z.string().min(1),
   VITE_APP_NAME: z.string().default('AGORA HAI'),
   VITE_SESSION_TIMEOUT: z.string().transform(Number).default('3600000'),
+  VITE_ELEVENLABS_API_KEY: z.string().optional().default(''),
+  VITE_ELEVENLABS_VOICE_ID: z.string().optional().default('pNInz6obpgDQGcFmaJgB'),
 });
 
 function validateEnv() {

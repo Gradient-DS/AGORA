@@ -236,6 +236,206 @@ paths:
                   preferences:
                     $ref: '#/components/schemas/UserPreferences'
 
+  /users:
+    post:
+      summary: Create a new user
+      description: |
+        Creates a new user account. Email must be unique across the system.
+      operationId: createUser
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid input (e.g., missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict - email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: List all users
+      description: |
+        Retrieves a paginated list of all users, ordered by creation date (most recent first).
+        Requires admin privileges.
+      operationId: listUsers
+      tags:
+        - Users
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of users to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Pagination offset
+      responses:
+        '200':
+          description: User list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{user_id}:
+    get:
+      summary: Get user by ID
+      description: Retrieves profile information for a specific user.
+      operationId: getUser
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          required: true
+          description: Unique user identifier
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update user
+      description: Updates user profile information. Partial updates are supported.
+      operationId: updateUser
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          required: true
+          description: Unique user identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete user
+      description: |
+        Deletes a user and all associated data. This operation cascades to delete
+        all sessions owned by the user, including their conversation history.
+      operationId: deleteUser
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          required: true
+          description: Unique user identifier
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User and associated sessions deleted"
+                  deletedSessionsCount:
+                    type: integer
+                    description: Number of sessions that were deleted
+                    example: 5
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     # -------------------------------------------------------------------------
@@ -427,25 +627,78 @@ components:
     # -------------------------------------------------------------------------
     UserProfile:
       type: object
-      required: [id, email, name]
+      description: Full user profile information
+      required: [id, email, name, createdAt, lastActivity]
       properties:
         id:
           type: string
           format: uuid
+          description: Unique user identifier
           example: "550e8400-e29b-41d4-a716-446655440000"
         email:
           type: string
           format: email
+          description: User's email address (unique)
           example: "jane.doe@example.com"
         name:
           type: string
+          description: User's display name
           example: "Jane Doe"
-        role:
-          type: string
-          enum: [admin, inspector, viewer]
-          example: "inspector"
         preferences:
           $ref: '#/components/schemas/UserPreferences'
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+          example: "2025-01-15T09:00:00Z"
+        lastActivity:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+          example: "2025-12-18T14:30:00Z"
+
+    CreateUserRequest:
+      type: object
+      description: Request body for creating a new user
+      required: [email, name]
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address (must be unique)
+          example: "new.user@example.com"
+        name:
+          type: string
+          description: User's display name
+          example: "New User"
+
+    UpdateUserRequest:
+      type: object
+      description: Request body for updating a user (all fields optional)
+      properties:
+        name:
+          type: string
+          description: User's display name
+          example: "Updated Name"
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+
+    UserListResponse:
+      type: object
+      description: Response for listing users
+      required: [success, users, totalCount]
+      properties:
+        success:
+          type: boolean
+          example: true
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfile'
+        totalCount:
+          type: integer
+          description: Total number of users (for pagination)
+          example: 25
 
     UserPreferences:
       type: object
