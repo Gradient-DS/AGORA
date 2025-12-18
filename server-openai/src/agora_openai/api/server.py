@@ -13,6 +13,7 @@ from agora_openai.core.agent_runner import AgentRegistry, AgentRunner
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.adapters.audit_logger import AuditLogger
 from agora_openai.adapters.session_metadata import SessionMetadataManager
+from agora_openai.adapters.user_manager import UserManager
 from agora_openai.pipelines.moderator import ModerationPipeline
 from agora_openai.pipelines.orchestrator import Orchestrator
 from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
@@ -60,6 +61,9 @@ async def lifespan(app: FastAPI):
     session_metadata = SessionMetadataManager(db_path="sessions.db")
     await session_metadata.initialize()
 
+    user_manager = UserManager(db_path="sessions.db")
+    await user_manager.initialize()
+
     orchestrator = Orchestrator(
         agent_runner=agent_runner,
         moderator=moderator,
@@ -71,11 +75,13 @@ async def lifespan(app: FastAPI):
     app.state.agent_registry = agent_registry
     app.state.mcp_tool_registry = mcp_tool_registry
     app.state.session_metadata = session_metadata
+    app.state.user_manager = user_manager
 
     yield
 
     log.info("Shutting down AGORA Agent SDK Server")
     await session_metadata.close()
+    await user_manager.close()
     await mcp_tool_registry.disconnect_all()
 
 
@@ -219,6 +225,164 @@ async def delete_session(session_id: str):
     return {
         "success": True,
         "message": "Session deleted",
+    }
+
+
+# ---------------------------------------------------------------------------
+# USER MANAGEMENT ENDPOINTS
+# ---------------------------------------------------------------------------
+
+
+@app.post("/users", status_code=201)
+async def create_user(
+    email: str = Query(..., description="User's email address"),
+    name: str = Query(..., description="User's display name"),
+    role: str = Query("inspector", description="User's role (admin, inspector, viewer)"),
+):
+    """Create a new user.
+
+    Email must be unique across the system.
+    """
+    user_manager: UserManager = app.state.user_manager
+
+    user = await user_manager.create_user(email=email, name=name, role=role)
+
+    if not user:
+        raise HTTPException(status_code=409, detail="Email already exists")
+
+    return {
+        "success": True,
+        "user": user,
+    }
+
+
+@app.get("/users")
+async def list_users(
+    limit: int = Query(50, ge=1, le=100, description="Max users to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+):
+    """List all users, ordered by creation date (most recent first)."""
+    user_manager: UserManager = app.state.user_manager
+
+    users, total_count = await user_manager.list_users(limit=limit, offset=offset)
+
+    return {
+        "success": True,
+        "users": users,
+        "totalCount": total_count,
+    }
+
+
+@app.get("/users/me")
+async def get_current_user(
+    user_id: str = Query(..., description="Current user ID"),
+):
+    """Get current user profile.
+
+    Requires user_id query parameter for identification.
+    """
+    user_manager: UserManager = app.state.user_manager
+
+    user = await user_manager.get_user(user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
+@app.put("/users/me/preferences")
+async def update_current_user_preferences(
+    user_id: str = Query(..., description="Current user ID"),
+    theme: str | None = Query(None, description="Theme preference (light, dark, system)"),
+    notifications_enabled: bool | None = Query(None, description="Enable notifications"),
+    default_agent_id: str | None = Query(None, description="Default agent ID"),
+    language: str | None = Query(None, description="Language preference"),
+):
+    """Update current user's preferences."""
+    user_manager: UserManager = app.state.user_manager
+
+    # Build preferences dict from provided values
+    preferences = {}
+    if theme is not None:
+        preferences["theme"] = theme
+    if notifications_enabled is not None:
+        preferences["notifications_enabled"] = notifications_enabled
+    if default_agent_id is not None:
+        preferences["default_agent_id"] = default_agent_id
+    if language is not None:
+        preferences["language"] = language
+
+    if not preferences:
+        raise HTTPException(status_code=400, detail="No preferences provided")
+
+    user = await user_manager.update_preferences(user_id, preferences)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "success": True,
+        "preferences": user.get("preferences"),
+    }
+
+
+@app.get("/users/{user_id}")
+async def get_user(user_id: str):
+    """Get user profile by ID."""
+    user_manager: UserManager = app.state.user_manager
+
+    user = await user_manager.get_user(user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "success": True,
+        "user": user,
+    }
+
+
+@app.put("/users/{user_id}")
+async def update_user(
+    user_id: str,
+    name: str | None = Query(None, description="User's display name"),
+    role: str | None = Query(None, description="User's role (admin, inspector, viewer)"),
+):
+    """Update user profile.
+
+    Partial updates are supported - only provided fields will be updated.
+    """
+    user_manager: UserManager = app.state.user_manager
+
+    user = await user_manager.update_user(user_id, name=name, role=role)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "success": True,
+        "user": user,
+    }
+
+
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    """Delete a user and all associated sessions.
+
+    This operation cascades to delete all sessions owned by the user.
+    """
+    user_manager: UserManager = app.state.user_manager
+
+    deleted, sessions_count = await user_manager.delete_user(user_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "success": True,
+        "message": "User and associated sessions deleted",
+        "deletedSessionsCount": sessions_count,
     }
 
 

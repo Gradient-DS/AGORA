@@ -19,12 +19,14 @@ import {
   type AGUIEvent,
   type CustomEvent,
   type StateSnapshotEvent,
+  type ToolCallStartEvent,
   isToolApprovalRequest,
   isAgoraError,
   parseToolApprovalRequest,
   parseAgoraError,
 } from '@/types/schemas';
 import { env } from '@/lib/env';
+import { emitTTSEvent } from './useTTS';
 
 let globalClient: AGUIWebSocketClient | null = null;
 let activeSubscriptions = 0;
@@ -158,24 +160,33 @@ export function useWebSocket() {
           }
           break;
 
-        case EventType.TOOL_CALL_START:
-          console.log('[AG-UI] Tool call start:', event.toolCallName, 'agent:', currentAgentId.current);
+        case EventType.TOOL_CALL_START: {
+          const toolEvent = event as ToolCallStartEvent;
+          console.log('[AG-UI] Tool call start:', toolEvent.toolCallName, 'agent:', currentAgentId.current);
           addToolCall({
-            id: event.toolCallId,
-            toolName: event.toolCallName,
+            id: toolEvent.toolCallId,
+            toolName: toolEvent.toolCallName,
             status: 'started',
-            parentMessageId: event.parentMessageId ?? undefined,
+            parentMessageId: toolEvent.parentMessageId ?? undefined,
             agentId: currentAgentId.current,
           });
           addMessage({
-            id: event.toolCallId,
+            id: toolEvent.toolCallId,
             role: 'tool',
-            content: event.toolCallName,
-            toolName: event.toolCallName,
+            content: toolEvent.toolCallName,
+            toolName: toolEvent.toolCallName,
             toolStatus: 'started',
             agentId: currentAgentId.current,
           });
+          // Emit TTS event for tool description (only handoffs have this)
+          if (toolEvent.toolDescription) {
+            emitTTSEvent({
+              type: 'tool_description',
+              content: toolEvent.toolDescription,
+            });
+          }
           break;
+        }
 
         case EventType.TOOL_CALL_ARGS:
           console.log('[AG-UI] Tool call args:', event.toolCallId);
@@ -262,6 +273,28 @@ export function useWebSocket() {
           console.error('[AG-UI] Server error:', error.message);
           setError(new Error(error.message));
         }
+      } else if (event.name === 'agora:spoken_text_start') {
+        // TTS: Start of spoken text stream
+        const value = event.value as { messageId?: string };
+        emitTTSEvent({
+          type: 'spoken_text_start',
+          messageId: value.messageId,
+        });
+      } else if (event.name === 'agora:spoken_text_content') {
+        // TTS: Spoken text content chunk
+        const value = event.value as { messageId?: string; delta?: string };
+        emitTTSEvent({
+          type: 'spoken_text_content',
+          messageId: value.messageId,
+          content: value.delta,
+        });
+      } else if (event.name === 'agora:spoken_text_end') {
+        // TTS: End of spoken text stream
+        const value = event.value as { messageId?: string };
+        emitTTSEvent({
+          type: 'spoken_text_end',
+          messageId: value.messageId,
+        });
       } else {
         console.log('[AG-UI] Custom event:', event.name, event.value);
       }

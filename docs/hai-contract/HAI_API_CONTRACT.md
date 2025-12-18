@@ -383,7 +383,7 @@ Emitted when a tool call begins.
   "type": "TOOL_CALL_START",
   "toolCallId": "call-abc-...",
   "toolCallName": "search_regulations",
-  "toolSpokenName": "Ik ga de regelgeving doorzoeken",
+  "toolDescription": "Ik ga de regelgeving doorzoeken",
   "parentMessageId": "msg-789-...",
   "timestamp": 1705318202000
 }
@@ -393,7 +393,7 @@ Emitted when a tool call begins.
 |-------|------|----------|-------------|
 | `toolCallId` | string | Yes | Unique identifier for this tool call |
 | `toolCallName` | string | Yes | Technical name of the tool |
-| `toolSpokenName` | string | No | Human-readable spoken description for TTS |
+| `toolDescription` | string | No | Human-readable spoken description for TTS |
 | `parentMessageId` | string | No | ID of the parent message |
 
 #### TOOL_CALL_ARGS
@@ -560,7 +560,7 @@ Client                                    Server
   | <------------ STEP_FINISHED (thinking)  |
   |                                         |
   | <------------ STEP_STARTED (exec_tools) |
-  | <------------ TOOL_CALL_START           |  (includes toolSpokenName)
+  | <------------ TOOL_CALL_START           |  (includes toolDescription)
   | <------------ TOOL_CALL_ARGS            |
   | <------------ TOOL_CALL_END             |
   | <------------ TOOL_CALL_RESULT          |

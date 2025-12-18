@@ -644,12 +644,6 @@ components:
           type: string
           description: User's display name
           example: "Jane Doe"
-        role:
-          type: string
-          enum: [admin, inspector, viewer]
-          description: User's role in the system
-          default: inspector
-          example: "inspector"
         preferences:
           $ref: '#/components/schemas/UserPreferences'
         createdAt:
@@ -677,12 +671,6 @@ components:
           type: string
           description: User's display name
           example: "New User"
-        role:
-          type: string
-          enum: [admin, inspector, viewer]
-          description: User's role (defaults to inspector)
-          default: inspector
-          example: "inspector"
 
     UpdateUserRequest:
       type: object
@@ -692,11 +680,6 @@ components:
           type: string
           description: User's display name
           example: "Updated Name"
-        role:
-          type: string
-          enum: [admin, inspector, viewer]
-          description: User's role in the system
-          example: "admin"
         preferences:
           $ref: '#/components/schemas/UserPreferences'
 

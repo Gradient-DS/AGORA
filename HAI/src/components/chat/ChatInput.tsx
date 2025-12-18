@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TTSToggle } from './TTSToggle';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -65,6 +66,7 @@ export function ChatInput({
           )}
         </Button>
       )}
+      <TTSToggle disabled={disabled} />
       <Textarea
         ref={textareaRef}
         value={message}

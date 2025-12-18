@@ -9,9 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
-import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, PERSONAS } from '@/stores';
+import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, useAdminStore } from '@/stores';
 import { useHistoryStore } from '@/stores/useHistoryStore';
-import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu } from 'lucide-react';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
@@ -22,9 +22,12 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const initializeSession = useSessionStore((state) => state.initializeSession);
   const clearMessages = useMessageStore((state) => state.clearMessages);
   const currentUser = useUserStore((state) => state.currentUser);
+  const users = useUserStore((state) => state.users);
+  const usersLoading = useUserStore((state) => state.isLoading);
   const setUser = useUserStore((state) => state.setUser);
   const toggleSidebar = useHistoryStore((state) => state.toggleSidebar);
   const fetchSessions = useHistoryStore((state) => state.fetchSessions);
+  const openAdminPanel = useAdminStore((state) => state.openAdminPanel);
 
   const handleNewConversation = (userId?: string) => {
     if (userId) {
@@ -130,27 +133,46 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                     variant="outline"
                     className="rounded-l-none px-2"
                     aria-label="Selecteer inspecteur"
+                    disabled={usersLoading}
                   >
-                    <ChevronDown className="h-3 w-3" />
+                    {usersLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel>Selecteer inspecteur</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {Object.values(PERSONAS).map((persona) => (
-                    <DropdownMenuItem
-                      key={persona.id}
-                      onClick={() => handleNewConversation(persona.id)}
-                      className="flex flex-col items-start py-2 cursor-pointer"
-                    >
-                      <div className="font-medium">{persona.name}</div>
-                      <div className="text-xs text-muted-foreground">{persona.title}</div>
-                      <div className="text-xs text-muted-foreground">{persona.experience} ervaring</div>
+                  {users.length === 0 ? (
+                    <DropdownMenuItem disabled>
+                      <span className="text-muted-foreground">Geen gebruikers beschikbaar</span>
                     </DropdownMenuItem>
-                  ))}
+                  ) : (
+                    users.map((user) => (
+                      <DropdownMenuItem
+                        key={user.id}
+                        onClick={() => handleNewConversation(user.id)}
+                        className="flex flex-col items-start py-2 cursor-pointer"
+                      >
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-xs text-muted-foreground">{user.email}</div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={openAdminPanel}
+              aria-label="Open beheerdersinstellingen"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
             
             <Badge 
               variant={getStatusVariant()}

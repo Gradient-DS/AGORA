@@ -219,7 +219,7 @@ components:
             type: "TOOL_CALL_START"
             toolCallId: "call-abc123"
             toolCallName: "search_regulations"
-            toolSpokenName: "Ik ga hem nu aan de regulation agent geven"
+            toolDescription: "Ik ga hem nu aan de regulation agent geven"
             parentMessageId: "msg-abc123"
             timestamp: "2025-01-15T10:30:02Z"
 
@@ -477,7 +477,7 @@ components:
           type: string
         toolCallName:
           type: string
-        toolSpokenName:
+        toolDescription:
           type: string
           nullable: true
           description: Human-readable spoken description of the tool action
