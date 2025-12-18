@@ -133,13 +133,10 @@ async def get_agents():
 
 @app.get("/sessions/{session_id}/history")
 async def get_session_history(session_id: str, include_tools: bool = False):
-    """Get conversation history for a session.
-
-    This endpoint is used by MCP servers (like reporting) to retrieve
-    conversation history from the Agents SDK SQLite session storage.
+    """Get conversation history for a session (thread).
 
     Args:
-        session_id: Session identifier
+        session_id: Session/thread identifier
         include_tools: If True, includes tool calls and results in the history
 
     Returns:
@@ -148,22 +145,22 @@ async def get_session_history(session_id: str, include_tools: bool = False):
     orchestrator: Orchestrator = app.state.orchestrator
 
     try:
-        history = await orchestrator.agent_runner.get_conversation_history(
-            session_id=session_id, include_tool_calls=include_tools
+        history = await orchestrator.get_conversation_history(
+            thread_id=session_id, include_tool_calls=include_tools
         )
 
         return {
             "success": True,
-            "session_id": session_id,
+            "threadId": session_id,
             "history": history,
-            "message_count": len(history),
+            "messageCount": len(history),
         }
     except Exception as e:
         log.error(f"Error retrieving session history: {e}", exc_info=True)
         return {
             "success": False,
             "error": str(e),
-            "message": f"Failed to retrieve history for session {session_id}",
+            "message": f"Failed to retrieve history for thread {session_id}",
         }
 
 

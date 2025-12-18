@@ -1,9 +1,111 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "agora-ag-ui-events",
-  "title": "AGORA AG-UI Protocol Events v2.1.1",
-  "description": "JSON Schema definitions for AG-UI Protocol events used by AGORA. Uses official ag-ui-protocol types with AGORA extensions. Note: TOOL_CALL_END signals end of argument streaming only; tool results are delivered via TOOL_CALL_RESULT.",
+  "title": "AGORA AG-UI Protocol Events v2.3.0",
+  "description": "JSON Schema definitions for AG-UI Protocol events and REST API types used by AGORA. Uses official ag-ui-protocol types with AGORA extensions for session management and conversation history.",
   "definitions": {
+    "SessionMetadata": {
+      "type": "object",
+      "description": "Metadata for a conversation session",
+      "required": ["sessionId", "userId", "title", "messageCount", "createdAt", "lastActivity"],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "description": "Unique session identifier (same as threadId)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Inspector persona ID (e.g., 'koen', 'fatima')"
+        },
+        "title": {
+          "type": "string",
+          "description": "Auto-generated title from first message"
+        },
+        "firstMessagePreview": {
+          "type": ["string", "null"],
+          "description": "Preview of the first message (truncated)"
+        },
+        "messageCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of messages in the session"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Session creation timestamp (ISO 8601)"
+        },
+        "lastActivity": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last message timestamp (ISO 8601)"
+        }
+      }
+    },
+    "SessionListResponse": {
+      "type": "object",
+      "description": "Response for GET /sessions endpoint",
+      "required": ["success", "sessions", "totalCount"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "sessions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SessionMetadata" }
+        },
+        "totalCount": {
+          "type": "integer",
+          "description": "Total number of sessions for pagination"
+        }
+      }
+    },
+    "HistoryMessage": {
+      "type": "object",
+      "description": "A message in conversation history (role determines available fields)",
+      "required": ["role", "content"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["user", "assistant", "tool_call", "tool"],
+          "description": "Message role: user, assistant, tool_call (invocation), or tool (result)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message content (for tool_call: JSON args, for tool: result)"
+        },
+        "agent_id": {
+          "type": ["string", "null"],
+          "description": "Agent that produced this message (for assistant and tool_call)"
+        },
+        "tool_call_id": {
+          "type": ["string", "null"],
+          "description": "Tool call identifier (for tool_call and tool roles)"
+        },
+        "tool_name": {
+          "type": ["string", "null"],
+          "description": "Name of the tool (for tool_call and tool roles)"
+        }
+      }
+    },
+    "HistoryResponse": {
+      "type": "object",
+      "description": "Response for GET /sessions/{id}/history endpoint",
+      "required": ["success", "threadId", "history", "messageCount"],
+      "properties": {
+        "success": { "type": "boolean" },
+        "threadId": {
+          "type": "string",
+          "description": "Session/thread identifier"
+        },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/HistoryMessage" }
+        },
+        "messageCount": {
+          "type": "integer",
+          "description": "Number of messages in history"
+        }
+      }
+    },
     "EventType": {
       "type": "string",
       "enum": [

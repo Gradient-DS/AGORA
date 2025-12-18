@@ -237,6 +237,19 @@ class Orchestrator:
                             tool_name, parameters, thread_id, protocol_handler
                         )
 
+                        # Record full tool call data for history retrieval
+                        if self.session_metadata and agent_id:
+                            try:
+                                await self.session_metadata.record_tool_call_agent(
+                                    tool_call_id=tool_call_id,
+                                    session_id=thread_id,
+                                    agent_id=agent_id,
+                                    tool_name=tool_name,
+                                    parameters=json.dumps(parameters) if parameters else None,
+                                )
+                            except Exception as e:
+                                log.warning(f"Failed to record tool call: {e}")
+
                         # Transition to executing_tools step
                         if current_step != "executing_tools":
                             await protocol_handler.send_step_finished(current_step)
@@ -256,6 +269,16 @@ class Orchestrator:
                             )
 
                     elif status == "completed":
+                        # Store tool call result for history retrieval
+                        if self.session_metadata and result:
+                            try:
+                                await self.session_metadata.update_tool_call_result(
+                                    tool_call_id=tool_call_id,
+                                    result=result,
+                                )
+                            except Exception as e:
+                                log.warning(f"Failed to store tool call result: {e}")
+
                         # Send TOOL_CALL_END first (signals end of streaming)
                         await protocol_handler.send_tool_call_end(
                             tool_call_id=tool_call_id
@@ -349,6 +372,37 @@ class Orchestrator:
                 "I apologize, but I encountered an error processing your request.",
                 str(uuid.uuid4()),
             )
+
+    async def get_conversation_history(
+        self, thread_id: str, include_tool_calls: bool = False
+    ) -> list[dict[str, Any]]:
+        """Get conversation history with tool calls and agent_id tracking.
+
+        Retrieves the conversation history from the agent runner and enriches
+        it with full tool call data from storage.
+
+        Args:
+            thread_id: Session/thread identifier
+            include_tool_calls: If True, includes tool calls and results
+
+        Returns:
+            List of conversation items with role, content, and agent_id
+        """
+        # Get full tool call data from storage
+        stored_tool_calls: list[dict[str, Any]] = []
+        if self.session_metadata and include_tool_calls:
+            try:
+                stored_tool_calls = await self.session_metadata.get_tool_calls_for_session(
+                    thread_id
+                )
+            except Exception as e:
+                log.warning(f"Failed to get tool calls: {e}")
+
+        return await self.agent_runner.get_conversation_history(
+            session_id=thread_id,
+            include_tool_calls=include_tool_calls,
+            stored_tool_calls=stored_tool_calls,
+        )
 
     def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
         """Create an AG-UI AssistantMessage response."""

@@ -11,6 +11,8 @@ import {
   useApprovalStore,
   useToolCallStore,
   useAgentStore,
+  useUserStore,
+  useHistoryStore,
 } from '@/stores';
 import {
   EventType,
@@ -91,14 +93,20 @@ export function useWebSocket() {
           setProcessingStatus('thinking');
           break;
 
-        case EventType.RUN_FINISHED:
+        case EventType.RUN_FINISHED: {
           console.log('[AG-UI] Run finished:', event.runId);
           currentRunId.current = null;
           setProcessingStatus(null);
           if (currentAgentId.current) {
             setAgentIdle(currentAgentId.current);
           }
+          // Refresh session list to capture new/updated sessions
+          const userId = useUserStore.getState().currentUser?.id;
+          if (userId) {
+            useHistoryStore.getState().fetchSessions(userId);
+          }
           break;
+        }
 
         case EventType.RUN_ERROR:
           console.error('[AG-UI] Run error:', event.message, event.code);
@@ -313,7 +321,11 @@ export function useWebSocket() {
         role: 'user',
         content,
       });
-      clientRef.current.sendRunInput(session.id, content);
+      // Pass user_id in context for session metadata tracking
+      const userId = useUserStore.getState().currentUser?.id;
+      clientRef.current.sendRunInput(session.id, content, {
+        user_id: userId || 'anonymous',
+      });
       updateActivity();
     }
   };

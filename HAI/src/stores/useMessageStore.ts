@@ -17,6 +17,7 @@ interface MessageStore {
   setProcessingStatus: (status: ProcessingStatus) => void;
   setTyping: (isTyping: boolean) => void;
   clearMessages: () => void;
+  replaceMessages: (messages: ChatMessage[]) => void;
 }
 
 export const useMessageStore = create<MessageStore>((set) => ({
@@ -74,5 +75,9 @@ export const useMessageStore = create<MessageStore>((set) => ({
 
   clearMessages: () => {
     set({ messages: [], processingStatus: null, isTyping: false });
+  },
+
+  replaceMessages: (messages: ChatMessage[]) => {
+    set({ messages, processingStatus: null, isTyping: false });
   },
 }));

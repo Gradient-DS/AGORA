@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
   title: AGORA HAI REST API
-  version: 1.0.0
+  version: 2.0.0
   description: |
-    REST API for the AGORA Human Agent Interface (HAI). 
-    This API handles session history retrieval, user management, and other non-real-time operations
-    that complement the WebSocket protocol.
+    REST API for the AGORA Human Agent Interface (HAI).
+    This API handles session management, conversation history retrieval, and other non-real-time operations
+    that complement the AG-UI WebSocket protocol.
 
   contact:
     name: AGORA Development Team
@@ -17,17 +17,62 @@ servers:
 
 paths:
   # ---------------------------------------------------------------------------
-  # HISTORY MANAGEMENT
+  # SESSION MANAGEMENT
   # ---------------------------------------------------------------------------
-  /sessions/{session_id}/history:
+  /sessions:
     get:
-      summary: Get conversation history
+      summary: List sessions for a user
       description: |
-        Retrieves the full conversation history for a specific session.
-        This should be called by the client on page load before establishing the WebSocket connection.
-      operationId: getSessionHistory
+        Retrieves all sessions for a specific user, ordered by last activity (most recent first).
+        Used by the frontend to display the conversation history sidebar.
+      operationId: listSessions
       tags:
-        - History
+        - Sessions
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            example: "koen"
+          required: true
+          description: Inspector persona ID (e.g., "koen", "fatima", "jan")
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of sessions to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Pagination offset
+      responses:
+        '200':
+          description: Session list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}:
+    delete:
+      summary: Delete a session
+      description: |
+        Deletes a session and all its associated data, including conversation history and metadata.
+      operationId: deleteSession
+      tags:
+        - Sessions
       parameters:
         - in: path
           name: session_id
@@ -36,15 +81,9 @@ paths:
             example: "123e4567-e89b-12d3-a456-426614174000"
           required: true
           description: Unique session identifier
-        - in: query
-          name: include_tools
-          schema:
-            type: boolean
-            default: false
-          description: If true, includes tool calls and results in the history
       responses:
         '200':
-          description: Conversation history retrieved successfully
+          description: Session deleted successfully
           content:
             application/json:
               schema:
@@ -53,16 +92,86 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  session_id:
+                  message:
                     type: string
-                    example: "123e4567-e89b-12d3-a456-426614174000"
-                  message_count:
-                    type: integer
-                    example: 15
-                  history:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/HistoryMessage'
+                    example: "Session deleted"
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/metadata:
+    get:
+      summary: Get session metadata
+      description: |
+        Retrieves metadata for a specific session without the full conversation history.
+        Useful for displaying session info in the sidebar without loading all messages.
+      operationId: getSessionMetadata
+      tags:
+        - Sessions
+      parameters:
+        - in: path
+          name: session_id
+          schema:
+            type: string
+            example: "123e4567-e89b-12d3-a456-426614174000"
+          required: true
+          description: Unique session identifier
+      responses:
+        '200':
+          description: Session metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  session:
+                    $ref: '#/components/schemas/SessionMetadata'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{session_id}/history:
+    get:
+      summary: Get conversation history
+      description: |
+        Retrieves the full conversation history for a specific session.
+        This should be called by the client when switching sessions or on page load
+        before establishing the WebSocket connection.
+      operationId: getSessionHistory
+      tags:
+        - Sessions
+      parameters:
+        - in: path
+          name: session_id
+          schema:
+            type: string
+            example: "123e4567-e89b-12d3-a456-426614174000"
+          required: true
+          description: Unique session identifier (same as threadId)
+        - in: query
+          name: include_tools
+          schema:
+            type: boolean
+            default: false
+          description: |
+            If true, includes tool calls (role: "tool_call") and tool results (role: "tool") in the history.
+            Required for restoring the debug panel state.
+      responses:
+        '200':
+          description: Conversation history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
         '404':
           description: Session not found
           content:
@@ -130,84 +239,188 @@ paths:
 components:
   schemas:
     # -------------------------------------------------------------------------
-    # HISTORY SCHEMAS
+    # SESSION SCHEMAS
     # -------------------------------------------------------------------------
-    HistoryMessage:
+    SessionMetadata:
       type: object
-      description: A single message in the conversation history
-      required: [type, content, session_id]
-      discriminator:
-        propertyName: type
-        mapping:
-          user_message: '#/components/schemas/UserMessage'
-          assistant_message: '#/components/schemas/AssistantMessage'
-          tool_call_end: '#/components/schemas/ToolCallEnd'
-      oneOf:
-        - $ref: '#/components/schemas/UserMessage'
-        - $ref: '#/components/schemas/AssistantMessage'
-        - $ref: '#/components/schemas/ToolCallEnd'
-
-    UserMessage:
-      type: object
-      required: [type, content, session_id]
+      description: Metadata for a conversation session
+      required: [sessionId, userId, title, messageCount, createdAt, lastActivity]
       properties:
-        type:
+        sessionId:
           type: string
-          const: "user_message"
-        content:
+          description: Unique session identifier (same as threadId)
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        userId:
           type: string
-        session_id:
+          description: Inspector persona ID
+          example: "koen"
+        title:
           type: string
-        metadata:
-          type: object
-          additionalProperties: true
-        timestamp:
+          description: Auto-generated title from first message
+          example: "Inspectie bij Restaurant Bella Rosa"
+        firstMessagePreview:
+          type: string
+          description: Preview of the first message (truncated)
+          example: "Start inspectie bij Restaurant..."
+        messageCount:
+          type: integer
+          description: Total number of messages in the session
+          example: 12
+        createdAt:
           type: string
           format: date-time
+          description: Session creation timestamp
+          example: "2025-12-01T10:30:00Z"
+        lastActivity:
+          type: string
+          format: date-time
+          description: Last message timestamp
+          example: "2025-12-01T11:45:00Z"
+
+    SessionListResponse:
+      type: object
+      description: Response for listing sessions
+      required: [success, sessions, totalCount]
+      properties:
+        success:
+          type: boolean
+          example: true
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionMetadata'
+        totalCount:
+          type: integer
+          description: Total number of sessions (for pagination)
+          example: 42
+
+    # -------------------------------------------------------------------------
+    # HISTORY SCHEMAS
+    # -------------------------------------------------------------------------
+    HistoryResponse:
+      type: object
+      description: Response for conversation history
+      required: [success, threadId, history, messageCount]
+      properties:
+        success:
+          type: boolean
+          example: true
+        threadId:
+          type: string
+          description: Session/thread identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryMessage'
+        messageCount:
+          type: integer
+          description: Number of messages in history
+          example: 15
+
+    HistoryMessage:
+      type: object
+      description: |
+        A single message in the conversation history.
+        The role field determines the message type and available fields.
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant, tool_call, tool]
+          description: |
+            Message role:
+            - user: User input
+            - assistant: Agent response
+            - tool_call: Tool invocation (when include_tools=true)
+            - tool: Tool result (when include_tools=true)
+        content:
+          type: string
+          description: |
+            Message content. For tool_call, this is the JSON-encoded arguments.
+            For tool, this is the tool result.
+        agent_id:
+          type: string
+          description: Agent that produced this message (for assistant and tool_call roles)
+          example: "history-agent"
+        tool_call_id:
+          type: string
+          description: Tool call identifier (for tool_call and tool roles)
+          example: "call-abc123"
+        tool_name:
+          type: string
+          description: Name of the tool (for tool_call and tool roles)
+          example: "get_company_info"
+      example:
+        role: "assistant"
+        content: "Inspectie gestart voor Restaurant Bella Rosa..."
+        agent_id: "history-agent"
+
+    # Legacy schemas for backward compatibility
+    UserMessage:
+      type: object
+      deprecated: true
+      description: "Deprecated: Use HistoryMessage with role='user' instead"
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          const: "user"
+        content:
+          type: string
 
     AssistantMessage:
       type: object
-      required: [type, content]
+      deprecated: true
+      description: "Deprecated: Use HistoryMessage with role='assistant' instead"
+      required: [role, content]
       properties:
-        type:
+        role:
           type: string
-          const: "assistant_message"
+          const: "assistant"
         content:
           type: string
-        session_id:
-          type: string
         agent_id:
           type: string
-        metadata:
-          type: object
-          additionalProperties: true
-        timestamp:
-          type: string
-          format: date-time
 
-    ToolCallEnd:
+    ToolCallMessage:
       type: object
-      required: [type, tool_call_id, tool_name, result]
+      description: Tool invocation message (only present when include_tools=true)
+      required: [role, tool_call_id, tool_name, content]
       properties:
-        type:
+        role:
           type: string
-          const: "tool_call_end"
+          const: "tool_call"
         tool_call_id:
           type: string
+          description: Unique tool call identifier
         tool_name:
           type: string
-        result:
+          description: Name of the tool being called
+        content:
           type: string
-        session_id:
-          type: string
+          description: JSON-encoded tool arguments
         agent_id:
           type: string
-        metadata:
-          type: object
-          additionalProperties: true
-        timestamp:
+          description: Agent that made this tool call
+
+    ToolResultMessage:
+      type: object
+      description: Tool result message (only present when include_tools=true)
+      required: [role, tool_call_id, tool_name, content]
+      properties:
+        role:
           type: string
-          format: date-time
+          const: "tool"
+        tool_call_id:
+          type: string
+          description: Tool call identifier this result belongs to
+        tool_name:
+          type: string
+          description: Name of the tool
+        content:
+          type: string
+          description: Tool execution result
 
     # -------------------------------------------------------------------------
     # USER SCHEMAS

@@ -71,6 +71,22 @@ class SessionMetadataManager:
             CREATE INDEX IF NOT EXISTS idx_session_metadata_user_activity
             ON session_metadata (user_id, last_activity DESC)
         """)
+        # Table for tracking tool calls with full data for history retrieval
+        await self._connection.execute("""
+            CREATE TABLE IF NOT EXISTS tool_call_agents (
+                tool_call_id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                agent_id TEXT NOT NULL,
+                tool_name TEXT NOT NULL,
+                parameters TEXT,
+                result TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        await self._connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_tool_call_agents_session
+            ON tool_call_agents (session_id)
+        """)
         await self._connection.commit()
 
     async def list_sessions(
@@ -294,3 +310,115 @@ class SessionMetadataManager:
             truncated = truncated[:last_space]
 
         return truncated + "..."
+
+    async def record_tool_call_agent(
+        self,
+        tool_call_id: str,
+        session_id: str,
+        agent_id: str,
+        tool_name: str,
+        parameters: str | None = None,
+    ) -> None:
+        """Record a tool call with its agent and parameters.
+
+        Called during streaming when a tool call is started. Stores the full
+        tool call data for history retrieval.
+
+        Args:
+            tool_call_id: Unique tool call identifier
+            session_id: Session identifier
+            agent_id: ID of the agent that made the tool call
+            tool_name: Name of the tool being called
+            parameters: JSON string of tool call parameters
+        """
+        if not self._connection:
+            raise RuntimeError("SessionMetadataManager not initialized")
+
+        await self._connection.execute(
+            """
+            INSERT OR REPLACE INTO tool_call_agents
+            (tool_call_id, session_id, agent_id, tool_name, parameters, created_at)
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
+            """,
+            (tool_call_id, session_id, agent_id, tool_name, parameters),
+        )
+        await self._connection.commit()
+
+    async def get_tool_call_agents(self, session_id: str) -> dict[str, str]:
+        """Get agent_id mapping for all tool calls in a session.
+
+        Args:
+            session_id: Session identifier
+
+        Returns:
+            Dict mapping tool_call_id to agent_id
+        """
+        if not self._connection:
+            raise RuntimeError("SessionMetadataManager not initialized")
+
+        cursor = await self._connection.execute(
+            "SELECT tool_call_id, agent_id FROM tool_call_agents WHERE session_id = ?",
+            (session_id,),
+        )
+        rows = await cursor.fetchall()
+        return {row[0]: row[1] for row in rows}
+
+    async def update_tool_call_result(
+        self,
+        tool_call_id: str,
+        result: str,
+    ) -> None:
+        """Update a tool call with its result.
+
+        Called during streaming when a tool call completes.
+
+        Args:
+            tool_call_id: Tool call identifier
+            result: Result of the tool call
+        """
+        if not self._connection:
+            raise RuntimeError("SessionMetadataManager not initialized")
+
+        await self._connection.execute(
+            """
+            UPDATE tool_call_agents
+            SET result = ?
+            WHERE tool_call_id = ?
+            """,
+            (result, tool_call_id),
+        )
+        await self._connection.commit()
+
+    async def get_tool_calls_for_session(self, session_id: str) -> list[dict[str, Any]]:
+        """Get all tool calls for a session with full data.
+
+        Args:
+            session_id: Session identifier
+
+        Returns:
+            List of tool call dicts with tool_call_id, agent_id, tool_name, parameters, result
+        """
+        if not self._connection:
+            raise RuntimeError("SessionMetadataManager not initialized")
+
+        cursor = await self._connection.execute(
+            """
+            SELECT tool_call_id, agent_id, tool_name, parameters, result, created_at
+            FROM tool_call_agents
+            WHERE session_id = ?
+            ORDER BY created_at ASC
+            """,
+            (session_id,),
+        )
+        rows = await cursor.fetchall()
+
+        return [
+            {
+                "tool_call_id": row[0],
+                "agent_id": row[1],
+                "tool_name": row[2],
+                "parameters": row[3],
+                "result": row[4],
+            }
+            for row in rows
+        ]

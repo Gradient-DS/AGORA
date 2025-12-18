@@ -145,11 +145,13 @@ class Orchestrator:
         # Create or update session metadata
         if self.session_metadata:
             try:
+                log.info(f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}")
                 await self.session_metadata.create_or_update_metadata(
                     session_id=thread_id,
                     user_id=user_id,
                     first_message=user_content,
                 )
+                log.info(f"Session metadata created/updated successfully for {thread_id}")
             except Exception as e:
                 log.warning(f"Failed to update session metadata: {e}")
 
@@ -475,11 +477,17 @@ class Orchestrator:
                             }
                         )
                     elif msg.type == "ai":
+                        # Extract agent_id from additional_kwargs if present
+                        agent_id = None
+                        if hasattr(msg, "additional_kwargs"):
+                            agent_id = msg.additional_kwargs.get("agent_id")
+
                         if msg.content:
                             history.append(
                                 {
                                     "role": "assistant",
                                     "content": str(msg.content),
+                                    "agent_id": agent_id,
                                 }
                             )
                         if include_tool_calls and hasattr(msg, "tool_calls"):
@@ -487,14 +495,17 @@ class Orchestrator:
                                 history.append(
                                     {
                                         "role": "tool_call",
+                                        "tool_call_id": tc.get("id", ""),
                                         "tool_name": tc.get("name", "unknown"),
                                         "content": str(tc.get("args", {})),
+                                        "agent_id": agent_id,
                                     }
                                 )
                     elif include_tool_calls and msg.type == "tool":
                         history.append(
                             {
                                 "role": "tool",
+                                "tool_call_id": getattr(msg, "tool_call_id", ""),
                                 "tool_name": getattr(msg, "name", "unknown"),
                                 "content": str(msg.content),
                             }

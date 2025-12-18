@@ -109,6 +109,10 @@ async def _run_agent_node(
             f"tool_calls={response_tool_calls}"
         )
 
+        # Add agent_id to additional_kwargs for history tracking
+        if hasattr(response, "additional_kwargs"):
+            response.additional_kwargs["agent_id"] = agent_id
+
         return {
             "messages": [response],
             "current_agent": agent_id,

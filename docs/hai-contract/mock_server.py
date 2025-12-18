@@ -1,23 +1,36 @@
 #!/usr/bin/env python3
 """
-Mock server for testing AG-UI Protocol WebSocket communication.
+Mock server for testing AG-UI Protocol WebSocket communication and REST API.
 
-This server simulates the AGORA LangGraph orchestrator for frontend testing.
-Implements the AG-UI Protocol v2.1.0 with proper event lifecycle.
+This server simulates the AGORA orchestrator for frontend testing.
+Implements the AG-UI Protocol v2.3.0 with proper event lifecycle.
+
+Features:
+- WebSocket: AG-UI Protocol events for real-time communication
+- REST API: Session management endpoints for conversation history
 
 Supports Demo Scenario 1: Inspecteur Koen - Restaurant Bella Rosa
 
 Usage:
     python mock_server.py
 
-Connects to: ws://localhost:8000/ws
+Endpoints:
+    WebSocket: ws://localhost:8000/ws
+    REST API:
+        GET  /sessions?user_id={user_id}
+        GET  /sessions/{session_id}/history?include_tools=true
+        GET  /sessions/{session_id}/metadata
+        DELETE /sessions/{session_id}
 """
 
 import asyncio
 import json
+import re
 import sys
 import time
 import uuid
+from datetime import datetime, timedelta
+from urllib.parse import parse_qs, urlparse
 
 import websockets
 from websockets.http11 import Response
@@ -67,6 +80,120 @@ DEMO_REGULATIONS = [
         "description": "Algemene levensmiddelenhygiëne voorschriften",
     },
 ]
+
+
+# ---------------------------------------------------------------------------
+# MOCK SESSION DATA FOR TESTING
+# ---------------------------------------------------------------------------
+
+def get_mock_sessions() -> dict:
+    """Return mock session data for demo personas."""
+    now = datetime.now()
+    return {
+        # Koen's sessions
+        "session-koen-bella-rosa": {
+            "sessionId": "session-koen-bella-rosa",
+            "userId": "koen",
+            "title": "Inspectie bij Restaurant Bella Rosa",
+            "firstMessagePreview": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+            "messageCount": 8,
+            "createdAt": (now - timedelta(hours=2)).isoformat() + "Z",
+            "lastActivity": (now - timedelta(minutes=30)).isoformat() + "Z",
+        },
+        "session-koen-hotel-sunset": {
+            "sessionId": "session-koen-hotel-sunset",
+            "userId": "koen",
+            "title": "Inspectie Hotel Sunset",
+            "firstMessagePreview": "Start inspectie bij Hotel Sunset, kvk: 12345678",
+            "messageCount": 15,
+            "createdAt": (now - timedelta(days=2)).isoformat() + "Z",
+            "lastActivity": (now - timedelta(days=2, hours=-1)).isoformat() + "Z",
+        },
+        # Fatima's sessions
+        "session-fatima-bakery": {
+            "sessionId": "session-fatima-bakery",
+            "userId": "fatima",
+            "title": "Inspectie Bakkerij De Gouden Korenschoof",
+            "firstMessagePreview": "Ik wil een inspectie starten bij Bakkerij De Gouden Korenschoof",
+            "messageCount": 6,
+            "createdAt": (now - timedelta(days=1)).isoformat() + "Z",
+            "lastActivity": (now - timedelta(days=1, hours=-2)).isoformat() + "Z",
+        },
+        # Jan's sessions
+        "session-jan-supermarket": {
+            "sessionId": "session-jan-supermarket",
+            "userId": "jan",
+            "title": "Controle Supermarkt Plus",
+            "firstMessagePreview": "Controle bij Supermarkt Plus, ik heb vragen over de koelketen",
+            "messageCount": 4,
+            "createdAt": (now - timedelta(days=3)).isoformat() + "Z",
+            "lastActivity": (now - timedelta(days=3)).isoformat() + "Z",
+        },
+    }
+
+
+def get_mock_history(session_id: str, include_tools: bool = False) -> list:
+    """Return mock conversation history for a session."""
+    if session_id == "session-koen-bella-rosa":
+        history = [
+            {"role": "user", "content": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854"},
+            {
+                "role": "assistant",
+                "content": "Inspectie gestart voor **Restaurant Bella Rosa**.\n\n**Bedrijfsgegevens:**\n- KVK: 92251854\n- Rechtsvorm: Besloten Vennootschap\n- Status: Actief\n\n**Inspectiehistorie:**\n⚠️ Er is 1 openstaande overtreding uit 15 mei 2022.",
+                "agent_id": Agents.HISTORY
+            },
+            {"role": "user", "content": "Ik zie een geopende ton met rauwe vis op kamertemperatuur"},
+            {
+                "role": "assistant",
+                "content": "🚨 **ERNSTIGE OVERTREDING GECONSTATEERD**\n\nRauwe vis op kamertemperatuur is een direct risico voor voedselvergiftiging. Bederfelijke levensmiddelen moeten onder 7°C bewaard worden.\n\n**Toepasselijke regelgeving:**\n- Hygiënecode Horeca artikel 4.2\n- Warenwetregeling Hygiëne van Levensmiddelen",
+                "agent_id": Agents.REGULATION
+            },
+        ]
+
+        if include_tools:
+            # Insert tool calls at appropriate positions
+            history = [
+                history[0],  # user message
+                {"role": "tool_call", "tool_call_id": "call-001", "tool_name": "get_company_info", "content": '{"kvk_number": "92251854"}', "agent_id": Agents.HISTORY},
+                {"role": "tool", "tool_call_id": "call-001", "tool_name": "get_company_info", "content": json.dumps(DEMO_COMPANY, ensure_ascii=False)},
+                {"role": "tool_call", "tool_call_id": "call-002", "tool_name": "get_inspection_history", "content": '{"kvk_number": "92251854"}', "agent_id": Agents.HISTORY},
+                {"role": "tool", "tool_call_id": "call-002", "tool_name": "get_inspection_history", "content": json.dumps({"violations": [DEMO_VIOLATION]}, ensure_ascii=False)},
+                history[1],  # assistant response
+                history[2],  # user message
+                {"role": "tool_call", "tool_call_id": "call-003", "tool_name": "search_regulations", "content": '{"query": "rauwe vis temperatuur"}', "agent_id": Agents.REGULATION},
+                {"role": "tool", "tool_call_id": "call-003", "tool_name": "search_regulations", "content": json.dumps({"regulations": DEMO_REGULATIONS}, ensure_ascii=False)},
+                history[3],  # assistant response
+            ]
+
+        return history
+
+    elif session_id == "session-koen-hotel-sunset":
+        return [
+            {"role": "user", "content": "Start inspectie bij Hotel Sunset, kvk: 12345678"},
+            {"role": "assistant", "content": "Inspectie gestart voor Hotel Sunset. Bedrijfsgegevens worden opgehaald...", "agent_id": Agents.HISTORY},
+            {"role": "user", "content": "Wat zijn de regels voor ontbijtbuffet temperaturen?"},
+            {"role": "assistant", "content": "Voor ontbijtbuffetten gelden de volgende temperatuurregels...", "agent_id": Agents.REGULATION},
+        ]
+
+    elif session_id == "session-fatima-bakery":
+        return [
+            {"role": "user", "content": "Ik wil een inspectie starten bij Bakkerij De Gouden Korenschoof"},
+            {"role": "assistant", "content": "Prima, ik help u graag met de inspectie. Heeft u het KVK-nummer?", "agent_id": Agents.GENERAL},
+            {"role": "user", "content": "Ja, het is 87654321"},
+            {"role": "assistant", "content": "Inspectie gestart voor Bakkerij De Gouden Korenschoof.", "agent_id": Agents.HISTORY},
+        ]
+
+    elif session_id == "session-jan-supermarket":
+        return [
+            {"role": "user", "content": "Controle bij Supermarkt Plus, ik heb vragen over de koelketen"},
+            {"role": "assistant", "content": "Welkom! Ik help u graag met vragen over de koelketen. Wat wilt u weten?", "agent_id": Agents.GENERAL},
+        ]
+
+    return []
+
+
+# In-memory storage for sessions (can be modified by DELETE)
+MOCK_SESSIONS = get_mock_sessions()
 
 
 def now_timestamp() -> int:
@@ -710,21 +837,163 @@ async def stream_response(
 
 
 def process_request(connection, request):
-    """Handle HTTP requests that aren't WebSocket upgrades."""
-    if request.headers.get("Upgrade", "").lower() != "websocket":
-        return Response(200, "OK", websockets.Headers(), b"AG-UI Mock Server OK\n")
-    return None
+    """Handle HTTP requests that aren't WebSocket upgrades.
+
+    Supports:
+    - GET /sessions?user_id={user_id}
+    - GET /sessions/{session_id}/history?include_tools=true
+    - GET /sessions/{session_id}/metadata
+    - DELETE /sessions/{session_id}
+    - GET /health
+    - GET /
+    """
+    if request.headers.get("Upgrade", "").lower() == "websocket":
+        return None  # Let WebSocket handler take over
+
+    path = request.path
+    method = request.method if hasattr(request, 'method') else "GET"
+    parsed = urlparse(path)
+    query_params = parse_qs(parsed.query)
+
+    # CORS headers for all responses
+    cors_headers = websockets.Headers([
+        ("Access-Control-Allow-Origin", "*"),
+        ("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS"),
+        ("Access-Control-Allow-Headers", "Content-Type"),
+        ("Content-Type", "application/json"),
+    ])
+
+    # Handle OPTIONS (CORS preflight)
+    if method == "OPTIONS":
+        return Response(200, "OK", cors_headers, b"")
+
+    # Health check
+    if parsed.path == "/health":
+        body = json.dumps({"status": "healthy", "service": "agora-mock", "protocol": "ag-ui"})
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # Root endpoint
+    if parsed.path == "/":
+        body = json.dumps({
+            "service": "AGORA Mock Server",
+            "version": "2.3.0",
+            "protocol": "AG-UI Protocol v2.3.0",
+            "endpoints": {
+                "websocket": "/ws",
+                "sessions": "/sessions?user_id={user_id}",
+                "history": "/sessions/{id}/history?include_tools=true",
+            }
+        })
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # GET /sessions - List sessions for a user
+    if parsed.path == "/sessions" and method == "GET":
+        user_id = query_params.get("user_id", [None])[0]
+        if not user_id:
+            body = json.dumps({"success": False, "error": "user_id is required"})
+            return Response(400, "Bad Request", cors_headers, body.encode())
+
+        # Filter sessions by user_id
+        user_sessions = [
+            session for session in MOCK_SESSIONS.values()
+            if session["userId"] == user_id
+        ]
+        # Sort by lastActivity descending
+        user_sessions.sort(key=lambda s: s["lastActivity"], reverse=True)
+
+        body = json.dumps({
+            "success": True,
+            "sessions": user_sessions,
+            "totalCount": len(user_sessions),
+        }, ensure_ascii=False)
+        log_event("send", "HTTP", f"GET /sessions?user_id={user_id} -> {len(user_sessions)} sessions")
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # Match /sessions/{session_id}/history
+    history_match = re.match(r"^/sessions/([^/]+)/history$", parsed.path)
+    if history_match and method == "GET":
+        session_id = history_match.group(1)
+        include_tools = query_params.get("include_tools", ["false"])[0].lower() == "true"
+
+        if session_id not in MOCK_SESSIONS:
+            body = json.dumps({"success": False, "error": "Session not found"})
+            return Response(404, "Not Found", cors_headers, body.encode())
+
+        history = get_mock_history(session_id, include_tools)
+        body = json.dumps({
+            "success": True,
+            "threadId": session_id,
+            "history": history,
+            "messageCount": len(history),
+        }, ensure_ascii=False)
+        log_event("send", "HTTP", f"GET /sessions/{session_id}/history -> {len(history)} messages")
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # Match /sessions/{session_id}/metadata
+    metadata_match = re.match(r"^/sessions/([^/]+)/metadata$", parsed.path)
+    if metadata_match and method == "GET":
+        session_id = metadata_match.group(1)
+
+        if session_id not in MOCK_SESSIONS:
+            body = json.dumps({"success": False, "error": "Session not found"})
+            return Response(404, "Not Found", cors_headers, body.encode())
+
+        body = json.dumps({
+            "success": True,
+            "session": MOCK_SESSIONS[session_id],
+        }, ensure_ascii=False)
+        log_event("send", "HTTP", f"GET /sessions/{session_id}/metadata")
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # Match DELETE /sessions/{session_id}
+    delete_match = re.match(r"^/sessions/([^/]+)$", parsed.path)
+    if delete_match and method == "DELETE":
+        session_id = delete_match.group(1)
+
+        if session_id not in MOCK_SESSIONS:
+            body = json.dumps({"detail": "Session not found"})
+            return Response(404, "Not Found", cors_headers, body.encode())
+
+        del MOCK_SESSIONS[session_id]
+        body = json.dumps({
+            "success": True,
+            "message": "Session deleted",
+        })
+        log_event("send", "HTTP", f"DELETE /sessions/{session_id}")
+        return Response(200, "OK", cors_headers, body.encode())
+
+    # Default: Unknown endpoint
+    body = json.dumps({"error": "Not found", "path": parsed.path})
+    return Response(404, "Not Found", cors_headers, body.encode())
 
 
 async def main():
-    """Start the mock WebSocket server."""
+    """Start the mock WebSocket server with REST API support."""
     print()
-    print("╔════════════════════════════════════════════════════════════╗")
-    print("║     AG-UI Protocol Mock Server v2.1.0 - Demo Mode          ║")
-    print("╠════════════════════════════════════════════════════════════╣")
-    print("║  Endpoint: ws://localhost:8000/ws                          ║")
-    print("║  Press Ctrl+C to stop                                      ║")
-    print("╚════════════════════════════════════════════════════════════╝")
+    print("╔════════════════════════════════════════════════════════════════╗")
+    print("║       AG-UI Protocol Mock Server v2.3.0 - Demo Mode            ║")
+    print("╠════════════════════════════════════════════════════════════════╣")
+    print("║  WebSocket: ws://localhost:8000/ws                             ║")
+    print("║  REST API:  http://localhost:8000                              ║")
+    print("║  Press Ctrl+C to stop                                          ║")
+    print("╚════════════════════════════════════════════════════════════════╝")
+    print()
+    print("REST API Endpoints:")
+    print("  GET  /sessions?user_id={user_id}       - List sessions")
+    print("  GET  /sessions/{id}/history            - Get conversation history")
+    print("  GET  /sessions/{id}/metadata           - Get session metadata")
+    print("  DELETE /sessions/{id}                  - Delete session")
+    print()
+    print("Mock Sessions (for testing):")
+    print("  • koen: 2 sessions (Bella Rosa, Hotel Sunset)")
+    print("  • fatima: 1 session (Bakkerij)")
+    print("  • jan: 1 session (Supermarkt)")
+    print()
+    print("Test the REST API:")
+    print("  curl http://localhost:8000/sessions?user_id=koen")
+    print("  curl http://localhost:8000/sessions/session-koen-bella-rosa/history?include_tools=true")
+    print()
+    print("─" * 64)
     print()
     print("Demo Scenario: Inspecteur Koen - Restaurant Bella Rosa")
     print()

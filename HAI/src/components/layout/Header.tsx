@@ -1,16 +1,17 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel 
+  DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, PERSONAS } from '@/stores';
-import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User } from 'lucide-react';
+import { useHistoryStore } from '@/stores/useHistoryStore';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
@@ -22,10 +23,14 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const clearMessages = useMessageStore((state) => state.clearMessages);
   const currentUser = useUserStore((state) => state.currentUser);
   const setUser = useUserStore((state) => state.setUser);
+  const toggleSidebar = useHistoryStore((state) => state.toggleSidebar);
+  const fetchSessions = useHistoryStore((state) => state.fetchSessions);
 
   const handleNewConversation = (userId?: string) => {
     if (userId) {
       setUser(userId);
+      // Refresh sessions for the new user (sidebar stays open per design decision)
+      fetchSessions(userId);
     }
     clearSession();
     clearMessages();
@@ -78,20 +83,30 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
     <Card className="rounded-none border-x-0 border-t-0">
       <header className="flex flex-col gap-2 p-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{env.VITE_APP_NAME}</h1>
-            <div className="flex items-center gap-2">
-              {session && (
-                <p className="text-xs text-muted-foreground">
-                  Session: {session.id.slice(0, 12)}...
-                </p>
-              )}
-              {currentUser && (
-                <Badge variant="secondary" className="text-xs">
-                  <User className="h-3 w-3 mr-1" />
-                  {currentUser.name}
-                </Badge>
-              )}
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={toggleSidebar}
+              aria-label="Open conversatiegeschiedenis"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">{env.VITE_APP_NAME}</h1>
+              <div className="flex items-center gap-2">
+                {session && (
+                  <p className="text-xs text-muted-foreground">
+                    Session: {session.id.slice(0, 12)}...
+                  </p>
+                )}
+                {currentUser && (
+                  <Badge variant="secondary" className="text-xs">
+                    <User className="h-3 w-3 mr-1" />
+                    {currentUser.name}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -105,7 +120,7 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                 aria-label="Start nieuwe inspectie"
               >
                 <Plus className="h-3 w-3" />
-                Nieuwe Inspectie
+                Nieuwe inspectie
               </Button>
               
               <DropdownMenu>

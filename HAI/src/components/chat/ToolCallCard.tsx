@@ -104,14 +104,14 @@ export function ToolCallCard({ toolName, status, parameters, result, toolCallId 
           )}
 
           {status === 'completed' && result && (
-            <div className="text-xs text-muted-foreground mt-1.5 pt-1.5 border-t border-current/10">
-              ✓ {result}
+            <div className="text-xs text-muted-foreground mt-1.5 pt-1.5 border-t border-current/10 line-clamp-3">
+              ✓ {result.length > 200 ? `${result.slice(0, 200)}...` : result}
             </div>
           )}
 
           {status === 'failed' && result && (
-            <div className="text-xs text-red-600 dark:text-red-400 mt-1.5 pt-1.5 border-t border-current/10">
-              ✗ {result}
+            <div className="text-xs text-red-600 dark:text-red-400 mt-1.5 pt-1.5 border-t border-current/10 line-clamp-3">
+              ✗ {result.length > 200 ? `${result.slice(0, 200)}...` : result}
             </div>
           )}
         </div>
