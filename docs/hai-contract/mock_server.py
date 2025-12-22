@@ -3,16 +3,25 @@
 Mock server for testing AG-UI Protocol WebSocket communication and REST API.
 
 This server simulates the AGORA orchestrator for frontend testing.
-Implements the AG-UI Protocol v2.4.0 with proper event lifecycle.
+Implements the AG-UI Protocol v2.4.2 with AGORA extensions.
 
 Features:
 - WebSocket: AG-UI Protocol events for real-time communication
 - REST API: Session and user management endpoints
+- AGORA Extensions: userId in RunAgentInput, spoken text events, HITL approval
 
 Supports Demo Scenario 1: Inspecteur Koen - Restaurant Bella Rosa
 
 Usage:
     python mock_server.py
+
+WebSocket Input (RunAgentInput):
+    {
+        "threadId": "session-uuid",
+        "runId": "run-uuid",
+        "userId": "user-uuid",  # AGORA extension - required
+        "messages": [{"role": "user", "content": "..."}]
+    }
 
 Endpoints:
     WebSocket: ws://localhost:8000/ws
@@ -33,11 +42,13 @@ Endpoints:
 
 import asyncio
 import json
+import os
 import re
 import sys
 import time
 import uuid
 from datetime import datetime, timedelta
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import websockets
@@ -435,6 +446,7 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
     """Handle a RunAgentInput and simulate an agent response."""
     thread_id = data.get("threadId") or data.get("thread_id") or str(uuid.uuid4())
     run_id = data.get("runId") or data.get("run_id") or str(uuid.uuid4())
+    user_id = data.get("userId") or data.get("user_id")
     messages = data.get("messages", [])
 
     user_content = ""
@@ -443,7 +455,9 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
             user_content = msg.get("content", "")
             break
 
-    print(f"  User: {user_content[:60]}{'...' if len(user_content) > 60 else ''}")
+    # Log user info if provided
+    user_info = f" (user: {user_id})" if user_id else ""
+    print(f"  User{user_info}: {user_content[:60]}{'...' if len(user_content) > 60 else ''}")
 
     # Always start with algemene-assistent for routing
     await send_run_started(websocket, thread_id, run_id, Agents.GENERAL)
@@ -841,7 +855,10 @@ async def execute_report_generation(
             {
                 "success": True,
                 "report_id": report_id,
-                "filename": f"rapport-{report_id}.pdf",
+                "download_urls": {
+                    "json": "http://localhost:8000/mock_documents/report.json",
+                    "pdf": "http://localhost:8000/mock_documents/report.pdf",
+                },
                 "status": "generated",
             }
         ),
@@ -852,8 +869,10 @@ async def execute_report_generation(
 
     response = [
         f"✅ **Rapport succesvol gegenereerd**\n\n",
-        f"**Rapport ID:** {report_id}\n",
-        f"**Bestand:** rapport-{report_id}.pdf\n\n",
+        f"**Rapport ID:** {report_id}\n\n",
+        f"**Downloads:**\n",
+        f"- [PDF Rapport](http://localhost:8000/mock_documents/report.pdf)\n",
+        f"- [JSON Data](http://localhost:8000/mock_documents/report.json)\n\n",
         f"**Inhoud rapport:**\n",
         f"- Bedrijfsgegevens {DEMO_COMPANY['name']}\n",
         f"- Inspectiehistorie met eerdere overtreding\n",
@@ -1106,6 +1125,39 @@ def process_request(connection, request):
             {"status": "healthy", "service": "agora-mock", "protocol": "ag-ui"}
         )
         return Response(200, "OK", cors_headers, body.encode())
+
+    # Mock documents (static files for report download)
+    if parsed.path.startswith("/mock_documents/"):
+        filename = parsed.path.replace("/mock_documents/", "")
+        # Only allow specific files
+        allowed_files = {"report.json", "report.pdf"}
+        if filename not in allowed_files:
+            body = json.dumps({"error": "File not found"})
+            return Response(404, "Not Found", cors_headers, body.encode())
+
+        # Determine content type
+        content_type = "application/json" if filename.endswith(".json") else "application/pdf"
+        file_headers = websockets.Headers(
+            [
+                ("Access-Control-Allow-Origin", "*"),
+                ("Access-Control-Allow-Methods", "GET, OPTIONS"),
+                ("Access-Control-Allow-Headers", "Content-Type"),
+                ("Content-Type", content_type),
+                ("Content-Disposition", f'attachment; filename="{filename}"'),
+            ]
+        )
+
+        # Read and serve the file
+        mock_docs_dir = Path(__file__).parent / "mock_documents"
+        file_path = mock_docs_dir / filename
+        if file_path.exists():
+            with open(file_path, "rb") as f:
+                file_content = f.read()
+            log_event("send", "HTTP", f"GET /mock_documents/{filename} -> {len(file_content)} bytes")
+            return Response(200, "OK", file_headers, file_content)
+        else:
+            body = json.dumps({"error": "File not found on disk"})
+            return Response(404, "Not Found", cors_headers, body.encode())
 
     # Root endpoint
     if parsed.path == "/":

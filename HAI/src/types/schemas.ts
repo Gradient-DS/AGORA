@@ -206,6 +206,7 @@ export const AGUIEventSchema = z.discriminatedUnion('type', [
 export const RunAgentInputSchema = z.object({
   threadId: z.string(),
   runId: z.string().optional(),
+  userId: z.string().uuid(),
   messages: z.array(
     z.object({
       role: z.enum(['user', 'assistant', 'system', 'tool', 'developer']),

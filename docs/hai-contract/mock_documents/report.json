@@ -1,0 +1,129 @@
+{
+  "metadata": {
+    "report_id": "HAP-20251218-39A787FB",
+    "session_id": "session-restaurant-bella-rosa",
+    "company_id": null,
+    "company_name": "Restaurant Bella Rosa",
+    "company_address": "Den Haag",
+    "inspection_date": "2025-12-18T08:53:22.619882",
+    "inspection_type": "Reguliere inspectie",
+    "inspector_name": "Koen",
+    "inspector_id": null,
+    "product_name": "Reguliere inspectie HAP",
+    "product_version": "6.02",
+    "overall_confidence": 0.85,
+    "completion_percentage": 36.0
+  },
+  "hygiene_general": {
+    "compliant": "Nee",
+    "violations": [
+      {
+        "type": "overig",
+        "severity": "Ernstige overtreding",
+        "description": "Geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten.",
+        "location": "Keuken",
+        "evidence": null,
+        "control_element_id": null,
+        "confidence": 0.9
+      }
+    ],
+    "observations": "De vis moet onder gecontroleerde temperaturen worden opgeslagen en de afvoerputjes moeten vrij zijn van schoonmaakmiddelresten.",
+    "washing_facilities": null,
+    "ventilation": null,
+    "sanitary_facilities": null,
+    "lighting": null,
+    "drainage": null,
+    "toilets": null,
+    "floor_condition": null,
+    "ceiling_condition": null,
+    "wall_condition": null,
+    "equipment_cleanliness": null,
+    "equipment_maintenance": null
+  },
+  "pest_control": {
+    "pest_prevention_compliant": "Niet beoordeeld",
+    "pest_control_compliant": "Niet beoordeeld",
+    "violations": [],
+    "pest_present": false,
+    "pest_types": [],
+    "pest_severity": "Afwezig",
+    "pest_other_description": null,
+    "observations": ""
+  },
+  "food_safety": {
+    "storage_compliant": "Nee",
+    "preparation_cooling_compliant": "Niet beoordeeld",
+    "presentation_compliant": "Niet beoordeeld",
+    "violations": [
+      {
+        "type": "overig",
+        "severity": "Ernstige overtreding",
+        "description": "Rauwe vis op kamertemperatuur.",
+        "location": "Keuken",
+        "evidence": null,
+        "control_element_id": null,
+        "confidence": 0.9
+      }
+    ],
+    "temperature_violations": [
+      {
+        "product": "Rauwe vis",
+        "temp": null,
+        "location": "Keuken"
+      }
+    ],
+    "unsafe_products": [
+      "Rauwe vis"
+    ],
+    "observations": "De vis moet onder gecontroleerde temperaturen worden opgeslagen."
+  },
+  "allergen_info": {
+    "compliant": "Niet beoordeeld",
+    "information_method": "absent",
+    "violations": [],
+    "written_info_available": null,
+    "oral_info_adequate": null,
+    "signage_present": null,
+    "observations": ""
+  },
+  "additional_info": {
+    "inspection_location_description": "Restaurant Bella Rosa in Den Haag",
+    "hygiene_code_used": "Hygiënecode voor de Horeca",
+    "hygiene_code_assessed_against": null,
+    "mobile_temporary_location": false,
+    "location_type": null,
+    "outdoor_temperature": null,
+    "repeat_violation": true,
+    "repeat_violation_details": "Eerdere overtreding op 15 mei 2022 betrof onvoldoende hygiënemaatregelen in de keuken, niet opgelost.",
+    "action_required": null,
+    "inspector_notes": "Vereiste vervolgactie: Verwijdering van de vis van kamertemperatuur en grondige reiniging van de afvoerputjes.",
+    "rvb_additional_info": null
+  },
+  "all_violations": [
+    {
+      "type": "overig",
+      "severity": "Ernstige overtreding",
+      "description": "Geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten.",
+      "location": "Keuken",
+      "evidence": null,
+      "control_element_id": null,
+      "confidence": 0.9
+    },
+    {
+      "type": "overig",
+      "severity": "Ernstige overtreding",
+      "description": "Rauwe vis op kamertemperatuur.",
+      "location": "Keuken",
+      "evidence": null,
+      "control_element_id": null,
+      "confidence": 0.9
+    }
+  ],
+  "requires_follow_up": true,
+  "enforcement_action_required": true,
+  "conversation_history": [],
+  "verification_questions": [],
+  "_generated_at": "2025-12-18T08:53:22.620648",
+  "_version": "1.0",
+  "_format": "HAP_JSON_v1"
+}

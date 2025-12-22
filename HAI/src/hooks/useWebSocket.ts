@@ -348,17 +348,18 @@ export function useWebSocket() {
   ]);
 
   const sendMessage = (content: string) => {
+    const userId = useUserStore.getState().currentUser?.id;
+    if (!userId) {
+      console.warn('[useWebSocket] Cannot send message: no user selected');
+      return;
+    }
     if (clientRef.current && session) {
       addMessage({
         id: `msg-${Date.now()}-${Math.random()}`,
         role: 'user',
         content,
       });
-      // Pass user_id in context for session metadata tracking
-      const userId = useUserStore.getState().currentUser?.id;
-      clientRef.current.sendRunInput(session.id, content, {
-        user_id: userId || 'anonymous',
-      });
+      clientRef.current.sendRunInput(session.id, userId, content);
       updateActivity();
     }
   };
