@@ -139,8 +139,8 @@ class Orchestrator:
                 user_content = msg.get("content", "")
                 break
 
-        # Extract user_id from context (default to anonymous)
-        user_id = (agent_input.context or {}).get("user_id", "anonymous")
+        # Get user_id from top-level field
+        user_id = agent_input.user_id
 
         # Create or update session metadata
         if self.session_metadata:

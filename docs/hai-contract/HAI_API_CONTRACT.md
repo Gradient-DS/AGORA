@@ -1,6 +1,6 @@
 # AGORA HAI API Contract
 
-**Version:** 2.4.1
+**Version:** 2.4.2
 **Last Updated:** December 2025
 
 This document defines the complete API contract between the HAI (Human Agent Interface) frontend and the AGORA orchestrator backend. It covers both real-time WebSocket communication and REST endpoints.
@@ -871,6 +871,7 @@ To start a new run, send a `RunAgentInput`:
 {
   "threadId": "abc123-...",
   "runId": "run-456-...",
+  "userId": "550e8400-e29b-41d4-a716-446655440001",
   "messages": [
     { "role": "user", "content": "What are the food safety regulations?" }
   ],
@@ -878,7 +879,13 @@ To start a new run, send a `RunAgentInput`:
 }
 ```
 
-Note: `runId` is optional - the server will generate one if not provided.
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `threadId` | string | Yes | Session/thread identifier (frontend-generated UUID) |
+| `runId` | string | No | Run identifier (server generates if not provided) |
+| `userId` | string (UUID) | Yes | User ID that owns this session (AGORA extension) |
+| `messages` | array | Yes | Input messages with role and content |
+| `context` | object | No | Additional context for the agent |
 
 ### TypeScript Client Setup
 
@@ -1009,18 +1016,25 @@ from ag_ui.core import (
 
 ### AGORA Extensions
 
-AGORA extends the official types with:
+AGORA extends the official AG-UI types with:
 
-- `RunAgentInput` - Simplified input format for the frontend
+- `RunAgentInput.userId` - Required field to associate sessions with users (not in standard AG-UI)
 - `ToolApprovalRequestPayload` - HITL approval request
 - `ToolApprovalResponsePayload` - HITL approval response
 - `ErrorPayload` - AGORA-specific error details
+- `agora:spoken_text_*` - TTS-optimized text streaming events
+- `agora:tool_approval_*` - Human-in-the-loop approval flow
 
 These are defined in `agora_langgraph.common.ag_ui_types`.
 
 ---
 
 ## Changelog
+
+### v2.4.2 (December 2025)
+- Added `userId` as required field to `RunAgentInput` (AGORA extension to AG-UI)
+- Sessions created via WebSocket are now associated with the owning user
+- Updated AGORA Extensions documentation section
 
 ### v2.4.1 (December 2025)
 - **BREAKING**: Migrated spoken text events from top-level event types to CUSTOM events
@@ -1031,7 +1045,7 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ### v2.4.0 (December 2025)
 - Added spoken text events for TTS support (now migrated to CUSTOM events in v2.4.1)
 - Spoken message events stream in parallel with regular text messages, sharing the same `messageId`
-- Added `toolSpokenName` optional field to `TOOL_CALL_START` for human-readable spoken tool descriptions
+- Added `toolDescription` optional field to `TOOL_CALL_START` for human-readable spoken tool descriptions
 
 ### v2.3.0 (December 2025)
 - **Renamed**: `AG_UI_PROTOCOL.md` → `HAI_API_CONTRACT.md` to reflect unified REST + WebSocket contract

@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 
 from agora_langgraph.config import get_settings, parse_mcp_servers
@@ -234,19 +235,25 @@ async def delete_session(session_id: str):
 # ---------------------------------------------------------------------------
 
 
+class CreateUserRequest(BaseModel):
+    """Request body for creating a user."""
+
+    email: str = Field(..., description="User's email address")
+    name: str = Field(..., description="User's display name")
+    role: str = Field("inspector", description="User's role (admin, inspector, viewer)")
+
+
 @app.post("/users", status_code=201)
-async def create_user(
-    email: str = Query(..., description="User's email address"),
-    name: str = Query(..., description="User's display name"),
-    role: str = Query("inspector", description="User's role (admin, inspector, viewer)"),
-):
+async def create_user(request: CreateUserRequest):
     """Create a new user.
 
     Email must be unique across the system.
     """
     user_manager: UserManager = app.state.user_manager
 
-    user = await user_manager.create_user(email=email, name=name, role=role)
+    user = await user_manager.create_user(
+        email=request.email, name=request.name, role=request.role
+    )
 
     if not user:
         raise HTTPException(status_code=409, detail="Email already exists")

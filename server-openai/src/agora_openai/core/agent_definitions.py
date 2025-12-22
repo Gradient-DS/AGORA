@@ -61,7 +61,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "FORMAT:\n"
             "Keep it conversational and natural in Dutch"
         ),
-        "model": None,  # Use OPENAI_AGENTS_OPENAI_MODEL from settings
+        "model": None, 
         "tools": [],
         "temperature": 0.7,
         "handoffs": ["history-agent", "regulation-agent", "reporting-agent"],

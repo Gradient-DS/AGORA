@@ -97,6 +97,7 @@ class RunAgentInput(AgoraBaseModel):
         default=None,
         description="Unique run identifier (auto-generated if not provided)",
     )
+    user_id: str = Field(description="User ID that owns this session (UUID)")
     messages: list[dict[str, Any]] = Field(
         default_factory=list, description="Input messages"
     )

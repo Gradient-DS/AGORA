@@ -104,11 +104,12 @@ export class AGUIWebSocketClient {
   /**
    * Send a run input to start a new agent run.
    */
-  sendRunInput(threadId: string, content: string, context?: Record<string, unknown>): string {
+  sendRunInput(threadId: string, userId: string, content: string, context?: Record<string, unknown>): string {
     const runId = generateUUID();
     const input: RunAgentInput = {
       threadId,
       runId,
+      userId,
       messages: [{ role: 'user', content }],
       context,
     };

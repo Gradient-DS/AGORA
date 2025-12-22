@@ -46,6 +46,13 @@ export const useUserStore = create<UserStore>((set, get) => ({
           localStorage.removeItem('current_user');
         }
       }
+
+      // Auto-select first user if none is saved and users exist
+      if (!get().currentUser && users.length > 0) {
+        console.log('[UserStore] No saved user, auto-selecting first user:', users[0].id);
+        localStorage.setItem('current_user', users[0].id);
+        set({ currentUser: users[0] });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load users';
       console.error('[UserStore] Error loading users:', message);

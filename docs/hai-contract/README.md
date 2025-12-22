@@ -51,7 +51,7 @@ client.sendRunInput('thread-123', 'Hello!');
 ### Event Flow Example
 
 ```
-Client → Server: RunAgentInput { threadId, runId, messages }
+Client → Server: RunAgentInput { threadId, runId, userId, messages }
 
 Server → Client: RUN_STARTED { threadId, runId }
 Server → Client: STEP_STARTED { stepName: "routing" }
