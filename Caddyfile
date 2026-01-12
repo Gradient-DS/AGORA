@@ -1,0 +1,44 @@
+# AGORA Production Caddyfile
+# Single domain with path-based routing
+# All traffic goes through HAI nginx, which proxies /ws and /api/* to api-gateway
+
+{$DOMAIN:localhost} {
+	# Enable compression
+	encode gzip
+
+	# Reverse proxy everything to HAI nginx
+	# HAI nginx handles:
+	# - Static file serving for frontend
+	# - Proxying /ws and /api/* to api-gateway
+	reverse_proxy hai:80 {
+		# Pass real client IP (Caddy passes X-Forwarded-For/Proto by default)
+		header_up X-Real-IP {remote_host}
+
+		# Flush immediately for streaming responses
+		flush_interval -1
+	}
+
+	# Health check endpoint for load balancers/monitoring
+	handle /caddy-health {
+		respond "OK" 200
+	}
+
+	# Security headers
+	header {
+		# Prevent clickjacking
+		X-Frame-Options "SAMEORIGIN"
+		# Prevent MIME type sniffing
+		X-Content-Type-Options "nosniff"
+		# XSS protection
+		X-XSS-Protection "1; mode=block"
+		# Referrer policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Logging
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+}

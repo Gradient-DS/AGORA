@@ -1,0 +1,224 @@
+# Production deployment with Caddy SSL termination
+# Usage: docker-compose -f docker-compose.production.yml up -d
+
+services:
+  # === Reverse Proxy (SSL Termination) ===
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3 (QUIC)
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      hai:
+        condition: service_started
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/caddy-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === API Gateway ===
+  api-gateway:
+    build: ./api-gateway
+    restart: unless-stopped
+    environment:
+      - GATEWAY_OPENAI_BACKEND_URL=http://server-openai:8000
+      - GATEWAY_LANGGRAPH_BACKEND_URL=http://server-langgraph:8000
+      - GATEWAY_MOCK_BACKEND_URL=http://mock-server:8000
+      - GATEWAY_DEFAULT_BACKEND=${DEFAULT_BACKEND:-langgraph}
+      - GATEWAY_API_KEYS=${API_KEYS}
+      - GATEWAY_REQUIRE_AUTH=${GATEWAY_REQUIRE_AUTH:-false}
+    depends_on:
+      server-langgraph:
+        condition: service_healthy
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === Frontend ===
+  hai:
+    build:
+      context: ./HAI
+      args:
+        # Production: WebSocket URL is relative (same domain)
+        - VITE_WS_URL=wss://${DOMAIN:-localhost}/ws
+        - VITE_BACKEND=${VITE_BACKEND:-langgraph}
+        - VITE_APP_NAME=${VITE_APP_NAME:-AGORA HAI}
+        - VITE_SESSION_TIMEOUT=3600000
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+    networks:
+      - agora-network
+
+  # === Orchestrators ===
+  server-openai:
+    build: ./server-openai
+    restart: unless-stopped
+    environment:
+      - OPENAI_AGENTS_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_AGENTS_MCP_SERVERS=regulation=http://regulation-analysis:8000,reporting=http://reporting:8000,history=http://inspection-history:8000
+      - OPENAI_AGENTS_HOST=0.0.0.0
+      - OPENAI_AGENTS_PORT=8000
+    depends_on:
+      regulation-analysis:
+        condition: service_healthy
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  server-langgraph:
+    build: ./server-langgraph
+    restart: unless-stopped
+    environment:
+      - LANGGRAPH_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LANGGRAPH_OPENAI_BASE_URL=${LANGGRAPH_OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LANGGRAPH_OPENAI_MODEL=${LANGGRAPH_OPENAI_MODEL:-gpt-4o}
+      - LANGGRAPH_MCP_SERVERS=regulation=http://regulation-analysis:8000,reporting=http://reporting:8000,history=http://inspection-history:8000
+    volumes:
+      - langgraph_sessions:/app/sessions
+    depends_on:
+      regulation-analysis:
+        condition: service_healthy
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mock-server:
+    build: ./docs/hai-contract
+    restart: unless-stopped
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # === MCP Servers ===
+  regulation-analysis:
+    build:
+      context: ./mcp-servers
+      dockerfile: ./regulation-analysis/Dockerfile
+    restart: unless-stopped
+    environment:
+      - MCP_WEAVIATE_URL=http://weaviate:8080
+      - MCP_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5
+      - MCP_EMBEDDING_DEVICE=cpu
+      - MCP_OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  reporting:
+    build: ./mcp-servers/reporting
+    restart: unless-stopped
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - reporting_storage:/app/storage
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  inspection-history:
+    build: ./mcp-servers/inspection-history
+    restart: unless-stopped
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.27.0
+    restart: unless-stopped
+    environment:
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - CLUSTER_HOSTNAME=weaviate
+      - RAFT_BOOTSTRAP_EXPECT=1
+      - RAFT_JOIN=weaviate:8300
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    networks:
+      - agora-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # === One-off: Document Ingestion ===
+  # Run with: docker-compose -f docker-compose.production.yml run --rm document-ingestion
+  # This populates Weaviate with regulation documents (required for regulation-analysis MCP)
+  document-ingestion:
+    build:
+      context: ./mcp-servers
+      dockerfile: ./document-ingestion/Dockerfile
+    environment:
+      - MCP_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MCP_WEAVIATE_URL=http://weaviate:8080
+      - MCP_EMBEDDING_PROVIDER=${MCP_EMBEDDING_PROVIDER:-openai}
+      - MCP_INPUT_DIR=/app/input/SPEC Agent
+    volumes:
+      # Mount input PDFs (regulation documents)
+      - ./mcp-servers/input:/app/input:ro
+      # Persist intermediate outputs for debugging
+      - ./mcp-servers/document-ingestion/output:/app/output
+    depends_on:
+      weaviate:
+        condition: service_healthy
+    networks:
+      - agora-network
+    profiles:
+      - tools  # Only runs when explicitly requested
+
+networks:
+  agora-network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  weaviate_data:
+  reporting_storage:
+  langgraph_sessions:
