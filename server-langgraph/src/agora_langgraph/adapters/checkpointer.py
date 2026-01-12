@@ -6,7 +6,6 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 log = logging.getLogger(__name__)
@@ -26,9 +25,7 @@ async def create_checkpointer(
     """
     log.info(f"Creating SQLite checkpointer at {db_path}")
 
-    async with aiosqlite.connect(db_path) as conn:
-        checkpointer = AsyncSqliteSaver(conn)
-        await checkpointer.setup()
+    async with AsyncSqliteSaver.from_conn_string(db_path) as checkpointer:
         log.info("Checkpointer initialized successfully")
         yield checkpointer
 

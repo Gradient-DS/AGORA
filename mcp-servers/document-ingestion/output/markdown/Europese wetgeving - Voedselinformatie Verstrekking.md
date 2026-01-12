@@ -1062,16 +1062,6 @@ zing  wanneer het product meer dan een keer ingevroren is, in  overeenstemming  
 
 (  1  )  De  bedoelde  gehalten  gelden  voor  het  product  als  aangeboden  voor  gebruik  of  als  gereconstitueerd  volgens  de  aanwijzingen  van  de fabrikant.
 
-1
-
-2
-
-3
-
-4 -
-
-5
-
 x  -  HOOGTE
 
 <!-- image -->
@@ -1194,14 +1184,6 @@ DEEL  B  -  SPECIFIEKE  VOORSCHRIFTEN  BETREFFENDE  DE  AANDUIDING  VAN  'GEHAKT
 | - gehakt dat varkensvlees bevat | ≤ 30 %       | ≤ 18 %                                  |
 | - gehakt van andere soorten     | ≤ 25 %       | ≤ 15 %                                  |
 
-( 1 ) De  collageen/vleeseiwitverhouding  wordt  uitgedrukt  als  het  percentage  collageen  in  het  vleeseiwit.  Het  collageengehalte  bedraagt achtmaal  het  hydroxyprolinegehalte.
-
-2.  In  aanvulling  op  de  voorschriften  van  hoofdstuk  IV  van  sectie  V  van  bijlage  III  bij  Verordening  (EG)  nr. 853/2004 worden  de  volgende  woorden  op  de  etikettering  aangebracht:
-
--  'vetgehalte  minder  dan  …',
-
--  'verhouding  collageen/vleeseiwit  minder  dan  …'.
-
 L  304/50
 
 NL
@@ -1264,10 +1246,6 @@ Onverminderd artikel 21  mogen ingrediënten die tot  één  van  de  hieronder 
 | ( 1 ) De collageen/vleeseiwitverhouding wordt uitgedrukt als het percentage collageen in het vleeseiwit. Het collageengehalte bedraagt achtmaal het hydroxyprolinegehalte. Wanneer de maximumgehalten aan vet en/of bind­ weefsel worden overschreden en aan alle andere criteria van de definitie van 'vlees' wordt voldaan, moet het gehalte aan '… vlees' dienovereenkomstig worden ver­                                                     | ( 1 ) De collageen/vleeseiwitverhouding wordt uitgedrukt als het percentage collageen in het vleeseiwit. Het collageengehalte bedraagt achtmaal het hydroxyprolinegehalte. Wanneer de maximumgehalten aan vet en/of bind­ weefsel worden overschreden en aan alle andere criteria van de definitie van 'vlees' wordt voldaan, moet het gehalte aan '… vlees' dienovereenkomstig worden ver­                                                     | ( 1 ) De collageen/vleeseiwitverhouding wordt uitgedrukt als het percentage collageen in het vleeseiwit. Het collageengehalte bedraagt achtmaal het hydroxyprolinegehalte. Wanneer de maximumgehalten aan vet en/of bind­ weefsel worden overschreden en aan alle andere criteria van de definitie van 'vlees' wordt voldaan, moet het gehalte aan '… vlees' dienovereenkomstig worden ver­                                                     |                                                                                                        |
 | 18. Alle soorten producten die aan de definitie van 'se­ paratorvlees' beantwoorden.                                                                                                                                                                                                                                                                                                                                                            | 18. Alle soorten producten die aan de definitie van 'se­ paratorvlees' beantwoorden.                                                                                                                                                                                                                                                                                                                                                            | 18. Alle soorten producten die aan de definitie van 'se­ paratorvlees' beantwoorden.                                                                                                                                                                                                                                                                                                                                                            | 'separatorvlees', voorafgegaan door de naam/namen ( 3 ) van de diersoort(en) waarvan het afkomstig is. |
 
-(  1  )  Verordening  (EG)  nr. 1234/2007  van  de  Raad  van  22  oktober  2007  houdende  een  gemeenschappelijke  ordening  van  de  landbouw­ markten en specifieke bepalingen voor een aantal landbouwproducten (Integrale-GMO-verordening) (PB L 299  van 16.11.2007, blz. 1). (  2  )  Het middenrif en de kauwspieren maken deel uit van de skeletspieren, terwijl het hart, de tong, de kopspieren (met uitzondering van de kauwspieren),  het  carpaal-  en  het  tarsaalgewricht  en  de  staart  er  geen  deel  van  uitmaken.
-
-(  3  )  Voor  de  etikettering  in  het  Engels  mag  deze  vermelding  vervangen  worden  door  de  aan  het  vlees  van  de  betrokken  diersoort  gegeven generieke  naam.
-
 ## DEEL  C  -  AANDUIDING  VAN  BEPAALDE  INGREDIËNTEN  MET  DE  NAAM  VAN  HUN  CATEGORIE,  GEVOLGD DOOR  HUN  SPECIFIEKE  BENAMING  OF  HET  E-NUMMER
 
 Onverminderd  artikel  21  moeten  andere  levensmiddelenadditieven  en  levensmiddelenenzymen  dan  die  vermeld  in artikel  20,  onder  b),  die  behoren  tot  één  van  de  in  dit  deel  opgenomen  categorieën,  worden  aangeduid  met  de  naam van  die  categorie,  gevolgd  door  hun  specifieke  benaming  of,  in  voorkomend  het  geval,  het  E-nummer.  Ingeval  een ingrediënt  tot  meer  dan  één  categorie  behoort,  wordt  de  categorie  vermeld  die  past  bij  de  voornaamste  functie  in  het betrokken  levensmiddel.
@@ -1285,10 +1263,6 @@ Onverminderd  artikel  21  moeten  andere  levensmiddelenadditieven  en  levensm
 | Verstevigingsmiddel | Stabilisator                |
 | Smaakversterker     | Zoetstof                    |
 | Meelverbeteraar     | Verdikkingsmiddel           |
-
-(  1  )  Alleen  voor  smeltkaas  en  producten  op  basis  van  smeltkaas.
-
-(  2  )  De  specifieke  benaming  of  het  E-nummer  behoeft  niet  te  worden  vermeld.
 
 ## DEEL  D  -  AANDUIDING  VAN  AROMA'S  IN  DE  LIJST  VAN  INGREDIËNTEN
 

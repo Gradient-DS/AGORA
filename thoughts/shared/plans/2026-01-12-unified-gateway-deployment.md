@@ -480,7 +480,7 @@ CMD ["python", "-m", "api_gateway.main"]
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] Gateway builds: `docker build -t api-gateway ./api-gateway`
+- [x] Gateway builds: `docker build -t api-gateway ./api-gateway`
 - [ ] Health check passes: `curl http://localhost:8000/health`
 - [ ] Backend list works: `curl http://localhost:8000/gateway/backends`
 
@@ -527,7 +527,7 @@ CMD ["python", "mock_server.py"]
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] Mock server builds: `docker build -t mock-server ./docs/hai-contract`
+- [x] Mock server builds: `docker build -t mock-server ./docs/hai-contract`
 - [ ] Health check passes after container starts
 
 ---
@@ -682,9 +682,9 @@ VITE_OPENAI_API_KEY=your_api_key_here
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] TypeScript compiles: `cd HAI && pnpm run type-check`
-- [ ] Linting passes: `cd HAI && pnpm run lint`
-- [ ] Tests pass: `cd HAI && pnpm run test`
+- [x] TypeScript compiles: `cd HAI && pnpm run type-check`
+- [x] Linting passes: `cd HAI && pnpm run lint`
+- [x] Tests pass: `cd HAI && pnpm run test`
 
 #### Manual Verification:
 - [ ] Frontend connects to correct backend when `VITE_BACKEND=mock`

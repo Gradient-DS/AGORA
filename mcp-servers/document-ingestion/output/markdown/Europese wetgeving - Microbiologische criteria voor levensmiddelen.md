@@ -611,10 +611,6 @@ ontoereikend, als het gemiddelde groter dan m is, als er meer dan c/n waarden tu
 | Micro-organismen                           | Aëroob kiemgetal ( 7 )                                                                         | E. coli ( 8 )                                                                                  | Aëroob kiemgetal                                                                               | E. coli ( 8 )                                                                                  | E. coli ( 8 )                                                                                  |
 | Levensmiddelencategorie                    | 2.1.6 Gehakt vlees                                                                             | 2.1.6 Gehakt vlees                                                                             | 2.1.7 Separatorvlees ( 9 )                                                                     | 2.1.7 Separatorvlees ( 9 )                                                                     | 2.1.8 Vleesbereidingen                                                                         |
 
-1 ) n = aantal deelmonsters waaruit het monster bestaat; c = aantal deelmonsters met waarden tussen m en M.
-
-( ( 2 ) Voor de punten 2.1.3 tot en met 2.1.5 geldt m = M.
-
 De recentste uitgave van de norm gebruiken.
 
 )
@@ -735,10 +731,6 @@ E. coli en aëroob kiemgetal in gehakt vlees, vleesbereidingen en separatorvlees
 | n                                          | 5                                                                                              | 5                                                                                                                                                         | 5                                                       | 10                                                                                                                                                                                |
 | Micro-organismen                           | Entero-bacteriaceae                                                                            | Coagulase-posi- tieve stafylokokken                                                                                                                       | Entero-bacteriaceae                                     | Entero-bacteriaceae                                                                                                                                                               |
 | Levensmiddelencategorie                    | 2.2.7 Melkpoeder en weipoeder ( 4 )                                                            | 2.2.7 Melkpoeder en weipoeder ( 4 )                                                                                                                       | 2.2.8 Consumptie-ijs ( 8 ) en bevroren zuivel- desserts | 2.2.9 Gedroogde volledige zuigelingenvoe- ding en gedroogde dieetvoeding voor medisch gebruik voor zuigelingen jon- ger dan zes maanden                                           |
-
-n = aantal deelmonsters waaruit het monster bestaat; c = aantal deelmonsters met waarden tussen m en M.
-
-( 1 ) ( 2 ) Voor punt 2.2.7 geldt m = M.
 
 De recentste uitgave van de norm gebruiken.
 

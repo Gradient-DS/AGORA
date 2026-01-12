@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getApiBaseUrl } from '@/lib/env';
 
 export interface Agent {
   id: string;
@@ -52,7 +53,7 @@ export const useAgentStore = create<AgentStore>((set, get) => {
 
     loadAgentsFromAPI: async () => {
       try {
-        const apiUrl = import.meta.env.VITE_WS_URL?.replace('ws://', 'http://').replace('wss://', 'https://').replace('/ws', '');
+        const apiUrl = getApiBaseUrl();
         const response = await fetch(`${apiUrl}/agents`);
         
         if (!response.ok) {
