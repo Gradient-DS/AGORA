@@ -6,39 +6,39 @@ Maps OpenAI Agents SDK stream events to AG-UI Protocol events.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
 from typing import Any
 
-from fastapi import WebSocket
-
 from ag_ui.core import (
+    CustomEvent,
     EventType,
-    RunStartedEvent,
-    RunFinishedEvent,
     RunErrorEvent,
-    StepStartedEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
+    StateSnapshotEvent,
     StepFinishedEvent,
-    TextMessageStartEvent,
+    StepStartedEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
-    ToolCallStartEvent,
+    TextMessageStartEvent,
     ToolCallArgsEvent,
     ToolCallEndEvent,
     ToolCallResultEvent,
-    StateSnapshotEvent,
-    CustomEvent,
+    ToolCallStartEvent,
 )
+from fastapi import WebSocket
 
 from agora_openai.common.ag_ui_types import (
+    AGORA_ERROR,
+    AGORA_TOOL_APPROVAL_REQUEST,
+    AGORA_TOOL_APPROVAL_RESPONSE,
+    ErrorPayload,
     RunAgentInput,
     ToolApprovalRequestPayload,
     ToolApprovalResponsePayload,
-    ErrorPayload,
-    AGORA_TOOL_APPROVAL_REQUEST,
-    AGORA_TOOL_APPROVAL_RESPONSE,
-    AGORA_ERROR,
 )
 
 log = logging.getLogger(__name__)
@@ -60,6 +60,7 @@ class AGUIProtocolHandler:
         """Initialize handler with WebSocket connection."""
         self.websocket = websocket
         self.is_connected = True
+        self._send_lock = asyncio.Lock()  # Serialize concurrent WebSocket sends
 
     async def receive_message(
         self,
@@ -105,25 +106,33 @@ class AGUIProtocolHandler:
             return None
 
     async def _send_event(self, event: Any) -> None:
-        """Send an AG-UI event over WebSocket as plain JSON."""
+        """Send an AG-UI event over WebSocket as plain JSON.
+
+        Uses a lock to serialize concurrent sends from multiple tasks
+        (e.g., parallel written and spoken streams).
+        """
         if not self.is_connected:
             log.debug("Cannot send event, WebSocket is not connected")
             return
 
-        try:
-            event_json = event.model_dump_json(by_alias=True, exclude_none=True)
-            log.debug("Sending event: %s", event.type)
-            await self.websocket.send_text(event_json)
-        except RuntimeError as e:
-            if "websocket.send" in str(e) or "websocket.close" in str(e):
-                log.warning("WebSocket already closed, cannot send event: %s", e)
+        async with self._send_lock:
+            if not self.is_connected:
+                return
+
+            try:
+                event_json = event.model_dump_json(by_alias=True, exclude_none=True)
+                log.debug("Sending event: %s", event.type)
+                await self.websocket.send_text(event_json)
+            except RuntimeError as e:
+                if "websocket.send" in str(e) or "websocket.close" in str(e):
+                    log.warning("WebSocket already closed, cannot send event: %s", e)
+                    self.is_connected = False
+                else:
+                    log.error("RuntimeError sending event: %s", e, exc_info=True)
+                    self.is_connected = False
+            except Exception as e:
+                log.error("Exception sending event: %s", e, exc_info=True)
                 self.is_connected = False
-            else:
-                log.error("RuntimeError sending event: %s", e, exc_info=True)
-                self.is_connected = False
-        except Exception as e:
-            log.error("Exception sending event: %s", e, exc_info=True)
-            self.is_connected = False
 
     # Lifecycle events
 
@@ -203,6 +212,65 @@ class AGUIProtocolHandler:
         """Emit TEXT_MESSAGE_END event."""
         event = TextMessageEndEvent(
             message_id=message_id,
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    # Spoken text events (for TTS)
+
+    async def send_spoken_text_start(
+        self, message_id: str, role: str = "assistant"
+    ) -> None:
+        """Emit agora:spoken_text_start custom event for TTS stream."""
+        event = CustomEvent(
+            name="agora:spoken_text_start",
+            value={"messageId": message_id, "role": role},
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    async def send_spoken_text_content(self, message_id: str, delta: str) -> None:
+        """Emit agora:spoken_text_content custom event for TTS stream."""
+        if not delta:
+            return  # Skip empty deltas
+        event = CustomEvent(
+            name="agora:spoken_text_content",
+            value={"messageId": message_id, "delta": delta},
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    async def send_spoken_text_end(self, message_id: str) -> None:
+        """Emit agora:spoken_text_end custom event for TTS stream."""
+        event = CustomEvent(
+            name="agora:spoken_text_end",
+            value={"messageId": message_id},
+            timestamp=_now_timestamp(),
+        )
+        await self._send_event(event)
+
+    async def send_spoken_text_error(
+        self,
+        message_id: str,
+        error_code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        """Emit agora:spoken_text_error custom event when TTS generation fails."""
+        from agora_openai.common.ag_ui_types import (
+            AGORA_SPOKEN_TEXT_ERROR,
+            SpokenTextErrorPayload,
+        )
+
+        payload = SpokenTextErrorPayload(
+            message_id=message_id,
+            error_code=error_code,
+            message=message,
+            details=details,
+        )
+        event = CustomEvent(
+            name=AGORA_SPOKEN_TEXT_ERROR,
+            value=payload.model_dump(by_alias=True),
             timestamp=_now_timestamp(),
         )
         await self._send_event(event)

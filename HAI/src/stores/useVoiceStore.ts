@@ -6,6 +6,7 @@ interface VoiceStore extends VoiceState {
   setListening: (isListening: boolean) => void;
   setSpeaking: (isSpeaking: boolean) => void;
   setVolume: (volume: number) => void;
+  setPartialTranscript: (transcript: string) => void;
   reset: () => void;
 }
 
@@ -14,6 +15,7 @@ const initialState: VoiceState = {
   isListening: false,
   isSpeaking: false,
   volume: 0,
+  partialTranscript: '',
 };
 
 export const useVoiceStore = create<VoiceStore>((set) => ({
@@ -33,6 +35,10 @@ export const useVoiceStore = create<VoiceStore>((set) => ({
 
   setVolume: (volume) => {
     set({ volume });
+  },
+
+  setPartialTranscript: (partialTranscript) => {
+    set({ partialTranscript });
   },
 
   reset: () => {

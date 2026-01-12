@@ -59,7 +59,8 @@ class UserManager:
         if not self._connection:
             raise RuntimeError("UserManager not initialized")
 
-        await self._connection.execute("""
+        await self._connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
@@ -69,11 +70,14 @@ class UserManager:
                 created_at TEXT DEFAULT (datetime('now')),
                 last_activity TEXT DEFAULT (datetime('now'))
             )
-        """)
-        await self._connection.execute("""
+        """
+        )
+        await self._connection.execute(
+            """
             CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
             ON users (email)
-        """)
+        """
+        )
         await self._connection.commit()
 
     async def create_user(

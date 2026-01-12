@@ -71,6 +71,7 @@ async def lifespan(app: FastAPI):
                 moderator=moderator,
                 audit_logger=audit_logger,
                 session_metadata=session_metadata,
+                user_manager=user_manager,
             )
 
             app.state.orchestrator = orchestrator
@@ -325,7 +326,9 @@ async def get_current_user_preferences(
         "language": "nl-NL",
         "spoken_text_type": "summarize",
     }
-    preferences = user.get("preferences", default_preferences)
+    # Use default if preferences is None or missing
+    user_prefs = user.get("preferences")
+    preferences = user_prefs if user_prefs else default_preferences
     return {"success": True, "preferences": preferences}
 
 
@@ -341,8 +344,7 @@ async def update_current_user_preferences(
     if request.theme is not None:
         if request.theme not in ("light", "dark", "system"):
             raise HTTPException(
-                status_code=400,
-                detail="theme must be 'light', 'dark', or 'system'"
+                status_code=400, detail="theme must be 'light', 'dark', or 'system'"
             )
 
     # Validate spoken_text_type
@@ -350,22 +352,43 @@ async def update_current_user_preferences(
         if request.spoken_text_type not in ("dictate", "summarize"):
             raise HTTPException(
                 status_code=400,
-                detail="spoken_text_type must be 'dictate' or 'summarize'"
+                detail="spoken_text_type must be 'dictate' or 'summarize'",
             )
 
-    preferences = {}
+    # Get existing preferences to merge with
+    user = await user_manager.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    default_preferences = {
+        "theme": "system",
+        "notifications_enabled": True,
+        "default_agent_id": "general-agent",
+        "language": "nl-NL",
+        "spoken_text_type": "summarize",
+    }
+    existing_prefs = user.get("preferences")
+    preferences = (existing_prefs if existing_prefs else default_preferences).copy()
+
+    # Update only provided fields
+    has_updates = False
     if request.theme is not None:
         preferences["theme"] = request.theme
+        has_updates = True
     if request.notifications_enabled is not None:
         preferences["notifications_enabled"] = request.notifications_enabled
+        has_updates = True
     if request.default_agent_id is not None:
         preferences["default_agent_id"] = request.default_agent_id
+        has_updates = True
     if request.language is not None:
         preferences["language"] = request.language
+        has_updates = True
     if request.spoken_text_type is not None:
         preferences["spoken_text_type"] = request.spoken_text_type
+        has_updates = True
 
-    if not preferences:
+    if not has_updates:
         raise HTTPException(status_code=400, detail="No preferences provided")
 
     user = await user_manager.update_preferences(user_id, preferences)
@@ -399,7 +422,9 @@ async def get_user(user_id: str):
 async def update_user(
     user_id: str,
     name: str | None = Query(None, description="User's display name"),
-    role: str | None = Query(None, description="User's role (admin, inspector, viewer)"),
+    role: str | None = Query(
+        None, description="User's role (admin, inspector, viewer)"
+    ),
 ):
     """Update user profile.
 

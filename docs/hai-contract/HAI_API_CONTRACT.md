@@ -20,7 +20,7 @@ This document defines the complete API contract between the HAI (Human Agent Int
 6. [Event Lifecycle Rules](#event-lifecycle-rules)
 7. [Conversation Flows](#conversation-flows)
 8. [Custom Events (HITL)](#custom-events-hitl)
-9. [Future: Voice Support](#future-voice-support)
+9. [Voice Support](#voice-support)
 10. [Implementation Guide](#implementation-guide)
 11. [Official AG-UI Package Usage](#official-ag-ui-package-usage)
 
@@ -1022,160 +1022,79 @@ Emitted when a spoken text message is complete.
 }
 ```
 
----
+#### agora:spoken_text_error
 
-## Future: Voice Support
-
-> **Status:** Planned  
-> **AG-UI Tracking:** [github.com/ag-ui-protocol/ag-ui/issues/126](https://github.com/ag-ui-protocol/ag-ui/issues/126)
-
-### Overview
-
-AGORA will support voice input/output for hands-free inspector interactions. The AG-UI protocol does not currently support audio natively, but multimodal support (audio, images, files) is on the AG-UI roadmap.
-
-### Migration Strategy
-
-1. **Phase 1 (Current):** Implement voice using AGORA `CUSTOM` events
-2. **Phase 2 (Future):** Migrate to native AG-UI audio events when available
-
-This approach ensures compatibility with the current AG-UI protocol while allowing seamless migration to native support.
-
-### Planned Custom Events
-
-#### agora:audio_input_start
-
-Sent by client when user starts speaking.
+Emitted when spoken text generation fails. The written text stream continues unaffected.
 
 ```json
 {
   "type": "CUSTOM",
-  "name": "agora:audio_input_start",
+  "name": "agora:spoken_text_error",
   "value": {
-    "messageId": "audio-input-123",
-    "format": "pcm",
-    "sampleRate": 16000,
-    "channels": 1
-  }
-}
-```
-
-#### agora:audio_input_chunk
-
-Sent by client with audio data chunks during recording.
-
-```json
-{
-  "type": "CUSTOM",
-  "name": "agora:audio_input_chunk",
-  "value": {
-    "messageId": "audio-input-123",
-    "data": "<base64-encoded-audio>",
-    "sequence": 0
-  }
-}
-```
-
-#### agora:audio_input_end
-
-Sent by client when user stops speaking.
-
-```json
-{
-  "type": "CUSTOM",
-  "name": "agora:audio_input_end",
-  "value": {
-    "messageId": "audio-input-123"
-  }
-}
-```
-
-#### agora:audio_output_start
-
-Sent by server when starting audio response.
-
-```json
-{
-  "type": "CUSTOM",
-  "name": "agora:audio_output_start",
-  "value": {
-    "messageId": "audio-output-456",
-    "format": "pcm",
-    "sampleRate": 24000,
-    "channels": 1
+    "messageId": "msg-abc123",
+    "errorCode": "generation_failed",
+    "message": "Failed to generate spoken text: API timeout",
+    "details": { "retryable": true }
   },
   "timestamp": 1705318202000
 }
 ```
 
-#### agora:audio_output_chunk
+**Error Codes:**
 
-Sent by server with audio response chunks.
+| Code | Description |
+|------|-------------|
+| `generation_failed` | LLM call for spoken text failed |
+| `prompt_not_found` | No spoken prompt defined for agent |
+| `timeout` | Spoken generation timed out |
 
-```json
-{
-  "type": "CUSTOM",
-  "name": "agora:audio_output_chunk",
-  "value": {
-    "messageId": "audio-output-456",
-    "data": "<base64-encoded-audio>",
-    "sequence": 0
-  },
-  "timestamp": 1705318202100
-}
-```
+---
 
-#### agora:audio_output_end
+## Voice Support
 
-Sent by server when audio response is complete.
+### Overview
 
-```json
-{
-  "type": "CUSTOM",
-  "name": "agora:audio_output_end",
-  "value": {
-    "messageId": "audio-output-456"
-  },
-  "timestamp": 1705318203000
-}
-```
+AGORA supports voice interactions through a frontend-only architecture:
 
-### Audio Format Considerations
+- **Speech-to-Text (STT)**: ElevenLabs Realtime STT API (frontend)
+- **Text-to-Speech (TTS)**: ElevenLabs TTS API (frontend)
 
-| Property | Input (Client → Server) | Output (Server → Client) |
-|----------|------------------------|--------------------------|
-| Format | PCM, WebM, Opus | PCM, MP3, Opus |
-| Sample Rate | 16000 Hz | 24000 Hz |
-| Channels | 1 (mono) | 1 (mono) |
-| Encoding | Base64 | Base64 |
+Voice transcriptions are submitted as regular user messages via the AG-UI WebSocket. No special voice endpoints or events are required on the backend.
 
-### Flow: Voice Conversation
+### Architecture
 
 ```
-Client                                    Server
-  |                                         |
-  |-- agora:audio_input_start ---------->   |
-  |-- agora:audio_input_chunk ---------->   |
-  |-- agora:audio_input_chunk ---------->   |
-  |-- agora:audio_input_end ------------>   |
-  |                                         |
-  | <------------ RUN_STARTED               |
-  | <------------ STATE_SNAPSHOT            |
-  | <------------ STEP_STARTED (processing) |
-  |                                         |
-  | <------------ agora:audio_output_start  |
-  | <------------ agora:audio_output_chunk  |
-  | <------------ agora:audio_output_chunk  |
-  | <------------ agora:audio_output_end    |
-  |                                         |
-  | <------------ TEXT_MESSAGE_START        |
-  | <------------ TEXT_MESSAGE_CONTENT      |  (transcript)
-  | <------------ TEXT_MESSAGE_END          |
-  |                                         |
-  | <------------ STEP_FINISHED             |
-  | <------------ RUN_FINISHED              |
+User speaks → Microphone
+    ↓
+ElevenLabs STT WebSocket (frontend)
+    ↓ transcript
+User message → AG-UI WebSocket → Backend
+    ↓
+LLM response
+    ↓ agora:spoken_text_* events
+ElevenLabs TTS (frontend) → Audio playback
 ```
 
-> **Note:** Text transcript events are sent alongside audio for accessibility and chat history.
+### Spoken Text Events
+
+When TTS is enabled, the backend streams spoken-friendly text alongside regular message content:
+
+| Event | Direction | Purpose |
+|-------|-----------|---------|
+| `agora:spoken_text_start` | Server → Client | Begin spoken text for a message |
+| `agora:spoken_text_content` | Server → Client | Spoken text delta (streaming) |
+| `agora:spoken_text_end` | Server → Client | End spoken text for a message |
+
+These events are sent via the AG-UI `CUSTOM` event type and are documented in the [Custom Events](#custom-events-hitl) section.
+
+### Configuration
+
+Voice support requires ElevenLabs API credentials:
+
+```env
+VITE_ELEVENLABS_API_KEY=your_api_key
+VITE_ELEVENLABS_VOICE_ID=optional_voice_id
+```
 
 ---
 
@@ -1367,6 +1286,11 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 - Follows AG-UI protocol extension pattern (same as HITL approval and error events)
 - Spoken text event payloads are now nested under the `value` field
 
+### v2.5.0 (January 2026)
+- Implemented frontend-only voice architecture using ElevenLabs STT/TTS
+- Removed planned backend voice endpoints (never implemented)
+- Updated Voice Support documentation to reflect actual implementation
+
 ### v2.4.0 (December 2025)
 - Added spoken text events for TTS support (now migrated to CUSTOM events in v2.4.1)
 - Spoken message events stream in parallel with regular text messages, sharing the same `messageId`
@@ -1380,9 +1304,8 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 - Added Session Restoration Flow diagram
 
 ### v2.2.0 (December 2025)
-- Added "Future: Voice Support" section with planned `CUSTOM` event specifications
-- Documented migration strategy: AGORA custom events → native AG-UI audio (when available)
-- Added audio input/output event definitions and flow diagram
+- Added initial Voice Support section (superseded by v2.5.0)
+- Documented audio event specifications (superseded by frontend-only architecture)
 
 ### v2.1.1 (December 2025)
 - Clarified `TOOL_CALL_END` does not contain result (result is in `TOOL_CALL_RESULT`)

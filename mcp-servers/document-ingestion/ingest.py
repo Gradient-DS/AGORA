@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from config import get_settings
 from parsers.pdf_parser import PDFParser
 from chunkers.semantic_chunker import SemanticChunker
-from embeddings.embedder import Embedder
+from embeddings.embedder import create_embedder
 from summarizers.openai_summarizer import OpenAISummarizer
 from database.weaviate_client import WeaviateClient
 
@@ -61,9 +61,11 @@ def main():
         max_chunk_size=settings.max_chunk_size,
         overlap=settings.chunk_overlap
     )
-    embedder = Embedder(
+    embedder = create_embedder(
+        provider=settings.embedding_provider,
+        api_key=settings.openai_api_key.get_secret_value() if settings.embedding_provider == "openai" else None,
         model_name=settings.embedding_model,
-        device=settings.embedding_device
+        device=settings.embedding_device,
     )
     summarizer = OpenAISummarizer(api_key=settings.openai_api_key.get_secret_value())
     weaviate = WeaviateClient(settings.weaviate_url)

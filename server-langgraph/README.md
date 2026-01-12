@@ -82,16 +82,77 @@ pip install -e .
 
 ## Configuration
 
-Environment variables (same as `server-openai`):
+Environment variables use the `LANGGRAPH_` prefix:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MCP_OPENAI_API_KEY` | OpenAI API key | Required |
-| `APP_MCP_SERVERS` | MCP servers (name=url,name2=url2) | Empty |
-| `APP_GUARDRAILS_ENABLED` | Enable content moderation | `true` |
-| `APP_LOG_LEVEL` | Logging level | `INFO` |
-| `APP_HOST` | Server host | `0.0.0.0` |
-| `APP_PORT` | Server port | `8000` |
+| `LANGGRAPH_OPENAI_API_KEY` | OpenAI-compatible API key | Required |
+| `LANGGRAPH_OPENAI_BASE_URL` | Base URL for LLM API | `https://api.openai.com/v1` |
+| `LANGGRAPH_OPENAI_MODEL` | Default model name | `gpt-4o` |
+| `LANGGRAPH_MCP_SERVERS` | MCP servers (name=url,name2=url2) | Empty |
+| `LANGGRAPH_GUARDRAILS_ENABLED` | Enable content moderation | `true` |
+| `LANGGRAPH_LOG_LEVEL` | Logging level | `INFO` |
+| `LANGGRAPH_HOST` | Server host | `0.0.0.0` |
+| `LANGGRAPH_PORT` | Server port | `8000` |
+
+## Alternative LLM Providers
+
+Unlike `server-openai`, this server supports any OpenAI-compatible API endpoint. This enables:
+- Cost reduction with open-source models
+- Vendor independence
+- Air-gapped deployments with self-hosted models
+
+### Supported Providers
+
+| Provider | Base URL | Notes |
+|----------|----------|-------|
+| OpenAI | `https://api.openai.com/v1` | Default |
+| Together.ai | `https://api.together.ai/v1` | Best OSS model selection |
+| Groq | `https://api.groq.com/openai/v1` | Fastest inference |
+| OpenRouter | `https://openrouter.ai/api/v1` | Model aggregator |
+| Fireworks | `https://api.fireworks.ai/inference/v1` | Fast, good pricing |
+| vLLM | `http://localhost:8000/v1` | Self-hosted |
+| Ollama | `http://localhost:11434/v1` | Local development |
+
+### Recommended Models for Agentic Applications
+
+| Model | Provider | Tool Calling | Cost/1M tokens |
+|-------|----------|--------------|----------------|
+| GPT-4o | OpenAI | Excellent | $5.00 |
+| GPT-4o-mini | OpenAI | Good | $0.15 |
+| DeepSeek-V3 | Together.ai | Excellent | $1.25 |
+| Llama 3.3 70B | Together/Groq | Good | $0.80 |
+| Qwen 2.5 72B | Together.ai | Good | $1.00 |
+
+### Configuration Examples
+
+**Together.ai with DeepSeek-V3:**
+```bash
+export LANGGRAPH_OPENAI_BASE_URL=https://api.together.ai/v1
+export LANGGRAPH_OPENAI_API_KEY=your_together_api_key
+export LANGGRAPH_OPENAI_MODEL=deepseek-ai/DeepSeek-V3
+```
+
+**Groq with Llama 3.3 (fastest inference):**
+```bash
+export LANGGRAPH_OPENAI_BASE_URL=https://api.groq.com/openai/v1
+export LANGGRAPH_OPENAI_API_KEY=your_groq_api_key
+export LANGGRAPH_OPENAI_MODEL=llama-3.3-70b-versatile
+```
+
+**Self-hosted vLLM:**
+```bash
+export LANGGRAPH_OPENAI_BASE_URL=http://localhost:8000/v1
+export LANGGRAPH_OPENAI_API_KEY=not-needed
+export LANGGRAPH_OPENAI_MODEL=meta-llama/Llama-3.3-70B-Instruct
+```
+
+**Local Ollama:**
+```bash
+export LANGGRAPH_OPENAI_BASE_URL=http://localhost:11434/v1
+export LANGGRAPH_OPENAI_API_KEY=not-needed
+export LANGGRAPH_OPENAI_MODEL=llama3.3:70b
+```
 
 ## Running
 
@@ -114,8 +175,8 @@ docker-compose up --build
 ### With MCP Servers
 
 ```bash
-export MCP_OPENAI_API_KEY=your-key
-export APP_MCP_SERVERS="regulation=http://localhost:5002,reporting=http://localhost:5003,history=http://localhost:5004"
+export LANGGRAPH_OPENAI_API_KEY=your-key
+export LANGGRAPH_MCP_SERVERS="regulation=http://localhost:5002,reporting=http://localhost:5003,history=http://localhost:5005"
 python -m agora_langgraph.api.server
 ```
 

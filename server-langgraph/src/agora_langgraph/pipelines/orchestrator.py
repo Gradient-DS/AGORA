@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import uuid
 from typing import Any
 
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
 from ag_ui.core import Message as AGUIMessage
@@ -19,8 +20,11 @@ from agora_langgraph.common.ag_ui_types import (
 )
 from agora_langgraph.common.schemas import ToolCall
 from agora_langgraph.core.approval_logic import requires_human_approval
+from agora_langgraph.core.agent_definitions import get_spoken_prompt
+from agora_langgraph.core.agents import get_llm_for_agent
 from agora_langgraph.adapters.audit_logger import AuditLogger
 from agora_langgraph.adapters.session_metadata import SessionMetadataManager
+from agora_langgraph.adapters.user_manager import UserManager
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
@@ -51,12 +55,14 @@ class Orchestrator:
         moderator: ModerationPipeline,
         audit_logger: AuditLogger,
         session_metadata: SessionMetadataManager | None = None,
+        user_manager: UserManager | None = None,
     ):
         """Initialize orchestrator."""
         self.graph = graph
         self.moderator = moderator
         self.audit = audit_logger
         self.session_metadata = session_metadata
+        self.user_manager = user_manager
         self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
 
     async def _handle_tool_approval_flow(
@@ -145,13 +151,17 @@ class Orchestrator:
         # Create or update session metadata
         if self.session_metadata:
             try:
-                log.info(f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}")
+                log.info(
+                    f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}"
+                )
                 await self.session_metadata.create_or_update_metadata(
                     session_id=thread_id,
                     user_id=user_id,
                     first_message=user_content,
                 )
-                log.info(f"Session metadata created/updated successfully for {thread_id}")
+                log.info(
+                    f"Session metadata created/updated successfully for {thread_id}"
+                )
             except Exception as e:
                 log.warning(f"Failed to update session metadata: {e}")
 
@@ -205,6 +215,7 @@ class Orchestrator:
                     thread_id,
                     run_id,
                     message_id,
+                    user_id,
                     protocol_handler,
                 )
             else:
@@ -304,18 +315,123 @@ class Orchestrator:
         thread_id: str,
         run_id: str,
         message_id: str,
+        user_id: str,
         protocol_handler: Any,
     ) -> tuple[str, str]:
-        """Stream graph response using astream_events with AG-UI Protocol."""
+        """Stream graph response using astream_events with AG-UI Protocol.
+
+        Dual-channel streaming controlled by user's spoken_text_type preference:
+        - 'summarize': Two parallel LLM calls (written + speech-optimized spoken)
+        - 'dictate': Single LLM call, same content to both channels
+        """
         full_response: list[str] = []
         current_agent_id = "general-agent"
         current_step: str | None = "routing"
         active_tool_calls: dict[str, str] = {}
         message_started = False
+        spoken_message_started = False
 
         await protocol_handler.send_step_finished("routing")
         await protocol_handler.send_step_started("thinking")
         current_step = "thinking"
+
+        # Fetch user preference for spoken response mode
+        spoken_mode = "summarize"  # default
+        if self.user_manager:
+            try:
+                user = await self.user_manager.get_user(user_id)
+                if user:
+                    prefs = user.get("preferences", {})
+                    if prefs:
+                        spoken_mode = prefs.get("spoken_text_type", "summarize")
+            except Exception as e:
+                log.warning(f"Failed to fetch user preferences: {e}, using default")
+
+        # Parallel spoken task state (only used in 'summarize' mode)
+        spoken_task: asyncio.Task[None] | None = None
+        spoken_queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        # Timing state for debug logging
+        stream_start_time: float = 0.0
+        written_first_token_time: float = 0.0
+        spoken_first_token_time: float = 0.0
+        written_end_time: float = 0.0
+        spoken_end_time: float = 0.0
+        written_first_token_received = False
+        spoken_first_token_received = False
+
+        async def generate_spoken_parallel(agent_id: str) -> None:
+            """Generate spoken response in TRUE PARALLEL with written stream.
+
+            Uses the same conversation context but a spoken-specific prompt
+            that produces shorter, TTS-friendly summary responses.
+            Only used when spoken_mode == 'summarize'.
+            """
+            nonlocal spoken_first_token_time, spoken_first_token_received, spoken_end_time
+            try:
+                spoken_prompt = get_spoken_prompt(agent_id)
+                if not spoken_prompt:
+                    log.warning(f"No spoken prompt for agent {agent_id}")
+                    await protocol_handler.send_spoken_text_error(
+                        message_id,
+                        "prompt_not_found",
+                        f"No spoken prompt defined for agent: {agent_id}",
+                    )
+                    return
+
+                llm = get_llm_for_agent(agent_id)
+
+                # Use same conversation context as written stream
+                messages = list(input_state.get("messages", []))
+                spoken_messages = [SystemMessage(content=spoken_prompt)] + messages
+
+                async for chunk in llm.astream(spoken_messages):
+                    if hasattr(chunk, "content") and chunk.content:
+                        # Track first token timing
+                        if not spoken_first_token_received:
+                            spoken_first_token_time = time.time()
+                            spoken_first_token_received = True
+                            elapsed = spoken_first_token_time - stream_start_time
+                            log.info(
+                                f"[TIMING] Spoken first token received at "
+                                f"+{elapsed:.3f}s from stream start"
+                            )
+                        await spoken_queue.put(str(chunk.content))
+
+                # Mark spoken stream end
+                spoken_end_time = time.time()
+                elapsed = spoken_end_time - stream_start_time
+                log.info(
+                    f"[TIMING] Spoken stream finished at +{elapsed:.3f}s from stream start"
+                )
+
+            except Exception as e:
+                error_msg = str(e)
+                log.error(f"Error generating spoken response: {error_msg}")
+                if protocol_handler.is_connected:
+                    await protocol_handler.send_spoken_text_error(
+                        message_id, "generation_failed", error_msg
+                    )
+            finally:
+                await spoken_queue.put(None)
+
+        async def stream_spoken_to_frontend() -> None:
+            """Stream spoken chunks to frontend as they arrive (summarize mode)."""
+            nonlocal spoken_message_started
+            while True:
+                chunk = await spoken_queue.get()
+                if chunk is None:
+                    # Send spoken_text_end immediately when spoken stream finishes
+                    if protocol_handler.is_connected and spoken_message_started:
+                        await protocol_handler.send_spoken_text_end(message_id)
+                        spoken_message_started = False  # Mark as ended
+                    break
+                if protocol_handler.is_connected:
+                    await protocol_handler.send_spoken_text_content(message_id, chunk)
+
+        # Start timing
+        stream_start_time = time.time()
+        log.info(f"[TIMING] Stream started (mode: {spoken_mode})")
 
         async for event in self.graph.astream_events(
             input_state, config=config, version="v2"
@@ -328,17 +444,45 @@ class Orchestrator:
                     content = str(chunk.content)
                     full_response.append(content)
 
+                    # Track written first token timing
+                    if not written_first_token_received:
+                        written_first_token_time = time.time()
+                        written_first_token_received = True
+                        elapsed = written_first_token_time - stream_start_time
+                        log.info(
+                            f"[TIMING] Written first token received at "
+                            f"+{elapsed:.3f}s from stream start"
+                        )
+
                     if protocol_handler.is_connected:
-                        # Start message on first content
+                        # Start BOTH channels on first content
                         if not message_started:
                             await protocol_handler.send_text_message_start(
                                 message_id, "assistant"
                             )
+                            await protocol_handler.send_spoken_text_start(
+                                message_id, "assistant"
+                            )
                             message_started = True
+                            spoken_message_started = True
 
+                            # In 'summarize' mode: start parallel LLM call for spoken
+                            if spoken_mode == "summarize":
+                                spoken_task = asyncio.create_task(
+                                    generate_spoken_parallel(current_agent_id)
+                                )
+                                asyncio.create_task(stream_spoken_to_frontend())
+
+                        # Send written content
                         await protocol_handler.send_text_message_content(
                             message_id, content
                         )
+
+                        # In 'dictate' mode: duplicate content to spoken channel
+                        if spoken_mode == "dictate":
+                            await protocol_handler.send_spoken_text_content(
+                                message_id, content
+                            )
 
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
@@ -444,10 +588,46 @@ class Orchestrator:
                                 }
                             )
 
-        # Finalize message and step
+        # Mark written stream end
+        written_end_time = time.time()
+        written_elapsed = written_end_time - stream_start_time
+        log.info(
+            f"[TIMING] Written stream finished at +{written_elapsed:.3f}s from stream start"
+        )
+
+        # Wait for spoken task to complete (only in 'summarize' mode)
+        if spoken_task:
+            try:
+                await spoken_task
+            except Exception as e:
+                log.error(f"Spoken task failed: {e}")
+
+        # Log timing summary
+        if written_first_token_received and spoken_first_token_received:
+            first_token_diff = spoken_first_token_time - written_first_token_time
+            log.info(
+                f"[TIMING] First token difference: spoken was "
+                f"{first_token_diff:+.3f}s vs written"
+            )
+        if written_end_time > 0 and spoken_end_time > 0:
+            end_diff = spoken_end_time - written_end_time
+            log.info(
+                f"[TIMING] Stream end difference: spoken was "
+                f"{end_diff:+.3f}s vs written"
+            )
+        log.info(
+            f"[TIMING] Summary - Written: first={written_first_token_time - stream_start_time:.3f}s, "
+            f"end={written_end_time - stream_start_time:.3f}s | "
+            f"Spoken: first={spoken_first_token_time - stream_start_time:.3f}s, "
+            f"end={spoken_end_time - stream_start_time:.3f}s"
+        )
+
+        # Finalize BOTH channels
         if protocol_handler.is_connected:
             if message_started:
                 await protocol_handler.send_text_message_end(message_id)
+            if spoken_message_started:
+                await protocol_handler.send_spoken_text_end(message_id)
             if current_step:
                 await protocol_handler.send_step_finished(current_step)
 

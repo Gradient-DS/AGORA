@@ -45,6 +45,14 @@ function getOrCreateClient(): AGUIWebSocketClient {
   return globalClient;
 }
 
+/**
+ * Get the global WebSocket client instance.
+ * Used by voice mode to send transcribed messages.
+ */
+export function getWebSocketClient(): AGUIWebSocketClient {
+  return getOrCreateClient();
+}
+
 export function useWebSocket() {
   const clientRef = useRef<AGUIWebSocketClient | null>(null);
   const currentMessageId = useRef<string | null>(null);

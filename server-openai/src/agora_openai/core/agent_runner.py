@@ -483,11 +483,13 @@ class AgentRunner:
             elif role == "assistant":
                 content = self._extract_content(item)
                 if content:
-                    history.append({
-                        "role": "assistant",
-                        "content": content,
-                        "agent_id": current_agent_id,
-                    })
+                    history.append(
+                        {
+                            "role": "assistant",
+                            "content": content,
+                            "agent_id": current_agent_id,
+                        }
+                    )
 
             elif item_type == "function_call" and include_tool_calls:
                 # OpenAI SDK stores tool calls with type="function_call"
@@ -505,13 +507,27 @@ class AgentRunner:
                     if stored_tc and stored_tc.get("agent_id"):
                         current_agent_id = stored_tc["agent_id"]
 
-                    history.append({
-                        "role": "tool_call",
-                        "tool_call_id": tool_call_id,
-                        "tool_name": stored_tc.get("tool_name", tool_name) if stored_tc else tool_name,
-                        "content": stored_tc.get("parameters", arguments) if stored_tc else arguments,
-                        "agent_id": stored_tc.get("agent_id", current_agent_id) if stored_tc else current_agent_id,
-                    })
+                    history.append(
+                        {
+                            "role": "tool_call",
+                            "tool_call_id": tool_call_id,
+                            "tool_name": (
+                                stored_tc.get("tool_name", tool_name)
+                                if stored_tc
+                                else tool_name
+                            ),
+                            "content": (
+                                stored_tc.get("parameters", arguments)
+                                if stored_tc
+                                else arguments
+                            ),
+                            "agent_id": (
+                                stored_tc.get("agent_id", current_agent_id)
+                                if stored_tc
+                                else current_agent_id
+                            ),
+                        }
+                    )
                     added_tool_calls.add(tool_call_id)
 
             elif item_type == "function_call_output" and include_tool_calls:
@@ -529,12 +545,14 @@ class AgentRunner:
                 if stored_tc:
                     tool_name = stored_tc.get("tool_name", tool_name)
 
-                history.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
-                    "tool_name": tool_name,
-                    "content": output,
-                })
+                history.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": tool_name,
+                        "content": output,
+                    }
+                )
 
             elif role == "tool" and include_tool_calls:
                 # Legacy format: Tool result with role="tool"
@@ -551,22 +569,26 @@ class AgentRunner:
                         current_agent_id = stored_tc["agent_id"]
 
                     # Add tool_call entry BEFORE the tool result
-                    history.append({
-                        "role": "tool_call",
-                        "tool_call_id": tool_call_id,
-                        "tool_name": stored_tc.get("tool_name", tool_name),
-                        "content": stored_tc.get("parameters", "{}"),
-                        "agent_id": stored_tc.get("agent_id", current_agent_id),
-                    })
+                    history.append(
+                        {
+                            "role": "tool_call",
+                            "tool_call_id": tool_call_id,
+                            "tool_name": stored_tc.get("tool_name", tool_name),
+                            "content": stored_tc.get("parameters", "{}"),
+                            "agent_id": stored_tc.get("agent_id", current_agent_id),
+                        }
+                    )
                     added_tool_calls.add(tool_call_id)
 
                 # Add tool result
-                history.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
-                    "tool_name": tool_name,
-                    "content": result_content,
-                })
+                history.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": tool_name,
+                        "content": result_content,
+                    }
+                )
 
         return history
 
