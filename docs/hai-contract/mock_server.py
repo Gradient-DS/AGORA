@@ -42,17 +42,18 @@ Endpoints:
 
 import asyncio
 import json
-import os
 import re
-import sys
 import time
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
 
-import websockets
-from websockets.http11 import Response
+import uvicorn
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
 
 # Agent IDs matching the frontend UI (from HAI/src/stores/useAgentStore.ts)
@@ -309,6 +310,7 @@ def get_mock_users() -> dict:
                 "notifications_enabled": True,
                 "default_agent_id": "general-agent",
                 "language": "nl-NL",
+                "spoken_text_type": "summarize",
             },
             "createdAt": "2024-06-15T09:00:00Z",
             "lastActivity": (now - timedelta(minutes=30)).isoformat() + "Z",
@@ -322,6 +324,7 @@ def get_mock_users() -> dict:
                 "notifications_enabled": True,
                 "default_agent_id": "general-agent",
                 "language": "nl-NL",
+                "spoken_text_type": "dictate",
             },
             "createdAt": "2024-08-20T14:30:00Z",
             "lastActivity": (now - timedelta(days=1)).isoformat() + "Z",
@@ -335,6 +338,7 @@ def get_mock_users() -> dict:
                 "notifications_enabled": False,
                 "default_agent_id": "general-agent",
                 "language": "nl-NL",
+                "spoken_text_type": "summarize",
             },
             "createdAt": "2024-01-10T08:00:00Z",
             "lastActivity": (now - timedelta(days=3)).isoformat() + "Z",
@@ -354,6 +358,359 @@ USER_ID_MAP = {
 
 # Default "current user" for /users/me endpoint (simulates authenticated user)
 CURRENT_USER_ID = "550e8400-e29b-41d4-a716-446655440001"
+
+
+# ---------------------------------------------------------------------------
+# REQUEST MODELS (for FastAPI)
+# ---------------------------------------------------------------------------
+
+
+class CreateUserRequest(BaseModel):
+    """Request body for creating a user."""
+
+    email: str = Field(..., description="User's email address")
+    name: str = Field(..., description="User's display name")
+
+
+class UpdateUserRequest(BaseModel):
+    """Request body for updating a user."""
+
+    name: str | None = Field(None, description="User's display name")
+    preferences: dict | None = Field(None, description="User preferences")
+
+
+class UpdatePreferencesRequest(BaseModel):
+    """Request body for updating user preferences."""
+
+    theme: str | None = Field(None, description="UI theme: 'light', 'dark', or 'system'")
+    notifications_enabled: bool | None = Field(None, description="Enable notifications")
+    default_agent_id: str | None = Field(None, description="Default agent ID")
+    language: str | None = Field(None, description="UI language (e.g., 'nl-NL')")
+    spoken_text_type: str | None = Field(
+        None,
+        description="Spoken text type: 'dictate' or 'summarize'"
+    )
+
+
+# ---------------------------------------------------------------------------
+# FASTAPI APPLICATION
+# ---------------------------------------------------------------------------
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown."""
+    print()
+    print("=" * 64)
+    print("  AG-UI Protocol Mock Server v2.4.0 - Demo Mode (FastAPI)")
+    print("=" * 64)
+    print()
+    print("  WebSocket: ws://localhost:8000/ws")
+    print("  REST API:  http://localhost:8000")
+    print("  API Docs:  http://localhost:8000/docs")
+    print()
+    yield
+    print("\nServer shutting down...")
+
+
+app = FastAPI(
+    title="AGORA Mock Server (AG-UI Protocol)",
+    description="Mock server for testing AG-UI Protocol WebSocket and REST API",
+    version="2.4.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ---------------------------------------------------------------------------
+# REST ENDPOINTS
+# ---------------------------------------------------------------------------
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy", "service": "agora-mock", "protocol": "ag-ui"}
+
+
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "service": "AGORA Mock Server",
+        "version": "2.4.0",
+        "protocol": "AG-UI Protocol v2.4.0",
+        "endpoints": {
+            "websocket": "/ws",
+            "sessions": "/sessions?user_id={user_id}",
+            "history": "/sessions/{id}/history?include_tools=true",
+            "users": "/users",
+            "currentUser": "/users/me",
+            "agents": "/agents",
+        },
+    }
+
+
+@app.get("/agents")
+async def list_agents():
+    """List available agents."""
+    log_event("send", "HTTP", "GET /agents -> 4 agents")
+    return {
+        "success": True,
+        "agents": [
+            {"id": Agents.GENERAL, "name": "Algemene Assistent", "description": "Algemene vraag- en routeringagent"},
+            {"id": Agents.HISTORY, "name": "Bedrijfsinformatie Specialist", "description": "KVK-gegevens en inspectiehistorie"},
+            {"id": Agents.REGULATION, "name": "Regelgeving Specialist", "description": "Wet- en regelgevingsanalyse"},
+            {"id": Agents.REPORTING, "name": "Rapportage Specialist", "description": "Inspectierapport genereren"},
+        ],
+    }
+
+
+# ---------------------------------------------------------------------------
+# SESSION ENDPOINTS
+# ---------------------------------------------------------------------------
+
+
+@app.get("/sessions")
+async def list_sessions(user_id: str = Query(..., description="User/inspector persona ID")):
+    """List all sessions for a user, ordered by last activity."""
+    # Map UUID to legacy userId if needed (sessions use legacy IDs like "koen", "fatima")
+    legacy_id = None
+    for legacy, uuid_id in USER_ID_MAP.items():
+        if uuid_id == user_id:
+            legacy_id = legacy
+            break
+    # Match on both UUID and legacy ID
+    user_sessions = [
+        s for s in MOCK_SESSIONS.values()
+        if s["userId"] == user_id or s["userId"] == legacy_id
+    ]
+    user_sessions.sort(key=lambda s: s["lastActivity"], reverse=True)
+    log_event("send", "HTTP", f"GET /sessions?user_id={user_id} -> {len(user_sessions)} sessions")
+    return {"success": True, "sessions": user_sessions, "totalCount": len(user_sessions)}
+
+
+@app.get("/sessions/{session_id}/history")
+async def get_session_history(
+    session_id: str,
+    include_tools: bool = Query(False, description="Include tool call messages"),
+):
+    """Get conversation history for a session."""
+    if session_id not in MOCK_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    history = get_mock_history(session_id, include_tools)
+    log_event("send", "HTTP", f"GET /sessions/{session_id}/history -> {len(history)} messages")
+    return {"success": True, "threadId": session_id, "history": history, "messageCount": len(history)}
+
+
+@app.get("/sessions/{session_id}/metadata")
+async def get_session_metadata(session_id: str):
+    """Get session metadata by ID."""
+    if session_id not in MOCK_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    log_event("send", "HTTP", f"GET /sessions/{session_id}/metadata")
+    return {"success": True, "session": MOCK_SESSIONS[session_id]}
+
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a session."""
+    if session_id not in MOCK_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    del MOCK_SESSIONS[session_id]
+    log_event("send", "HTTP", f"DELETE /sessions/{session_id}")
+    return {"success": True, "message": "Session deleted"}
+
+
+# ---------------------------------------------------------------------------
+# USER ENDPOINTS
+# ---------------------------------------------------------------------------
+
+
+@app.get("/users/me")
+async def get_current_user():
+    """Get current user profile."""
+    if CURRENT_USER_ID not in MOCK_USERS:
+        raise HTTPException(status_code=401, detail="User not found")
+    user = MOCK_USERS[CURRENT_USER_ID]
+    log_event("send", "HTTP", f"GET /users/me -> {user['name']}")
+    return user
+
+
+@app.get("/users/me/preferences")
+async def get_current_user_preferences(
+    user_id: str = Query(..., description="Current user ID")
+):
+    """Get current user's preferences."""
+    if user_id not in MOCK_USERS:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = MOCK_USERS[user_id]
+    default_preferences = {
+        "theme": "system",
+        "notifications_enabled": True,
+        "default_agent_id": "general-agent",
+        "language": "nl-NL",
+        "spoken_text_type": "summarize",
+    }
+    preferences = user.get("preferences", default_preferences)
+    log_event("send", "HTTP", f"GET /users/me/preferences?user_id={user_id}")
+    return {"success": True, "preferences": preferences}
+
+
+@app.put("/users/me/preferences")
+async def update_current_user_preferences(
+    request: UpdatePreferencesRequest,
+    user_id: str = Query(..., description="Current user ID")
+):
+    """Update current user's preferences."""
+    if user_id not in MOCK_USERS:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = MOCK_USERS[user_id]
+    if "preferences" not in user:
+        user["preferences"] = {
+            "theme": "system",
+            "notifications_enabled": True,
+            "default_agent_id": "general-agent",
+            "language": "nl-NL",
+            "spoken_text_type": "summarize",
+        }
+    if request.theme is not None:
+        if request.theme not in ("light", "dark", "system"):
+            raise HTTPException(
+                status_code=400,
+                detail="theme must be 'light', 'dark', or 'system'"
+            )
+        user["preferences"]["theme"] = request.theme
+    if request.notifications_enabled is not None:
+        user["preferences"]["notifications_enabled"] = request.notifications_enabled
+    if request.default_agent_id is not None:
+        user["preferences"]["default_agent_id"] = request.default_agent_id
+    if request.language is not None:
+        user["preferences"]["language"] = request.language
+    if request.spoken_text_type is not None:
+        if request.spoken_text_type not in ("dictate", "summarize"):
+            raise HTTPException(
+                status_code=400,
+                detail="spoken_text_type must be 'dictate' or 'summarize'"
+            )
+        user["preferences"]["spoken_text_type"] = request.spoken_text_type
+    log_event("send", "HTTP", f"PUT /users/me/preferences?user_id={user_id}")
+    return {"success": True, "preferences": user["preferences"]}
+
+
+@app.post("/users", status_code=201)
+async def create_user(request: CreateUserRequest):
+    """Create a new user."""
+    for existing_user in MOCK_USERS.values():
+        if existing_user["email"] == request.email:
+            raise HTTPException(status_code=409, detail="Email already exists")
+    new_user_id = str(uuid.uuid4())
+    now = datetime.now()
+    new_user = {
+        "id": new_user_id,
+        "email": request.email,
+        "name": request.name,
+        "preferences": {
+            "theme": "system",
+            "notifications_enabled": True,
+            "default_agent_id": "general-agent",
+            "language": "nl-NL",
+            "spoken_text_type": "summarize",
+        },
+        "createdAt": now.isoformat() + "Z",
+        "lastActivity": now.isoformat() + "Z",
+    }
+    MOCK_USERS[new_user_id] = new_user
+    log_event("send", "HTTP", f"POST /users -> created {new_user['email']}")
+    return {"success": True, "user": new_user}
+
+
+@app.get("/users")
+async def list_users(
+    limit: int = Query(50, ge=1, le=100, description="Max users to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+):
+    """List all users, ordered by creation date."""
+    all_users = list(MOCK_USERS.values())
+    all_users.sort(key=lambda u: u["createdAt"], reverse=True)
+    paginated_users = all_users[offset : offset + limit]
+    log_event("send", "HTTP", f"GET /users -> {len(paginated_users)} of {len(all_users)} users")
+    return {"success": True, "users": paginated_users, "totalCount": len(all_users)}
+
+
+@app.get("/users/{user_id}")
+async def get_user(user_id: str):
+    """Get user profile by ID."""
+    if user_id not in MOCK_USERS:
+        raise HTTPException(status_code=404, detail="User not found")
+    log_event("send", "HTTP", f"GET /users/{user_id}")
+    return {"success": True, "user": MOCK_USERS[user_id]}
+
+
+@app.put("/users/{user_id}")
+async def update_user(user_id: str, request: UpdateUserRequest):
+    """Update user profile."""
+    if user_id not in MOCK_USERS:
+        raise HTTPException(status_code=404, detail="User not found")
+    user = MOCK_USERS[user_id]
+    if request.name is not None:
+        user["name"] = request.name
+    if request.preferences is not None:
+        if "preferences" not in user:
+            user["preferences"] = {}
+        for key in ["theme", "notifications_enabled", "default_agent_id", "language"]:
+            if key in request.preferences:
+                user["preferences"][key] = request.preferences[key]
+    log_event("send", "HTTP", f"PUT /users/{user_id}")
+    return {"success": True, "user": user}
+
+
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    """Delete a user and associated sessions."""
+    if user_id not in MOCK_USERS:
+        raise HTTPException(status_code=404, detail="User not found")
+    legacy_user_id = None
+    for legacy_id, uuid_id in USER_ID_MAP.items():
+        if uuid_id == user_id:
+            legacy_user_id = legacy_id
+            break
+    sessions_to_delete = [
+        sid for sid, s in MOCK_SESSIONS.items()
+        if s["userId"] == legacy_user_id or s["userId"] == user_id
+    ]
+    for sid in sessions_to_delete:
+        del MOCK_SESSIONS[sid]
+    del MOCK_USERS[user_id]
+    log_event("send", "HTTP", f"DELETE /users/{user_id} -> {len(sessions_to_delete)} sessions deleted")
+    return {"success": True, "message": "User and associated sessions deleted", "deletedSessionsCount": len(sessions_to_delete)}
+
+
+# ---------------------------------------------------------------------------
+# MOCK DOCUMENTS (for report download testing)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/mock_documents/{filename}")
+async def get_mock_document(filename: str):
+    """Serve mock document files (report.json, report.pdf)."""
+    allowed_files = {"report.json", "report.pdf"}
+    if filename not in allowed_files:
+        raise HTTPException(status_code=404, detail="File not found")
+    mock_docs_dir = Path(__file__).parent / "mock_documents"
+    file_path = mock_docs_dir / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    media_type = "application/json" if filename.endswith(".json") else "application/pdf"
+    log_event("send", "HTTP", f"GET /mock_documents/{filename}")
+    return FileResponse(path=file_path, media_type=media_type, filename=filename)
 
 
 def now_timestamp() -> int:
@@ -393,10 +750,10 @@ def log_event(direction: str, event_type: str, detail: str = "") -> None:
     print(f"[{timestamp}] {arrow} {event_type}{suffix}")
 
 
-async def send_event(websocket, event: dict, detail: str = "") -> None:
+async def send_event(websocket: WebSocket, event: dict, detail: str = "") -> None:
     """Send an event over WebSocket and log it."""
     log_event("send", event.get("type", "unknown"), detail)
-    await websocket.send(json.dumps(event))
+    await websocket.send_text(json.dumps(event))
 
 
 class ConversationState:
@@ -412,8 +769,10 @@ class ConversationState:
         self.current_agent = Agents.GENERAL
 
 
-async def handle_connection(websocket):
-    """Handle incoming WebSocket connections."""
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for AG-UI protocol communication."""
+    await websocket.accept()
     print(f"\n{'='*60}")
     print("Client connected")
     print(f"{'='*60}")
@@ -421,25 +780,34 @@ async def handle_connection(websocket):
     state = ConversationState()
 
     try:
-        async for message in websocket:
-            data = json.loads(message)
-            event_type = data.get("type", "RunAgentInput")
-            log_event("recv", event_type)
+        while True:
+            try:
+                raw_message = await websocket.receive_text()
+                data = json.loads(raw_message)
+                event_type = data.get("type", "RunAgentInput")
+                log_event("recv", event_type)
 
-            if data.get("type") == "CUSTOM":
-                name = data.get("name", "")
-                if name == "agora:tool_approval_response":
-                    await handle_approval_response(websocket, data, state)
+                if data.get("type") == "CUSTOM":
+                    name = data.get("name", "")
+                    if name == "agora:tool_approval_response":
+                        await handle_approval_response(websocket, data, state)
+                        continue
+                    print(f"  Unknown custom event: {name}")
                     continue
-                print(f"  Unknown custom event: {name}")
+
+                if "threadId" in data or "thread_id" in data:
+                    await handle_run_input(websocket, data, state)
+
+            except WebSocketDisconnect:
+                print("\nClient disconnected")
+                print(f"{'='*60}\n")
+                break
+            except json.JSONDecodeError as e:
+                print(f"  Invalid JSON: {e}")
                 continue
 
-            if "threadId" in data or "thread_id" in data:
-                await handle_run_input(websocket, data, state)
-
-    except websockets.exceptions.ConnectionClosed:
-        print("\nClient disconnected")
-        print(f"{'='*60}\n")
+    except Exception as e:
+        print(f"WebSocket error: {e}")
 
 
 async def handle_run_input(websocket, data: dict, state: ConversationState) -> None:
@@ -1086,445 +1454,8 @@ async def stream_response(
     )
 
 
-def process_request(connection, request):
-    """Handle HTTP requests that aren't WebSocket upgrades.
-
-    Supports:
-    - GET /sessions?user_id={user_id}
-    - GET /sessions/{session_id}/history?include_tools=true
-    - GET /sessions/{session_id}/metadata
-    - DELETE /sessions/{session_id}
-    - GET /health
-    - GET /
-    """
-    if request.headers.get("Upgrade", "").lower() == "websocket":
-        return None  # Let WebSocket handler take over
-
-    path = request.path
-    method = request.method if hasattr(request, "method") else "GET"
-    parsed = urlparse(path)
-    query_params = parse_qs(parsed.query)
-
-    # CORS headers for all responses
-    cors_headers = websockets.Headers(
-        [
-            ("Access-Control-Allow-Origin", "*"),
-            ("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
-            ("Access-Control-Allow-Headers", "Content-Type"),
-            ("Content-Type", "application/json"),
-        ]
-    )
-
-    # Handle OPTIONS (CORS preflight)
-    if method == "OPTIONS":
-        return Response(200, "OK", cors_headers, b"")
-
-    # Health check
-    if parsed.path == "/health":
-        body = json.dumps(
-            {"status": "healthy", "service": "agora-mock", "protocol": "ag-ui"}
-        )
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # Mock documents (static files for report download)
-    if parsed.path.startswith("/mock_documents/"):
-        filename = parsed.path.replace("/mock_documents/", "")
-        # Only allow specific files
-        allowed_files = {"report.json", "report.pdf"}
-        if filename not in allowed_files:
-            body = json.dumps({"error": "File not found"})
-            return Response(404, "Not Found", cors_headers, body.encode())
-
-        # Determine content type
-        content_type = "application/json" if filename.endswith(".json") else "application/pdf"
-        file_headers = websockets.Headers(
-            [
-                ("Access-Control-Allow-Origin", "*"),
-                ("Access-Control-Allow-Methods", "GET, OPTIONS"),
-                ("Access-Control-Allow-Headers", "Content-Type"),
-                ("Content-Type", content_type),
-                ("Content-Disposition", f'attachment; filename="{filename}"'),
-            ]
-        )
-
-        # Read and serve the file
-        mock_docs_dir = Path(__file__).parent / "mock_documents"
-        file_path = mock_docs_dir / filename
-        if file_path.exists():
-            with open(file_path, "rb") as f:
-                file_content = f.read()
-            log_event("send", "HTTP", f"GET /mock_documents/{filename} -> {len(file_content)} bytes")
-            return Response(200, "OK", file_headers, file_content)
-        else:
-            body = json.dumps({"error": "File not found on disk"})
-            return Response(404, "Not Found", cors_headers, body.encode())
-
-    # Root endpoint
-    if parsed.path == "/":
-        body = json.dumps(
-            {
-                "service": "AGORA Mock Server",
-                "version": "2.4.0",
-                "protocol": "AG-UI Protocol v2.4.0",
-                "endpoints": {
-                    "websocket": "/ws",
-                    "sessions": "/sessions?user_id={user_id}",
-                    "history": "/sessions/{id}/history?include_tools=true",
-                    "users": "/users",
-                    "currentUser": "/users/me",
-                },
-            }
-        )
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # GET /sessions - List sessions for a user
-    if parsed.path == "/sessions" and method == "GET":
-        user_id = query_params.get("user_id", [None])[0]
-        if not user_id:
-            body = json.dumps({"success": False, "error": "user_id is required"})
-            return Response(400, "Bad Request", cors_headers, body.encode())
-
-        # Filter sessions by user_id
-        user_sessions = [
-            session
-            for session in MOCK_SESSIONS.values()
-            if session["userId"] == user_id
-        ]
-        # Sort by lastActivity descending
-        user_sessions.sort(key=lambda s: s["lastActivity"], reverse=True)
-
-        body = json.dumps(
-            {
-                "success": True,
-                "sessions": user_sessions,
-                "totalCount": len(user_sessions),
-            },
-            ensure_ascii=False,
-        )
-        log_event(
-            "send",
-            "HTTP",
-            f"GET /sessions?user_id={user_id} -> {len(user_sessions)} sessions",
-        )
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # Match /sessions/{session_id}/history
-    history_match = re.match(r"^/sessions/([^/]+)/history$", parsed.path)
-    if history_match and method == "GET":
-        session_id = history_match.group(1)
-        include_tools = (
-            query_params.get("include_tools", ["false"])[0].lower() == "true"
-        )
-
-        if session_id not in MOCK_SESSIONS:
-            body = json.dumps({"success": False, "error": "Session not found"})
-            return Response(404, "Not Found", cors_headers, body.encode())
-
-        history = get_mock_history(session_id, include_tools)
-        body = json.dumps(
-            {
-                "success": True,
-                "threadId": session_id,
-                "history": history,
-                "messageCount": len(history),
-            },
-            ensure_ascii=False,
-        )
-        log_event(
-            "send",
-            "HTTP",
-            f"GET /sessions/{session_id}/history -> {len(history)} messages",
-        )
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # Match /sessions/{session_id}/metadata
-    metadata_match = re.match(r"^/sessions/([^/]+)/metadata$", parsed.path)
-    if metadata_match and method == "GET":
-        session_id = metadata_match.group(1)
-
-        if session_id not in MOCK_SESSIONS:
-            body = json.dumps({"success": False, "error": "Session not found"})
-            return Response(404, "Not Found", cors_headers, body.encode())
-
-        body = json.dumps(
-            {
-                "success": True,
-                "session": MOCK_SESSIONS[session_id],
-            },
-            ensure_ascii=False,
-        )
-        log_event("send", "HTTP", f"GET /sessions/{session_id}/metadata")
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # Match DELETE /sessions/{session_id}
-    delete_match = re.match(r"^/sessions/([^/]+)$", parsed.path)
-    if delete_match and method == "DELETE":
-        session_id = delete_match.group(1)
-
-        if session_id not in MOCK_SESSIONS:
-            body = json.dumps({"detail": "Session not found"})
-            return Response(404, "Not Found", cors_headers, body.encode())
-
-        del MOCK_SESSIONS[session_id]
-        body = json.dumps(
-            {
-                "success": True,
-                "message": "Session deleted",
-            }
-        )
-        log_event("send", "HTTP", f"DELETE /sessions/{session_id}")
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # ---------------------------------------------------------------------------
-    # USER MANAGEMENT ENDPOINTS
-    # ---------------------------------------------------------------------------
-
-    # Helper to parse request body
-    def get_request_body() -> dict:
-        """Parse JSON request body if present."""
-        try:
-            if hasattr(request, "body") and request.body:
-                return json.loads(request.body.decode("utf-8"))
-        except (json.JSONDecodeError, AttributeError):
-            pass
-        return {}
-
-    # GET /users/me - Get current user profile
-    if parsed.path == "/users/me" and method == "GET":
-        if CURRENT_USER_ID not in MOCK_USERS:
-            body = json.dumps(
-                {"success": False, "error": "unauthorized", "message": "User not found"}
-            )
-            return Response(401, "Unauthorized", cors_headers, body.encode())
-
-        user = MOCK_USERS[CURRENT_USER_ID]
-        body = json.dumps(user, ensure_ascii=False)
-        log_event("send", "HTTP", f"GET /users/me -> {user['name']}")
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # PUT /users/me/preferences - Update user preferences
-    if parsed.path == "/users/me/preferences" and method == "PUT":
-        if CURRENT_USER_ID not in MOCK_USERS:
-            body = json.dumps(
-                {"success": False, "error": "unauthorized", "message": "User not found"}
-            )
-            return Response(401, "Unauthorized", cors_headers, body.encode())
-
-        request_body = get_request_body()
-        user = MOCK_USERS[CURRENT_USER_ID]
-
-        # Update preferences with provided values
-        if "preferences" not in user:
-            user["preferences"] = {}
-
-        for key in ["theme", "notifications_enabled", "default_agent_id", "language"]:
-            if key in request_body:
-                user["preferences"][key] = request_body[key]
-
-        body = json.dumps(
-            {"success": True, "preferences": user["preferences"]},
-            ensure_ascii=False,
-        )
-        log_event("send", "HTTP", "PUT /users/me/preferences")
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # POST /users - Create a new user
-    if parsed.path == "/users" and method == "POST":
-        request_body = get_request_body()
-
-        # Validate required fields
-        if not request_body.get("email") or not request_body.get("name"):
-            body = json.dumps(
-                {
-                    "success": False,
-                    "error": "bad_request",
-                    "message": "email and name are required",
-                }
-            )
-            return Response(400, "Bad Request", cors_headers, body.encode())
-
-        # Check email uniqueness
-        email = request_body["email"]
-        for existing_user in MOCK_USERS.values():
-            if existing_user["email"] == email:
-                body = json.dumps(
-                    {
-                        "success": False,
-                        "error": "conflict",
-                        "message": "Email already exists",
-                    }
-                )
-                return Response(409, "Conflict", cors_headers, body.encode())
-
-        # Create new user
-        new_user_id = str(uuid.uuid4())
-        now = datetime.now()
-        new_user = {
-            "id": new_user_id,
-            "email": email,
-            "name": request_body["name"],
-            "preferences": {
-                "theme": "system",
-                "notifications_enabled": True,
-                "default_agent_id": "general-agent",
-                "language": "nl-NL",
-            },
-            "createdAt": now.isoformat() + "Z",
-            "lastActivity": now.isoformat() + "Z",
-        }
-        MOCK_USERS[new_user_id] = new_user
-
-        body = json.dumps({"success": True, "user": new_user}, ensure_ascii=False)
-        log_event("send", "HTTP", f"POST /users -> created {new_user['email']}")
-        return Response(201, "Created", cors_headers, body.encode())
-
-    # GET /users - List all users (paginated)
-    if parsed.path == "/users" and method == "GET":
-        limit = int(query_params.get("limit", [50])[0])
-        offset = int(query_params.get("offset", [0])[0])
-
-        # Get all users sorted by createdAt descending
-        all_users = list(MOCK_USERS.values())
-        all_users.sort(key=lambda u: u["createdAt"], reverse=True)
-
-        # Apply pagination
-        paginated_users = all_users[offset : offset + limit]
-
-        body = json.dumps(
-            {
-                "success": True,
-                "users": paginated_users,
-                "totalCount": len(all_users),
-            },
-            ensure_ascii=False,
-        )
-        log_event(
-            "send",
-            "HTTP",
-            f"GET /users -> {len(paginated_users)} of {len(all_users)} users",
-        )
-        return Response(200, "OK", cors_headers, body.encode())
-
-    # Match /users/{user_id} - GET, PUT, DELETE
-    user_match = re.match(r"^/users/([^/]+)$", parsed.path)
-    if user_match:
-        user_id = user_match.group(1)
-
-        # GET /users/{user_id}
-        if method == "GET":
-            if user_id not in MOCK_USERS:
-                body = json.dumps(
-                    {
-                        "success": False,
-                        "error": "not_found",
-                        "message": "User not found",
-                    }
-                )
-                return Response(404, "Not Found", cors_headers, body.encode())
-
-            body = json.dumps(
-                {"success": True, "user": MOCK_USERS[user_id]},
-                ensure_ascii=False,
-            )
-            log_event("send", "HTTP", f"GET /users/{user_id}")
-            return Response(200, "OK", cors_headers, body.encode())
-
-        # PUT /users/{user_id}
-        if method == "PUT":
-            if user_id not in MOCK_USERS:
-                body = json.dumps(
-                    {
-                        "success": False,
-                        "error": "not_found",
-                        "message": "User not found",
-                    }
-                )
-                return Response(404, "Not Found", cors_headers, body.encode())
-
-            request_body = get_request_body()
-            user = MOCK_USERS[user_id]
-
-            # Update allowed fields
-            if "name" in request_body:
-                user["name"] = request_body["name"]
-            if "preferences" in request_body:
-                if "preferences" not in user:
-                    user["preferences"] = {}
-                for key in [
-                    "theme",
-                    "notifications_enabled",
-                    "default_agent_id",
-                    "language",
-                ]:
-                    if key in request_body["preferences"]:
-                        user["preferences"][key] = request_body["preferences"][key]
-
-            body = json.dumps({"success": True, "user": user}, ensure_ascii=False)
-            log_event("send", "HTTP", f"PUT /users/{user_id}")
-            return Response(200, "OK", cors_headers, body.encode())
-
-        # DELETE /users/{user_id}
-        if method == "DELETE":
-            if user_id not in MOCK_USERS:
-                body = json.dumps(
-                    {
-                        "success": False,
-                        "error": "not_found",
-                        "message": "User not found",
-                    }
-                )
-                return Response(404, "Not Found", cors_headers, body.encode())
-
-            # Find legacy userId for this user (if any) to cascade session deletes
-            legacy_user_id = None
-            for legacy_id, uuid_id in USER_ID_MAP.items():
-                if uuid_id == user_id:
-                    legacy_user_id = legacy_id
-                    break
-
-            # Delete associated sessions
-            deleted_sessions_count = 0
-            sessions_to_delete = []
-            for session_id, session in MOCK_SESSIONS.items():
-                if session["userId"] == legacy_user_id or session["userId"] == user_id:
-                    sessions_to_delete.append(session_id)
-
-            for session_id in sessions_to_delete:
-                del MOCK_SESSIONS[session_id]
-                deleted_sessions_count += 1
-
-            # Delete the user
-            del MOCK_USERS[user_id]
-
-            body = json.dumps(
-                {
-                    "success": True,
-                    "message": "User and associated sessions deleted",
-                    "deletedSessionsCount": deleted_sessions_count,
-                }
-            )
-            log_event(
-                "send",
-                "HTTP",
-                f"DELETE /users/{user_id} -> {deleted_sessions_count} sessions deleted",
-            )
-            return Response(200, "OK", cors_headers, body.encode())
-
-    # Default: Unknown endpoint
-    body = json.dumps({"error": "Not found", "path": parsed.path})
-    return Response(404, "Not Found", cors_headers, body.encode())
-
-
-async def main():
-    """Start the mock WebSocket server with REST API support."""
-    print()
-    print("╔════════════════════════════════════════════════════════════════╗")
-    print("║       AG-UI Protocol Mock Server v2.4.0 - Demo Mode            ║")
-    print("╠════════════════════════════════════════════════════════════════╣")
-    print("║  WebSocket: ws://localhost:8000/ws                             ║")
-    print("║  REST API:  http://localhost:8000                              ║")
-    print("║  Press Ctrl+C to stop                                          ║")
-    print("╚════════════════════════════════════════════════════════════════╝")
+def main():
+    """Start the mock server."""
     print()
     print("REST API Endpoints:")
     print()
@@ -1536,6 +1467,7 @@ async def main():
     print()
     print("  Users:")
     print("    GET  /users/me                         - Get current user")
+    print("    GET  /users/me/preferences             - Get preferences")
     print("    PUT  /users/me/preferences             - Update preferences")
     print("    POST /users                            - Create new user")
     print("    GET  /users                            - List all users")
@@ -1544,60 +1476,26 @@ async def main():
     print("    DELETE /users/{id}                     - Delete user")
     print()
     print("Mock Data (for testing):")
-    print("  Sessions:")
-    print("    • koen: 2 sessions (Bella Rosa, Hotel Sunset)")
-    print("    • fatima: 1 session (Bakkerij)")
-    print("    • jan: 1 session (Supermarkt)")
-    print("  Users:")
-    print("    • Koen van den Berg (koen.vandenberg@nvwa.nl)")
-    print("    • Fatima El-Amrani (fatima.el-amrani@nvwa.nl)")
-    print("    • Jan de Vries (jan.devries@nvwa.nl)")
+    print("  Sessions: koen (2), fatima (1), jan (1)")
+    print("  Users: Koen, Fatima, Jan")
     print()
     print("Test the REST API:")
     print("  curl http://localhost:8000/sessions?user_id=koen")
     print("  curl http://localhost:8000/users/me")
-    print("  curl http://localhost:8000/users")
-    print(
-        "  curl http://localhost:8000/sessions/session-koen-bella-rosa/history?include_tools=true"
-    )
     print()
-    print("─" * 64)
+    print("-" * 64)
     print()
-    print("Demo Scenario: Inspecteur Koen - Restaurant Bella Rosa")
+    print(f"Demo Scenario: Inspecteur Koen - Restaurant Bella Rosa")
     print()
     print("Agents:")
-    print(f"  • {Agents.GENERAL}")
-    print(f"  • {Agents.HISTORY}")
-    print(f"  • {Agents.REGULATION}")
-    print(f"  • {Agents.REPORTING}")
-    print()
-    print("Test inputs (copy-paste these):")
-    print()
-    print("  1. Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854")
-    print(f"     → Routes to: {Agents.HISTORY} (Bedrijfsinformatie Specialist)")
-    print()
-    print("  2. Ik zie een geopende ton met rauwe vis op kamertemperatuur naast")
-    print("     een afvoerputje vol schoonmaakmiddelresten, welke regels worden")
-    print("     hiermee overtreden?")
-    print(f"     → Routes to: {Agents.REGULATION} (Regelgeving Specialist)")
-    print()
-    print("  3. Genereer rapport")
-    print(
-        f"     → Routes to: {Agents.REPORTING} (Rapportage Specialist, with approval)"
-    )
+    print(f"  - {Agents.GENERAL}")
+    print(f"  - {Agents.HISTORY}")
+    print(f"  - {Agents.REGULATION}")
+    print(f"  - {Agents.REPORTING}")
     print()
 
-    async with websockets.serve(
-        handle_connection,
-        "localhost",
-        8000,
-        process_request=process_request,
-    ):
-        await asyncio.Future()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\nServer stopped")
+    main()

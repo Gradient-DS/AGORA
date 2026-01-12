@@ -7,6 +7,7 @@ export interface UserPreferences {
   notifications_enabled?: boolean;
   default_agent_id?: string;
   language?: string;
+  spoken_text_type?: 'dictate' | 'summarize';
 }
 
 export interface UserProfile {

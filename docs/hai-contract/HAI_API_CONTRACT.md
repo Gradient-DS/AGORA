@@ -1,14 +1,16 @@
 # AGORA HAI API Contract
 
-**Version:** 2.4.2
-**Last Updated:** December 2025
+**Version:** 2.5.0
+**Last Updated:** January 2026
 
 This document defines the complete API contract between the HAI (Human Agent Interface) frontend and the AGORA orchestrator backend. It covers both real-time WebSocket communication and REST endpoints.
 
 ## Table of Contents
 
 ### REST API
-1. [Session Management](#session-management-rest-api)
+1. [Health & Info](#health--info-rest-api)
+2. [Session Management](#session-management-rest-api)
+3. [User Management](#user-management-rest-api)
 
 ### WebSocket Protocol (AG-UI)
 2. [Overview](#overview)
@@ -26,7 +28,67 @@ This document defines the complete API contract between the HAI (Human Agent Int
 
 # REST API
 
-The REST API handles non-real-time operations such as session management, conversation history retrieval, and user preferences.
+The REST API handles non-real-time operations such as session management, conversation history retrieval, user management, and preferences.
+
+---
+
+## Health & Info (REST API)
+
+### Endpoints
+
+#### GET /health
+
+Health check endpoint for monitoring.
+
+**Response:**
+
+```json
+{
+  "status": "healthy",
+  "service": "agora-mock",
+  "protocol": "ag-ui"
+}
+```
+
+#### GET /
+
+Root endpoint with API information.
+
+**Response:**
+
+```json
+{
+  "service": "AGORA Mock Server",
+  "version": "2.4.0",
+  "protocol": "AG-UI Protocol v2.4.0",
+  "endpoints": {
+    "websocket": "/ws",
+    "sessions": "/sessions?user_id={user_id}",
+    "history": "/sessions/{id}/history?include_tools=true",
+    "users": "/users",
+    "currentUser": "/users/me",
+    "agents": "/agents"
+  }
+}
+```
+
+#### GET /agents
+
+List available agents in the system.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "agents": [
+    {"id": "general-agent", "name": "Algemene Assistent", "description": "Algemene vraag- en routeringagent"},
+    {"id": "history-agent", "name": "Bedrijfsinformatie Specialist", "description": "KVK-gegevens en inspectiehistorie"},
+    {"id": "regulation-agent", "name": "Regelgeving Specialist", "description": "Wet- en regelgevingsanalyse"},
+    {"id": "reporting-agent", "name": "Rapportage Specialist", "description": "Inspectierapport genereren"}
+  ]
+}
+```
 
 ---
 
@@ -178,6 +240,262 @@ Client                                    Server
 3. **Load History**: Fetch full history via `GET /sessions/{id}/history?include_tools=true`
 4. **Populate UI**: Load messages into chat and tool calls into debug panel
 5. **Connect WebSocket**: Establish connection for new messages using the same `threadId`
+
+---
+
+## User Management (REST API)
+
+The User Management endpoints handle user profiles, preferences, and CRUD operations.
+
+### Endpoints
+
+#### GET /users/me
+
+Get the current user's profile (based on authentication context).
+
+**Response:**
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "email": "koen.vandenberg@nvwa.nl",
+  "name": "Koen van den Berg",
+  "preferences": {
+    "theme": "light",
+    "notifications_enabled": true,
+    "default_agent_id": "general-agent",
+    "language": "nl-NL",
+    "spoken_text_type": "summarize"
+  },
+  "createdAt": "2024-06-15T09:00:00Z",
+  "lastActivity": "2026-01-12T10:30:00Z"
+}
+```
+
+#### GET /users/me/preferences
+
+Get the current user's preferences.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `user_id` | string (UUID) | Yes | Current user ID |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "preferences": {
+    "theme": "light",
+    "notifications_enabled": true,
+    "default_agent_id": "general-agent",
+    "language": "nl-NL",
+    "spoken_text_type": "summarize"
+  }
+}
+```
+
+#### PUT /users/me/preferences
+
+Update the current user's preferences.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `user_id` | string (UUID) | Yes | Current user ID |
+
+**Request Body:**
+
+```json
+{
+  "spoken_text_type": "dictate"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "preferences": {
+    "theme": "light",
+    "notifications_enabled": true,
+    "default_agent_id": "general-agent",
+    "language": "nl-NL",
+    "spoken_text_type": "dictate"
+  }
+}
+```
+
+**Preference Fields:**
+
+| Field | Type | Values | Description |
+|-------|------|--------|-------------|
+| `theme` | string | `light`, `dark`, `system` | UI theme preference |
+| `notifications_enabled` | boolean | `true`, `false` | Enable in-app notifications |
+| `default_agent_id` | string | agent ID | Default agent for new conversations |
+| `language` | string | locale code | UI language (e.g., `nl-NL`) |
+| `spoken_text_type` | string | `dictate`, `summarize` | Type of spoken text for TTS |
+
+#### POST /users
+
+Create a new user.
+
+**Request Body:**
+
+```json
+{
+  "email": "new.user@nvwa.nl",
+  "name": "New User"
+}
+```
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "user": {
+    "id": "generated-uuid",
+    "email": "new.user@nvwa.nl",
+    "name": "New User",
+    "preferences": {
+      "theme": "system",
+      "notifications_enabled": true,
+      "default_agent_id": "general-agent",
+      "language": "nl-NL",
+      "spoken_text_type": "summarize"
+    },
+    "createdAt": "2026-01-12T10:30:00Z",
+    "lastActivity": "2026-01-12T10:30:00Z"
+  }
+}
+```
+
+**Error (409 - Conflict):**
+
+```json
+{
+  "detail": "Email already exists"
+}
+```
+
+#### GET /users
+
+List all users (paginated).
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | integer | No | 50 | Max users to return (1-100) |
+| `offset` | integer | No | 0 | Pagination offset |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "users": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "email": "koen.vandenberg@nvwa.nl",
+      "name": "Koen van den Berg",
+      "preferences": {
+        "theme": "light",
+        "notifications_enabled": true,
+        "default_agent_id": "general-agent",
+        "language": "nl-NL",
+        "spoken_text_type": "summarize"
+      },
+      "createdAt": "2024-06-15T09:00:00Z",
+      "lastActivity": "2026-01-12T10:30:00Z"
+    }
+  ],
+  "totalCount": 3
+}
+```
+
+#### GET /users/{user_id}
+
+Get a user by ID.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "email": "koen.vandenberg@nvwa.nl",
+    "name": "Koen van den Berg",
+    "preferences": {
+      "theme": "light",
+      "notifications_enabled": true,
+      "default_agent_id": "general-agent",
+      "language": "nl-NL",
+      "spoken_text_type": "summarize"
+    },
+    "createdAt": "2024-06-15T09:00:00Z",
+    "lastActivity": "2026-01-12T10:30:00Z"
+  }
+}
+```
+
+#### PUT /users/{user_id}
+
+Update a user's profile.
+
+**Request Body:**
+
+```json
+{
+  "name": "Updated Name",
+  "preferences": {
+    "theme": "dark",
+    "language": "nl-NL"
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "email": "koen.vandenberg@nvwa.nl",
+    "name": "Updated Name",
+    "preferences": {
+      "theme": "dark",
+      "notifications_enabled": true,
+      "default_agent_id": "general-agent",
+      "language": "nl-NL",
+      "spoken_text_type": "summarize"
+    },
+    "createdAt": "2024-06-15T09:00:00Z",
+    "lastActivity": "2026-01-12T10:30:00Z"
+  }
+}
+```
+
+#### DELETE /users/{user_id}
+
+Delete a user and all associated sessions.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "User and associated sessions deleted",
+  "deletedSessionsCount": 2
+}
+```
 
 ---
 
@@ -1030,6 +1348,13 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ---
 
 ## Changelog
+
+### v2.5.0 (January 2026)
+- **Added** Health & Info REST API section (`/health`, `/`, `/agents` endpoints)
+- **Added** User Management REST API section (full CRUD operations)
+- **Added** `GET /users/me/preferences` endpoint documentation
+- **Updated** `UserPreferences` to include `spoken_response_mode` field
+- **Updated** Table of Contents to reflect new sections
 
 ### v2.4.2 (December 2025)
 - Added `userId` as required field to `RunAgentInput` (AGORA extension to AG-UI)

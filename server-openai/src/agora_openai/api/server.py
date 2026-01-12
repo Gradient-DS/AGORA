@@ -298,27 +298,71 @@ async def get_current_user(
     return user
 
 
+class UpdatePreferencesRequest(BaseModel):
+    """Request body for updating user preferences."""
+
+    theme: str | None = None
+    notifications_enabled: bool | None = None
+    default_agent_id: str | None = None
+    language: str | None = None
+    spoken_text_type: str | None = None
+
+
+@app.get("/users/me/preferences")
+async def get_current_user_preferences(
+    user_id: str = Query(..., description="Current user ID"),
+):
+    """Get current user's preferences."""
+    user_manager: UserManager = app.state.user_manager
+    user = await user_manager.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    default_preferences = {
+        "theme": "system",
+        "notifications_enabled": True,
+        "default_agent_id": "general-agent",
+        "language": "nl-NL",
+        "spoken_text_type": "summarize",
+    }
+    preferences = user.get("preferences", default_preferences)
+    return {"success": True, "preferences": preferences}
+
+
 @app.put("/users/me/preferences")
 async def update_current_user_preferences(
+    request: UpdatePreferencesRequest,
     user_id: str = Query(..., description="Current user ID"),
-    theme: str | None = Query(None, description="Theme preference (light, dark, system)"),
-    notifications_enabled: bool | None = Query(None, description="Enable notifications"),
-    default_agent_id: str | None = Query(None, description="Default agent ID"),
-    language: str | None = Query(None, description="Language preference"),
 ):
     """Update current user's preferences."""
     user_manager: UserManager = app.state.user_manager
 
-    # Build preferences dict from provided values
+    # Validate theme
+    if request.theme is not None:
+        if request.theme not in ("light", "dark", "system"):
+            raise HTTPException(
+                status_code=400,
+                detail="theme must be 'light', 'dark', or 'system'"
+            )
+
+    # Validate spoken_text_type
+    if request.spoken_text_type is not None:
+        if request.spoken_text_type not in ("dictate", "summarize"):
+            raise HTTPException(
+                status_code=400,
+                detail="spoken_text_type must be 'dictate' or 'summarize'"
+            )
+
     preferences = {}
-    if theme is not None:
-        preferences["theme"] = theme
-    if notifications_enabled is not None:
-        preferences["notifications_enabled"] = notifications_enabled
-    if default_agent_id is not None:
-        preferences["default_agent_id"] = default_agent_id
-    if language is not None:
-        preferences["language"] = language
+    if request.theme is not None:
+        preferences["theme"] = request.theme
+    if request.notifications_enabled is not None:
+        preferences["notifications_enabled"] = request.notifications_enabled
+    if request.default_agent_id is not None:
+        preferences["default_agent_id"] = request.default_agent_id
+    if request.language is not None:
+        preferences["language"] = request.language
+    if request.spoken_text_type is not None:
+        preferences["spoken_text_type"] = request.spoken_text_type
 
     if not preferences:
         raise HTTPException(status_code=400, detail="No preferences provided")
