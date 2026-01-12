@@ -1,9 +1,11 @@
 """Protocol definitions for AGORA OpenAI backend components."""
 
 from __future__ import annotations
-from typing import Protocol, Any
+
+from typing import Any, Protocol
 
 from ag_ui.core import Message as AGUIMessage
+
 from agora_openai.common.ag_ui_types import RunAgentInput
 
 

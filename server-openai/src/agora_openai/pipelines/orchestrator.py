@@ -2,29 +2,30 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
 import uuid
-import asyncio
 from typing import Any
 
-from ag_ui.core import Message as AGUIMessage, AssistantMessage
+from ag_ui.core import AssistantMessage
+from ag_ui.core import Message as AGUIMessage
 
+from agora_openai.adapters.audit_logger import AuditLogger
+from agora_openai.adapters.session_metadata import SessionMetadataManager
+from agora_openai.adapters.user_manager import UserManager
+from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
 from agora_openai.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
 )
 from agora_openai.common.schemas import ToolCall
-from agora_openai.core.approval_logic import requires_human_approval
-from agora_openai.core.agent_runner import AgentRunner
-from agora_openai.core.agent_definitions import get_spoken_prompt
-from agora_openai.adapters.audit_logger import AuditLogger
-from agora_openai.adapters.session_metadata import SessionMetadataManager
-from agora_openai.adapters.user_manager import UserManager
-from agora_openai.pipelines.moderator import ModerationPipeline
-from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
 from agora_openai.config import get_settings
+from agora_openai.core.agent_definitions import get_spoken_prompt
+from agora_openai.core.agent_runner import AgentRunner
+from agora_openai.core.approval_logic import requires_human_approval
+from agora_openai.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
 

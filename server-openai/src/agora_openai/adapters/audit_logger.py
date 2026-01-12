@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import Any
+
 import logging
 from datetime import datetime
+from typing import Any
 
 log = logging.getLogger(__name__)
 

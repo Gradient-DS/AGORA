@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import json
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
-from typing import Callable, Awaitable, Any
+from typing import Any
+
 from agents import FunctionTool
-from agents.tool import ToolContext
 from agents.mcp import MCPServer, MCPServerStreamableHttp
+from agents.tool import ToolContext
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +33,6 @@ def create_mcp_function_tool(
             parsed_args = {}
 
         log.info(f"🔧 FunctionTool invoking MCP: {tool_name} on {mcp_server.name}")
-        log.debug(f"   Args: {parsed_args}")
 
         try:
             result = await mcp_server.call_tool(tool_name, parsed_args)
@@ -128,7 +130,6 @@ class MCPToolRegistry:
     async def connect_all(self) -> None:
         """Connect all MCP servers and fetch their tool lists."""
         if self._connected:
-            log.debug("MCP servers already connected")
             return
 
         log.info(f"Connecting {len(self.mcp_servers)} MCP servers...")
@@ -189,8 +190,6 @@ class MCPToolRegistry:
             if hasattr(mcp_server, "_tools_list") and mcp_server._tools_list:
                 for tool in mcp_server._tools_list:
                     tools_by_server[server_name].append(tool)
-                    tool_name = getattr(tool, "name", "unknown")
-                    log.debug(f"Extracted tool '{tool_name}' from server '{server_name}'")
             else:
                 log.warning(f"No tools found for MCP server: {server_name}")
 
@@ -238,7 +237,6 @@ class MCPToolRegistry:
                         input_schema=input_schema,
                     )
                     function_tools_by_server[server_name].append(function_tool)
-                    log.debug(f"Created FunctionTool wrapper for '{tool_name}'")
             else:
                 log.warning(f"No tools to wrap for MCP server: {server_name}")
 

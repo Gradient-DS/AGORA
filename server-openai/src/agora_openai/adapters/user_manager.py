@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import aiosqlite
@@ -100,7 +100,7 @@ class UserManager:
             raise RuntimeError("UserManager not initialized")
 
         user_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         try:
             await self._connection.execute(
@@ -222,7 +222,7 @@ class UserManager:
             return await self.get_user(user_id)
 
         # Always update last_activity
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         updates.append("last_activity = ?")
         params.append(now)
 

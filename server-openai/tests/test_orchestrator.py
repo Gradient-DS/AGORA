@@ -8,6 +8,7 @@ async def test_process_message_success(orchestrator: Orchestrator):
     """Test successful message processing."""
     agent_input = RunAgentInput(
         thread_id="test-session",
+        user_id="test-user",
         messages=[{"role": "user", "content": "What are FDA food safety regulations?"}],
     )
 
@@ -22,6 +23,7 @@ async def test_process_message_validation_failure(orchestrator: Orchestrator):
     """Test message validation failure."""
     agent_input = RunAgentInput(
         thread_id="test-session",
+        user_id="test-user",
         messages=[
             {
                 "role": "user",
@@ -40,6 +42,7 @@ async def test_process_message_empty_input(orchestrator: Orchestrator):
     """Test empty input handling."""
     agent_input = RunAgentInput(
         thread_id="test-session",
+        user_id="test-user",
         messages=[{"role": "user", "content": "   "}],
     )
 

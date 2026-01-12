@@ -1,15 +1,19 @@
 from __future__ import annotations
+
 import json
-from dataclasses import dataclass, field
-from typing import Any, Callable, Awaitable
 import logging
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from typing import Any
+
 from agents import Agent, Runner, SQLiteSession
 from agents.items import ToolCallItem, ToolCallOutputItem
 from agents.stream_events import RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
-from agora_openai.core.agent_definitions import AgentConfig
+
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.config import get_settings
+from agora_openai.core.agent_definitions import AgentConfig
 
 log = logging.getLogger(__name__)
 
@@ -146,58 +150,6 @@ class AgentRunner:
             log.info(f"♻️ REUSING existing session: {session_id}")
         return self.sessions[session_id]
 
-    async def _debug_log_session_state(self, session: SQLiteSession, session_id: str) -> None:
-        """Debug helper: Log current session state before running agent."""
-        try:
-            items = await session.get_items()
-            log.info(f"📋 SESSION DEBUG [{session_id}]: {len(items)} items in history")
-
-            # Summarize the history
-            user_msgs = 0
-            assistant_msgs = 0
-            tool_calls = 0
-            tool_outputs = 0
-
-            for item in items:
-                item_type = item.get("type")
-                role = item.get("role")
-                if role == "user":
-                    user_msgs += 1
-                elif role == "assistant":
-                    assistant_msgs += 1
-                elif item_type == "function_call":
-                    tool_calls += 1
-                    tool_name = item.get("name", "unknown")
-                    log.debug(f"  📦 Tool call: {tool_name}")
-                elif item_type == "function_call_output":
-                    tool_outputs += 1
-
-            log.info(
-                f"📊 SESSION SUMMARY [{session_id}]: "
-                f"user={user_msgs}, assistant={assistant_msgs}, "
-                f"tool_calls={tool_calls}, tool_outputs={tool_outputs}"
-            )
-
-            # Log the last few items to see recent context
-            if items:
-                log.info(f"📜 LAST 3 ITEMS [{session_id}]:")
-                for item in items[-3:]:
-                    item_type = item.get("type", item.get("role", "unknown"))
-                    content_preview = ""
-                    if item.get("content"):
-                        content_raw = item.get("content")
-                        if isinstance(content_raw, str):
-                            content_preview = content_raw[:100]
-                        elif isinstance(content_raw, list) and content_raw:
-                            first = content_raw[0]
-                            if isinstance(first, dict):
-                                content_preview = first.get("text", "")[:100]
-                    elif item.get("name"):
-                        content_preview = f"tool: {item.get('name')}"
-                    log.info(f"    [{item_type}] {content_preview}...")
-        except Exception as e:
-            log.warning(f"Failed to debug log session state: {e}")
-
     async def run_agent(
         self,
         message: str,
@@ -223,19 +175,6 @@ class AgentRunner:
         """
         session = self.get_or_create_session(session_id)
         entry_agent = self.agent_registry.get_entry_agent()
-
-        # Debug: Log session state BEFORE running
-        log.info(f"🚀 STARTING AGENT RUN for session: {session_id}")
-        log.info(f"📥 User message: {message[:100]}...")
-        log.info(f"🎯 Entry agent: {entry_agent.name} (always starts from general-agent)")
-        await self._debug_log_session_state(session, session_id)
-
-        # Log available MCP servers for entry agent
-        if hasattr(entry_agent, "mcp_servers") and entry_agent.mcp_servers:
-            mcp_names = [s.name for s in entry_agent.mcp_servers]
-            log.info(f"🔧 Entry agent MCP servers: {mcp_names}")
-        else:
-            log.info("🔧 Entry agent has NO MCP servers (expected for general-agent)")
 
         if stream_callback:
             return await self._run_streamed_session(
@@ -287,19 +226,6 @@ class AgentRunner:
 
         final_output = "".join(state.full_response)
 
-        # End-of-run summary
-        log.info("=" * 60)
-        log.info(f"🏁 AGENT RUN COMPLETED")
-        log.info(f"   Final agent: {state.current_agent_id}")
-        log.info(f"   Output length: {len(final_output)} characters")
-        log.info(f"   Total tool calls: {len(state.tool_calls_info)}")
-        if state.tool_calls_info:
-            log.info(f"   Tools called: {list(state.tool_calls_info.values())}")
-        log.info("=" * 60)
-
-        # Debug: Log session state AFTER running
-        await self._debug_log_session_state(session, f"{session.session_id}-AFTER")
-
         return final_output, state.current_agent_id
 
     async def _process_stream_event(
@@ -310,17 +236,14 @@ class AgentRunner:
         tool_callback: Callable | None,
     ) -> None:
         """Process individual stream events."""
-        event_type = event.type
-        log.debug(f"Stream event: {event_type}")
-
-        if event_type == "raw_response_event":
+        if event.type == "raw_response_event":
             if isinstance(event.data, ResponseTextDeltaEvent):
                 delta = event.data.delta
                 if delta:
                     state.full_response.append(delta)
                     await stream_callback(delta, state.current_agent_id)
 
-        elif event_type == "run_item_stream_event" and isinstance(
+        elif event.type == "run_item_stream_event" and isinstance(
             event, RunItemStreamEvent
         ):
             await self._process_run_item_event(event, state, tool_callback)
@@ -384,7 +307,7 @@ class AgentRunner:
                 parameters = (
                     json.loads(tool_args_str) if isinstance(tool_args_str, str) else {}
                 )
-            except:
+            except json.JSONDecodeError:
                 parameters = {}
 
             # Categorize tool type for debugging
@@ -526,7 +449,7 @@ class AgentRunner:
         self, state: StreamState, tool_callback: Callable
     ) -> None:
         """Mark transfer tool call as completed."""
-        log.info(f"Marking transfer tool call as completed")
+        log.info("Marking transfer tool call as completed")
 
         transfer_tool_ids = [
             tool_id

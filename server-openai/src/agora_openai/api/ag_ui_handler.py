@@ -112,7 +112,6 @@ class AGUIProtocolHandler:
         (e.g., parallel written and spoken streams).
         """
         if not self.is_connected:
-            log.debug("Cannot send event, WebSocket is not connected")
             return
 
         async with self._send_lock:
@@ -121,7 +120,6 @@ class AGUIProtocolHandler:
 
             try:
                 event_json = event.model_dump_json(by_alias=True, exclude_none=True)
-                log.debug("Sending event: %s", event.type)
                 await self.websocket.send_text(event_json)
             except RuntimeError as e:
                 if "websocket.send" in str(e) or "websocket.close" in str(e):

@@ -1,27 +1,30 @@
 from __future__ import annotations
+
+import asyncio
 import logging
 import os
-import uvicorn
-import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
-from pydantic import BaseModel, Field
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from agora_openai.config import get_settings, parse_mcp_servers
-from agora_openai.logging_config import configure_logging
-from agora_openai.core.agent_definitions import AGENT_CONFIGS, list_all_agents
-from agora_openai.core.agent_runner import AgentRegistry, AgentRunner
-from agora_openai.adapters.mcp_tools import MCPToolRegistry
+from pydantic import BaseModel, Field
+
 from agora_openai.adapters.audit_logger import AuditLogger
+from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.adapters.session_metadata import SessionMetadataManager
 from agora_openai.adapters.user_manager import UserManager
-from agora_openai.pipelines.moderator import ModerationPipeline
-from agora_openai.pipelines.orchestrator import Orchestrator
 from agora_openai.api.ag_ui_handler import AGUIProtocolHandler
 from agora_openai.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
 )
+from agora_openai.config import get_settings, parse_mcp_servers
+from agora_openai.core.agent_definitions import AGENT_CONFIGS, list_all_agents
+from agora_openai.core.agent_runner import AgentRegistry, AgentRunner
+from agora_openai.logging_config import configure_logging
+from agora_openai.pipelines.moderator import ModerationPipeline
+from agora_openai.pipelines.orchestrator import Orchestrator
 
 log = logging.getLogger(__name__)
 

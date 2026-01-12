@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import aiosqlite
@@ -235,7 +235,7 @@ class SessionMetadataManager:
         if not self._connection:
             raise RuntimeError("SessionMetadataManager not initialized")
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Check if session already exists
         cursor = await self._connection.execute(
@@ -283,7 +283,7 @@ class SessionMetadataManager:
         if not self._connection:
             raise RuntimeError("SessionMetadataManager not initialized")
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         await self._connection.execute(
             """
             UPDATE session_metadata

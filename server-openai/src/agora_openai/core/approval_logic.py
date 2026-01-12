@@ -1,6 +1,6 @@
 from typing import Any
-from agora_openai.common.schemas import ToolCall
 
+from agora_openai.common.schemas import ToolCall
 
 HIGH_RISK_TOOL_PATTERNS = [
     "delete",
