@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, useAdminStore } from '@/stores';
 import { useHistoryStore } from '@/stores/useHistoryStore';
-import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings } from 'lucide-react';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings, Mic, FileText } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
@@ -25,6 +25,7 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const users = useUserStore((state) => state.users);
   const usersLoading = useUserStore((state) => state.isLoading);
   const setUser = useUserStore((state) => state.setUser);
+  const preferences = useUserStore((state) => state.preferences);
   const toggleSidebar = useHistoryStore((state) => state.toggleSidebar);
   const fetchSessions = useHistoryStore((state) => state.fetchSessions);
   const openAdminPanel = useAdminStore((state) => state.openAdminPanel);
@@ -107,6 +108,21 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                   <Badge variant="secondary" className="text-xs">
                     <User className="h-3 w-3 mr-1" />
                     {currentUser.name}
+                  </Badge>
+                )}
+                {preferences?.spoken_text_type && (
+                  <Badge variant="outline" className="text-xs">
+                    {preferences.spoken_text_type === 'dictate' ? (
+                      <>
+                        <Mic className="h-3 w-3 mr-1" />
+                        Dicteer
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-3 w-3 mr-1" />
+                        Samenvatten
+                      </>
+                    )}
                   </Badge>
                 )}
               </div>

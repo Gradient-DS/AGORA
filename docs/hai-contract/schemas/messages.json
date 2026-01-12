@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "agora-ag-ui-events",
-  "title": "AGORA AG-UI Protocol Events v2.3.0",
+  "title": "AGORA AG-UI Protocol Events v2.5.0",
   "description": "JSON Schema definitions for AG-UI Protocol events and REST API types used by AGORA. Uses official ag-ui-protocol types with AGORA extensions for session management and conversation history.",
   "definitions": {
     "SessionMetadata": {
@@ -148,10 +148,15 @@
     },
     "RunAgentInput": {
       "type": "object",
-      "required": ["threadId", "messages"],
+      "required": ["threadId", "messages", "userId"],
       "properties": {
         "threadId": { "type": "string", "description": "Thread/session identifier" },
         "runId": { "type": "string", "description": "Optional unique run identifier (auto-generated if not provided)" },
+        "userId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User ID that owns this session (AGORA extension to AG-UI protocol)"
+        },
         "messages": {
           "type": "array",
           "items": { "$ref": "#/definitions/Message" }
@@ -245,6 +250,10 @@
         "type": { "const": "TOOL_CALL_START" },
         "toolCallId": { "type": "string" },
         "toolCallName": { "type": "string" },
+        "toolDescription": {
+          "type": ["string", "null"],
+          "description": "Human-readable spoken description of the tool action for TTS"
+        },
         "parentMessageId": { "type": ["string", "null"] },
         "timestamp": { "type": "integer" }
       }

@@ -36,6 +36,8 @@ channels:
         $ref: '#/components/messages/RunStartedEvent'
       RunFinishedEvent:
         $ref: '#/components/messages/RunFinishedEvent'
+      RunErrorEvent:
+        $ref: '#/components/messages/RunErrorEvent'
       StepStartedEvent:
         $ref: '#/components/messages/StepStartedEvent'
       StepFinishedEvent:
@@ -52,6 +54,10 @@ channels:
         $ref: '#/components/messages/ToolCallArgsEvent'
       ToolCallEndEvent:
         $ref: '#/components/messages/ToolCallEndEvent'
+      ToolCallResultEvent:
+        $ref: '#/components/messages/ToolCallResultEvent'
+      StateSnapshotEvent:
+        $ref: '#/components/messages/StateSnapshotEvent'
       CustomEvent:
         $ref: '#/components/messages/CustomEvent'
 
@@ -73,6 +79,7 @@ operations:
     messages:
       - $ref: '#/channels/~1ws/messages/RunStartedEvent'
       - $ref: '#/channels/~1ws/messages/RunFinishedEvent'
+      - $ref: '#/channels/~1ws/messages/RunErrorEvent'
       - $ref: '#/channels/~1ws/messages/StepStartedEvent'
       - $ref: '#/channels/~1ws/messages/StepFinishedEvent'
       - $ref: '#/channels/~1ws/messages/TextMessageStartEvent'
@@ -81,6 +88,8 @@ operations:
       - $ref: '#/channels/~1ws/messages/ToolCallStartEvent'
       - $ref: '#/channels/~1ws/messages/ToolCallArgsEvent'
       - $ref: '#/channels/~1ws/messages/ToolCallEndEvent'
+      - $ref: '#/channels/~1ws/messages/ToolCallResultEvent'
+      - $ref: '#/channels/~1ws/messages/StateSnapshotEvent'
       - $ref: '#/channels/~1ws/messages/CustomEvent'
 
 components:
@@ -132,6 +141,22 @@ components:
             threadId: "123e4567-e89b-12d3-a456-426614174000"
             runId: "run-abc123"
             timestamp: "2025-01-15T10:30:05Z"
+
+    RunErrorEvent:
+      name: RunErrorEvent
+      title: Run Error
+      summary: Emitted when an agent run encounters an error
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RunErrorEvent'
+      examples:
+        - name: RunError
+          summary: Error during agent processing
+          payload:
+            type: "RUN_ERROR"
+            message: "Failed to process request: Connection timeout"
+            code: "PROCESSING_ERROR"
+            timestamp: "2025-01-15T10:30:03Z"
 
     StepStartedEvent:
       name: StepStartedEvent
@@ -242,23 +267,72 @@ components:
     ToolCallEndEvent:
       name: ToolCallEndEvent
       title: Tool Call End
-      summary: Emitted when a tool call completes
+      summary: Emitted when tool call argument streaming completes (does NOT contain result)
       contentType: application/json
       payload:
         $ref: '#/components/schemas/ToolCallEndEvent'
       examples:
-        - name: ToolSuccess
+        - name: ToolCallEnd
           payload:
             type: "TOOL_CALL_END"
             toolCallId: "call-abc123"
-            result: "Found 5 relevant regulations"
             timestamp: "2025-01-15T10:30:03Z"
-        - name: ToolError
+
+    ToolCallResultEvent:
+      name: ToolCallResultEvent
+      title: Tool Call Result
+      summary: Emitted with the tool execution result
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ToolCallResultEvent'
+      examples:
+        - name: ToolResult
           payload:
-            type: "TOOL_CALL_END"
+            type: "TOOL_CALL_RESULT"
+            messageId: "tool-result-abc123"
             toolCallId: "call-abc123"
-            error: "Database connection timeout"
+            content: '{"regulations": [{"name": "Hygiënecode Horeca"}]}'
+            role: "tool"
             timestamp: "2025-01-15T10:30:03Z"
+
+    StateSnapshotEvent:
+      name: StateSnapshotEvent
+      title: State Snapshot
+      summary: Emitted for full state synchronization (at run start, on agent change, at run end)
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/StateSnapshotEvent'
+      examples:
+        - name: InitialState
+          summary: Initial state at run start
+          payload:
+            type: "STATE_SNAPSHOT"
+            snapshot:
+              threadId: "123e4567-e89b-12d3-a456-426614174000"
+              runId: "run-abc123"
+              currentAgent: "general-agent"
+              status: "processing"
+            timestamp: "2025-01-15T10:30:00Z"
+        - name: AgentSwitch
+          summary: State after agent handoff
+          payload:
+            type: "STATE_SNAPSHOT"
+            snapshot:
+              threadId: "123e4567-e89b-12d3-a456-426614174000"
+              runId: "run-abc123"
+              currentAgent: "regulation-agent"
+              status: "processing"
+            timestamp: "2025-01-15T10:30:02Z"
+        - name: FinalState
+          summary: Final state at run completion
+          payload:
+            type: "STATE_SNAPSHOT"
+            snapshot:
+              threadId: "123e4567-e89b-12d3-a456-426614174000"
+              runId: "run-abc123"
+              currentAgent: "regulation-agent"
+              status: "completed"
+            timestamp: "2025-01-15T10:30:05Z"
 
     CustomEvent:
       name: CustomEvent
@@ -401,6 +475,25 @@ components:
           type: string
           format: date-time
 
+    RunErrorEvent:
+      type: object
+      description: Emitted when an error occurs during agent processing
+      required: [type, message]
+      properties:
+        type:
+          type: string
+          const: "RUN_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Error code for programmatic handling
+          example: "PROCESSING_ERROR"
+        timestamp:
+          type: string
+          format: date-time
+
     StepStartedEvent:
       type: object
       required: [type, stepName]
@@ -483,15 +576,21 @@ components:
           const: "TOOL_CALL_START"
         toolCallId:
           type: string
+          description: Unique identifier for this tool call
         toolCallName:
           type: string
+          description: Technical name of the tool being called
         toolDescription:
           type: string
           nullable: true
-          description: Human-readable spoken description of the tool action
+          description: |
+            Human-readable spoken description of the tool action.
+            Used for TTS to announce what the agent is doing.
+            Example: "Ik ga de regelgeving doorzoeken"
         parentMessageId:
           type: string
           nullable: true
+          description: ID of the parent message that triggered this tool call
         timestamp:
           type: string
           format: date-time
@@ -520,12 +619,55 @@ components:
           const: "TOOL_CALL_END"
         toolCallId:
           type: string
-        result:
+        timestamp:
           type: string
-          nullable: true
-        error:
+          format: date-time
+
+    ToolCallResultEvent:
+      type: object
+      required: [type, messageId, toolCallId, content]
+      properties:
+        type:
           type: string
-          nullable: true
+          const: "TOOL_CALL_RESULT"
+        messageId:
+          type: string
+          description: Unique identifier for the tool result message
+        toolCallId:
+          type: string
+          description: Identifier of the tool call this result belongs to
+        content:
+          type: string
+          description: Tool execution result (typically JSON-encoded)
+        role:
+          type: string
+          const: "tool"
+        timestamp:
+          type: string
+          format: date-time
+
+    StateSnapshotEvent:
+      type: object
+      required: [type, snapshot]
+      properties:
+        type:
+          type: string
+          const: "STATE_SNAPSHOT"
+        snapshot:
+          type: object
+          description: Full state object for synchronization
+          properties:
+            threadId:
+              type: string
+            runId:
+              type: string
+            currentAgent:
+              type: string
+              description: ID of the currently active agent
+            status:
+              type: string
+              enum: [processing, completed]
+              description: Current run status
         timestamp:
           type: string
           format: date-time

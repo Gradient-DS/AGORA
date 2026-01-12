@@ -13,21 +13,25 @@ AGORA uses the open-source **AG-UI Protocol** for real-time, event-driven commun
 - **Event-driven streaming** with typed events
 - **WebSocket transport** for real-time bidirectional communication
 - **Lifecycle events** (`RUN_STARTED`, `RUN_FINISHED`, `STEP_STARTED`, `STEP_FINISHED`)
+- **State synchronization** via `STATE_SNAPSHOT` events for agent tracking
 - **Text streaming** with `TEXT_MESSAGE_START/CONTENT/END` pattern
-- **Tool call events** with `TOOL_CALL_START/ARGS/END`
+- **Tool call events** with `TOOL_CALL_START/ARGS/END/RESULT` pattern
+- **Spoken text events** for TTS support (`agora:spoken_text_*`)
 - **Custom events** for AGORA-specific extensions (HITL approval)
+- **REST API** for session management, user management, and history retrieval
 - **Type-safe** with full TypeScript/Python support
 
 ## Directory Contents
 
 | File | Description |
 |------|-------------|
-| `AG_UI_PROTOCOL.md` | Complete protocol specification |
+| `HAI_API_CONTRACT.md` | Complete protocol specification (REST + WebSocket) |
 | `asyncapi.yaml` | AsyncAPI 3.0 specification for WebSocket events |
-| `openapi.yaml` | OpenAPI 3.0 specification for REST endpoints |
+| `openapi.yaml` | OpenAPI 3.0 specification for REST endpoints (sessions, users, agents) |
 | `schemas/messages.json` | JSON Schema definitions for events |
 | `examples/` | Example event sequences |
 | `mock_server.py` | Python mock server for testing |
+| `mock_documents/` | Mock PDF/JSON documents for report download testing |
 
 ## Quick Start
 
@@ -54,6 +58,7 @@ client.sendRunInput('thread-123', 'Hello!');
 Client → Server: RunAgentInput { threadId, runId, userId, messages }
 
 Server → Client: RUN_STARTED { threadId, runId }
+Server → Client: STATE_SNAPSHOT { snapshot: { currentAgent: "general-agent", status: "processing" } }
 Server → Client: STEP_STARTED { stepName: "routing" }
 Server → Client: STEP_FINISHED { stepName: "routing" }
 Server → Client: STEP_STARTED { stepName: "thinking" }
@@ -62,6 +67,7 @@ Server → Client: TEXT_MESSAGE_CONTENT { messageId, delta: "Based on..." }
 Server → Client: TEXT_MESSAGE_CONTENT { messageId, delta: "the regulations..." }
 Server → Client: TEXT_MESSAGE_END { messageId }
 Server → Client: STEP_FINISHED { stepName: "thinking" }
+Server → Client: STATE_SNAPSHOT { snapshot: { currentAgent: "general-agent", status: "completed" } }
 Server → Client: RUN_FINISHED { threadId, runId }
 ```
 

@@ -17,6 +17,82 @@ servers:
 
 paths:
   # ---------------------------------------------------------------------------
+  # HEALTH & INFO
+  # ---------------------------------------------------------------------------
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns server health status.
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  service:
+                    type: string
+                    example: "agora-mock"
+                  protocol:
+                    type: string
+                    example: "ag-ui"
+
+  /:
+    get:
+      summary: Root endpoint with API information
+      description: Returns API version and key endpoint paths.
+      operationId: root
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: "AGORA Orchestration"
+                  version:
+                    type: string
+                    example: "2.0.0"
+                  protocol:
+                    type: string
+                    example: "AG-UI Protocol v2.1.1"
+                  docs:
+                    type: string
+                    description: Path to OpenAPI documentation
+                    example: "/docs"
+                  websocket:
+                    type: string
+                    description: WebSocket endpoint path
+                    example: "/ws"
+
+  /agents:
+    get:
+      summary: List available agents
+      description: Returns the list of available agents in the system.
+      operationId: listAgents
+      tags:
+        - Agents
+      responses:
+        '200':
+          description: Agent list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+
+  # ---------------------------------------------------------------------------
   # SESSION MANAGEMENT
   # ---------------------------------------------------------------------------
   /sessions:
@@ -191,10 +267,19 @@ paths:
   /users/me:
     get:
       summary: Get current user profile
-      description: Retrieves profile information for the currently authenticated user.
+      description: Retrieves profile information for the specified user.
       operationId: getCurrentUser
       tags:
         - Users
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          required: true
+          description: Current user ID
       responses:
         '200':
           description: User profile retrieved successfully
@@ -202,26 +287,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfile'
-        '401':
-          description: Unauthorized
+        '404':
+          description: User not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /users/me/preferences:
+    get:
+      summary: Get user preferences
+      description: Retrieves the current user's preferences.
+      operationId: getUserPreferences
+      tags:
+        - Users
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          required: true
+          description: Current user ID
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  preferences:
+                    $ref: '#/components/schemas/UserPreferences'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Update user preferences
-      description: Updates settings like theme, notifications, or default agent.
+      description: Updates settings like spoken response mode.
       operationId: updateUserPreferences
       tags:
         - Users
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+          required: true
+          description: Current user ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserPreferences'
+              $ref: '#/components/schemas/UpdatePreferencesRequest'
       responses:
         '200':
           description: Preferences updated successfully
@@ -235,6 +363,18 @@ paths:
                     example: true
                   preferences:
                     $ref: '#/components/schemas/UserPreferences'
+        '400':
+          description: Invalid input (e.g., invalid spoken_response_mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /users:
     post:
@@ -350,7 +490,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Update user
-      description: Updates user profile information. Partial updates are supported.
+      description: Updates user profile information. Partial updates are supported via query parameters.
       operationId: updateUser
       tags:
         - Users
@@ -363,12 +503,17 @@ paths:
             example: "550e8400-e29b-41d4-a716-446655440000"
           required: true
           description: Unique user identifier
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: User's display name
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [admin, inspector, viewer]
+          description: User's role
       responses:
         '200':
           description: User updated successfully
@@ -436,8 +581,106 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ---------------------------------------------------------------------------
+  # MOCK DOCUMENTS (for testing)
+  # ---------------------------------------------------------------------------
+  /mock_documents/{filename}:
+    get:
+      summary: Get mock document
+      description: |
+        Serves mock document files for testing (e.g., report.json, report.pdf).
+        Only available in the mock server.
+      operationId: getMockDocument
+      tags:
+        - Mock
+      parameters:
+        - in: path
+          name: filename
+          schema:
+            type: string
+            enum: ["report.json", "report.pdf"]
+            example: "report.pdf"
+          required: true
+          description: Name of the mock document file
+      responses:
+        '200':
+          description: Document retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
+    # -------------------------------------------------------------------------
+    # AGENT SCHEMAS
+    # -------------------------------------------------------------------------
+    Agent:
+      type: object
+      description: Agent information
+      required: [id, name, model, description]
+      properties:
+        id:
+          type: string
+          description: Unique agent identifier
+          example: "general-agent"
+        name:
+          type: string
+          description: Human-readable agent name
+          example: "Algemene Assistent"
+        model:
+          type: string
+          description: LLM model used by the agent
+          example: "gpt-4o"
+        description:
+          type: string
+          description: Agent description (first paragraph of instructions)
+          example: "Algemene vraag- en routeringagent"
+
+    InactiveAgent:
+      type: object
+      description: Inactive/unavailable agent information
+      required: [id, name, reason]
+      properties:
+        id:
+          type: string
+          description: Unique agent identifier
+          example: "deprecated-agent"
+        name:
+          type: string
+          description: Human-readable agent name
+          example: "Deprecated Agent"
+        reason:
+          type: string
+          description: Reason why the agent is inactive
+          example: "Disabled for maintenance"
+
+    AgentListResponse:
+      type: object
+      description: Response for listing agents
+      required: [active_agents, inactive_agents]
+      properties:
+        active_agents:
+          type: array
+          description: List of currently active agents
+          items:
+            $ref: '#/components/schemas/Agent'
+        inactive_agents:
+          type: array
+          description: List of inactive/unavailable agents
+          items:
+            $ref: '#/components/schemas/InactiveAgent'
+
     # -------------------------------------------------------------------------
     # SESSION SCHEMAS
     # -------------------------------------------------------------------------
@@ -628,7 +871,7 @@ components:
     UserProfile:
       type: object
       description: Full user profile information
-      required: [id, email, name, createdAt, lastActivity]
+      required: [id, email, name, role, createdAt, lastActivity]
       properties:
         id:
           type: string
@@ -644,6 +887,11 @@ components:
           type: string
           description: User's display name
           example: "Jane Doe"
+        role:
+          type: string
+          enum: [admin, inspector, viewer]
+          description: User's role in the system
+          example: "inspector"
         preferences:
           $ref: '#/components/schemas/UserPreferences'
         createdAt:
@@ -671,6 +919,12 @@ components:
           type: string
           description: User's display name
           example: "New User"
+        role:
+          type: string
+          enum: [admin, inspector, viewer]
+          default: inspector
+          description: User's role in the system
+          example: "inspector"
 
     UpdateUserRequest:
       type: object
@@ -702,20 +956,60 @@ components:
 
     UserPreferences:
       type: object
+      description: User preferences stored in the system
       properties:
         theme:
           type: string
           enum: [light, dark, system]
           default: system
+          description: UI theme preference
         notifications_enabled:
           type: boolean
           default: true
+          description: Enable in-app notifications
         default_agent_id:
           type: string
+          default: "general-agent"
           example: "general-agent"
+          description: Default agent to use for new conversations
         language:
           type: string
+          default: "nl-NL"
           example: "nl-NL"
+          description: UI language preference
+        spoken_text_type:
+          type: string
+          enum: [dictate, summarize]
+          default: summarize
+          description: |
+            Type of spoken text for TTS:
+            - dictate: Full text-to-speech of responses
+            - summarize: Summarized spoken responses
+
+    UpdatePreferencesRequest:
+      type: object
+      description: Request body for updating user preferences
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          description: UI theme preference
+        notifications_enabled:
+          type: boolean
+          description: Enable in-app notifications
+        default_agent_id:
+          type: string
+          description: Default agent to use for new conversations
+        language:
+          type: string
+          description: UI language preference
+        spoken_text_type:
+          type: string
+          enum: [dictate, summarize]
+          description: |
+            Type of spoken text for TTS:
+            - dictate: Full text-to-speech of responses
+            - summarize: Summarized spoken responses
 
     # -------------------------------------------------------------------------
     # COMMON SCHEMAS

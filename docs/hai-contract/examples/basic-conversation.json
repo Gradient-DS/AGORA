@@ -1,11 +1,12 @@
 {
-  "description": "Basic conversation flow using AG-UI Protocol v2.1.1",
+  "description": "Basic conversation flow using AG-UI Protocol v2.5.0",
   "events": [
     {
       "direction": "client → server",
       "event": {
         "threadId": "abc123-def456-789",
         "runId": "run-001",
+        "userId": "550e8400-e29b-41d4-a716-446655440001",
         "messages": [
           {
             "role": "user",

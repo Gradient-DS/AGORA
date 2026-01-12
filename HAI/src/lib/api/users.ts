@@ -190,19 +190,47 @@ export async function fetchCurrentUser(): Promise<UserProfile> {
 }
 
 /**
+ * Fetch preferences for the current user.
+ */
+export async function fetchUserPreferences(
+  userId: string
+): Promise<UserPreferences> {
+  const baseUrl = getBaseUrl();
+  const response = await fetch(
+    `${baseUrl}/users/me/preferences?user_id=${encodeURIComponent(userId)}`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch preferences: ${response.statusText}`);
+  }
+
+  const data: { success: boolean; preferences: UserPreferences } = await response.json();
+
+  if (!data.success) {
+    throw new Error('Failed to fetch preferences');
+  }
+
+  return data.preferences;
+}
+
+/**
  * Update preferences for the current user.
  */
 export async function updateUserPreferences(
+  userId: string,
   preferences: UserPreferences
 ): Promise<UserPreferences> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/users/me/preferences`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(preferences),
-  });
+  const response = await fetch(
+    `${baseUrl}/users/me/preferences?user_id=${encodeURIComponent(userId)}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(preferences),
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to update preferences: ${response.statusText}`);
