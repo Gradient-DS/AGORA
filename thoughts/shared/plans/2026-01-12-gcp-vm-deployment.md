@@ -281,10 +281,10 @@ MCP_EMBEDDING_PROVIDER=openai
 ### Success Criteria
 
 #### Automated Verification (run on VM):
-- [ ] Docker installed: `docker --version`
-- [ ] Docker Compose installed: `docker compose version`
-- [ ] Repository cloned: `ls /opt/agora/docker-compose.production.yml`
-- [ ] Environment file exists: `ls /opt/agora/.env`
+- [x] Docker installed: `docker --version`
+- [x] Docker Compose installed: `docker compose version`
+- [x] Repository cloned: `ls /opt/agora/docker-compose.production.yml`
+- [x] Environment file exists: `ls /opt/agora/.env`
 
 #### Manual Verification:
 - [ ] `.env` file contains valid `OPENAI_API_KEY`
@@ -351,11 +351,11 @@ curl -s -X POST http://localhost:8080/v1/graphql \
 ### Success Criteria
 
 #### Automated Verification (run on VM):
-- [ ] All containers running: `docker compose -f docker-compose.production.yml ps --format "table {{.Service}}\t{{.Status}}" | grep -v "unhealthy\|Exit"`
-- [ ] Caddy obtained certificate: `docker compose -f docker-compose.production.yml logs caddy 2>&1 | grep -i "certificate obtained"`
-- [ ] API gateway healthy: `curl -s http://localhost:8000/health | jq`
-- [ ] Weaviate healthy: `curl -s http://localhost:8080/v1/.well-known/ready`
-- [ ] Documents ingested: `curl -s -X POST http://localhost:8080/v1/graphql -H "Content-Type: application/json" -d '{"query": "{Aggregate{RegulationChunk{meta{count}}}}"}' | jq '.data.Aggregate.RegulationChunk[0].meta.count'` returns > 0
+- [x] All containers running: `docker compose -f docker-compose.production.yml ps --format "table {{.Service}}\t{{.Status}}" | grep -v "unhealthy\|Exit"`
+- [x] Caddy obtained certificate: `docker compose -f docker-compose.production.yml logs caddy 2>&1 | grep -i "certificate obtained"`
+- [x] API gateway healthy: `curl -s http://localhost:8000/health | jq`
+- [x] Weaviate healthy: `curl -s http://localhost:8080/v1/.well-known/ready`
+- [ ] Documents ingested: `curl -s -X POST http://localhost:8080/v1/graphql -H "Content-Type: application/json" -d '{"query": "{Aggregate{RegulationChunk{meta{count}}}}"}' | jq '.data.Aggregate.RegulationChunk[0].meta.count'` returns > 0 (pending: input files needed)
 
 #### Manual Verification:
 - [ ] Caddy logs show successful HTTPS setup (no certificate errors)
@@ -408,9 +408,9 @@ Open in browser: `https://agora.gradient-testing.nl`
 ### Success Criteria
 
 #### Automated Verification (from local machine):
-- [ ] HTTPS works: `curl -sI https://agora.gradient-testing.nl | grep "HTTP/2 200"`
-- [ ] Certificate valid: `curl -s https://agora.gradient-testing.nl/caddy-health` returns "OK"
-- [ ] API accessible: `curl -s -o /dev/null -w "%{http_code}" https://agora.gradient-testing.nl/api/langgraph/health` returns `200`
+- [x] HTTPS works: `curl -sI https://agora.gradient-testing.nl | grep "HTTP/2 200"`
+- [x] Certificate valid: `curl -s https://agora.gradient-testing.nl/caddy-health` returns "OK"
+- [x] API accessible: `curl -s -o /dev/null -w "%{http_code}" https://agora.gradient-testing.nl/api/langgraph/health` returns `200`
 
 #### Manual Verification:
 - [ ] Frontend loads in browser without certificate warnings
@@ -481,8 +481,8 @@ The frontend should still work because it passes the API key via WebSocket query
 ### Success Criteria
 
 #### Automated Verification (from local machine):
-- [ ] Auth required: `curl -s -o /dev/null -w "%{http_code}" https://agora.gradient-testing.nl/api/langgraph/health` returns `401`
-- [ ] Auth works: `curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: YOUR_KEY" https://agora.gradient-testing.nl/api/langgraph/health` returns `200`
+- [x] Auth required: `curl -s -o /dev/null -w "%{http_code}" https://agora.gradient-testing.nl/api/langgraph/health` returns `401`
+- [x] Auth works: `curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: YOUR_KEY" https://agora.gradient-testing.nl/api/langgraph/health` returns `200`
 
 #### Manual Verification:
 - [ ] Frontend still works with authentication enabled
