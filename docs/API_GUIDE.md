@@ -313,6 +313,55 @@ Contact your administrator for rate limit details specific to your API key.
 
 ---
 
+## Automated Testing
+
+A comprehensive test script is available to verify your API setup:
+
+```bash
+# Install dependencies
+pip install httpx websockets
+
+# Run tests against production
+python scripts/test_api.py --api-key YOUR_API_KEY
+
+# Run tests against a custom URL
+python scripts/test_api.py --api-key YOUR_API_KEY --base-url https://your-domain.com
+```
+
+The test script validates:
+- HTTP endpoint authentication (no auth, valid key, wrong key)
+- Gateway backends listing
+- All backend health endpoints (langgraph, openai, mock)
+- WebSocket authentication rejection
+- WebSocket streaming with actual message delivery
+
+Example output:
+```
+============================================================
+AGORA API Test Suite
+============================================================
+Base URL: https://agora.gradient-testing.nl
+API Key:  cabf0b2b...2844
+============================================================
+
+HTTP Endpoint Tests
+----------------------------------------
+  [PASS] Health (no auth): Returns 401 as expected (156ms)
+  [PASS] Health (with auth): status=healthy (89ms)
+  [PASS] Health (wrong key): Returns 401 as expected (78ms)
+  [PASS] Gateway backends: Found: ['openai', 'langgraph', 'mock'] (92ms)
+  [PASS] Agents endpoint: Found 4 agents (85ms)
+  ...
+
+WebSocket Streaming Tests
+----------------------------------------
+  [PASS] WebSocket (no auth): Rejected with 4001 as expected (45ms)
+  [PASS] WebSocket streaming: 15 events, 42 chars (1250ms)
+  ...
+```
+
+---
+
 ## Support
 
 For technical issues or questions:
