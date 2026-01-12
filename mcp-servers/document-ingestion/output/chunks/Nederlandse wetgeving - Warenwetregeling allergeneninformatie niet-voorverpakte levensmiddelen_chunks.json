@@ -1,6 +1,6 @@
 [
   {
-    "chunk_id": "97f24259-8ca9-4164-911d-59c4d7e87fc3",
+    "chunk_id": "5b6af53f-d7fd-4e1c-aaca-79edd6f4bc35",
     "content": "<!-- image -->\n\n## Warenwetregeling allergeneninformatie nietvoorverpakte levensmiddelen\n\nGeraadpleegd op 13-11-2025. Gebruikte datum 'geldig op' 10-11-2025 en zichtdatum 10-11-2025. Geldend van 13-12-2014 t/m heden.\n\nOrigineel opschrift en aanhef",
     "document_name": "Dutch",
     "source_type": "Dutch",
@@ -17,10 +17,10 @@
       "allergeneninformatie"
     ],
     "previous_chunk_id": null,
-    "next_chunk_id": "7809735c-3340-4e90-b0b7-bafbcb882241"
+    "next_chunk_id": "6ea38ccb-c0cc-449e-a14a-137d8d77528a"
   },
   {
-    "chunk_id": "7809735c-3340-4e90-b0b7-bafbcb882241",
+    "chunk_id": "6ea38ccb-c0cc-449e-a14a-137d8d77528a",
     "content": "## Artikel 1\n\nIn deze regeling wordt verstaan onder:\n\n- levensmiddelen die niet voorverpakt aan de eindverbruiker of aan grote cateraars te koop worden aangeboden of levensmiddelen die op de plaats van verkoop op verzoek van de consument worden verpakt of met het oog op de onmiddellijke verkoop worden voorverpakt; a. niet-voorverpakte levensmiddelen:\n- de vermelding, bedoeld in artikel 9, eerste lid, onderdeel c, van verordening (EU) 1169/2011. b. allergeneninformatie:",
     "document_name": "Dutch",
     "source_type": "Dutch",
@@ -33,16 +33,16 @@
     "effective_date": "13 december 2014",
     "nvwa_category": "Food Safety - Allergens",
     "keywords": [
-      "levensmiddelen",
-      "artikel",
       "verordening",
-      "allergeneninformatie"
+      "levensmiddelen",
+      "allergeneninformatie",
+      "artikel"
     ],
-    "previous_chunk_id": "97f24259-8ca9-4164-911d-59c4d7e87fc3",
-    "next_chunk_id": "77932435-ad1d-4b9a-919c-b21102a318b3"
+    "previous_chunk_id": "5b6af53f-d7fd-4e1c-aaca-79edd6f4bc35",
+    "next_chunk_id": "e4eac6c5-e8f5-4282-8fd9-2bc0ca0f5c68"
   },
   {
-    "chunk_id": "77932435-ad1d-4b9a-919c-b21102a318b3",
+    "chunk_id": "e4eac6c5-e8f5-4282-8fd9-2bc0ca0f5c68",
     "content": "## Artikel 2\n\n- Op de plaats waar niet-voorverpakte levensmiddelen te koop worden aangeboden, wordt duidelijk zichtbaar vermeld waar de allergeneninformatie over deze niet-voorverpakte levensmiddelen beschikbaar is. 1\n- Indien niet-voorverpakte levensmiddelen te koop worden aangeboden op meerdere plaatsen binnen eenzelfde pand, wordt de vermelding, bedoeld in het eerste lid, aangebracht op elk van deze plaatsen afzonderlijk. 2\n- De allergeneninformatie, bedoeld in het eerste lid, wordt op de plaats van verkoop van deze levensmiddelen schriftelijk of elektronisch beschikbaar gesteld en is vrij toegankelijk, begrijpelijk en duidelijk leesbaar. 3",
     "document_name": "Dutch",
     "source_type": "Dutch",
@@ -56,14 +56,14 @@
     "nvwa_category": "Food Safety - Allergens",
     "keywords": [
       "levensmiddelen",
-      "artikel",
-      "allergeneninformatie"
+      "allergeneninformatie",
+      "artikel"
     ],
-    "previous_chunk_id": "7809735c-3340-4e90-b0b7-bafbcb882241",
-    "next_chunk_id": "0c95b018-4107-40a8-8f7b-4efe67940cd4"
+    "previous_chunk_id": "6ea38ccb-c0cc-449e-a14a-137d8d77528a",
+    "next_chunk_id": "355f2abb-41ae-4812-903e-d69dc3b90cfe"
   },
   {
-    "chunk_id": "0c95b018-4107-40a8-8f7b-4efe67940cd4",
+    "chunk_id": "355f2abb-41ae-4812-903e-d69dc3b90cfe",
     "content": "## Artikel 3\n\nIn afwijking van mag de allergeneninformatie op de plaats van verkoop van niet-voorverpakte levensmiddelen mondeling worden medegedeeld indien: artikel 2\n\n- de allergeneninformatie te allen tijde door de eigenaar of een werknemer onverwijld en op een juiste manier aan de consument kan worden medegedeeld voordat de aankoop plaatsvindt; a.\n- de allergeneninformatie is te allen tijde schriftelijk of elektronisch beschikbaar voor het personeel en de Nederlandse Voedsel- en Warenautoriteit; en b.\n- op de plaats van verkoop wordt een duidelijk zichtbare vermelding aangebracht waarbij de consument wordt verzocht zich voor de allergeneninformatie te wenden tot het personeel. c.",
     "document_name": "Dutch",
     "source_type": "Dutch",
@@ -77,14 +77,14 @@
     "nvwa_category": "Food Safety - Allergens",
     "keywords": [
       "levensmiddelen",
-      "artikel",
-      "allergeneninformatie"
+      "allergeneninformatie",
+      "artikel"
     ],
-    "previous_chunk_id": "77932435-ad1d-4b9a-919c-b21102a318b3",
-    "next_chunk_id": "5a8e366b-13e8-43bf-9918-a3d1fdc25488"
+    "previous_chunk_id": "e4eac6c5-e8f5-4282-8fd9-2bc0ca0f5c68",
+    "next_chunk_id": "e24524c8-5276-471d-bd54-09c3e9af0ced"
   },
   {
-    "chunk_id": "5a8e366b-13e8-43bf-9918-a3d1fdc25488",
+    "chunk_id": "e24524c8-5276-471d-bd54-09c3e9af0ced",
     "content": "## Artikel 4\n\nDeze regeling treedt in werking met ingang van 13 december 2014.",
     "document_name": "Dutch",
     "source_type": "Dutch",
@@ -99,11 +99,11 @@
     "keywords": [
       "artikel"
     ],
-    "previous_chunk_id": "0c95b018-4107-40a8-8f7b-4efe67940cd4",
-    "next_chunk_id": "4f42c7de-e585-44b0-9b81-97d05da6c3ab"
+    "previous_chunk_id": "355f2abb-41ae-4812-903e-d69dc3b90cfe",
+    "next_chunk_id": "73f99048-92e2-4b92-9ace-611540913841"
   },
   {
-    "chunk_id": "4f42c7de-e585-44b0-9b81-97d05da6c3ab",
+    "chunk_id": "73f99048-92e2-4b92-9ace-611540913841",
     "content": "## Artikel 5\n\nDeze regeling wordt aangehaald als: Warenwetregeling allergeneninformatie niet-voorverpakte levensmiddelen.\n\nOrigineel slotformulier en ondertekening",
     "document_name": "Dutch",
     "source_type": "Dutch",
@@ -117,10 +117,10 @@
     "nvwa_category": "Food Safety - Allergens",
     "keywords": [
       "levensmiddelen",
-      "artikel",
-      "allergeneninformatie"
+      "allergeneninformatie",
+      "artikel"
     ],
-    "previous_chunk_id": "5a8e366b-13e8-43bf-9918-a3d1fdc25488",
+    "previous_chunk_id": "e24524c8-5276-471d-bd54-09c3e9af0ced",
     "next_chunk_id": null
   }
 ]

@@ -49,7 +49,6 @@ class ElevenLabsClient {
    */
   async speak(text: string): Promise<void> {
     if (!this.isConfigured()) {
-      console.warn('[ElevenLabs] Not configured - skipping TTS');
       return;
     }
 
@@ -93,7 +92,6 @@ class ElevenLabsClient {
       await this.playText(item.text);
       item.resolve();
     } catch (error) {
-      console.error('[ElevenLabs] Playback error:', error);
       item.reject(error instanceof Error ? error : new Error('Playback failed'));
     } finally {
       this.isProcessing = false;

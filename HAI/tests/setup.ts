@@ -6,5 +6,5 @@ afterEach(() => {
   cleanup();
 });
 
-globalThis.expect = expect;
+(globalThis as Record<string, unknown>).expect = expect;
 

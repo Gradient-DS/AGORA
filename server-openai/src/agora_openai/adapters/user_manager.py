@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import aiosqlite
@@ -59,7 +59,8 @@ class UserManager:
         if not self._connection:
             raise RuntimeError("UserManager not initialized")
 
-        await self._connection.execute("""
+        await self._connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 email TEXT UNIQUE NOT NULL,
@@ -69,11 +70,14 @@ class UserManager:
                 created_at TEXT DEFAULT (datetime('now')),
                 last_activity TEXT DEFAULT (datetime('now'))
             )
-        """)
-        await self._connection.execute("""
+        """
+        )
+        await self._connection.execute(
+            """
             CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email
             ON users (email)
-        """)
+        """
+        )
         await self._connection.commit()
 
     async def create_user(
@@ -96,7 +100,7 @@ class UserManager:
             raise RuntimeError("UserManager not initialized")
 
         user_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         try:
             await self._connection.execute(
@@ -218,7 +222,7 @@ class UserManager:
             return await self.get_user(user_id)
 
         # Always update last_activity
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         updates.append("last_activity = ?")
         params.append(now)
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import aiosqlite
@@ -56,7 +56,8 @@ class SessionMetadataManager:
         if not self._connection:
             raise RuntimeError("SessionMetadataManager not initialized")
 
-        await self._connection.execute("""
+        await self._connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS session_metadata (
                 session_id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -66,13 +67,17 @@ class SessionMetadataManager:
                 created_at TEXT DEFAULT (datetime('now')),
                 last_activity TEXT DEFAULT (datetime('now'))
             )
-        """)
-        await self._connection.execute("""
+        """
+        )
+        await self._connection.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_session_metadata_user_activity
             ON session_metadata (user_id, last_activity DESC)
-        """)
+        """
+        )
         # Table for tracking tool calls with full data for history retrieval
-        await self._connection.execute("""
+        await self._connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS tool_call_agents (
                 tool_call_id TEXT PRIMARY KEY,
                 session_id TEXT NOT NULL,
@@ -82,11 +87,14 @@ class SessionMetadataManager:
                 result TEXT,
                 created_at TEXT DEFAULT (datetime('now'))
             )
-        """)
-        await self._connection.execute("""
+        """
+        )
+        await self._connection.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_tool_call_agents_session
             ON tool_call_agents (session_id)
-        """)
+        """
+        )
         await self._connection.commit()
 
     async def list_sessions(
@@ -132,15 +140,17 @@ class SessionMetadataManager:
 
         sessions = []
         for row in rows:
-            sessions.append({
-                "sessionId": row[0],
-                "userId": row[1],
-                "title": row[2],
-                "firstMessagePreview": row[3],
-                "messageCount": row[4],
-                "createdAt": row[5],
-                "lastActivity": row[6],
-            })
+            sessions.append(
+                {
+                    "sessionId": row[0],
+                    "userId": row[1],
+                    "title": row[2],
+                    "firstMessagePreview": row[3],
+                    "messageCount": row[4],
+                    "createdAt": row[5],
+                    "lastActivity": row[6],
+                }
+            )
 
         return sessions, total_count
 
@@ -225,7 +235,7 @@ class SessionMetadataManager:
         if not self._connection:
             raise RuntimeError("SessionMetadataManager not initialized")
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         # Check if session already exists
         cursor = await self._connection.execute(
@@ -246,7 +256,11 @@ class SessionMetadataManager:
             )
         else:
             # Create new entry
-            title = self._generate_title(first_message) if first_message else "New Conversation"
+            title = (
+                self._generate_title(first_message)
+                if first_message
+                else "New Conversation"
+            )
             preview = first_message[:200] if first_message else None
 
             await self._connection.execute(
@@ -269,7 +283,7 @@ class SessionMetadataManager:
         if not self._connection:
             raise RuntimeError("SessionMetadataManager not initialized")
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         await self._connection.execute(
             """
             UPDATE session_metadata

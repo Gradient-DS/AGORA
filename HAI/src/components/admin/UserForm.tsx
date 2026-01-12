@@ -13,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminStore } from '@/stores/useAdminStore';
-import { X, Loader2, Save, UserPlus } from 'lucide-react';
+import { fetchUserPreferences, updateUserPreferences } from '@/lib/api/users';
+import { X, Loader2, Save, UserPlus, Mic, FileText } from 'lucide-react';
 import type { CreateUserRequest, UpdateUserRequest } from '@/types/user';
 
 interface UserFormProps {
@@ -33,13 +34,25 @@ export function UserForm({ mode }: UserFormProps) {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [spokenTextType, setSpokenTextType] = useState<'dictate' | 'summarize'>('summarize');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Populate form for edit mode
   useEffect(() => {
     if (mode === 'edit' && selectedUser) {
       setName(selectedUser.name);
       setEmail(selectedUser.email);
+      // Load preferences
+      fetchUserPreferences(selectedUser.id)
+        .then((prefs) => {
+          if (prefs.spoken_text_type) {
+            setSpokenTextType(prefs.spoken_text_type);
+          }
+        })
+        .catch((err) => {
+          console.warn('Failed to load preferences:', err);
+        });
     }
   }, [mode, selectedUser]);
 
@@ -75,6 +88,7 @@ export function UserForm({ mode }: UserFormProps) {
       return;
     }
 
+    setIsSaving(true);
     try {
       if (mode === 'create') {
         const data: CreateUserRequest = {
@@ -87,9 +101,15 @@ export function UserForm({ mode }: UserFormProps) {
           name: name.trim(),
         };
         await updateUser(selectedUser.id, data);
+        // Update preferences separately
+        await updateUserPreferences(selectedUser.id, {
+          spoken_text_type: spokenTextType,
+        });
       }
     } catch {
       // Error is handled by the store
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -101,6 +121,7 @@ export function UserForm({ mode }: UserFormProps) {
 
   const title = mode === 'create' ? 'Nieuwe gebruiker' : 'Gebruiker bewerken';
   const displayError = localError || error;
+  const isFormLoading = isLoading || isSaving;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -144,7 +165,7 @@ export function UserForm({ mode }: UserFormProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Voer naam in"
-                disabled={isLoading}
+                disabled={isFormLoading}
               />
             </div>
 
@@ -158,7 +179,7 @@ export function UserForm({ mode }: UserFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="naam@voorbeeld.nl"
-                disabled={isLoading || mode === 'edit'}
+                disabled={isFormLoading || mode === 'edit'}
                 className={mode === 'edit' ? 'bg-muted' : ''}
               />
               {mode === 'edit' && (
@@ -167,6 +188,47 @@ export function UserForm({ mode }: UserFormProps) {
                 </p>
               )}
             </div>
+
+            {mode === 'edit' && (
+              <div className="space-y-2">
+                <label htmlFor="spokenTextType" className="text-sm font-medium">
+                  Spraakweergave
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSpokenTextType('summarize')}
+                    disabled={isFormLoading}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                      spokenTextType === 'summarize'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm font-medium">Samenvatten</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpokenTextType('dictate')}
+                    disabled={isFormLoading}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                      spokenTextType === 'dictate'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    <Mic className="h-4 w-4" />
+                    <span className="text-sm font-medium">Dicteer</span>
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {spokenTextType === 'summarize'
+                    ? 'AI vat antwoorden samen voor spraak'
+                    : 'AI leest antwoorden volledig voor'}
+                </p>
+              </div>
+            )}
           </CardContent>
 
           <CardFooter className="flex justify-end gap-2">
@@ -174,12 +236,12 @@ export function UserForm({ mode }: UserFormProps) {
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={isFormLoading}
             >
               Annuleren
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" disabled={isFormLoading}>
+              {isFormLoading ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : mode === 'create' ? (
                 <UserPlus className="h-4 w-4 mr-2" />

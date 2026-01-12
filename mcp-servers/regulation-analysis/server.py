@@ -12,7 +12,7 @@ from fastmcp import FastMCP
 try:
     from config import get_settings
     from database.weaviate_client import WeaviateClient
-    from embeddings.embedder import Embedder
+    from embeddings.embedder import create_embedder
     WEAVIATE_AVAILABLE = True
 except ImportError as e:
     WEAVIATE_AVAILABLE = False
@@ -29,14 +29,18 @@ embedder = None
 if WEAVIATE_AVAILABLE:
     try:
         settings = get_settings()
-        logger.info("Loaded configuration with MCP_ prefix")
-        
+        logger.info(f"Loaded configuration with MCP_ prefix (embedding_provider={settings.embedding_provider})")
+
         weaviate_client = WeaviateClient(settings.weaviate_url)
-        embedder = Embedder(
+
+        # Use factory function to create appropriate embedder
+        embedder = create_embedder(
+            provider=settings.embedding_provider,
+            api_key=settings.openai_api_key.get_secret_value() if settings.embedding_provider == "openai" else None,
             model_name=settings.embedding_model,
-            device=settings.embedding_device
+            device=settings.embedding_device,
         )
-        
+
         if weaviate_client.connect():
             logger.info("Successfully connected to Weaviate")
         else:

@@ -49,17 +49,14 @@ export class AGUIWebSocketClient {
 
   connect(): void {
     if (this.isConnecting) {
-      console.log('[AG-UI WebSocket] Connection attempt already in progress, skipping');
       return;
     }
 
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
-      console.log('[AG-UI WebSocket] Already connected or connecting, skipping');
       return;
     }
 
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('[AG-UI WebSocket] Max reconnect attempts reached, not attempting connection');
       this.updateStatus('error');
       return;
     }
@@ -69,15 +66,10 @@ export class AGUIWebSocketClient {
     const status = this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting';
     this.updateStatus(status);
 
-    console.log(
-      `[AG-UI WebSocket] ${status === 'connecting' ? 'Connecting' : `Reconnecting (attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts})`} to ${this.config.url}`
-    );
-
     try {
       this.ws = new WebSocket(this.config.url);
       this.setupEventHandlers();
     } catch (error) {
-      console.error('[AG-UI WebSocket] Failed to create WebSocket:', error);
       this.isConnecting = false;
       this.handleError(new Error(`Failed to create WebSocket: ${error}`));
       this.scheduleReconnect();
@@ -85,7 +77,6 @@ export class AGUIWebSocketClient {
   }
 
   disconnect(): void {
-    console.log('[AG-UI WebSocket] Manually disconnecting');
     this.isManualClose = true;
     this.isConnecting = false;
     this.reconnectAttempts = 0;
@@ -140,10 +131,8 @@ export class AGUIWebSocketClient {
    */
   private sendRaw(data: string): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('[AG-UI WebSocket] Sending message');
       this.ws.send(data);
     } else {
-      console.log('[AG-UI WebSocket] Connection not open, queuing message');
       this.messageQueue.push(data);
     }
   }
@@ -184,7 +173,6 @@ export class AGUIWebSocketClient {
   }
 
   reset(): void {
-    console.log('[AG-UI WebSocket] Resetting connection state');
     this.disconnect();
     this.reconnectAttempts = 0;
     this.messageQueue = [];
@@ -195,7 +183,6 @@ export class AGUIWebSocketClient {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
-      console.log('[AG-UI WebSocket] Connection established');
       this.isConnecting = false;
       this.updateStatus('connected');
       this.reconnectAttempts = 0;
@@ -210,46 +197,33 @@ export class AGUIWebSocketClient {
         if (parseResult.success) {
           this.eventCallbacks.forEach((callback) => callback(parseResult.data));
         } else {
-          console.warn('[AG-UI WebSocket] Invalid event received:', parseResult.error);
           // Still try to handle it as a raw event
           this.eventCallbacks.forEach((callback) =>
             callback({ type: EventType.RAW, data } as AGUIEvent)
           );
         }
       } catch (error) {
-        console.error('[AG-UI WebSocket] Error parsing message:', error);
         this.handleError(new Error(`Error parsing message: ${error}`));
       }
     };
 
-    this.ws.onerror = (wsEvent) => {
-      console.error('[AG-UI WebSocket] Connection error:', wsEvent);
+    this.ws.onerror = () => {
       this.isConnecting = false;
       this.handleError(new Error('WebSocket connection error'));
     };
 
-    this.ws.onclose = (wsEvent) => {
-      console.log(
-        `[AG-UI WebSocket] Connection closed (code: ${wsEvent.code}, reason: ${wsEvent.reason || 'none'})`
-      );
+    this.ws.onclose = () => {
       this.isConnecting = false;
 
       if (!this.isManualClose) {
-        console.log('[AG-UI WebSocket] Connection closed unexpectedly, will attempt reconnect');
         this.scheduleReconnect();
       } else {
-        console.log('[AG-UI WebSocket] Connection closed manually');
         this.updateStatus('disconnected');
       }
     };
   }
 
   private flushMessageQueue(): void {
-    const queueLength = this.messageQueue.length;
-    if (queueLength > 0) {
-      console.log(`[AG-UI WebSocket] Flushing ${queueLength} queued message(s)`);
-    }
-
     while (this.messageQueue.length > 0 && this.ws?.readyState === WebSocket.OPEN) {
       const message = this.messageQueue.shift();
       if (message) {
@@ -260,19 +234,14 @@ export class AGUIWebSocketClient {
 
   private scheduleReconnect(): void {
     if (this.isManualClose) {
-      console.log('[AG-UI WebSocket] Manual close detected, skipping reconnect');
       return;
     }
 
     if (this.reconnectTimeout !== null) {
-      console.log('[AG-UI WebSocket] Reconnect already scheduled, skipping');
       return;
     }
 
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error(
-        `[AG-UI WebSocket] Max reconnect attempts (${this.config.maxReconnectAttempts}) reached, giving up`
-      );
       this.updateStatus('error');
       this.handleError(new Error(`Failed to connect after ${this.config.maxReconnectAttempts} attempts`));
       return;
@@ -285,10 +254,6 @@ export class AGUIWebSocketClient {
 
     this.reconnectAttempts++;
     this.updateStatus('reconnecting');
-
-    console.log(
-      `[AG-UI WebSocket] Scheduling reconnect attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts} in ${delay}ms`
-    );
 
     this.reconnectTimeout = window.setTimeout(() => {
       this.reconnectTimeout = null;

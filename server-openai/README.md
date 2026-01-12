@@ -8,30 +8,25 @@ OpenAI Agents SDK implementatie voor het AGORA multi-agent compliance platform.
 
 Deze implementatie maakt gebruik van:
 - ✅ **OpenAI Agents SDK** - Multi-agent orchestratie met handoffs
-- ✅ **Verenigde Spraak & Tekst** - Zelfde agenten voor beide modaliteiten via VoicePipeline
-- ✅ **Autonome Handoffs** - Agenten dragen controle over aan specialisten (tekst & spraak)
+- ✅ **Autonome Handoffs** - Agenten dragen controle over aan specialisten
 - ✅ **Sessiebeheer** - Op SQLite gebaseerde gespreksopslag
 - ✅ **Streaming Responses** - Real-time berichtfragmenten
 - ✅ **Native MCP Integratie** - Enkele SDK-native tool integratie
-- ✅ **Per-Agent TTS Instellingen** - Aangepaste stem persoonlijkheden
 
 ## Wat OpenAI afhandelt
 
-- Agent orchestratie en handoffs (tekst & spraak)
+- Agent orchestratie en handoffs
 - Gespreksstatus (SQLiteSession)
 - Tool uitvoeringsloops
 - Contextbeheer en token telling
 - Parallelle tool uitvoering
-- Streaming responses (tekst)
-- Spraak I/O (STT & TTS via VoicePipeline)
+- Streaming responses
 
 ## Wat wij bouwen
 
 - AG-UI Protocol implementatie (WebSocket)
 - Native MCP tool integratie via Agents SDK
 - Domeinspecifieke agent definities en handoff strategie
-- Verenigde spraakafhandelaar met VoicePipeline
-- Per-agent TTS persoonlijkheidsinstellingen
 - Audit logging en observability
 - Moderatie en validatie
 
@@ -55,8 +50,7 @@ server-openai/
 │   │   └── moderator.py          # Validatie
 │   └── api/                       # Entry points
 │       ├── server.py              # FastAPI + WebSocket
-│       ├── ag_ui_handler.py       # AG-UI Protocol events
-│       └── voice_handler.py       # Spraak sessiebeheerder
+│       └── ag_ui_handler.py       # AG-UI Protocol events
 └── common/                        # Gedeelde types
     ├── ag_ui_types.py
     ├── protocols.py
@@ -174,19 +168,6 @@ asyncio.run(chat())
 | `RUN_FINISHED` | Run complete |
 | `RUN_ERROR` | Error occurred |
 | `CUSTOM` | HITL approval events |
-
-### Spraakmodus (TODO)
-
-Verbind met `/ws/voice` voor spraakinteractie:
-
-```python
-message = {
-    "type": "session.start",
-    "session_id": "voice-123",
-    "agent_id": "general-agent",
-    "conversation_history": []
-}
-```
 
 ## Belangrijkste Kenmerken
 

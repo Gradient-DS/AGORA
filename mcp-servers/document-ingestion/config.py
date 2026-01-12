@@ -1,4 +1,5 @@
 """Configuration management for MCP document ingestion."""
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr, Field
 from functools import lru_cache
@@ -17,17 +18,22 @@ logger.info(f".env exists: {_env_path.exists()}")
 
 class MCPSettings(BaseSettings):
     """MCP Server settings with MCP_ prefix."""
-    
-    openai_api_key: SecretStr = Field(description="OpenAI API key for document summarization")
-    
+
+    openai_api_key: SecretStr = Field(description="OpenAI API key for document summarization and embeddings")
+
+    embedding_provider: Literal["openai", "local"] = Field(
+        default="openai",
+        description="Embedding provider: 'openai' (text-embedding-3-small) or 'local' (sentence-transformers)"
+    )
+
     embedding_model: str = Field(
         default="nomic-ai/nomic-embed-text-v1.5",
-        description="Embedding model from Hugging Face (default: nomic-embed-text-v1.5, ~550MB)"
+        description="Local embedding model from Hugging Face (only used when embedding_provider=local)"
     )
-    
+
     embedding_device: str | None = Field(
         default=None,
-        description="Device for embedding model (cuda/mps/cpu). Auto-detected if not set."
+        description="Device for local embedding model (cuda/mps/cpu). Auto-detected if not set."
     )
     
     weaviate_url: str = Field(

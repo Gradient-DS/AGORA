@@ -41,12 +41,13 @@ export interface RunState {
   currentStep: string | null;
 }
 
-// Voice state (retained for future use)
+// Voice state
 export interface VoiceState {
   isActive: boolean;
   isListening: boolean;
   isSpeaking: boolean;
   volume: number;
+  partialTranscript: string;
 }
 
 export interface AudioVisualizerData {

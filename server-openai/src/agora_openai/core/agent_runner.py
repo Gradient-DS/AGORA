@@ -1,16 +1,19 @@
 from __future__ import annotations
+
 import json
-from dataclasses import dataclass, field
-from typing import Any, Callable, Awaitable
 import logging
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from typing import Any
+
 from agents import Agent, Runner, SQLiteSession
-from agents.mcp import MCPServerStreamableHttp
 from agents.items import ToolCallItem, ToolCallOutputItem
 from agents.stream_events import RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
-from agora_openai.core.agent_definitions import AgentConfig
+
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.config import get_settings
+from agora_openai.core.agent_definitions import AgentConfig
 
 log = logging.getLogger(__name__)
 
@@ -38,8 +41,13 @@ AGENT_MCP_MAPPING = {
 class AgentRegistry:
     """Registry for Agent SDK agents with handoff support."""
 
-    def __init__(self, mcp_registry: MCPToolRegistry):
+    def __init__(
+        self,
+        mcp_registry: MCPToolRegistry,
+        tools_by_server: dict[str, list] | None = None,
+    ):
         self.mcp_registry = mcp_registry
+        self.tools_by_server = tools_by_server or {}
         self.agents: dict[str, Agent] = {}
         self.agent_configs: dict[str, AgentConfig] = {}
 
@@ -47,14 +55,17 @@ class AgentRegistry:
         """Create and register an Agent SDK agent from config."""
         agent_id = config["id"]
 
-        # Get only the MCP servers this agent should have access to
+        # Get the MCP server names this agent should have access to
         agent_mcp_server_names = AGENT_MCP_MAPPING.get(agent_id, [])
-        agent_mcp_servers: list[MCPServerStreamableHttp] = []
 
-        # mcp_registry.mcp_servers is a list, so we need to filter by name
-        for mcp_server in self.mcp_registry.mcp_servers:
-            if mcp_server.name in agent_mcp_server_names:
-                agent_mcp_servers.append(mcp_server)
+        # Collect FunctionTool wrappers for this agent's MCP servers
+        # Using FunctionTools instead of mcp_servers for reliable tool calling
+        # after handoffs (workaround for SDK issue #617)
+        agent_tools: list = []
+
+        for server_name in agent_mcp_server_names:
+            if server_name in self.tools_by_server:
+                agent_tools.extend(self.tools_by_server[server_name])
 
         # Agent SDK doesn't support temperature parameter directly
         # Temperature is set at the Runner.run level or via model string
@@ -62,19 +73,31 @@ class AgentRegistry:
         settings = get_settings()
         model = config.get("model") or settings.openai_model
 
+        # Pass FunctionTool wrappers explicitly via tools= parameter
+        # NOT using mcp_servers= because SDK's MCP integration is unreliable after handoffs
         agent = Agent(
             name=config["name"],
             instructions=config["instructions"],
             model=model,
-            mcp_servers=agent_mcp_servers,
+            tools=agent_tools,
         )
 
         self.agents[agent_id] = agent
         self.agent_configs[agent_id] = config
 
         log.info(
-            f"Registered agent: {agent_id} with {len(agent_mcp_servers)} MCP servers: {agent_mcp_server_names}"
+            f"📝 REGISTERED AGENT: {agent_id} with {len(agent_tools)} FunctionTools"
         )
+        if agent_tools:
+            tool_names = [t.name for t in agent_tools[:5]]
+            suffix = "..." if len(agent_tools) > 5 else ""
+            log.info(f"    └─ Tools: {tool_names}{suffix}")
+            # Log which MCP servers these tools come from
+            for server_name in agent_mcp_server_names:
+                server_tool_count = len(self.tools_by_server.get(server_name, []))
+                log.info(f"    └─ From MCP '{server_name}': {server_tool_count} tools")
+        else:
+            log.info("    └─ (no tools)")
 
         return agent
 
@@ -122,7 +145,9 @@ class AgentRunner:
                 session_id=session_id,
                 db_path=self.sessions_db_path,
             )
-            log.info(f"Created new session: {session_id}")
+            log.info(f"🆕 Created NEW session: {session_id}")
+        else:
+            log.info(f"♻️ REUSING existing session: {session_id}")
         return self.sessions[session_id]
 
     async def run_agent(
@@ -200,8 +225,7 @@ class AgentRunner:
             )
 
         final_output = "".join(state.full_response)
-        log.info(f"Streaming completed. Total output: {len(final_output)} characters")
-        log.info(f"Agent run completed. Active agent: {state.current_agent_id}")
+
         return final_output, state.current_agent_id
 
     async def _process_stream_event(
@@ -212,17 +236,14 @@ class AgentRunner:
         tool_callback: Callable | None,
     ) -> None:
         """Process individual stream events."""
-        event_type = event.type
-        log.debug(f"Stream event: {event_type}")
-
-        if event_type == "raw_response_event":
+        if event.type == "raw_response_event":
             if isinstance(event.data, ResponseTextDeltaEvent):
                 delta = event.data.delta
                 if delta:
                     state.full_response.append(delta)
                     await stream_callback(delta, state.current_agent_id)
 
-        elif event_type == "run_item_stream_event" and isinstance(
+        elif event.type == "run_item_stream_event" and isinstance(
             event, RunItemStreamEvent
         ):
             await self._process_run_item_event(event, state, tool_callback)
@@ -286,12 +307,27 @@ class AgentRunner:
                 parameters = (
                     json.loads(tool_args_str) if isinstance(tool_args_str, str) else {}
                 )
-            except:
+            except json.JSONDecodeError:
                 parameters = {}
 
-            log.info(
-                f"🔧 Tool call started: {tool_name} (ID: {tool_call_id}) by agent {state.current_agent_id}"
+            # Categorize tool type for debugging
+            is_handoff = "transfer" in tool_name.lower() or "handoff" in tool_name.lower()
+            is_mcp_tool = not is_handoff and any(
+                prefix in tool_name.lower()
+                for prefix in ["search_", "get_", "check_", "lookup_", "generate_", "extract_", "verify_", "analyze_"]
             )
+
+            if is_handoff:
+                log.info(f"🔄 HANDOFF TOOL CALL: {tool_name} (current: {state.current_agent_id})")
+            elif is_mcp_tool:
+                log.info(
+                    f"🌐 MCP TOOL CALL: {tool_name} by {state.current_agent_id} "
+                    f"(params: {json.dumps(parameters)[:200]}...)"
+                )
+            else:
+                log.info(
+                    f"🔧 Tool call started: {tool_name} (ID: {tool_call_id}) by agent {state.current_agent_id}"
+                )
             await tool_callback(
                 tool_call_id,
                 tool_name,
@@ -374,14 +410,37 @@ class AgentRunner:
         self, state: StreamState, tool_callback: Callable | None
     ) -> None:
         """Handle handoff occurrence."""
-        log.info(f"🔄 Handoff occurred event detected")
+        old_agent_id = state.current_agent_id
+        log.info(f"🔄 HANDOFF EVENT DETECTED (from {old_agent_id})")
 
         if state.pending_handoff_target:
             state.current_agent_id = state.pending_handoff_target
             log.info(
-                f"✅ Agent handoff completed. Now active: {state.current_agent_id}"
+                f"✅ AGENT TRANSITION: {old_agent_id} → {state.current_agent_id}"
             )
+
+            # Log FunctionTools available to the new agent
+            new_agent = self.agent_registry.get_agent(state.current_agent_id)
+            if new_agent:
+                # Log FunctionTools (these are MCP tool wrappers)
+                if hasattr(new_agent, "tools") and new_agent.tools:
+                    tool_names = [t.name for t in new_agent.tools[:5]]
+                    suffix = "..." if len(new_agent.tools) > 5 else ""
+                    log.info(
+                        f"🔧 NEW AGENT TOOLS [{state.current_agent_id}]: "
+                        f"{len(new_agent.tools)} FunctionTools ({tool_names}{suffix})"
+                    )
+                else:
+                    log.info(
+                        f"🔧 NEW AGENT [{state.current_agent_id}] has NO tools"
+                    )
+
             state.pending_handoff_target = None
+        else:
+            log.warning(
+                f"⚠️ HANDOFF EVENT but no pending target! "
+                f"current_agent={state.current_agent_id}"
+            )
 
         if tool_callback:
             await self._complete_transfer_tool_call(state, tool_callback)
@@ -390,7 +449,7 @@ class AgentRunner:
         self, state: StreamState, tool_callback: Callable
     ) -> None:
         """Mark transfer tool call as completed."""
-        log.info(f"Marking transfer tool call as completed")
+        log.info("Marking transfer tool call as completed")
 
         transfer_tool_ids = [
             tool_id
@@ -483,11 +542,13 @@ class AgentRunner:
             elif role == "assistant":
                 content = self._extract_content(item)
                 if content:
-                    history.append({
-                        "role": "assistant",
-                        "content": content,
-                        "agent_id": current_agent_id,
-                    })
+                    history.append(
+                        {
+                            "role": "assistant",
+                            "content": content,
+                            "agent_id": current_agent_id,
+                        }
+                    )
 
             elif item_type == "function_call" and include_tool_calls:
                 # OpenAI SDK stores tool calls with type="function_call"
@@ -505,13 +566,27 @@ class AgentRunner:
                     if stored_tc and stored_tc.get("agent_id"):
                         current_agent_id = stored_tc["agent_id"]
 
-                    history.append({
-                        "role": "tool_call",
-                        "tool_call_id": tool_call_id,
-                        "tool_name": stored_tc.get("tool_name", tool_name) if stored_tc else tool_name,
-                        "content": stored_tc.get("parameters", arguments) if stored_tc else arguments,
-                        "agent_id": stored_tc.get("agent_id", current_agent_id) if stored_tc else current_agent_id,
-                    })
+                    history.append(
+                        {
+                            "role": "tool_call",
+                            "tool_call_id": tool_call_id,
+                            "tool_name": (
+                                stored_tc.get("tool_name", tool_name)
+                                if stored_tc
+                                else tool_name
+                            ),
+                            "content": (
+                                stored_tc.get("parameters", arguments)
+                                if stored_tc
+                                else arguments
+                            ),
+                            "agent_id": (
+                                stored_tc.get("agent_id", current_agent_id)
+                                if stored_tc
+                                else current_agent_id
+                            ),
+                        }
+                    )
                     added_tool_calls.add(tool_call_id)
 
             elif item_type == "function_call_output" and include_tool_calls:
@@ -529,12 +604,14 @@ class AgentRunner:
                 if stored_tc:
                     tool_name = stored_tc.get("tool_name", tool_name)
 
-                history.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
-                    "tool_name": tool_name,
-                    "content": output,
-                })
+                history.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": tool_name,
+                        "content": output,
+                    }
+                )
 
             elif role == "tool" and include_tool_calls:
                 # Legacy format: Tool result with role="tool"
@@ -551,22 +628,26 @@ class AgentRunner:
                         current_agent_id = stored_tc["agent_id"]
 
                     # Add tool_call entry BEFORE the tool result
-                    history.append({
-                        "role": "tool_call",
-                        "tool_call_id": tool_call_id,
-                        "tool_name": stored_tc.get("tool_name", tool_name),
-                        "content": stored_tc.get("parameters", "{}"),
-                        "agent_id": stored_tc.get("agent_id", current_agent_id),
-                    })
+                    history.append(
+                        {
+                            "role": "tool_call",
+                            "tool_call_id": tool_call_id,
+                            "tool_name": stored_tc.get("tool_name", tool_name),
+                            "content": stored_tc.get("parameters", "{}"),
+                            "agent_id": stored_tc.get("agent_id", current_agent_id),
+                        }
+                    )
                     added_tool_calls.add(tool_call_id)
 
                 # Add tool result
-                history.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
-                    "tool_name": tool_name,
-                    "content": result_content,
-                })
+                history.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "tool_name": tool_name,
+                        "content": result_content,
+                    }
+                )
 
         return history
 

@@ -1,20 +1,21 @@
 from __future__ import annotations
-from typing import Any
+
 import logging
 from datetime import datetime
+from typing import Any
 
 log = logging.getLogger(__name__)
 
 
 class AuditLogger:
     """Audit logger with OpenTelemetry integration."""
-    
+
     def __init__(self, otel_endpoint: str | None = None):
         self.otel_endpoint = otel_endpoint
         self.enabled = otel_endpoint is not None
         if not self.enabled:
             log.warning("Audit logging initialized without OpenTelemetry endpoint")
-    
+
     async def log_message(
         self,
         session_id: str,
@@ -24,7 +25,7 @@ class AuditLogger:
     ) -> None:
         """Log a message exchange."""
         timestamp = datetime.utcnow().isoformat()
-        
+
         log.info(
             "Message logged",
             extra={
@@ -35,10 +36,10 @@ class AuditLogger:
                 **metadata,
             },
         )
-        
+
         if self.enabled:
             pass
-    
+
     async def log_tool_execution(
         self,
         tool_name: str,
@@ -48,7 +49,7 @@ class AuditLogger:
     ) -> None:
         """Log tool execution."""
         timestamp = datetime.utcnow().isoformat()
-        
+
         log.info(
             "Tool execution logged",
             extra={
@@ -58,10 +59,10 @@ class AuditLogger:
                 "timestamp": timestamp,
             },
         )
-        
+
         if self.enabled:
             pass
-    
+
     async def log_approval_request(
         self,
         approval_id: str,
@@ -71,7 +72,7 @@ class AuditLogger:
     ) -> None:
         """Log approval decision."""
         timestamp = datetime.utcnow().isoformat()
-        
+
         log.info(
             "Approval decision logged",
             extra={
@@ -82,7 +83,6 @@ class AuditLogger:
                 "timestamp": timestamp,
             },
         )
-        
+
         if self.enabled:
             pass
-

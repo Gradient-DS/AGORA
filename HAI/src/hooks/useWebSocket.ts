@@ -34,7 +34,6 @@ let hasInitiatedConnection = false;
 
 function getOrCreateClient(): AGUIWebSocketClient {
   if (!globalClient) {
-    console.log('[AG-UI WebSocket] Creating global client instance');
     globalClient = new AGUIWebSocketClient({
       url: env.VITE_WS_URL,
       maxReconnectAttempts: 5,
@@ -43,6 +42,14 @@ function getOrCreateClient(): AGUIWebSocketClient {
     });
   }
   return globalClient;
+}
+
+/**
+ * Get the global WebSocket client instance.
+ * Used by voice mode to send transcribed messages.
+ */
+export function getWebSocketClient(): AGUIWebSocketClient {
+  return getOrCreateClient();
 }
 
 export function useWebSocket() {
@@ -71,7 +78,6 @@ export function useWebSocket() {
     clientRef.current = client;
 
     activeSubscriptions++;
-    console.log('[useWebSocket] Subscribing (active: %d)', activeSubscriptions);
 
     const unsubscribeStatus = client.onStatusChange((status) => {
       setStatus(status);
@@ -79,7 +85,6 @@ export function useWebSocket() {
 
     const unsubscribeError = client.onError((error) => {
       setError(error);
-      console.error('[useWebSocket] WebSocket error:', error);
     });
 
     const unsubscribeEvent = client.onEvent((event: AGUIEvent) => {
@@ -90,13 +95,11 @@ export function useWebSocket() {
     function handleAGUIEvent(event: AGUIEvent) {
       switch (event.type) {
         case EventType.RUN_STARTED:
-          console.log('[AG-UI] Run started:', event.runId);
           currentRunId.current = event.runId;
           setProcessingStatus('thinking');
           break;
 
         case EventType.RUN_FINISHED: {
-          console.log('[AG-UI] Run finished:', event.runId);
           currentRunId.current = null;
           setProcessingStatus(null);
           if (currentAgentId.current) {
@@ -111,13 +114,11 @@ export function useWebSocket() {
         }
 
         case EventType.RUN_ERROR:
-          console.error('[AG-UI] Run error:', event.message, event.code);
           setError(new Error(event.message));
           setProcessingStatus(null);
           break;
 
         case EventType.STEP_STARTED:
-          console.log('[AG-UI] Step started:', event.stepName);
           setProcessingStatus(event.stepName as 'thinking' | 'routing' | 'executing_tools');
           if (event.stepName === 'executing_tools') {
             if (currentAgentId.current) {
@@ -129,11 +130,9 @@ export function useWebSocket() {
           break;
 
         case EventType.STEP_FINISHED:
-          console.log('[AG-UI] Step finished:', event.stepName);
           break;
 
         case EventType.TEXT_MESSAGE_START:
-          console.log('[AG-UI] Text message start:', event.messageId, event.role);
           if (event.role === 'assistant') {
             currentMessageId.current = event.messageId;
             addMessage({
@@ -146,14 +145,12 @@ export function useWebSocket() {
           break;
 
         case EventType.TEXT_MESSAGE_CONTENT:
-          console.log('[AG-UI] Text message content:', event.messageId, event.delta.length, 'chars');
           if (currentMessageId.current === event.messageId) {
             updateMessageContent(event.messageId, event.delta, true);
           }
           break;
 
         case EventType.TEXT_MESSAGE_END:
-          console.log('[AG-UI] Text message end:', event.messageId);
           if (currentMessageId.current === event.messageId) {
             finalizeMessage(event.messageId);
             currentMessageId.current = null;
@@ -162,7 +159,6 @@ export function useWebSocket() {
 
         case EventType.TOOL_CALL_START: {
           const toolEvent = event as ToolCallStartEvent;
-          console.log('[AG-UI] Tool call start:', toolEvent.toolCallName, 'agent:', currentAgentId.current);
           addToolCall({
             id: toolEvent.toolCallId,
             toolName: toolEvent.toolCallName,
@@ -189,22 +185,19 @@ export function useWebSocket() {
         }
 
         case EventType.TOOL_CALL_ARGS:
-          console.log('[AG-UI] Tool call args:', event.toolCallId);
           try {
             const parameters = JSON.parse(event.delta);
             updateToolCall(event.toolCallId, { parameters });
           } catch {
-            console.warn('[AG-UI] Failed to parse tool args:', event.delta);
+            // Failed to parse tool args
           }
           break;
 
         case EventType.TOOL_CALL_END:
-          console.log('[AG-UI] Tool call end:', event.toolCallId);
           // TOOL_CALL_END now just signals end of streaming, result comes via TOOL_CALL_RESULT
           break;
 
         case EventType.TOOL_CALL_RESULT:
-          console.log('[AG-UI] Tool call result:', event.toolCallId);
           updateToolCall(event.toolCallId, {
             status: 'completed',
             result: event.content,
@@ -222,7 +215,6 @@ export function useWebSocket() {
           break;
 
         case EventType.STATE_DELTA:
-          console.log('[AG-UI] State delta received');
           break;
 
         case EventType.CUSTOM:
@@ -230,23 +222,20 @@ export function useWebSocket() {
           break;
 
         case EventType.RAW:
-          console.warn('[AG-UI] Received raw event:', event.event);
           break;
 
         default:
-          console.log('[AG-UI] Unhandled event type:', (event as AGUIEvent).type);
+          break;
       }
     }
 
     function handleStateSnapshot(event: StateSnapshotEvent) {
-      console.log('[AG-UI] State snapshot:', event.snapshot);
       const snapshot = event.snapshot;
-      
+
       // Update current agent from state snapshot
       if (snapshot.current_agent || snapshot.currentAgent) {
         const newAgentId = (snapshot.current_agent || snapshot.currentAgent) as string;
         if (newAgentId !== currentAgentId.current) {
-          console.log('[AG-UI] Agent changed via state snapshot:', currentAgentId.current, '→', newAgentId);
           currentAgentId.current = newAgentId;
           setAgentActive(newAgentId);
         }
@@ -257,7 +246,6 @@ export function useWebSocket() {
       if (isToolApprovalRequest(event)) {
         const payload = parseToolApprovalRequest(event);
         if (payload) {
-          console.log('[AG-UI] Tool approval request:', payload.toolName);
           addApproval({
             approvalId: payload.approvalId,
             toolName: payload.toolName,
@@ -270,7 +258,6 @@ export function useWebSocket() {
       } else if (isAgoraError(event)) {
         const error = parseAgoraError(event);
         if (error) {
-          console.error('[AG-UI] Server error:', error.message);
           setError(new Error(error.message));
         }
       } else if (event.name === 'agora:spoken_text_start') {
@@ -295,17 +282,13 @@ export function useWebSocket() {
           type: 'spoken_text_end',
           messageId: value.messageId,
         });
-      } else {
-        console.log('[AG-UI] Custom event:', event.name, event.value);
       }
     }
 
     if (!hasInitiatedConnection) {
       const status = client.getStatus();
-      console.log('[useWebSocket] First subscription, client status: %s', status);
 
       if (status === 'disconnected' || status === 'error') {
-        console.log('[useWebSocket] Initiating connection');
         hasInitiatedConnection = true;
         setTimeout(() => client.connect(), 0);
       }
@@ -313,17 +296,14 @@ export function useWebSocket() {
 
     return () => {
       activeSubscriptions--;
-      console.log('[useWebSocket] Unsubscribing (active: %d)', activeSubscriptions);
 
       unsubscribeStatus();
       unsubscribeError();
       unsubscribeEvent();
 
       if (activeSubscriptions === 0) {
-        console.log('[useWebSocket] No active subscriptions, scheduling cleanup check');
         setTimeout(() => {
           if (activeSubscriptions === 0 && globalClient) {
-            console.log('[useWebSocket] Disconnecting idle client');
             globalClient.disconnect();
             globalClient = null;
             hasInitiatedConnection = false;
@@ -350,7 +330,6 @@ export function useWebSocket() {
   const sendMessage = (content: string) => {
     const userId = useUserStore.getState().currentUser?.id;
     if (!userId) {
-      console.warn('[useWebSocket] Cannot send message: no user selected');
       return;
     }
     if (clientRef.current && session) {
@@ -374,7 +353,6 @@ export function useWebSocket() {
   const reconnect = () => {
     const client = clientRef.current || globalClient;
     if (client) {
-      console.log('[useWebSocket] Manual reconnect requested');
       hasInitiatedConnection = false;
       client.reset();
       client.connect();

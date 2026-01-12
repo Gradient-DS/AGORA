@@ -94,7 +94,8 @@ class AuditLogger:
             approval_id: Unique approval request ID
         """
         log.info(
-            f"[{session_id}] Approval requested for {tool_name} (risk: {risk_level}, id: {approval_id})"
+            f"[{session_id}] Approval requested for {tool_name} "
+            f"(risk: {risk_level}, id: {approval_id})"
         )
 
     async def log_approval_response(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from langchain_core.tools import tool, BaseTool
+from langchain_core.tools import BaseTool, tool
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,8 @@ def get_tools_for_agent(
             [transfer_to_history, transfer_to_regulation, transfer_to_reporting]
         )
         log.info(
-            f"{agent_id} gets handoff tools: transfer_to_history, transfer_to_regulation, transfer_to_reporting"
+            f"{agent_id} gets handoff tools: transfer_to_history, "
+            "transfer_to_regulation, transfer_to_reporting"
         )
     else:
         tools.append(transfer_to_general)

@@ -8,19 +8,21 @@ import logging
 import uuid
 from typing import Any
 
-from langchain_core.messages import HumanMessage, AIMessage
+from ag_ui.core import Message as AGUIMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
-from ag_ui.core import Message as AGUIMessage
-
+from agora_langgraph.adapters.audit_logger import AuditLogger
+from agora_langgraph.adapters.session_metadata import SessionMetadataManager
+from agora_langgraph.adapters.user_manager import UserManager
 from agora_langgraph.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
 )
 from agora_langgraph.common.schemas import ToolCall
+from agora_langgraph.core.agent_definitions import get_spoken_prompt
+from agora_langgraph.core.agents import get_llm_for_agent
 from agora_langgraph.core.approval_logic import requires_human_approval
-from agora_langgraph.adapters.audit_logger import AuditLogger
-from agora_langgraph.adapters.session_metadata import SessionMetadataManager
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
@@ -47,16 +49,18 @@ class Orchestrator:
 
     def __init__(
         self,
-        graph: CompiledStateGraph,
+        graph: CompiledStateGraph[Any],
         moderator: ModerationPipeline,
         audit_logger: AuditLogger,
         session_metadata: SessionMetadataManager | None = None,
+        user_manager: UserManager | None = None,
     ):
         """Initialize orchestrator."""
         self.graph = graph
         self.moderator = moderator
         self.audit = audit_logger
         self.session_metadata = session_metadata
+        self.user_manager = user_manager
         self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
 
     async def _handle_tool_approval_flow(
@@ -145,13 +149,17 @@ class Orchestrator:
         # Create or update session metadata
         if self.session_metadata:
             try:
-                log.info(f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}")
+                log.info(
+                    f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}"
+                )
                 await self.session_metadata.create_or_update_metadata(
                     session_id=thread_id,
                     user_id=user_id,
                     first_message=user_content,
                 )
-                log.info(f"Session metadata created/updated successfully for {thread_id}")
+                log.info(
+                    f"Session metadata created/updated successfully for {thread_id}"
+                )
             except Exception as e:
                 log.warning(f"Failed to update session metadata: {e}")
 
@@ -205,6 +213,7 @@ class Orchestrator:
                     thread_id,
                     run_id,
                     message_id,
+                    user_id,
                     protocol_handler,
                 )
             else:
@@ -285,7 +294,7 @@ class Orchestrator:
         config: dict[str, Any],
     ) -> tuple[str, str]:
         """Run graph in blocking mode without streaming."""
-        result = await self.graph.ainvoke(input_state, config=config)
+        result = await self.graph.ainvoke(input_state, config=config)  # type: ignore[arg-type]
 
         messages = result.get("messages", [])
         response_content = ""
@@ -304,21 +313,96 @@ class Orchestrator:
         thread_id: str,
         run_id: str,
         message_id: str,
+        user_id: str,
         protocol_handler: Any,
     ) -> tuple[str, str]:
-        """Stream graph response using astream_events with AG-UI Protocol."""
+        """Stream graph response using astream_events with AG-UI Protocol.
+
+        Dual-channel streaming controlled by user's spoken_text_type preference:
+        - 'summarize': Two parallel LLM calls (written + speech-optimized spoken)
+        - 'dictate': Single LLM call, same content to both channels
+        """
         full_response: list[str] = []
         current_agent_id = "general-agent"
         current_step: str | None = "routing"
         active_tool_calls: dict[str, str] = {}
         message_started = False
+        spoken_message_started = False
 
         await protocol_handler.send_step_finished("routing")
         await protocol_handler.send_step_started("thinking")
         current_step = "thinking"
 
+        # Fetch user preference for spoken response mode
+        spoken_mode = "summarize"  # default
+        if self.user_manager:
+            try:
+                user = await self.user_manager.get_user(user_id)
+                if user:
+                    prefs = user.get("preferences", {})
+                    if prefs:
+                        spoken_mode = prefs.get("spoken_text_type", "summarize")
+            except Exception as e:
+                log.warning(f"Failed to fetch user preferences: {e}, using default")
+
+        # Parallel spoken task state (only used in 'summarize' mode)
+        spoken_task: asyncio.Task[None] | None = None
+        spoken_queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        async def generate_spoken_parallel(agent_id: str) -> None:
+            """Generate spoken response in TRUE PARALLEL with written stream.
+
+            Uses the same conversation context but a spoken-specific prompt
+            that produces shorter, TTS-friendly summary responses.
+            Only used when spoken_mode == 'summarize'.
+            """
+            try:
+                spoken_prompt = get_spoken_prompt(agent_id)
+                if not spoken_prompt:
+                    log.warning(f"No spoken prompt for agent {agent_id}")
+                    await protocol_handler.send_spoken_text_error(
+                        message_id,
+                        "prompt_not_found",
+                        f"No spoken prompt defined for agent: {agent_id}",
+                    )
+                    return
+
+                llm = get_llm_for_agent(agent_id)
+
+                # Use same conversation context as written stream
+                messages = list(input_state.get("messages", []))
+                spoken_messages = [SystemMessage(content=spoken_prompt)] + messages
+
+                async for chunk in llm.astream(spoken_messages):
+                    if hasattr(chunk, "content") and chunk.content:
+                        await spoken_queue.put(str(chunk.content))
+
+            except Exception as e:
+                error_msg = str(e)
+                log.error(f"Error generating spoken response: {error_msg}")
+                if protocol_handler.is_connected:
+                    await protocol_handler.send_spoken_text_error(
+                        message_id, "generation_failed", error_msg
+                    )
+            finally:
+                await spoken_queue.put(None)
+
+        async def stream_spoken_to_frontend() -> None:
+            """Stream spoken chunks to frontend as they arrive (summarize mode)."""
+            nonlocal spoken_message_started
+            while True:
+                chunk = await spoken_queue.get()
+                if chunk is None:
+                    # Send spoken_text_end immediately when spoken stream finishes
+                    if protocol_handler.is_connected and spoken_message_started:
+                        await protocol_handler.send_spoken_text_end(message_id)
+                        spoken_message_started = False  # Mark as ended
+                    break
+                if protocol_handler.is_connected:
+                    await protocol_handler.send_spoken_text_content(message_id, chunk)
+
         async for event in self.graph.astream_events(
-            input_state, config=config, version="v2"
+            input_state, config=config, version="v2"  # type: ignore[arg-type]
         ):
             kind = event.get("event", "")
 
@@ -329,21 +413,39 @@ class Orchestrator:
                     full_response.append(content)
 
                     if protocol_handler.is_connected:
-                        # Start message on first content
+                        # Start BOTH channels on first content
                         if not message_started:
                             await protocol_handler.send_text_message_start(
                                 message_id, "assistant"
                             )
+                            await protocol_handler.send_spoken_text_start(
+                                message_id, "assistant"
+                            )
                             message_started = True
+                            spoken_message_started = True
 
+                            # In 'summarize' mode: start parallel LLM call for spoken
+                            if spoken_mode == "summarize":
+                                spoken_task = asyncio.create_task(
+                                    generate_spoken_parallel(current_agent_id)
+                                )
+                                asyncio.create_task(stream_spoken_to_frontend())
+
+                        # Send written content
                         await protocol_handler.send_text_message_content(
                             message_id, content
                         )
 
+                        # In 'dictate' mode: duplicate content to spoken channel
+                        if spoken_mode == "dictate":
+                            await protocol_handler.send_spoken_text_content(
+                                message_id, content
+                            )
+
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 tool_run_id = event.get("run_id", str(uuid.uuid4()))
-                raw_input = event.get("data", {}).get("input", {})
+                raw_input: Any = event.get("data", {}).get("input", {})
                 tool_input = (
                     _sanitize_params(raw_input) if isinstance(raw_input, dict) else {}
                 )
@@ -444,10 +546,19 @@ class Orchestrator:
                                 }
                             )
 
-        # Finalize message and step
+        # Wait for spoken task to complete (only in 'summarize' mode)
+        if spoken_task:
+            try:
+                await spoken_task
+            except Exception as e:
+                log.error(f"Spoken task failed: {e}")
+
+        # Finalize BOTH channels
         if protocol_handler.is_connected:
             if message_started:
                 await protocol_handler.send_text_message_end(message_id)
+            if spoken_message_started:
+                await protocol_handler.send_spoken_text_end(message_id)
             if current_step:
                 await protocol_handler.send_step_finished(current_step)
 
@@ -460,7 +571,7 @@ class Orchestrator:
         config = {"configurable": {"thread_id": thread_id}}
 
         try:
-            state = await self.graph.aget_state(config)
+            state = await self.graph.aget_state(config)  # type: ignore[arg-type]
             if not state or not state.values:
                 return []
 
@@ -487,7 +598,7 @@ class Orchestrator:
                                 {
                                     "role": "assistant",
                                     "content": str(msg.content),
-                                    "agent_id": agent_id,
+                                    "agent_id": agent_id or "",
                                 }
                             )
                         if include_tool_calls and hasattr(msg, "tool_calls"):
@@ -498,7 +609,7 @@ class Orchestrator:
                                         "tool_call_id": tc.get("id", ""),
                                         "tool_name": tc.get("name", "unknown"),
                                         "content": str(tc.get("args", {})),
-                                        "agent_id": agent_id,
+                                        "agent_id": agent_id or "",
                                     }
                                 )
                     elif include_tool_calls and msg.type == "tool":

@@ -33,20 +33,17 @@ export const useUserStore = create<UserStore>((set, get) => ({
     try {
       const preferences = await fetchUserPreferences(userId);
       set({ preferences });
-    } catch (error) {
-      console.error('[UserStore] Error loading preferences:', error);
+    } catch {
       // Default preferences on error
       set({ preferences: { spoken_text_type: 'summarize' } });
     }
   },
 
   loadUsers: async () => {
-    console.log('[UserStore] Loading users from API');
     set({ isLoading: true, error: null });
 
     try {
       const { users } = await apiFetchUsers();
-      console.log('[UserStore] Loaded users:', users.length);
       set({ users, isLoading: false });
 
       // If we have a saved user ID, try to restore it
@@ -66,7 +63,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
       // Auto-select first user if none is saved and users exist
       const firstUser = users[0];
       if (!get().currentUser && firstUser) {
-        console.log('[UserStore] No saved user, auto-selecting first user:', firstUser.id);
         localStorage.setItem('current_user', firstUser.id);
         set({ currentUser: firstUser });
         // Load preferences for the auto-selected user
@@ -74,7 +70,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load users';
-      console.error('[UserStore] Error loading users:', message);
       set({ error: message, isLoading: false });
     }
   },
@@ -87,8 +82,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
       set({ currentUser: user });
       // Load preferences for the new user
       get().loadPreferences(userId);
-    } else {
-      console.warn('[UserStore] User not found:', userId);
     }
   },
 

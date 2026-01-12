@@ -83,6 +83,50 @@ Elke server draait onafhankelijk met gebruik van het **FastMCP** framework met *
 - ✅ **Resource endpoints** - Stel data beschikbaar via `@mcp.resource()`
 - ✅ **Ingebouwde server** - Enkele `mcp.run()` aanroep start alles
 
+## Embedding Configuration
+
+The regulation-analysis server supports two embedding providers:
+
+### OpenAI Embeddings (Default)
+
+Uses `text-embedding-3-small` with 768 dimensions. Requires `MCP_OPENAI_API_KEY`.
+
+```bash
+MCP_EMBEDDING_PROVIDER=openai
+MCP_OPENAI_API_KEY=sk-...
+```
+
+### Local Embeddings
+
+Uses `nomic-ai/nomic-embed-text-v1.5` via sentence-transformers. Requires additional dependencies (~800MB).
+
+```bash
+MCP_EMBEDDING_PROVIDER=local
+MCP_EMBEDDING_MODEL=nomic-ai/nomic-embed-text-v1.5  # optional, this is default
+MCP_EMBEDDING_DEVICE=cpu  # optional, auto-detected
+```
+
+### Docker Builds
+
+For smaller images when using OpenAI embeddings:
+
+```bash
+# OpenAI embeddings (~300MB image)
+docker build --build-arg EMBEDDING_PROVIDER=openai -t regulation-analysis .
+
+# Local embeddings (~1.1GB image)
+docker build --build-arg EMBEDDING_PROVIDER=local -t regulation-analysis .
+```
+
+### Re-ingesting Documents
+
+When switching providers, documents should be re-ingested to ensure query/document embedding consistency:
+
+```bash
+cd mcp-servers/document-ingestion
+MCP_EMBEDDING_PROVIDER=openai MCP_OPENAI_API_KEY=sk-... python ingest.py
+```
+
 ## Ontwikkeling
 
 ### Lokaal draaien (zonder Docker)

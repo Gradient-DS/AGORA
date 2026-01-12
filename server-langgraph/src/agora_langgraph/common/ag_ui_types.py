@@ -10,35 +10,33 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
-from pydantic.alias_generators import to_camel
-
 # Re-export all official AG-UI types
 from ag_ui.core import (
-    EventType,
     BaseEvent,
-    TextMessageStartEvent,
+    CustomEvent,
+    Event,
+    EventType,
+    Message,
+    MessagesSnapshotEvent,
+    RawEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
+    State,
+    StateDeltaEvent,
+    StateSnapshotEvent,
+    StepFinishedEvent,
+    StepStartedEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
-    ToolCallStartEvent,
+    TextMessageStartEvent,
     ToolCallArgsEvent,
     ToolCallEndEvent,
     ToolCallResultEvent,
-    StateSnapshotEvent,
-    StateDeltaEvent,
-    MessagesSnapshotEvent,
-    RawEvent,
-    CustomEvent,
-    RunStartedEvent,
-    RunFinishedEvent,
-    RunErrorEvent,
-    StepStartedEvent,
-    StepFinishedEvent,
-    Event,
-    Message,
-    RunAgentInput as OfficialRunAgentInput,  # Keep for completeness...
-    State,
+    ToolCallStartEvent,
 )
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 __all__ = [
     # Official AG-UI types
@@ -69,9 +67,11 @@ __all__ = [
     "ToolApprovalRequestPayload",
     "ToolApprovalResponsePayload",
     "ErrorPayload",
+    "SpokenTextErrorPayload",
     "AGORA_TOOL_APPROVAL_REQUEST",
     "AGORA_TOOL_APPROVAL_RESPONSE",
     "AGORA_ERROR",
+    "AGORA_SPOKEN_TEXT_ERROR",
 ]
 
 
@@ -141,7 +141,19 @@ class ErrorPayload(AgoraBaseModel):
     )
 
 
+class SpokenTextErrorPayload(AgoraBaseModel):
+    """Payload for agora:spoken_text_error custom event."""
+
+    message_id: str = Field(description="Message ID this error relates to")
+    error_code: str = Field(description="Error code for programmatic handling")
+    message: str = Field(description="Human-readable error message")
+    details: dict[str, Any] | None = Field(
+        default=None, description="Additional error details"
+    )
+
+
 # Custom event names used by AGORA
 AGORA_TOOL_APPROVAL_REQUEST = "agora:tool_approval_request"
 AGORA_TOOL_APPROVAL_RESPONSE = "agora:tool_approval_response"
 AGORA_ERROR = "agora:error"
+AGORA_SPOKEN_TEXT_ERROR = "agora:spoken_text_error"
