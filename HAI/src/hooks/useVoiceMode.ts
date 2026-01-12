@@ -84,9 +84,8 @@ export function useVoiceMode() {
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
 
-      // Log actual sample rate (browsers may use 44100 or 48000)
+      // Use actual sample rate (browsers may use 44100 or 48000)
       const actualSampleRate = audioContext.sampleRate;
-      console.log(`[VoiceMode] AudioContext sample rate: ${actualSampleRate}`);
 
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
@@ -143,11 +142,9 @@ export function useVoiceMode() {
 
       sttClient.onError((err) => {
         setError(err);
-        console.error('[VoiceMode] STT error:', err);
       });
 
       sttClient.onStatusChange((status) => {
-        console.log('[VoiceMode] STT status:', status);
         if (status === 'error') {
           setListening(false);
         }
@@ -165,7 +162,6 @@ export function useVoiceMode() {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Failed to start voice mode');
       setError(error);
-      console.error('[VoiceMode] Error:', error);
     }
   };
 

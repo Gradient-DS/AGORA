@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Awaitable
 import logging
 from agents import Agent, Runner, SQLiteSession
-from agents.mcp import MCPServerStreamableHttp
 from agents.items import ToolCallItem, ToolCallOutputItem
 from agents.stream_events import RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
@@ -38,8 +37,13 @@ AGENT_MCP_MAPPING = {
 class AgentRegistry:
     """Registry for Agent SDK agents with handoff support."""
 
-    def __init__(self, mcp_registry: MCPToolRegistry):
+    def __init__(
+        self,
+        mcp_registry: MCPToolRegistry,
+        tools_by_server: dict[str, list] | None = None,
+    ):
         self.mcp_registry = mcp_registry
+        self.tools_by_server = tools_by_server or {}
         self.agents: dict[str, Agent] = {}
         self.agent_configs: dict[str, AgentConfig] = {}
 
@@ -47,14 +51,17 @@ class AgentRegistry:
         """Create and register an Agent SDK agent from config."""
         agent_id = config["id"]
 
-        # Get only the MCP servers this agent should have access to
+        # Get the MCP server names this agent should have access to
         agent_mcp_server_names = AGENT_MCP_MAPPING.get(agent_id, [])
-        agent_mcp_servers: list[MCPServerStreamableHttp] = []
 
-        # mcp_registry.mcp_servers is a list, so we need to filter by name
-        for mcp_server in self.mcp_registry.mcp_servers:
-            if mcp_server.name in agent_mcp_server_names:
-                agent_mcp_servers.append(mcp_server)
+        # Collect FunctionTool wrappers for this agent's MCP servers
+        # Using FunctionTools instead of mcp_servers for reliable tool calling
+        # after handoffs (workaround for SDK issue #617)
+        agent_tools: list = []
+
+        for server_name in agent_mcp_server_names:
+            if server_name in self.tools_by_server:
+                agent_tools.extend(self.tools_by_server[server_name])
 
         # Agent SDK doesn't support temperature parameter directly
         # Temperature is set at the Runner.run level or via model string
@@ -62,19 +69,31 @@ class AgentRegistry:
         settings = get_settings()
         model = config.get("model") or settings.openai_model
 
+        # Pass FunctionTool wrappers explicitly via tools= parameter
+        # NOT using mcp_servers= because SDK's MCP integration is unreliable after handoffs
         agent = Agent(
             name=config["name"],
             instructions=config["instructions"],
             model=model,
-            mcp_servers=agent_mcp_servers,
+            tools=agent_tools,
         )
 
         self.agents[agent_id] = agent
         self.agent_configs[agent_id] = config
 
         log.info(
-            f"Registered agent: {agent_id} with {len(agent_mcp_servers)} MCP servers: {agent_mcp_server_names}"
+            f"📝 REGISTERED AGENT: {agent_id} with {len(agent_tools)} FunctionTools"
         )
+        if agent_tools:
+            tool_names = [t.name for t in agent_tools[:5]]
+            suffix = "..." if len(agent_tools) > 5 else ""
+            log.info(f"    └─ Tools: {tool_names}{suffix}")
+            # Log which MCP servers these tools come from
+            for server_name in agent_mcp_server_names:
+                server_tool_count = len(self.tools_by_server.get(server_name, []))
+                log.info(f"    └─ From MCP '{server_name}': {server_tool_count} tools")
+        else:
+            log.info("    └─ (no tools)")
 
         return agent
 
@@ -122,8 +141,62 @@ class AgentRunner:
                 session_id=session_id,
                 db_path=self.sessions_db_path,
             )
-            log.info(f"Created new session: {session_id}")
+            log.info(f"🆕 Created NEW session: {session_id}")
+        else:
+            log.info(f"♻️ REUSING existing session: {session_id}")
         return self.sessions[session_id]
+
+    async def _debug_log_session_state(self, session: SQLiteSession, session_id: str) -> None:
+        """Debug helper: Log current session state before running agent."""
+        try:
+            items = await session.get_items()
+            log.info(f"📋 SESSION DEBUG [{session_id}]: {len(items)} items in history")
+
+            # Summarize the history
+            user_msgs = 0
+            assistant_msgs = 0
+            tool_calls = 0
+            tool_outputs = 0
+
+            for item in items:
+                item_type = item.get("type")
+                role = item.get("role")
+                if role == "user":
+                    user_msgs += 1
+                elif role == "assistant":
+                    assistant_msgs += 1
+                elif item_type == "function_call":
+                    tool_calls += 1
+                    tool_name = item.get("name", "unknown")
+                    log.debug(f"  📦 Tool call: {tool_name}")
+                elif item_type == "function_call_output":
+                    tool_outputs += 1
+
+            log.info(
+                f"📊 SESSION SUMMARY [{session_id}]: "
+                f"user={user_msgs}, assistant={assistant_msgs}, "
+                f"tool_calls={tool_calls}, tool_outputs={tool_outputs}"
+            )
+
+            # Log the last few items to see recent context
+            if items:
+                log.info(f"📜 LAST 3 ITEMS [{session_id}]:")
+                for item in items[-3:]:
+                    item_type = item.get("type", item.get("role", "unknown"))
+                    content_preview = ""
+                    if item.get("content"):
+                        content_raw = item.get("content")
+                        if isinstance(content_raw, str):
+                            content_preview = content_raw[:100]
+                        elif isinstance(content_raw, list) and content_raw:
+                            first = content_raw[0]
+                            if isinstance(first, dict):
+                                content_preview = first.get("text", "")[:100]
+                    elif item.get("name"):
+                        content_preview = f"tool: {item.get('name')}"
+                    log.info(f"    [{item_type}] {content_preview}...")
+        except Exception as e:
+            log.warning(f"Failed to debug log session state: {e}")
 
     async def run_agent(
         self,
@@ -150,6 +223,19 @@ class AgentRunner:
         """
         session = self.get_or_create_session(session_id)
         entry_agent = self.agent_registry.get_entry_agent()
+
+        # Debug: Log session state BEFORE running
+        log.info(f"🚀 STARTING AGENT RUN for session: {session_id}")
+        log.info(f"📥 User message: {message[:100]}...")
+        log.info(f"🎯 Entry agent: {entry_agent.name} (always starts from general-agent)")
+        await self._debug_log_session_state(session, session_id)
+
+        # Log available MCP servers for entry agent
+        if hasattr(entry_agent, "mcp_servers") and entry_agent.mcp_servers:
+            mcp_names = [s.name for s in entry_agent.mcp_servers]
+            log.info(f"🔧 Entry agent MCP servers: {mcp_names}")
+        else:
+            log.info("🔧 Entry agent has NO MCP servers (expected for general-agent)")
 
         if stream_callback:
             return await self._run_streamed_session(
@@ -200,8 +286,20 @@ class AgentRunner:
             )
 
         final_output = "".join(state.full_response)
-        log.info(f"Streaming completed. Total output: {len(final_output)} characters")
-        log.info(f"Agent run completed. Active agent: {state.current_agent_id}")
+
+        # End-of-run summary
+        log.info("=" * 60)
+        log.info(f"🏁 AGENT RUN COMPLETED")
+        log.info(f"   Final agent: {state.current_agent_id}")
+        log.info(f"   Output length: {len(final_output)} characters")
+        log.info(f"   Total tool calls: {len(state.tool_calls_info)}")
+        if state.tool_calls_info:
+            log.info(f"   Tools called: {list(state.tool_calls_info.values())}")
+        log.info("=" * 60)
+
+        # Debug: Log session state AFTER running
+        await self._debug_log_session_state(session, f"{session.session_id}-AFTER")
+
         return final_output, state.current_agent_id
 
     async def _process_stream_event(
@@ -289,9 +387,24 @@ class AgentRunner:
             except:
                 parameters = {}
 
-            log.info(
-                f"🔧 Tool call started: {tool_name} (ID: {tool_call_id}) by agent {state.current_agent_id}"
+            # Categorize tool type for debugging
+            is_handoff = "transfer" in tool_name.lower() or "handoff" in tool_name.lower()
+            is_mcp_tool = not is_handoff and any(
+                prefix in tool_name.lower()
+                for prefix in ["search_", "get_", "check_", "lookup_", "generate_", "extract_", "verify_", "analyze_"]
             )
+
+            if is_handoff:
+                log.info(f"🔄 HANDOFF TOOL CALL: {tool_name} (current: {state.current_agent_id})")
+            elif is_mcp_tool:
+                log.info(
+                    f"🌐 MCP TOOL CALL: {tool_name} by {state.current_agent_id} "
+                    f"(params: {json.dumps(parameters)[:200]}...)"
+                )
+            else:
+                log.info(
+                    f"🔧 Tool call started: {tool_name} (ID: {tool_call_id}) by agent {state.current_agent_id}"
+                )
             await tool_callback(
                 tool_call_id,
                 tool_name,
@@ -374,14 +487,37 @@ class AgentRunner:
         self, state: StreamState, tool_callback: Callable | None
     ) -> None:
         """Handle handoff occurrence."""
-        log.info(f"🔄 Handoff occurred event detected")
+        old_agent_id = state.current_agent_id
+        log.info(f"🔄 HANDOFF EVENT DETECTED (from {old_agent_id})")
 
         if state.pending_handoff_target:
             state.current_agent_id = state.pending_handoff_target
             log.info(
-                f"✅ Agent handoff completed. Now active: {state.current_agent_id}"
+                f"✅ AGENT TRANSITION: {old_agent_id} → {state.current_agent_id}"
             )
+
+            # Log FunctionTools available to the new agent
+            new_agent = self.agent_registry.get_agent(state.current_agent_id)
+            if new_agent:
+                # Log FunctionTools (these are MCP tool wrappers)
+                if hasattr(new_agent, "tools") and new_agent.tools:
+                    tool_names = [t.name for t in new_agent.tools[:5]]
+                    suffix = "..." if len(new_agent.tools) > 5 else ""
+                    log.info(
+                        f"🔧 NEW AGENT TOOLS [{state.current_agent_id}]: "
+                        f"{len(new_agent.tools)} FunctionTools ({tool_names}{suffix})"
+                    )
+                else:
+                    log.info(
+                        f"🔧 NEW AGENT [{state.current_agent_id}] has NO tools"
+                    )
+
             state.pending_handoff_target = None
+        else:
+            log.warning(
+                f"⚠️ HANDOFF EVENT but no pending target! "
+                f"current_agent={state.current_agent_id}"
+            )
 
         if tool_callback:
             await self._complete_transfer_tool_call(state, tool_callback)

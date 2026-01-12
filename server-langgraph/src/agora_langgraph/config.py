@@ -1,7 +1,7 @@
 """Application configuration - matching server-openai settings for compatibility."""
 
-from functools import lru_cache
 import logging
+from functools import lru_cache
 
 from dotenv import find_dotenv, load_dotenv
 from pydantic import Field, SecretStr
@@ -27,7 +27,10 @@ class Settings(BaseSettings):
 
     mcp_servers: str = Field(
         default="",
-        description="Comma-separated MCP servers (name=url,name2=url2). Optional - leave empty for testing without MCP tools.",
+        description=(
+            "Comma-separated MCP servers (name=url,name2=url2). "
+            "Optional - leave empty for testing without MCP tools."
+        ),
     )
 
     guardrails_enabled: bool = Field(default=True, description="Enable moderation")
@@ -55,7 +58,7 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
-    return Settings()
+    return Settings()  # type: ignore[call-arg]
 
 
 def parse_mcp_servers(servers_str: str) -> dict[str, str]:

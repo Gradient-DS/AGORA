@@ -9,15 +9,15 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from agora_langgraph.core.state import AgentState
 from agora_langgraph.core.agents import (
     general_agent,
+    get_agent_tools,
+    history_agent,
     regulation_agent,
     reporting_agent,
-    history_agent,
-    get_agent_tools,
     set_agent_tools,
 )
+from agora_langgraph.core.state import AgentState
 from agora_langgraph.core.tools import get_tools_for_agent
 
 log = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ def route_after_tools(state: AgentState) -> str:
 
 def build_agent_graph(
     mcp_tools_by_server: dict[str, list[Any]] | None = None,
-) -> StateGraph:
+) -> StateGraph[AgentState]:
     """Build the multi-agent StateGraph.
 
     Args:

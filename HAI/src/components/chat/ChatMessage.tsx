@@ -17,6 +17,8 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
+  const getAgent = useAgentStore((state) => state.getAgent);
+
   if (message.role === 'tool') {
     return (
       <div className="flex justify-center mb-2">
@@ -35,8 +37,6 @@ export function ChatMessage({ message }: ChatMessageProps) {
     minute: '2-digit',
     hour12: false,
   });
-
-  const getAgent = useAgentStore((state) => state.getAgent);
   const agentName = message.agentId ? getAgent(message.agentId)?.name || message.agentId : null;
 
   const downloadUrls = message.metadata?.download_urls as

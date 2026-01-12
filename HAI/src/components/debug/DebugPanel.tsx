@@ -18,8 +18,6 @@ export function DebugPanel() {
 
   const unassignedToolCalls = toolCalls.filter((tc) => !tc.agentId);
 
-  console.log('[DebugPanel] All tool calls:', toolCalls.length, toolCalls);
-
   const toggleAgentCollapse = (agentId: string) => {
     setCollapsedAgents((prev) => {
       const next = new Set(prev);

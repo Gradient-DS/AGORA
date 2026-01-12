@@ -9,8 +9,8 @@ from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 from agora_langgraph.config import get_settings
+from agora_langgraph.core.agent_definitions import get_agent_by_id
 from agora_langgraph.core.state import AgentState
-from agora_langgraph.core.agent_definitions import AGENT_CONFIGS, get_agent_by_id
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def get_llm_for_agent(agent_id: str) -> ChatOpenAI:
             model=model,
             temperature=temperature,
             streaming=True,
-            api_key=settings.openai_api_key.get_secret_value(),
+            api_key=settings.openai_api_key.get_secret_value(),  # type: ignore[arg-type]
             base_url=settings.openai_base_url,
         )
 
@@ -85,29 +85,8 @@ async def _run_agent_node(
     system_message = {"role": "system", "content": config["instructions"]}
     messages_with_system = [system_message] + list(state["messages"])
 
-    log.info(f"Running agent: {agent_id} with {len(tools)} tools")
-
-    log.info("=" * 60)
-    log.info(f"DEBUG: Agent {agent_id} - Message history before LLM call:")
-    for i, msg in enumerate(state["messages"]):
-        msg_type = type(msg).__name__
-        content_preview = str(getattr(msg, "content", ""))[:100]
-        tool_calls = getattr(msg, "tool_calls", None)
-        tool_call_id = getattr(msg, "tool_call_id", None)
-        log.info(
-            f"  [{i}] {msg_type}: content={content_preview!r}, "
-            f"tool_calls={tool_calls}, tool_call_id={tool_call_id}"
-        )
-    log.info("=" * 60)
-
     try:
         response = await llm_with_tools.ainvoke(messages_with_system)
-
-        response_tool_calls = getattr(response, "tool_calls", None)
-        log.info(
-            f"Agent {agent_id} response: content={str(response.content)[:100]!r}, "
-            f"tool_calls={response_tool_calls}"
-        )
 
         # Add agent_id to additional_kwargs for history tracking
         if hasattr(response, "additional_kwargs"):

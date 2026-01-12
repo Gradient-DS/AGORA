@@ -74,16 +74,13 @@ export default function App() {
       loadedHistoryForSession.current = session.id;
 
       try {
-        console.log('[App] Loading history for session:', session.id);
         const { messages: historyMessages, toolCalls } = await fetchSessionHistory(session.id);
         if (historyMessages.length > 0) {
           replaceMessages(historyMessages);
           replaceToolCalls(toolCalls);
-          console.log('[App] Loaded', historyMessages.length, 'messages and', toolCalls.length, 'tool calls');
         }
-      } catch (error) {
+      } catch {
         // Session might not have history yet (new session), that's ok
-        console.log('[App] No history found for session (may be new):', error);
       }
     };
 

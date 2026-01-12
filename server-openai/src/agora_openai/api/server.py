@@ -46,7 +46,12 @@ async def lifespan(app: FastAPI):
     await mcp_tool_registry.discover_and_register_tools()
     log.info("Discovered and registered MCP servers")
 
-    agent_registry = AgentRegistry(mcp_tool_registry)
+    # Create FunctionTool wrappers for MCP tools
+    # This ensures reliable tool availability after agent handoffs
+    # (workaround for OpenAI Agents SDK issue #617)
+    function_tools_by_server = mcp_tool_registry.get_function_tools_by_server()
+
+    agent_registry = AgentRegistry(mcp_tool_registry, tools_by_server=function_tools_by_server)
 
     for agent_config in AGENT_CONFIGS:
         agent_registry.register_agent(agent_config)

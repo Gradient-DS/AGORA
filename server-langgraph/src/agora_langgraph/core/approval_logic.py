@@ -4,7 +4,6 @@ from typing import Any
 
 from agora_langgraph.common.schemas import ToolCall
 
-
 HIGH_RISK_TOOL_PATTERNS = [
     "delete",
     "remove",
@@ -20,7 +19,7 @@ ALWAYS_APPROVE_TOOLS = {
     "generate_final_report",
 }
 
-HIGH_RISK_PARAMETERS = {
+HIGH_RISK_PARAMETERS: dict[str, Any] = {
     "amount": 10000,
     "scope": ["company_wide", "global"],
 }

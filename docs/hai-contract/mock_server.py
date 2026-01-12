@@ -773,9 +773,6 @@ class ConversationState:
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for AG-UI protocol communication."""
     await websocket.accept()
-    print(f"\n{'='*60}")
-    print("Client connected")
-    print(f"{'='*60}")
 
     state = ConversationState()
 
@@ -792,22 +789,18 @@ async def websocket_endpoint(websocket: WebSocket):
                     if name == "agora:tool_approval_response":
                         await handle_approval_response(websocket, data, state)
                         continue
-                    print(f"  Unknown custom event: {name}")
                     continue
 
                 if "threadId" in data or "thread_id" in data:
                     await handle_run_input(websocket, data, state)
 
             except WebSocketDisconnect:
-                print("\nClient disconnected")
-                print(f"{'='*60}\n")
                 break
-            except json.JSONDecodeError as e:
-                print(f"  Invalid JSON: {e}")
+            except json.JSONDecodeError:
                 continue
 
-    except Exception as e:
-        print(f"WebSocket error: {e}")
+    except Exception:
+        pass
 
 
 async def handle_run_input(websocket, data: dict, state: ConversationState) -> None:
@@ -822,10 +815,6 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
         if msg.get("role") == "user":
             user_content = msg.get("content", "")
             break
-
-    # Log user info if provided
-    user_info = f" (user: {user_id})" if user_id else ""
-    print(f"  User{user_info}: {user_content[:60]}{'...' if len(user_content) > 60 else ''}")
 
     # Always start with algemene-assistent for routing
     await send_run_started(websocket, thread_id, run_id, Agents.GENERAL)
@@ -1150,8 +1139,6 @@ async def handle_report_request(
         "tool_approval_request",
     )
 
-    print(f"  ⏳ Wacht op goedkeuring (id: {approval_id[:12]}...)")
-
 
 async def handle_generic_response(
     websocket, thread_id: str, run_id: str, state: ConversationState, user_content: str
@@ -1193,9 +1180,6 @@ async def handle_approval_response(
     pending = state.pending_approval or {}
     thread_id = pending.get("thread_id", str(uuid.uuid4()))
     run_id = pending.get("run_id", str(uuid.uuid4()))
-
-    status = "✅ Goedgekeurd" if approved else "❌ Afgewezen"
-    print(f"  {status} (feedback: {feedback or 'geen'})")
 
     if approved:
         await execute_report_generation(websocket, thread_id, run_id, state)

@@ -253,6 +253,7 @@ describe('AG-UI Protocol Schemas', () => {
       const input = {
         threadId: 'thread_123',
         runId: 'run_456',
+        userId: '550e8400-e29b-41d4-a716-446655440000',
         messages: [
           { role: 'user', content: 'Hello', id: 'msg_1' },
         ],
@@ -267,6 +268,7 @@ describe('AG-UI Protocol Schemas', () => {
       roles.forEach(role => {
         const input = {
           threadId: 'thread_123',
+          userId: '550e8400-e29b-41d4-a716-446655440000',
           messages: [{ role, content: 'Test' }],
         };
         const result = RunAgentInputSchema.safeParse(input);

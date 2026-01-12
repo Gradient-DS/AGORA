@@ -5,26 +5,24 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import time
 import uuid
 from typing import Any
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from ag_ui.core import Message as AGUIMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 
-from ag_ui.core import Message as AGUIMessage
-
+from agora_langgraph.adapters.audit_logger import AuditLogger
+from agora_langgraph.adapters.session_metadata import SessionMetadataManager
+from agora_langgraph.adapters.user_manager import UserManager
 from agora_langgraph.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
 )
 from agora_langgraph.common.schemas import ToolCall
-from agora_langgraph.core.approval_logic import requires_human_approval
 from agora_langgraph.core.agent_definitions import get_spoken_prompt
 from agora_langgraph.core.agents import get_llm_for_agent
-from agora_langgraph.adapters.audit_logger import AuditLogger
-from agora_langgraph.adapters.session_metadata import SessionMetadataManager
-from agora_langgraph.adapters.user_manager import UserManager
+from agora_langgraph.core.approval_logic import requires_human_approval
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
@@ -51,7 +49,7 @@ class Orchestrator:
 
     def __init__(
         self,
-        graph: CompiledStateGraph,
+        graph: CompiledStateGraph[Any],
         moderator: ModerationPipeline,
         audit_logger: AuditLogger,
         session_metadata: SessionMetadataManager | None = None,
@@ -296,7 +294,7 @@ class Orchestrator:
         config: dict[str, Any],
     ) -> tuple[str, str]:
         """Run graph in blocking mode without streaming."""
-        result = await self.graph.ainvoke(input_state, config=config)
+        result = await self.graph.ainvoke(input_state, config=config)  # type: ignore[arg-type]
 
         messages = result.get("messages", [])
         response_content = ""
@@ -351,15 +349,6 @@ class Orchestrator:
         spoken_task: asyncio.Task[None] | None = None
         spoken_queue: asyncio.Queue[str | None] = asyncio.Queue()
 
-        # Timing state for debug logging
-        stream_start_time: float = 0.0
-        written_first_token_time: float = 0.0
-        spoken_first_token_time: float = 0.0
-        written_end_time: float = 0.0
-        spoken_end_time: float = 0.0
-        written_first_token_received = False
-        spoken_first_token_received = False
-
         async def generate_spoken_parallel(agent_id: str) -> None:
             """Generate spoken response in TRUE PARALLEL with written stream.
 
@@ -367,7 +356,6 @@ class Orchestrator:
             that produces shorter, TTS-friendly summary responses.
             Only used when spoken_mode == 'summarize'.
             """
-            nonlocal spoken_first_token_time, spoken_first_token_received, spoken_end_time
             try:
                 spoken_prompt = get_spoken_prompt(agent_id)
                 if not spoken_prompt:
@@ -387,23 +375,7 @@ class Orchestrator:
 
                 async for chunk in llm.astream(spoken_messages):
                     if hasattr(chunk, "content") and chunk.content:
-                        # Track first token timing
-                        if not spoken_first_token_received:
-                            spoken_first_token_time = time.time()
-                            spoken_first_token_received = True
-                            elapsed = spoken_first_token_time - stream_start_time
-                            log.info(
-                                f"[TIMING] Spoken first token received at "
-                                f"+{elapsed:.3f}s from stream start"
-                            )
                         await spoken_queue.put(str(chunk.content))
-
-                # Mark spoken stream end
-                spoken_end_time = time.time()
-                elapsed = spoken_end_time - stream_start_time
-                log.info(
-                    f"[TIMING] Spoken stream finished at +{elapsed:.3f}s from stream start"
-                )
 
             except Exception as e:
                 error_msg = str(e)
@@ -429,12 +401,8 @@ class Orchestrator:
                 if protocol_handler.is_connected:
                     await protocol_handler.send_spoken_text_content(message_id, chunk)
 
-        # Start timing
-        stream_start_time = time.time()
-        log.info(f"[TIMING] Stream started (mode: {spoken_mode})")
-
         async for event in self.graph.astream_events(
-            input_state, config=config, version="v2"
+            input_state, config=config, version="v2"  # type: ignore[arg-type]
         ):
             kind = event.get("event", "")
 
@@ -443,16 +411,6 @@ class Orchestrator:
                 if chunk and hasattr(chunk, "content") and chunk.content:
                     content = str(chunk.content)
                     full_response.append(content)
-
-                    # Track written first token timing
-                    if not written_first_token_received:
-                        written_first_token_time = time.time()
-                        written_first_token_received = True
-                        elapsed = written_first_token_time - stream_start_time
-                        log.info(
-                            f"[TIMING] Written first token received at "
-                            f"+{elapsed:.3f}s from stream start"
-                        )
 
                     if protocol_handler.is_connected:
                         # Start BOTH channels on first content
@@ -487,7 +445,7 @@ class Orchestrator:
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 tool_run_id = event.get("run_id", str(uuid.uuid4()))
-                raw_input = event.get("data", {}).get("input", {})
+                raw_input: Any = event.get("data", {}).get("input", {})
                 tool_input = (
                     _sanitize_params(raw_input) if isinstance(raw_input, dict) else {}
                 )
@@ -588,39 +546,12 @@ class Orchestrator:
                                 }
                             )
 
-        # Mark written stream end
-        written_end_time = time.time()
-        written_elapsed = written_end_time - stream_start_time
-        log.info(
-            f"[TIMING] Written stream finished at +{written_elapsed:.3f}s from stream start"
-        )
-
         # Wait for spoken task to complete (only in 'summarize' mode)
         if spoken_task:
             try:
                 await spoken_task
             except Exception as e:
                 log.error(f"Spoken task failed: {e}")
-
-        # Log timing summary
-        if written_first_token_received and spoken_first_token_received:
-            first_token_diff = spoken_first_token_time - written_first_token_time
-            log.info(
-                f"[TIMING] First token difference: spoken was "
-                f"{first_token_diff:+.3f}s vs written"
-            )
-        if written_end_time > 0 and spoken_end_time > 0:
-            end_diff = spoken_end_time - written_end_time
-            log.info(
-                f"[TIMING] Stream end difference: spoken was "
-                f"{end_diff:+.3f}s vs written"
-            )
-        log.info(
-            f"[TIMING] Summary - Written: first={written_first_token_time - stream_start_time:.3f}s, "
-            f"end={written_end_time - stream_start_time:.3f}s | "
-            f"Spoken: first={spoken_first_token_time - stream_start_time:.3f}s, "
-            f"end={spoken_end_time - stream_start_time:.3f}s"
-        )
 
         # Finalize BOTH channels
         if protocol_handler.is_connected:
@@ -640,7 +571,7 @@ class Orchestrator:
         config = {"configurable": {"thread_id": thread_id}}
 
         try:
-            state = await self.graph.aget_state(config)
+            state = await self.graph.aget_state(config)  # type: ignore[arg-type]
             if not state or not state.values:
                 return []
 
@@ -667,7 +598,7 @@ class Orchestrator:
                                 {
                                     "role": "assistant",
                                     "content": str(msg.content),
-                                    "agent_id": agent_id,
+                                    "agent_id": agent_id or "",
                                 }
                             )
                         if include_tool_calls and hasattr(msg, "tool_calls"):
@@ -678,7 +609,7 @@ class Orchestrator:
                                         "tool_call_id": tc.get("id", ""),
                                         "tool_name": tc.get("name", "unknown"),
                                         "content": str(tc.get("args", {})),
-                                        "agent_id": agent_id,
+                                        "agent_id": agent_id or "",
                                     }
                                 )
                     elif include_tool_calls and msg.type == "tool":

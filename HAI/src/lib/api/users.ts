@@ -39,7 +39,6 @@ export async function fetchUsers(
   });
 
   const url = `${baseUrl}/users?${params}`;
-  console.log('[users API] Fetching users:', url);
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -47,7 +46,6 @@ export async function fetchUsers(
   }
 
   const data: UserListResponse = await response.json();
-  console.log('[users API] Response:', data);
 
   if (!data.success) {
     throw new Error('Failed to fetch users');

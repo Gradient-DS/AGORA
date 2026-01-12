@@ -5,36 +5,37 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
-from agora_langgraph.config import get_settings, parse_mcp_servers
-from agora_langgraph.logging_config import configure_logging
-from agora_langgraph.core.agent_definitions import list_all_agents
-from agora_langgraph.core.graph import build_agent_graph
-from agora_langgraph.adapters.mcp_client import create_mcp_client_manager
-from agora_langgraph.adapters.checkpointer import create_checkpointer
 from agora_langgraph.adapters.audit_logger import AuditLogger
+from agora_langgraph.adapters.checkpointer import create_checkpointer
+from agora_langgraph.adapters.mcp_client import create_mcp_client_manager
 from agora_langgraph.adapters.session_metadata import SessionMetadataManager
 from agora_langgraph.adapters.user_manager import UserManager
-from agora_langgraph.pipelines.moderator import ModerationPipeline
-from agora_langgraph.pipelines.orchestrator import Orchestrator
 from agora_langgraph.api.ag_ui_handler import AGUIProtocolHandler
 from agora_langgraph.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
 )
+from agora_langgraph.config import get_settings, parse_mcp_servers
+from agora_langgraph.core.agent_definitions import list_all_agents
+from agora_langgraph.core.graph import build_agent_graph
+from agora_langgraph.logging_config import configure_logging
+from agora_langgraph.pipelines.moderator import ModerationPipeline
+from agora_langgraph.pipelines.orchestrator import Orchestrator
 
 log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Initialize LangGraph agents on startup."""
     settings = get_settings()
 
@@ -105,13 +106,13 @@ app.add_middleware(
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy", "service": "agora-langgraph", "protocol": "ag-ui"}
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
         "service": "AGORA LangGraph Orchestration",
@@ -123,9 +124,11 @@ async def root():
 
 
 @app.get("/agents")
-async def get_agents():
+async def get_agents() -> dict[str, Any]:
     """Get list of active and inactive agents."""
     agents = list_all_agents()
+    # Cast to Any to access AgentConfig-specific fields
+    active_agents: list[Any] = agents["active"]
     return {
         "active_agents": [
             {
@@ -134,14 +137,16 @@ async def get_agents():
                 "model": agent["model"],
                 "description": agent["instructions"].split("\n\n")[0],
             }
-            for agent in agents["active"]
+            for agent in active_agents
         ],
         "inactive_agents": agents["inactive"],
     }
 
 
 @app.get("/sessions/{session_id}/history")
-async def get_session_history(session_id: str, include_tools: bool = False):
+async def get_session_history(
+    session_id: str, include_tools: bool = False
+) -> dict[str, Any]:
     """Get conversation history for a session (thread).
 
     Args:
@@ -178,7 +183,7 @@ async def list_sessions(
     user_id: str = Query(..., description="User/inspector persona ID"),
     limit: int = Query(50, ge=1, le=100, description="Max sessions to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-):
+) -> dict[str, Any]:
     """List all sessions for a user, ordered by last activity."""
     session_metadata: SessionMetadataManager = app.state.session_metadata
 
@@ -196,7 +201,7 @@ async def list_sessions(
 
 
 @app.get("/sessions/{session_id}/metadata")
-async def get_session_metadata(session_id: str):
+async def get_session_metadata(session_id: str) -> dict[str, Any]:
     """Get session metadata by ID."""
     session_metadata: SessionMetadataManager = app.state.session_metadata
 
@@ -212,7 +217,7 @@ async def get_session_metadata(session_id: str):
 
 
 @app.delete("/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str) -> dict[str, Any]:
     """Delete a session and its metadata.
 
     Note: This deletes the metadata. Session conversation data
@@ -245,7 +250,7 @@ class CreateUserRequest(BaseModel):
 
 
 @app.post("/users", status_code=201)
-async def create_user(request: CreateUserRequest):
+async def create_user(request: CreateUserRequest) -> dict[str, Any]:
     """Create a new user.
 
     Email must be unique across the system.
@@ -269,7 +274,7 @@ async def create_user(request: CreateUserRequest):
 async def list_users(
     limit: int = Query(50, ge=1, le=100, description="Max users to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-):
+) -> dict[str, Any]:
     """List all users, ordered by creation date (most recent first)."""
     user_manager: UserManager = app.state.user_manager
 
@@ -285,7 +290,7 @@ async def list_users(
 @app.get("/users/me")
 async def get_current_user(
     user_id: str = Query(..., description="Current user ID"),
-):
+) -> dict[str, Any]:
     """Get current user profile.
 
     Requires user_id query parameter for identification.
@@ -313,7 +318,7 @@ class UpdatePreferencesRequest(BaseModel):
 @app.get("/users/me/preferences")
 async def get_current_user_preferences(
     user_id: str = Query(..., description="Current user ID"),
-):
+) -> dict[str, Any]:
     """Get current user's preferences."""
     user_manager: UserManager = app.state.user_manager
     user = await user_manager.get_user(user_id)
@@ -336,7 +341,7 @@ async def get_current_user_preferences(
 async def update_current_user_preferences(
     request: UpdatePreferencesRequest,
     user_id: str = Query(..., description="Current user ID"),
-):
+) -> dict[str, Any]:
     """Update current user's preferences."""
     user_manager: UserManager = app.state.user_manager
 
@@ -403,7 +408,7 @@ async def update_current_user_preferences(
 
 
 @app.get("/users/{user_id}")
-async def get_user(user_id: str):
+async def get_user(user_id: str) -> dict[str, Any]:
     """Get user profile by ID."""
     user_manager: UserManager = app.state.user_manager
 
@@ -425,7 +430,7 @@ async def update_user(
     role: str | None = Query(
         None, description="User's role (admin, inspector, viewer)"
     ),
-):
+) -> dict[str, Any]:
     """Update user profile.
 
     Partial updates are supported - only provided fields will be updated.
@@ -444,7 +449,7 @@ async def update_user(
 
 
 @app.delete("/users/{user_id}")
-async def delete_user(user_id: str):
+async def delete_user(user_id: str) -> dict[str, Any]:
     """Delete a user and all associated sessions.
 
     This operation cascades to delete all sessions owned by the user.
@@ -464,25 +469,18 @@ async def delete_user(user_id: str):
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for AG-UI protocol."""
     await websocket.accept()
 
     handler = AGUIProtocolHandler(websocket)
     orchestrator: Orchestrator = app.state.orchestrator
 
-    log.info("=" * 80)
-    log.info(
-        "WebSocket connection ESTABLISHED from %s (AG-UI Protocol)", websocket.client
-    )
-    log.info("=" * 80)
-
     active_task = None
 
     try:
         while True:
             if not handler.is_connected:
-                log.info("Handler reports connection is closed, exiting loop")
                 break
 
             try:
@@ -490,40 +488,22 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 if message is None:
                     if not handler.is_connected:
-                        log.info("Connection closed during receive, exiting loop")
                         break
                     continue
 
                 if isinstance(message, RunAgentInput):
-                    thread_id = message.thread_id
-                    run_id = message.run_id or str(uuid.uuid4())
-                    log.info(
-                        f"Processing AG-UI run for thread: {thread_id}, run: {run_id}"
-                    )
-
                     if active_task and not active_task.done():
-                        log.info(
-                            "New run received while processing previous one. Cancelling previous."
-                        )
                         active_task.cancel()
                         try:
                             await active_task
                         except asyncio.CancelledError:
                             pass
 
-                    async def process_wrapper(agent_input: RunAgentInput):
+                    async def process_wrapper(agent_input: RunAgentInput) -> None:
                         try:
-                            resp = await orchestrator.process_message(
-                                agent_input, handler
-                            )
-                            log.info(
-                                f"Got response from orchestrator: role={resp.role}, has_content={bool(resp.content)}"
-                            )
-                            log.info(
-                                f"Response sent successfully for thread: {agent_input.thread_id}"
-                            )
+                            await orchestrator.process_message(agent_input, handler)
                         except asyncio.CancelledError:
-                            log.info("Processing cancelled")
+                            pass
                         except Exception as e:
                             log.error("Error in processing task: %s", e, exc_info=True)
                             if handler.is_connected:
@@ -532,64 +512,41 @@ async def websocket_endpoint(websocket: WebSocket):
                     active_task = asyncio.create_task(process_wrapper(message))
 
                 elif isinstance(message, ToolApprovalResponsePayload):
-                    log.info(
-                        f"Received tool approval response: {message.approved} (id: {message.approval_id})"
-                    )
                     orchestrator.handle_approval_response(message)
 
             except WebSocketDisconnect:
-                log.info("WebSocket disconnected by client")
                 if active_task and not active_task.done():
                     active_task.cancel()
                 handler.is_connected = False
                 raise
             except Exception as e:
-                log.error("=" * 80)
-                log.error("ERROR PROCESSING MESSAGE")
-                log.error("=" * 80)
-                log.error("Error: %s", e, exc_info=True)
-                log.error("=" * 80)
+                log.error("Error processing message: %s", e, exc_info=True)
 
                 if handler.is_connected:
                     try:
                         await handler.send_error(
                             "processing_error", f"Error processing message: {str(e)}"
                         )
-                        if handler.is_connected:
-                            log.info(
-                                "Error message sent to client, connection maintained"
-                            )
-                        else:
-                            log.info(
-                                "Connection closed while sending error, exiting loop"
-                            )
+                        if not handler.is_connected:
                             break
                     except Exception as send_err:
                         log.error("Failed to send error message: %s", send_err)
-                        log.error("Connection will be closed")
                         handler.is_connected = False
                         raise
                 else:
-                    log.info("Connection already closed, cannot send error message")
                     break
 
     except WebSocketDisconnect:
-        log.info("=" * 80)
-        log.info("WebSocket connection CLOSED")
-        log.info("=" * 80)
+        pass
     except Exception as e:
-        log.error("=" * 80)
-        log.error("FATAL WebSocket error - connection will close")
-        log.error("=" * 80)
         log.error("Fatal WebSocket error: %s", e, exc_info=True)
-        log.error("=" * 80)
         try:
             await handler.send_error("internal_error", "Internal server error")
         except Exception:
             pass
 
 
-def main():
+def main() -> None:
     """Run the server."""
     settings = get_settings()
     uvicorn.run(

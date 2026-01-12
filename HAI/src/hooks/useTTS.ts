@@ -114,10 +114,11 @@ export function useTTS() {
 
   useEffect(() => {
     const unsubscribe = subscribeTTSEvents(handleTTSEvent);
+    const buffer = textBuffer.current;
     return () => {
       unsubscribe();
       // Clear any pending buffers
-      textBuffer.current.clear();
+      buffer.clear();
     };
   }, [handleTTSEvent]);
 

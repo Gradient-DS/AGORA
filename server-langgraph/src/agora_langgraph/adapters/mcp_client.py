@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from langchain_core.tools import BaseTool
-from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_mcp_adapters.client import MultiServerMCPClient  # type: ignore[import-untyped]
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +81,9 @@ class MCPClientManager:
 
 
 @asynccontextmanager
-async def create_mcp_client_manager(server_urls: dict[str, str]):
+async def create_mcp_client_manager(
+    server_urls: dict[str, str],
+) -> AsyncGenerator[MCPClientManager, None]:
     """Create MCP client manager as async context manager.
 
     Args:

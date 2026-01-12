@@ -1008,7 +1008,7 @@ class ApiKey(Base):
 │                                                                         │
 │  Phase 1: Local Full Stack                                              │
 │  ├─ Topic 1A: Unified docker-compose.local.yml  ← START HERE            │
-│  └─ Topic 1B: Frontend dev mode instructions                            │
+│                                                                         │
 │           ↓                                                             │
 │  Phase 2: API Gateway (Local)                                           │
 │  ├─ Topic 2A: API Gateway service                                       │

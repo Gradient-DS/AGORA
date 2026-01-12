@@ -21,7 +21,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
         "id": "general-agent",
         "name": "NVWA General Assistant",
         "instructions": (
-            "You are a general NVWA inspection assistant that handles greetings and provides guidance.\n\n"
+            "You are a general NVWA inspection assistant that handles greetings "
+            "and provides guidance.\n\n"
             "🇳🇱 LANGUAGE REQUIREMENT:\n"
             "- ALL responses MUST be in Dutch (Nederlands)\n"
             "- You are assisting Dutch-speaking NVWA inspectors\n"
@@ -48,7 +49,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- If inspector says 'genereer rapport' → handoff to reporting-agent\n"
             "- For general questions, answer yourself\n\n"
             "HOW TO HANDOFF:\n"
-            "Use the transfer tools (transfer_to_history, transfer_to_regulation, transfer_to_reporting) when you detect the need.\n"
+            "Use the transfer tools (transfer_to_history, transfer_to_regulation, "
+            "transfer_to_reporting) when you detect the need.\n"
             "The specialist will take over and has all conversation context.\n\n"
             "ALWAYS:\n"
             "- Be friendly and helpful\n"
@@ -91,8 +93,10 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Provide actionable guidance in clear Dutch\n"
             "- Cross-reference with company context when available from conversation\n\n"
             "SEARCH STRATEGY:\n"
-            "- When using search_regulations or lookup_regulation_articles: DO NOT use filters by default\n"
-            "- Let the vector search find the most relevant regulations based on semantic similarity\n"
+            "- When using search_regulations or lookup_regulation_articles: "
+            "DO NOT use filters by default\n"
+            "- Let the vector search find the most relevant regulations "
+            "based on semantic similarity\n"
             "- Only add filters if the inspector specifically requests a certain type\n"
             "- The search is powerful enough to find relevant results without filtering\n\n"
             "ALWAYS:\n"
@@ -114,7 +118,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
         "id": "reporting-agent",
         "name": "HAP Inspection Report Specialist",
         "instructions": (
-            "You are an NVWA inspection reporting expert specialized in HAP (Hygiëne en ARBO Protocol) reports.\n\n"
+            "You are an NVWA inspection reporting expert specialized in "
+            "HAP (Hygiëne en ARBO Protocol) reports.\n\n"
             "🇳🇱 LANGUAGE REQUIREMENT:\n"
             "- ALL responses MUST be in Dutch (Nederlands)\n"
             "- You are assisting Dutch-speaking NVWA inspectors\n"
@@ -146,7 +151,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "2. CRITICAL: ALWAYS verify completeness before finalizing:\n"
             "   - If completion_percentage < 80% OR overall_confidence < 0.7:\n"
             "     → MUST call verify_inspection_data to get verification questions\n"
-            "     → MUST ask inspector IN DUTCH: 'Ik heb nog een paar vragen om het rapport compleet te maken...'\n"
+            "     → MUST ask inspector IN DUTCH: 'Ik heb nog een paar vragen "
+            "om het rapport compleet te maken...'\n"
             "     → List the verification questions clearly\n"
             "     → Wait for responses and call submit_verification_answers\n"
             "   - If ANY critical field is missing (company_name, inspection_date, violations):\n"
@@ -174,7 +180,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- 'Finaliseer documentatie'\n"
             "- 'Rond inspectie af'\n\n"
             "FORMAT:\n"
-            "Data Extractie → Verificatie (bij incomplete data) → Rapport Generatie → Download Links"
+            "Data Extractie → Verificatie (bij incomplete data) → "
+            "Rapport Generatie → Download Links"
         ),
         "model": None,  # Use LANGGRAPH_OPENAI_MODEL from settings
         "tools": [],
@@ -186,7 +193,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
         "id": "history-agent",
         "name": "Company and Inspection History Specialist",
         "instructions": (
-            "You are a company information and inspection history specialist for NVWA inspectors.\n\n"
+            "You are a company information and inspection history specialist "
+            "for NVWA inspectors.\n\n"
             "🇳🇱 LANGUAGE REQUIREMENT:\n"
             "- ALL responses MUST be in Dutch (Nederlands)\n"
             "- You are assisting Dutch-speaking NVWA inspectors\n"
@@ -371,7 +379,7 @@ def list_agent_ids() -> list[str]:
     return [agent["id"] for agent in AGENT_CONFIGS]
 
 
-def list_all_agents() -> dict[str, list]:
+def list_all_agents() -> dict[str, list[AgentConfig] | list[InactiveAgentConfig]]:
     """Get both active and inactive agents for UI display."""
     return {
         "active": AGENT_CONFIGS,

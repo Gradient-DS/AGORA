@@ -51,9 +51,7 @@ class ElevenLabsSTTClient {
    * Check if ElevenLabs STT is configured with a valid API key.
    */
   isConfigured(): boolean {
-    const hasKey = Boolean(this.config.apiKey && this.config.apiKey.length > 0);
-    console.log('[ElevenLabsSTT] isConfigured:', hasKey, 'keyLength:', this.config.apiKey?.length || 0);
-    return hasKey;
+    return Boolean(this.config.apiKey && this.config.apiKey.length > 0);
   }
 
   /**
@@ -84,12 +82,10 @@ class ElevenLabsSTTClient {
    */
   async connect(actualSampleRate?: number): Promise<void> {
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
-      console.log('[ElevenLabsSTT] Already connected or connecting');
       return;
     }
 
     if (!this.isConfigured()) {
-      console.warn('[ElevenLabsSTT] Not configured - cannot connect');
       this.handleError(new Error('ElevenLabs API key not configured'));
       return;
     }
@@ -104,9 +100,7 @@ class ElevenLabsSTTClient {
     try {
       // Fetch a single-use token for WebSocket authentication
       // (browsers cannot set custom headers on WebSocket connections)
-      console.log('[ElevenLabsSTT] Fetching single-use token...');
       const token = await this.fetchSingleUseToken();
-      console.log('[ElevenLabsSTT] Single-use token obtained');
 
       // Build WebSocket URL with query parameters
       const url = new URL('wss://api.elevenlabs.io/v1/speech-to-text/realtime');
@@ -120,12 +114,9 @@ class ElevenLabsSTTClient {
       // Fine-tune VAD: 1 second silence = commit (slightly faster than default 1.5s)
       url.searchParams.set('vad_silence_threshold_secs', '1.0');
 
-      console.log(`[ElevenLabsSTT] Connecting with sampleRate=${sampleRate}, audioFormat=${audioFormat}`);
-
       this.ws = new WebSocket(url.toString());
       this.setupEventHandlers();
     } catch (error) {
-      console.error('[ElevenLabsSTT] Failed to connect:', error);
       this.handleError(error instanceof Error ? error : new Error(`Failed to connect: ${error}`));
       this.updateStatus('error');
     }
@@ -215,18 +206,15 @@ class ElevenLabsSTTClient {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
-      console.log('[ElevenLabsSTT] WebSocket connected, waiting for session_started');
+      // Wait for session_started message before updating status
     };
 
     this.ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        console.log('[ElevenLabsSTT] Received:', message.message_type);
 
         switch (message.message_type) {
           case 'session_started':
-            console.log('[ElevenLabsSTT] Session started:', message.session_id);
-            console.log('[ElevenLabsSTT] Config:', message.config);
             this.updateStatus('connected');
             break;
 
@@ -246,35 +234,31 @@ class ElevenLabsSTTClient {
             break;
 
           case 'error':
-            console.error('[ElevenLabsSTT] Server error:', message);
             this.handleError(new Error(message.error || message.message || 'STT error'));
             break;
 
           case 'auth_error':
-            console.error('[ElevenLabsSTT] Authentication error:', message);
             this.handleError(new Error('ElevenLabs authentication failed. The single-use token may have expired or is invalid.'));
             break;
 
           case 'invalid_request':
-            console.error('[ElevenLabsSTT] Invalid request:', message);
             this.handleError(new Error(message.error || message.message || 'Invalid STT request'));
             break;
 
           default:
-            console.log('[ElevenLabsSTT] Unknown message type:', message.message_type, message);
+            // Unknown message type - ignore
+            break;
         }
-      } catch (error) {
-        console.error('[ElevenLabsSTT] Invalid message received:', error, event.data);
+      } catch {
+        // Invalid message received - ignore
       }
     };
 
-    this.ws.onerror = (event) => {
-      console.error('[ElevenLabsSTT] WebSocket error:', event);
+    this.ws.onerror = () => {
       this.handleError(new Error('WebSocket connection error'));
     };
 
-    this.ws.onclose = (event) => {
-      console.log(`[ElevenLabsSTT] Connection closed (code: ${event.code}, reason: ${event.reason})`);
+    this.ws.onclose = () => {
       if (this.currentStatus === 'connected' || this.currentStatus === 'connecting') {
         this.updateStatus('disconnected');
       }
