@@ -50,4 +50,7 @@ c4/workspace.dsl.json
 
 .pnpm-store/
 
-sessions.*
+# Session database files (but not sessions.ts source files)
+sessions/
+*.session
+sessions.db
