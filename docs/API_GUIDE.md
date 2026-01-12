@@ -74,12 +74,14 @@ curl -H "X-API-Key: your-api-key" https://agora.gradient-testing.nl/agents
 Response:
 ```json
 {
-  "success": true,
-  "agents": [
-    {"id": "general-agent", "name": "Algemene Assistent", "description": "Algemene vraag- en routeringagent"},
-    {"id": "history-agent", "name": "Bedrijfsinformatie Specialist", "description": "KVK-gegevens en inspectiehistorie"},
-    {"id": "regulation-agent", "name": "Regelgeving Specialist", "description": "Wet- en regelgevingsanalyse"},
-    {"id": "reporting-agent", "name": "Rapportage Specialist", "description": "Inspectierapport genereren"}
+  "active_agents": [
+    {"id": "general-agent", "name": "NVWA General Assistant", "description": "General NVWA inspection assistant"},
+    {"id": "regulation-agent", "name": "Regulation Analysis Expert", "description": "Regulatory compliance expert"},
+    {"id": "reporting-agent", "name": "HAP Inspection Report Specialist", "description": "NVWA inspection reporting expert"},
+    {"id": "history-agent", "name": "Company and Inspection History Specialist", "description": "Company information and inspection history specialist"}
+  ],
+  "inactive_agents": [
+    {"id": "ns-reisplanner-agent", "name": "NS Reisplanner", "description": "Plan inspectie routes", "coming_soon": true}
   ]
 }
 ```

@@ -175,8 +175,10 @@ class APITester:
                 duration = (time.time() - start) * 1000
                 if resp.status_code == 200:
                     data = resp.json()
-                    agents = data.get("agents", [])
-                    self._record("Agents endpoint", True, f"Found {len(agents)} agents", duration)
+                    # API returns active_agents and inactive_agents
+                    active = data.get("active_agents", [])
+                    inactive = data.get("inactive_agents", [])
+                    self._record("Agents endpoint", True, f"Found {len(active)} active, {len(inactive)} inactive", duration)
                 else:
                     self._record("Agents endpoint", False, f"Status {resp.status_code}", duration)
         except Exception as e:
@@ -215,19 +217,12 @@ class APITester:
                 self._record("WebSocket (no auth)", True, "Rejected with 4001 as expected", duration)
             else:
                 self._record("WebSocket (no auth)", True, f"Rejected with code {e.code}", duration)
-        except websockets.exceptions.InvalidStatusCode as e:
-            # HTTP rejection before WebSocket upgrade (401/403) is also valid
-            duration = (time.time() - start) * 1000
-            if e.status_code in (401, 403):
-                self._record("WebSocket (no auth)", True, f"Rejected with HTTP {e.status_code}", duration)
-            else:
-                self._record("WebSocket (no auth)", False, f"Unexpected HTTP {e.status_code}", duration)
         except Exception as e:
-            # Handle "server rejected WebSocket connection: HTTP 403" style errors
+            # Handle HTTP rejection before WebSocket upgrade (401/403) and other errors
             duration = (time.time() - start) * 1000
             err_str = str(e)
             if "HTTP 401" in err_str or "HTTP 403" in err_str:
-                self._record("WebSocket (no auth)", True, f"Rejected: {err_str}", duration)
+                self._record("WebSocket (no auth)", True, f"Rejected with HTTP 401/403", duration)
             else:
                 self._record("WebSocket (no auth)", False, err_str, duration)
 
@@ -241,19 +236,12 @@ class APITester:
         except websockets.exceptions.ConnectionClosed as e:
             duration = (time.time() - start) * 1000
             self._record("WebSocket (wrong key)", True, f"Rejected with code {e.code}", duration)
-        except websockets.exceptions.InvalidStatusCode as e:
-            # HTTP rejection before WebSocket upgrade (401/403) is also valid
-            duration = (time.time() - start) * 1000
-            if e.status_code in (401, 403):
-                self._record("WebSocket (wrong key)", True, f"Rejected with HTTP {e.status_code}", duration)
-            else:
-                self._record("WebSocket (wrong key)", False, f"Unexpected HTTP {e.status_code}", duration)
         except Exception as e:
-            # Handle "server rejected WebSocket connection: HTTP 403" style errors
+            # Handle HTTP rejection before WebSocket upgrade (401/403) and other errors
             duration = (time.time() - start) * 1000
             err_str = str(e)
             if "HTTP 401" in err_str or "HTTP 403" in err_str:
-                self._record("WebSocket (wrong key)", True, f"Rejected: {err_str}", duration)
+                self._record("WebSocket (wrong key)", True, f"Rejected with HTTP 401/403", duration)
             else:
                 self._record("WebSocket (wrong key)", False, err_str, duration)
 
