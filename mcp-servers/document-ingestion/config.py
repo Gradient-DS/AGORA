@@ -55,7 +55,12 @@ class MCPSettings(BaseSettings):
         default=200,
         description="Overlap between chunks (in characters)"
     )
-    
+
+    input_dir: str = Field(
+        default="",
+        description="Input directory for PDFs. If empty, uses ../input/SPEC Agent relative to script."
+    )
+
     model_config = SettingsConfigDict(
         env_file=str(_env_path),
         env_prefix="MCP_",

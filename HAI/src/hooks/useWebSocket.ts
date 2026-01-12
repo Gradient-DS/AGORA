@@ -25,7 +25,7 @@ import {
   parseToolApprovalRequest,
   parseAgoraError,
 } from '@/types/schemas';
-import { env } from '@/lib/env';
+import { getWebSocketUrl } from '@/lib/env';
 import { emitTTSEvent } from './useTTS';
 
 let globalClient: AGUIWebSocketClient | null = null;
@@ -35,7 +35,7 @@ let hasInitiatedConnection = false;
 function getOrCreateClient(): AGUIWebSocketClient {
   if (!globalClient) {
     globalClient = new AGUIWebSocketClient({
-      url: env.VITE_WS_URL,
+      url: getWebSocketUrl(),
       maxReconnectAttempts: 5,
       reconnectInterval: 3000,
       maxReconnectInterval: 30000,

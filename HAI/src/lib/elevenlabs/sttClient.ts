@@ -7,7 +7,7 @@
  * API Reference: https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime
  */
 
-import { env } from '@/lib/env';
+import { getElevenLabsApiKey } from '@/lib/env';
 
 interface ElevenLabsSTTConfig {
   apiKey: string;
@@ -41,7 +41,7 @@ class ElevenLabsSTTClient {
 
   constructor(config: Partial<ElevenLabsSTTConfig> = {}) {
     this.config = {
-      apiKey: config.apiKey || env.VITE_ELEVENLABS_API_KEY || '',
+      apiKey: config.apiKey || getElevenLabsApiKey(),
       sampleRate: config.sampleRate || 16000,
       languageCode: config.languageCode || 'nld', // Dutch in ISO 639-3
     };

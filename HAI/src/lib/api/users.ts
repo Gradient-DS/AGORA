@@ -2,7 +2,7 @@
  * User management API functions.
  */
 
-import { env } from '@/lib/env';
+import { getApiBaseUrl } from '@/lib/env';
 import type {
   UserProfile,
   CreateUserRequest,
@@ -15,14 +15,9 @@ import type {
 
 /**
  * Get the HTTP base URL from the WebSocket URL.
- * Converts ws://host:port/ws to http://host:port
  */
 function getBaseUrl(): string {
-  const wsUrl = env.VITE_WS_URL;
-  return wsUrl
-    .replace(/^ws:/, 'http:')
-    .replace(/^wss:/, 'https:')
-    .replace(/\/ws\/?$/, '');
+  return getApiBaseUrl();
 }
 
 /**

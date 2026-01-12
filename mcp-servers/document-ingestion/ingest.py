@@ -25,16 +25,24 @@ def main():
     try:
         settings = get_settings()
         logger.info(f"Loaded configuration with MCP_ prefix from .env")
+        logger.info(f"  Embedding Provider: {settings.embedding_provider}")
         logger.info(f"  Embedding Model: {settings.embedding_model}")
         logger.info(f"  Weaviate URL: {settings.weaviate_url}")
         logger.info(f"  Batch Size: {settings.batch_size}")
+        logger.info(f"  Input Dir: {settings.input_dir or '(default)'}")
     except Exception as e:
         logger.error(f"Failed to load configuration: {e}")
         logger.error("Make sure MCP_OPENAI_API_KEY is set in your .env file")
         return
     
     base_dir = Path(__file__).parent
-    input_dir = base_dir.parent / "input" / "SPEC Agent"
+
+    # Use configured input_dir or default to relative path
+    if settings.input_dir:
+        input_dir = Path(settings.input_dir)
+    else:
+        input_dir = base_dir.parent / "input" / "SPEC Agent"
+
     output_markdown_dir = base_dir / "output" / "markdown"
     output_chunks_dir = base_dir / "output" / "chunks"
     

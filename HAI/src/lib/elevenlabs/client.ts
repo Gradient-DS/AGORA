@@ -5,7 +5,7 @@
  * Manages audio playback queue for sequential speech.
  */
 
-import { env } from '@/lib/env';
+import { getElevenLabsApiKey, getElevenLabsVoiceId } from '@/lib/env';
 
 interface ElevenLabsConfig {
   apiKey: string;
@@ -29,8 +29,8 @@ class ElevenLabsClient {
 
   constructor(config: Partial<ElevenLabsConfig> = {}) {
     this.config = {
-      apiKey: config.apiKey || env.VITE_ELEVENLABS_API_KEY || '',
-      voiceId: config.voiceId || env.VITE_ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB',
+      apiKey: config.apiKey || getElevenLabsApiKey(),
+      voiceId: config.voiceId || getElevenLabsVoiceId(),
       modelId: config.modelId || 'eleven_multilingual_v2',
       stability: config.stability ?? 0.5,
       similarityBoost: config.similarityBoost ?? 0.75,
