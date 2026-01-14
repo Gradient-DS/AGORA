@@ -8,6 +8,7 @@ import { ChatInterface } from '@/components/chat/ChatInterface';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import { ApprovalDialog } from '@/components/approval/ApprovalDialog';
 import { ApiKeyDialog } from '@/components/auth/ApiKeyDialog';
+import { CreateFirstUserDialog } from '@/components/auth/CreateFirstUserDialog';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
 import {
@@ -31,6 +32,8 @@ export default function App() {
   const session = useSessionStore((state) => state.session);
   const initializeUser = useUserStore((state) => state.initializeUser);
   const currentUser = useUserStore((state) => state.currentUser);
+  const users = useUserStore((state) => state.users);
+  const isUsersLoading = useUserStore((state) => state.isLoading);
   const loadAgentsFromAPI = useAgentStore((state) => state.loadAgentsFromAPI);
   const fetchSessions = useHistoryStore((state) => state.fetchSessions);
   const messages = useMessageStore((state) => state.messages);
@@ -141,6 +144,9 @@ export default function App() {
           open={true}
           onSubmit={handleApiKeySubmit}
         />
+      )}
+      {isAuthRequired !== true && !isUsersLoading && users.length === 0 && (
+        <CreateFirstUserDialog open={true} />
       )}
       <MainLayout onReconnect={reconnect}>
         <div className="h-full flex flex-col p-4 gap-4 overflow-hidden">
