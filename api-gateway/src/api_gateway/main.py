@@ -2,8 +2,9 @@
 
 import logging
 
-from fastapi import Depends, FastAPI, Request, WebSocket
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from .auth import verify_api_key_http, verify_api_key_websocket
 from .config import Settings, get_settings
@@ -46,6 +47,88 @@ async def list_backends(settings: Settings = Depends(get_settings)):
             "mock": "/api/mock/*",
         },
     }
+
+
+@app.get("/gateway/elevenlabs/config")
+async def get_elevenlabs_config(
+    settings: Settings = Depends(get_settings),
+    _auth: dict = Depends(verify_api_key_http),
+):
+    """Get ElevenLabs configuration (voice ID, whether voice is enabled)."""
+    return {
+        "enabled": bool(settings.elevenlabs_api_key),
+        "voiceId": settings.elevenlabs_voice_id,
+    }
+
+
+@app.post("/gateway/elevenlabs/token")
+async def get_elevenlabs_token(
+    settings: Settings = Depends(get_settings),
+    _auth: dict = Depends(verify_api_key_http),
+):
+    """Get a single-use token for ElevenLabs STT.
+
+    The master API key stays server-side; client gets a scoped token.
+    """
+    if not settings.elevenlabs_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ElevenLabs not configured",
+        )
+
+    import httpx
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.elevenlabs.io/v1/single-use-token/realtime_scribe",
+            headers={"xi-api-key": settings.elevenlabs_api_key},
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"ElevenLabs token request failed: {response.text}",
+            )
+
+        return response.json()
+
+
+@app.post("/gateway/elevenlabs/tts")
+async def proxy_elevenlabs_tts(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+    _auth: dict = Depends(verify_api_key_http),
+):
+    """Proxy TTS requests to ElevenLabs, keeping API key server-side."""
+    if not settings.elevenlabs_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ElevenLabs not configured",
+        )
+
+    import httpx
+
+    body = await request.json()
+    voice_id = body.pop("voice_id", settings.elevenlabs_voice_id)
+
+    async def stream_tts():
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                "POST",
+                f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream",
+                headers={
+                    "xi-api-key": settings.elevenlabs_api_key,
+                    "Content-Type": "application/json",
+                },
+                json=body,
+            ) as response:
+                async for chunk in response.aiter_bytes():
+                    yield chunk
+
+    return StreamingResponse(
+        stream_tts(),
+        media_type="audio/mpeg",
+    )
 
 
 # WebSocket endpoints - handle auth manually (can't use Depends with APIKeyHeader)

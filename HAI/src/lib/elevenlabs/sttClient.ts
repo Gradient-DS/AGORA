@@ -7,10 +7,10 @@
  * API Reference: https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime
  */
 
-import { getElevenLabsApiKey } from '@/lib/env';
+import { getApiBaseUrl } from '@/lib/env';
+import { getStoredApiKey } from '@/stores/useAuthStore';
 
 interface ElevenLabsSTTConfig {
-  apiKey: string;
   sampleRate?: number;
   languageCode?: string;
 }
@@ -32,7 +32,7 @@ type StatusCallback = (status: 'disconnected' | 'connecting' | 'connected' | 'er
 type ErrorCallback = (error: Error) => void;
 
 class ElevenLabsSTTClient {
-  private config: ElevenLabsSTTConfig;
+  private config: Required<ElevenLabsSTTConfig>;
   private ws: WebSocket | null = null;
   private transcriptCallbacks: TranscriptCallback[] = [];
   private statusCallbacks: StatusCallback[] = [];
@@ -41,35 +41,41 @@ class ElevenLabsSTTClient {
 
   constructor(config: Partial<ElevenLabsSTTConfig> = {}) {
     this.config = {
-      apiKey: config.apiKey || getElevenLabsApiKey(),
       sampleRate: config.sampleRate || 16000,
       languageCode: config.languageCode || 'nld', // Dutch in ISO 639-3
     };
   }
 
   /**
-   * Check if ElevenLabs STT is configured with a valid API key.
+   * Check if ElevenLabs STT is configured.
+   * Configuration is now handled by backend - we'll know if it's configured when we try to get a token.
    */
   isConfigured(): boolean {
-    return Boolean(this.config.apiKey && this.config.apiKey.length > 0);
+    return true;
   }
 
   /**
-   * Fetch a single-use token from ElevenLabs API.
-   * Browsers cannot set custom headers on WebSocket connections,
-   * so we must use single-use tokens for authentication.
+   * Fetch a single-use token from backend API.
+   * The master API key stays server-side; client gets a scoped token.
    */
   private async fetchSingleUseToken(): Promise<string> {
-    const response = await fetch('https://api.elevenlabs.io/v1/single-use-token/realtime_scribe', {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    const apiKey = getStoredApiKey();
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+    }
+
+    const response = await fetch(`${getApiBaseUrl()}/gateway/elevenlabs/token`, {
       method: 'POST',
-      headers: {
-        'xi-api-key': this.config.apiKey,
-      },
+      headers,
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch single-use token: ${response.status} - ${errorText}`);
+      throw new Error(`Failed to fetch ElevenLabs token: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();

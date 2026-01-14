@@ -38,6 +38,8 @@ services:
       - GATEWAY_DEFAULT_BACKEND=${DEFAULT_BACKEND:-langgraph}
       - GATEWAY_API_KEYS=${API_KEYS}
       - GATEWAY_REQUIRE_AUTH=${GATEWAY_REQUIRE_AUTH:-false}
+      - GATEWAY_ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - GATEWAY_ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID:-pNInz6obpgDQGcFmaJgB}
     depends_on:
       server-langgraph:
         condition: service_healthy

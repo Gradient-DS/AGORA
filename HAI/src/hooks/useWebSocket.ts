@@ -13,6 +13,7 @@ import {
   useAgentStore,
   useUserStore,
   useHistoryStore,
+  useAuthStore,
 } from '@/stores';
 import {
   EventType,
@@ -72,6 +73,8 @@ export function useWebSocket() {
   const setAgentActive = useAgentStore((state) => state.setAgentActive);
   const setAgentIdle = useAgentStore((state) => state.setAgentIdle);
   const setAgentExecutingTools = useAgentStore((state) => state.setAgentExecutingTools);
+  const setAuthRequired = useAuthStore((state) => state.setAuthRequired);
+  const setAuthError = useAuthStore((state) => state.setAuthError);
 
   useEffect(() => {
     const client = getOrCreateClient();
@@ -84,7 +87,12 @@ export function useWebSocket() {
     });
 
     const unsubscribeError = client.onError((error) => {
-      setError(error);
+      if (error.message === 'AUTH_REQUIRED') {
+        setAuthRequired(true);
+        setAuthError('Authenticatie vereist. Voer uw API-sleutel in.');
+      } else {
+        setError(error);
+      }
     });
 
     const unsubscribeEvent = client.onEvent((event: AGUIEvent) => {
@@ -325,6 +333,8 @@ export function useWebSocket() {
     setAgentActive,
     setAgentIdle,
     setAgentExecutingTools,
+    setAuthRequired,
+    setAuthError,
   ]);
 
   const sendMessage = (content: string) => {

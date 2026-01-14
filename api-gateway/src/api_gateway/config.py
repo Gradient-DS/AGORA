@@ -35,6 +35,16 @@ class Settings(BaseSettings):
         description="Whether to require API key authentication",
     )
 
+    # ElevenLabs
+    elevenlabs_api_key: str = Field(
+        default="",
+        description="ElevenLabs API key for voice features (kept server-side)",
+    )
+    elevenlabs_voice_id: str = Field(
+        default="pNInz6obpgDQGcFmaJgB",
+        description="Default ElevenLabs voice ID",
+    )
+
     # Server
     host: str = Field(default="0.0.0.0")
     port: int = Field(default=8000)

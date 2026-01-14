@@ -4,7 +4,6 @@ import { z } from 'zod';
 declare global {
   interface Window {
     __RUNTIME_CONFIG__?: {
-      ELEVENLABS_API_KEY?: string;
       ELEVENLABS_VOICE_ID?: string;
     };
   }
@@ -14,7 +13,6 @@ const envSchema = z.object({
   VITE_WS_URL: z.string().url(),
   VITE_APP_NAME: z.string().default('AGORA HAI'),
   VITE_SESSION_TIMEOUT: z.string().transform(Number).default('3600000'),
-  VITE_ELEVENLABS_API_KEY: z.string().optional().default(''),
   VITE_ELEVENLABS_VOICE_ID: z.string().optional().default('pNInz6obpgDQGcFmaJgB'),
   VITE_BACKEND: z
     .enum(['langgraph', 'openai', 'mock'])
@@ -68,10 +66,11 @@ export function getApiBaseUrl(): string {
 
 /**
  * Get ElevenLabs API key.
- * Checks runtime config first (Docker), then falls back to build-time env.
+ * @deprecated API key now comes from backend token endpoint.
  */
 export function getElevenLabsApiKey(): string {
-  return window.__RUNTIME_CONFIG__?.ELEVENLABS_API_KEY || env.VITE_ELEVENLABS_API_KEY || '';
+  console.warn('getElevenLabsApiKey() is deprecated. Use backend token endpoint.');
+  return '';
 }
 
 /**

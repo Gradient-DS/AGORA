@@ -5,10 +5,10 @@
  * Manages audio playback queue for sequential speech.
  */
 
-import { getElevenLabsApiKey, getElevenLabsVoiceId } from '@/lib/env';
+import { getApiBaseUrl, getElevenLabsVoiceId } from '@/lib/env';
+import { getStoredApiKey } from '@/stores/useAuthStore';
 
 interface ElevenLabsConfig {
-  apiKey: string;
   voiceId: string;
   modelId?: string;
   stability?: number;
@@ -22,14 +22,13 @@ interface QueueItem {
 }
 
 class ElevenLabsClient {
-  private config: ElevenLabsConfig;
+  private config: Required<ElevenLabsConfig>;
   private queue: QueueItem[] = [];
   private isProcessing = false;
   private currentAudio: HTMLAudioElement | null = null;
 
   constructor(config: Partial<ElevenLabsConfig> = {}) {
     this.config = {
-      apiKey: config.apiKey || getElevenLabsApiKey(),
       voiceId: config.voiceId || getElevenLabsVoiceId(),
       modelId: config.modelId || 'eleven_multilingual_v2',
       stability: config.stability ?? 0.5,
@@ -38,10 +37,11 @@ class ElevenLabsClient {
   }
 
   /**
-   * Check if ElevenLabs is configured with a valid API key.
+   * Check if ElevenLabs is configured.
+   * Configuration is now handled by backend.
    */
   isConfigured(): boolean {
-    return Boolean(this.config.apiKey && this.config.apiKey.length > 0);
+    return true;
   }
 
   /**
@@ -103,16 +103,21 @@ class ElevenLabsClient {
   }
 
   private async playText(text: string): Promise<void> {
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${this.config.voiceId}/stream`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
 
-    const response = await fetch(url, {
+    const apiKey = getStoredApiKey();
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+    }
+
+    const response = await fetch(`${getApiBaseUrl()}/gateway/elevenlabs/tts`, {
       method: 'POST',
-      headers: {
-        'xi-api-key': this.config.apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         text,
+        voice_id: this.config.voiceId,
         model_id: this.config.modelId,
         voice_settings: {
           stability: this.config.stability,
