@@ -4,6 +4,7 @@
 
 import type { SessionMetadata, ChatMessage, ToolCallInfo } from '@/types';
 import { env } from '@/lib/env';
+import { apiFetch } from './client';
 
 /**
  * Get the HTTP base URL from the WebSocket URL.
@@ -64,7 +65,7 @@ export async function fetchSessions(
   });
 
   const url = `${baseUrl}/sessions?${params}`;
-  const response = await fetch(url);
+  const response = await apiFetch(url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch sessions: ${response.statusText}`);
@@ -91,7 +92,7 @@ export async function fetchSessionHistory(
   const baseUrl = getBaseUrl();
 
   // Request with include_tools=true to get tool call data
-  const response = await fetch(`${baseUrl}/sessions/${sessionId}/history?include_tools=true`);
+  const response = await apiFetch(`${baseUrl}/sessions/${sessionId}/history?include_tools=true`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch session history: ${response.statusText}`);
@@ -178,7 +179,7 @@ export async function fetchSessionHistory(
 export async function deleteSession(sessionId: string): Promise<void> {
   const baseUrl = getBaseUrl();
 
-  const response = await fetch(`${baseUrl}/sessions/${sessionId}`, {
+  const response = await apiFetch(`${baseUrl}/sessions/${sessionId}`, {
     method: 'DELETE',
   });
 

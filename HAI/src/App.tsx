@@ -7,6 +7,8 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import { ApprovalDialog } from '@/components/approval/ApprovalDialog';
+import { ApiKeyDialog } from '@/components/auth/ApiKeyDialog';
+import { CreateFirstUserDialog } from '@/components/auth/CreateFirstUserDialog';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useVoiceMode } from '@/hooks/useVoiceMode';
 import {
@@ -18,6 +20,7 @@ import {
   useUserStore,
   useMessageStore,
   useToolCallStore,
+  useAuthStore,
 } from '@/stores';
 import { useHistoryStore } from '@/stores/useHistoryStore';
 import { fetchSessionHistory } from '@/lib/api/sessions';
@@ -29,6 +32,8 @@ export default function App() {
   const session = useSessionStore((state) => state.session);
   const initializeUser = useUserStore((state) => state.initializeUser);
   const currentUser = useUserStore((state) => state.currentUser);
+  const users = useUserStore((state) => state.users);
+  const isUsersLoading = useUserStore((state) => state.isLoading);
   const loadAgentsFromAPI = useAgentStore((state) => state.loadAgentsFromAPI);
   const fetchSessions = useHistoryStore((state) => state.fetchSessions);
   const messages = useMessageStore((state) => state.messages);
@@ -45,6 +50,16 @@ export default function App() {
   const setCurrentApproval = useApprovalStore((state) => state.setCurrentApproval);
 
   const isVoiceActive = useVoiceStore((state) => state.isActive);
+
+  const isAuthRequired = useAuthStore((state) => state.isAuthRequired);
+  const setApiKey = useAuthStore((state) => state.setApiKey);
+  const setAuthRequired = useAuthStore((state) => state.setAuthRequired);
+
+  const handleApiKeySubmit = (apiKey: string) => {
+    setApiKey(apiKey);
+    setAuthRequired(false);
+    reconnect(); // Retry connection with new key
+  };
 
   useEffect(() => {
     initializeSession();
@@ -123,8 +138,18 @@ export default function App() {
   const isDisabled = connectionStatus !== 'connected';
 
   return (
-    <MainLayout onReconnect={reconnect}>
-      <div className="h-full flex flex-col p-4 gap-4 overflow-hidden">
+    <>
+      {isAuthRequired === true && (
+        <ApiKeyDialog
+          open={true}
+          onSubmit={handleApiKeySubmit}
+        />
+      )}
+      {isAuthRequired !== true && !isUsersLoading && users.length === 0 && (
+        <CreateFirstUserDialog open={true} />
+      )}
+      <MainLayout onReconnect={reconnect}>
+        <div className="h-full flex flex-col p-4 gap-4 overflow-hidden">
         {connectionError && (
           <Alert variant="destructive" className="flex-shrink-0">
             <AlertCircle className="h-4 w-4" />
@@ -160,5 +185,6 @@ export default function App() {
         </div>
       </div>
     </MainLayout>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import {
   AGORA_TOOL_APPROVAL_RESPONSE,
 } from '@/types/schemas';
 import { generateUUID } from '@/lib/utils';
+import { getStoredApiKey } from '@/stores/useAuthStore';
 
 type EventCallback = (event: AGUIEvent) => void;
 type StatusCallback = (status: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error') => void;
@@ -67,7 +68,17 @@ export class AGUIWebSocketClient {
     this.updateStatus(status);
 
     try {
-      this.ws = new WebSocket(this.config.url);
+      let url = this.config.url;
+
+      // Append API key as query param if available
+      const apiKey = getStoredApiKey();
+      if (apiKey) {
+        const urlObj = new URL(url, window.location.origin);
+        urlObj.searchParams.set('token', apiKey);
+        url = urlObj.toString();
+      }
+
+      this.ws = new WebSocket(url);
       this.setupEventHandlers();
     } catch (error) {
       this.isConnecting = false;
@@ -212,8 +223,15 @@ export class AGUIWebSocketClient {
       this.handleError(new Error('WebSocket connection error'));
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
       this.isConnecting = false;
+
+      // Detect auth failure (code 4001 from gateway)
+      if (event.code === 4001) {
+        this.updateStatus('error');
+        this.handleError(new Error('AUTH_REQUIRED'));
+        return; // Don't attempt reconnect for auth errors
+      }
 
       if (!this.isManualClose) {
         this.scheduleReconnect();

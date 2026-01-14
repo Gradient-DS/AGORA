@@ -3,6 +3,7 @@
  */
 
 import { getApiBaseUrl } from '@/lib/env';
+import { apiFetch } from './client';
 import type {
   UserProfile,
   CreateUserRequest,
@@ -34,7 +35,7 @@ export async function fetchUsers(
   });
 
   const url = `${baseUrl}/users?${params}`;
-  const response = await fetch(url);
+  const response = await apiFetch(url);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch users: ${response.statusText}`);
@@ -57,7 +58,7 @@ export async function fetchUsers(
  */
 export async function fetchUser(userId: string): Promise<UserProfile> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/users/${userId}`);
+  const response = await apiFetch(`${baseUrl}/users/${userId}`);
 
   if (!response.ok) {
     if (response.status === 404) {
@@ -80,7 +81,7 @@ export async function fetchUser(userId: string): Promise<UserProfile> {
  */
 export async function createUser(userData: CreateUserRequest): Promise<UserProfile> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/users`, {
+  const response = await apiFetch(`${baseUrl}/users`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -115,7 +116,7 @@ export async function updateUser(
   userData: UpdateUserRequest
 ): Promise<UserProfile> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/users/${userId}`, {
+  const response = await apiFetch(`${baseUrl}/users/${userId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -144,7 +145,7 @@ export async function updateUser(
  */
 export async function deleteUser(userId: string): Promise<DeleteUserResponse> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/users/${userId}`, {
+  const response = await apiFetch(`${baseUrl}/users/${userId}`, {
     method: 'DELETE',
   });
 
@@ -169,7 +170,7 @@ export async function deleteUser(userId: string): Promise<DeleteUserResponse> {
  */
 export async function fetchCurrentUser(): Promise<UserProfile> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(`${baseUrl}/users/me`);
+  const response = await apiFetch(`${baseUrl}/users/me`);
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -189,7 +190,7 @@ export async function fetchUserPreferences(
   userId: string
 ): Promise<UserPreferences> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(
+  const response = await apiFetch(
     `${baseUrl}/users/me/preferences?user_id=${encodeURIComponent(userId)}`
   );
 
@@ -214,7 +215,7 @@ export async function updateUserPreferences(
   preferences: UserPreferences
 ): Promise<UserPreferences> {
   const baseUrl = getBaseUrl();
-  const response = await fetch(
+  const response = await apiFetch(
     `${baseUrl}/users/me/preferences?user_id=${encodeURIComponent(userId)}`,
     {
       method: 'PUT',
