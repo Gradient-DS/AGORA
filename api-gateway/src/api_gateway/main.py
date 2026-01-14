@@ -138,6 +138,8 @@ async def websocket_default(websocket: WebSocket):
     settings = get_settings()
     auth = verify_api_key_websocket(websocket, settings)
     if auth is None:
+        # Must accept before closing to send proper close code to client
+        await websocket.accept()
         await websocket.close(code=4001, reason="Unauthorized")
         return
     await proxy_websocket(websocket, "ws", settings)
@@ -149,6 +151,8 @@ async def websocket_backend(websocket: WebSocket, backend: str):
     settings = get_settings()
     auth = verify_api_key_websocket(websocket, settings)
     if auth is None:
+        # Must accept before closing to send proper close code to client
+        await websocket.accept()
         await websocket.close(code=4001, reason="Unauthorized")
         return
     await proxy_websocket(websocket, f"api/{backend}/ws", settings)
