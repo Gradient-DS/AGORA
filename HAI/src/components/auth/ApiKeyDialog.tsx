@@ -32,7 +32,7 @@ export function ApiKeyDialog({ open, onSubmit }: ApiKeyDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e: Event) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-md" hideCloseButton onPointerDownOutside={(e: Event) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5" />

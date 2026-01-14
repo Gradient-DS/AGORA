@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getApiBaseUrl } from '@/lib/env';
+import { apiFetch } from '@/lib/api/client';
 
 export interface Agent {
   id: string;
@@ -54,7 +55,7 @@ export const useAgentStore = create<AgentStore>((set, get) => {
     loadAgentsFromAPI: async () => {
       try {
         const apiUrl = getApiBaseUrl();
-        const response = await fetch(`${apiUrl}/agents`);
+        const response = await apiFetch(`${apiUrl}/agents`);
         
         if (!response.ok) {
           console.warn('Failed to fetch agents from API, using defaults');
