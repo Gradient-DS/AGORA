@@ -150,7 +150,8 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
-      - reporting_storage:/app/storage
+      - reporting_data:/app/storage/reports
+      - reporting_history:/app/storage/conversation_history
     networks:
       - agora-network
     healthcheck:
@@ -224,5 +225,6 @@ volumes:
   caddy_data:
   caddy_config:
   weaviate_data:
-  reporting_storage:
+  reporting_data:
+  reporting_history:
   langgraph_sessions:
