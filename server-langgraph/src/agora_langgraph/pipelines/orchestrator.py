@@ -9,7 +9,7 @@ import uuid
 from typing import Any
 
 from ag_ui.core import Message as AGUIMessage
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.state import CompiledStateGraph
 
 from agora_langgraph.adapters.audit_logger import AuditLogger
@@ -21,8 +21,6 @@ from agora_langgraph.common.ag_ui_types import (
 )
 from agora_langgraph.common.schemas import ToolCall
 from agora_langgraph.config import get_settings
-from agora_langgraph.core.agent_definitions import get_spoken_prompt
-from agora_langgraph.core.agents import get_llm_for_agent
 from agora_langgraph.core.approval_logic import requires_human_approval
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
@@ -326,9 +324,13 @@ class Orchestrator:
     ) -> tuple[str, str]:
         """Stream graph response using astream_events with AG-UI Protocol.
 
+        The graph uses parallel generation nodes (generate_written, generate_spoken)
+        via the Send API. Both run simultaneously with shared context but different
+        prompts.
+
         Dual-channel streaming controlled by user's spoken_text_type preference:
-        - 'summarize': Two parallel LLM calls (written + speech-optimized spoken)
-        - 'dictate': Single LLM call, same content to both channels
+        - 'summarize': Uses generate_spoken output (speech-optimized)
+        - 'dictate': Ignores spoken stream, duplicates written to both channels
         """
         full_response: list[str] = []
         current_agent_id = "general-agent"
@@ -336,6 +338,14 @@ class Orchestrator:
         active_tool_calls: dict[str, str] = {}
         message_started = False
         spoken_message_started = False
+
+        # Agent node names - we don't stream from these (ReAct loop)
+        agent_nodes = {
+            "general-agent",
+            "regulation-agent",
+            "reporting-agent",
+            "history-agent",
+        }
 
         await protocol_handler.send_step_finished("routing")
         await protocol_handler.send_step_started("thinking")
@@ -353,119 +363,72 @@ class Orchestrator:
             except Exception as e:
                 log.warning(f"Failed to fetch user preferences: {e}, using default")
 
-        # Log the spoken mode for debugging
-        print(f"########################################################")
-        print(f"[SPOKEN MODE] user_id={user_id}, spoken_mode={spoken_mode}")
-        print(f"########################################################")
-
-        # Parallel spoken task state (only used in 'summarize' mode)
-        spoken_task: asyncio.Task[None] | None = None
-        spoken_queue: asyncio.Queue[str | None] = asyncio.Queue()
-
-        async def generate_spoken_parallel(agent_id: str) -> None:
-            """Generate spoken response in TRUE PARALLEL with written stream.
-
-            Uses the same conversation context but a spoken-specific prompt
-            that produces shorter, TTS-friendly summary responses.
-            Only used when spoken_mode == 'summarize'.
-            """
-            try:
-                spoken_prompt = get_spoken_prompt(agent_id)
-                if not spoken_prompt:
-                    log.warning(f"No spoken prompt for agent {agent_id}")
-                    await protocol_handler.send_spoken_text_error(
-                        message_id,
-                        "prompt_not_found",
-                        f"No spoken prompt defined for agent: {agent_id}",
-                    )
-                    return
-
-                llm = get_llm_for_agent(agent_id)
-
-                # Use same conversation context as written stream
-                messages = list(input_state.get("messages", []))
-                spoken_messages = [SystemMessage(content=spoken_prompt)] + messages
-                print(f"Spoken messages: {spoken_messages}")
-                print("########################################################")
-                spoken_answer = ""
-                async for chunk in llm.astream(spoken_messages):
-                    spoken_answer += str(chunk.content)
-                    if hasattr(chunk, "content") and chunk.content:
-                        await spoken_queue.put(str(chunk.content))
-                print(f"Spoken answer: {spoken_answer}")
-                print("########################################################")
-            except Exception as e:
-                error_msg = str(e)
-                log.error(f"Error generating spoken response: {error_msg}")
-                if protocol_handler.is_connected:
-                    await protocol_handler.send_spoken_text_error(
-                        message_id, "generation_failed", error_msg
-                    )
-            finally:
-                await spoken_queue.put(None)
-
-        async def stream_spoken_to_frontend() -> None:
-            """Stream spoken chunks to frontend as they arrive (summarize mode)."""
-            nonlocal spoken_message_started
-            while True:
-                chunk = await spoken_queue.get()
-                if chunk is None:
-                    # Send spoken_text_end immediately when spoken stream finishes
-                    if protocol_handler.is_connected and spoken_message_started:
-                        await protocol_handler.send_spoken_text_end(message_id)
-                        spoken_message_started = False  # Mark as ended
-                    break
-                if protocol_handler.is_connected:
-                    await protocol_handler.send_spoken_text_content(message_id, chunk)
+        log.info(f"Spoken mode for user {user_id}: {spoken_mode}")
 
         async for event in self.graph.astream_events(
             input_state, config=config, version="v2"  # type: ignore[arg-type]
         ):
             kind = event.get("event", "")
+            metadata = event.get("metadata", {})
+            node_name = metadata.get("langgraph_node", "")
 
-            if kind == "on_chat_model_start":
-                # Print what goes into the written LLM invocation
-                input_messages = event.get("data", {}).get("input", {})
-                print("########################################################")
-                print(f"Written LLM input messages: {input_messages}")
-                print("########################################################")
-
-            elif kind == "on_chat_model_stream":
+            if kind == "on_chat_model_stream":
                 chunk = event.get("data", {}).get("chunk")
                 if chunk and hasattr(chunk, "content") and chunk.content:
                     content = str(chunk.content)
-                    full_response.append(content)
 
-                    if protocol_handler.is_connected:
-                        # Start BOTH channels on first content
-                        if not message_started:
-                            await protocol_handler.send_text_message_start(
-                                message_id, "assistant"
-                            )
-                            await protocol_handler.send_spoken_text_start(
-                                message_id, "assistant"
-                            )
-                            message_started = True
-                            spoken_message_started = True
+                    # Only stream from generator nodes, not agent nodes
+                    # Agent nodes run during ReAct loop - their output is regenerated
+                    if node_name in agent_nodes:
+                        # Skip streaming from agent nodes (wasted call is filtered)
+                        continue
 
-                            # In 'summarize' mode: start parallel LLM call for spoken
-                            if spoken_mode == "summarize":
-                                spoken_task = asyncio.create_task(
-                                    generate_spoken_parallel(current_agent_id)
+                    if node_name == "generate_written":
+                        # Accumulate for final response
+                        full_response.append(content)
+
+                        if protocol_handler.is_connected:
+                            # Start both channels on first written content
+                            if not message_started:
+                                log.info(
+                                    f"Starting text streams (spoken_mode={spoken_mode})"
                                 )
-                                asyncio.create_task(stream_spoken_to_frontend())
+                                await protocol_handler.send_text_message_start(
+                                    message_id, "assistant"
+                                )
+                                await protocol_handler.send_spoken_text_start(
+                                    message_id, "assistant"
+                                )
+                                message_started = True
+                                spoken_message_started = True
 
-                        # Send written content
-                        await protocol_handler.send_text_message_content(
-                            message_id, content
-                        )
+                            # Send to written channel
+                            await protocol_handler.send_text_message_content(
+                                message_id, content
+                            )
 
-                        # In 'dictate' mode: duplicate content to spoken channel
-                        if spoken_mode == "dictate":
-                            print(f"[DICTATE MODE] Duplicating to spoken: {content[:50]}...")
+                            # In dictate mode: also send written to spoken channel
+                            if spoken_mode == "dictate":
+                                await protocol_handler.send_spoken_text_content(
+                                    message_id, content
+                                )
+
+                    elif node_name == "generate_spoken":
+                        # In summarize mode: send to spoken channel
+                        if spoken_mode == "summarize" and protocol_handler.is_connected:
+                            # Ensure spoken started (should be from written first chunk)
+                            if not spoken_message_started:
+                                await protocol_handler.send_spoken_text_start(
+                                    message_id, "assistant"
+                                )
+                                spoken_message_started = True
+
                             await protocol_handler.send_spoken_text_content(
                                 message_id, content
                             )
+                        elif spoken_mode == "dictate":
+                            # In dictate mode: ignore spoken stream (we duplicate written)
+                            pass
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 tool_run_id = event.get("run_id", str(uuid.uuid4()))
@@ -569,15 +532,15 @@ class Orchestrator:
                                     "status": "processing",
                                 }
                             )
-        print("########################################################")
-        print(f"Full response: {''.join(full_response)}")
-        print("########################################################")
-        # Wait for spoken task to complete (only in 'summarize' mode)
-        if spoken_task:
-            try:
-                await spoken_task
-            except Exception as e:
-                log.error(f"Spoken task failed: {e}")
+
+        written_chars = len("".join(full_response))
+        spoken_source = (
+            "duplicated from written" if spoken_mode == "dictate" else "generate_spoken"
+        )
+        log.info(
+            f"Parallel generation complete: written={written_chars} chars, "
+            f"spoken_mode={spoken_mode}, spoken_source={spoken_source}"
+        )
 
         # Finalize BOTH channels
         if protocol_handler.is_connected:
