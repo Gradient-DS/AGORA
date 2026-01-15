@@ -3,24 +3,60 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Literal
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
+from langgraph.types import Send
 
+from agora_langgraph.core.agent_definitions import get_agent_by_id, get_spoken_prompt
 from agora_langgraph.core.agents import (
     general_agent,
     get_agent_tools,
+    get_llm_for_agent,
     history_agent,
     regulation_agent,
     reporting_agent,
     set_agent_tools,
 )
-from agora_langgraph.core.state import AgentState
+from agora_langgraph.core.state import AgentState, GeneratorState
 from agora_langgraph.core.tools import get_tools_for_agent
 
 log = logging.getLogger(__name__)
+
+
+VALID_AGENTS = {
+    "general-agent",
+    "regulation-agent",
+    "reporting-agent",
+    "history-agent",
+}
+
+
+def route_from_start(state: AgentState) -> str:
+    """Route from START to the appropriate agent based on persisted state.
+
+    This enables specialist agents to continue handling follow-up messages
+    (e.g., user responses to clarifying questions) instead of always routing
+    through general-agent.
+
+    Args:
+        state: Current graph state with persisted current_agent
+
+    Returns:
+        Target agent ID to start execution
+    """
+    current = state.get("current_agent", "general-agent")
+
+    # Validate agent ID - default to general-agent for unknown values
+    if current not in VALID_AGENTS:
+        log.info(f"route_from_start: Unknown agent '{current}', defaulting to general-agent")
+        return "general-agent"
+
+    log.info(f"route_from_start: Routing to persisted agent '{current}'")
+    return current
 
 
 def detect_handoff_target(tool_name: str) -> str | None:
@@ -53,18 +89,21 @@ def is_handoff_tool(tool_name: str) -> bool:
 
 def route_from_agent(
     state: AgentState,
-) -> Literal["tools", "end"]:
+) -> Literal["tools"] | list[Send]:
     """Route from any agent based on the last message.
 
     ALL tool calls (including handoffs) go to ToolNode first.
     This ensures a proper ToolMessage response is added to the history,
     which OpenAI API requires before the next agent can run.
 
+    When no more tool calls, returns Send commands for parallel
+    spoken/written text generation.
+
     Args:
         state: Current graph state
 
     Returns:
-        Next node to execute ("tools" or "end")
+        "tools" or list of Send commands for parallel generation
     """
     current_agent = state.get("current_agent", "unknown")
     messages = state.get("messages", [])
@@ -74,17 +113,17 @@ def route_from_agent(
     )
 
     if not messages:
-        return "end"
+        return _create_parallel_sends(state)
 
     last_message = messages[-1]
 
     if not isinstance(last_message, AIMessage):
-        return "end"
+        return _create_parallel_sends(state)
 
     tool_calls = getattr(last_message, "tool_calls", None)
     if not tool_calls:
-        log.info("route_from_agent: No tool calls, ending turn")
-        return "end"
+        log.info("route_from_agent: No tool calls, forking to parallel generation")
+        return _create_parallel_sends(state)
 
     tool_name = tool_calls[0].get("name", "")
     log.info(f"route_from_agent: Tool call '{tool_name}' → routing to ToolNode first")
@@ -118,6 +157,195 @@ def route_after_tools(state: AgentState) -> str:
 
     log.info(f"route_after_tools: Returning to {current}")
     return current
+
+
+def _create_parallel_sends(state: AgentState) -> list[Send]:
+    """Create Send commands for parallel spoken and written generation.
+
+    This is used by route_from_agent to dispatch parallel generator instances with:
+    - Same message context (all tool results included)
+    - Different system prompts (written vs spoken)
+
+    The agent's final response (if any) is filtered out since we regenerate
+    it with separate written/spoken prompts.
+
+    Args:
+        state: Current agent state after tool execution
+
+    Returns:
+        List of Send commands for parallel generator dispatch
+    """
+    agent_id = state.get("current_agent", "general-agent")
+
+    # Get prompts for both streams
+    agent_config = get_agent_by_id(agent_id)
+    written_prompt = agent_config["instructions"] if agent_config else ""
+    spoken_prompt = get_spoken_prompt(agent_id) or ""
+
+    # Filter out system messages - we'll add our own per-stream
+    raw_messages = state.get("messages", [])
+    messages: list[BaseMessage] = [
+        m for m in raw_messages if not isinstance(m, SystemMessage)
+    ]
+
+    # Filter out the last AI message if it has no tool calls
+    # This is the "wasted" response from the agent that we're regenerating
+    if messages and isinstance(messages[-1], AIMessage):
+        last_msg = messages[-1]
+        if not getattr(last_msg, "tool_calls", None):
+            log.info("_create_parallel_sends: Filtering out agent's final response")
+            messages = messages[:-1]
+
+    log.info(
+        f"_create_parallel_sends: Dispatching parallel streams for {agent_id} "
+        f"with {len(messages)} messages"
+    )
+
+    # Get common state fields
+    session_id = state.get("session_id", "")
+    metadata = state.get("metadata", {})
+
+    # Dispatch to separate nodes for easy identification in astream_events
+    return [
+        Send(
+            "generate_written",
+            GeneratorState(
+                messages=messages,
+                system_prompt=written_prompt,
+                stream_type="written",
+                agent_id=agent_id,
+                session_id=session_id,
+                metadata=metadata,
+            ),
+        ),
+        Send(
+            "generate_spoken",
+            GeneratorState(
+                messages=messages,
+                system_prompt=spoken_prompt,
+                stream_type="spoken",
+                agent_id=agent_id,
+                session_id=session_id,
+                metadata=metadata,
+            ),
+        ),
+    ]
+
+
+async def _generate_stream(
+    state: GeneratorState, stream_type: str
+) -> dict[str, list[str]]:
+    """Internal: Generate a stream with the given type.
+
+    Args:
+        state: Generator-specific state from Send API
+        stream_type: "written" or "spoken"
+
+    Returns:
+        Dict with stream_type key containing generated content list
+    """
+    agent_id = state["agent_id"]
+    system_prompt = state["system_prompt"]
+    messages = state["messages"]
+
+    start_time = time.time()
+    log.info(
+        f"_generate_stream: Starting {stream_type} generation for {agent_id} "
+        f"at t={start_time:.3f}"
+    )
+
+    llm = get_llm_for_agent(agent_id)
+
+    # Build message list with system prompt
+    full_messages: list[BaseMessage] = [SystemMessage(content=system_prompt)] + list(
+        messages
+    )
+
+    # Stream - astream_events will capture on_chat_model_stream events
+    # which the orchestrator can use to stream to frontend
+    full_content: list[str] = []
+    first_chunk_time: float | None = None
+    async for chunk in llm.astream(full_messages):
+        if hasattr(chunk, "content") and chunk.content:
+            if first_chunk_time is None:
+                first_chunk_time = time.time()
+            content = str(chunk.content)
+            full_content.append(content)
+
+    end_time = time.time()
+    total_content = "".join(full_content)
+    time_to_first = (first_chunk_time - start_time) if first_chunk_time else 0
+    total_duration = end_time - start_time
+
+    log.info(
+        f"_generate_stream: Completed {stream_type} for {agent_id} - "
+        f"{len(total_content)} chars, "
+        f"time_to_first_chunk={time_to_first:.2f}s, "
+        f"total_duration={total_duration:.2f}s"
+    )
+
+    # Return with stream_type as key - reducer will accumulate
+    return {stream_type: [total_content]}
+
+
+async def generate_written_node(state: GeneratorState) -> dict[str, list[str]]:
+    """Generate written text stream.
+
+    This node is easily identifiable in astream_events by name,
+    allowing the orchestrator to route chunks to the written channel.
+    """
+    return await _generate_stream(state, "written")
+
+
+async def generate_spoken_node(state: GeneratorState) -> dict[str, list[str]]:
+    """Generate spoken text stream.
+
+    This node is easily identifiable in astream_events by name,
+    allowing the orchestrator to route chunks to the spoken channel.
+    """
+    return await _generate_stream(state, "spoken")
+
+
+def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
+    """Combine parallel generation outputs into final state.
+
+    Takes accumulated written/spoken lists from parallel branches
+    and produces final merged output. Also adds written response
+    as AIMessage to conversation history.
+
+    Args:
+        state: State with accumulated written/spoken lists
+
+    Returns:
+        Dict with final outputs and updated messages
+    """
+    written_parts = state.get("written", [])
+    spoken_parts = state.get("spoken", [])
+
+    written_content = "".join(written_parts)
+    spoken_content = "".join(spoken_parts)
+
+    log.info(
+        f"merge_parallel_outputs: written={len(written_content)} chars, "
+        f"spoken={len(spoken_content)} chars"
+    )
+
+    # Log full content to terminal for debugging
+    print("\n" + "=" * 80)
+    print("WRITTEN OUTPUT:")
+    print("=" * 80)
+    print(written_content)
+    print("\n" + "=" * 80)
+    print("SPOKEN OUTPUT:")
+    print("=" * 80)
+    print(spoken_content)
+    print("=" * 80 + "\n")
+
+    return {
+        "messages": [AIMessage(content=written_content)],
+        "final_written": written_content,
+        "final_spoken": spoken_content,
+    }
 
 
 def build_agent_graph(
@@ -157,17 +385,36 @@ def build_agent_graph(
 
     graph = StateGraph(AgentState)
 
+    # Agent nodes
     graph.add_node("general-agent", general_agent)
     graph.add_node("regulation-agent", regulation_agent)
     graph.add_node("reporting-agent", reporting_agent)
     graph.add_node("history-agent", history_agent)
 
+    # Tool node
     if unique_tools:
         tool_node = ToolNode(unique_tools)
         graph.add_node("tools", tool_node)
 
-    graph.add_edge(START, "general-agent")
+    # Parallel generation nodes (fork happens via Send in route_from_agent)
+    graph.add_node("generate_written", generate_written_node)
+    graph.add_node("generate_spoken", generate_spoken_node)
+    graph.add_node("merge", merge_parallel_outputs)
 
+    # Entry point - dynamic routing based on persisted current_agent
+    # This allows specialist agents to continue handling follow-up messages
+    graph.add_conditional_edges(
+        START,
+        route_from_start,
+        {
+            "general-agent": "general-agent",
+            "regulation-agent": "regulation-agent",
+            "reporting-agent": "reporting-agent",
+            "history-agent": "history-agent",
+        },
+    )
+
+    # Agent routing - routes to tools or directly dispatches parallel generation via Send
     for agent_id in [
         "general-agent",
         "regulation-agent",
@@ -175,17 +422,22 @@ def build_agent_graph(
         "history-agent",
     ]:
         if unique_tools:
+            # route_from_agent returns "tools" or list[Send] for parallel generation
+            # When returning list[Send], the Send objects specify targets directly
             graph.add_conditional_edges(
                 agent_id,
                 route_from_agent,
-                {
-                    "tools": "tools",
-                    "end": END,
-                },
+                ["tools", "generate_written", "generate_spoken"],
             )
         else:
-            graph.add_edge(agent_id, END)
+            # No tools - use conditional edges for Send-based fan-out
+            graph.add_conditional_edges(
+                agent_id,
+                route_from_agent,
+                ["generate_written", "generate_spoken"],
+            )
 
+    # Tools routing back to agents
     if unique_tools:
         graph.add_conditional_edges(
             "tools",
@@ -198,5 +450,12 @@ def build_agent_graph(
             },
         )
 
-    log.info("Agent graph built successfully")
+    # Parallel generation edges
+    # fork_generation uses Send API - edges are implicit from Send targets
+    # Both generator nodes merge their outputs
+    graph.add_edge("generate_written", "merge")
+    graph.add_edge("generate_spoken", "merge")
+    graph.add_edge("merge", END)
+
+    log.info("Agent graph built successfully with parallel generation support")
     return graph

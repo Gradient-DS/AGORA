@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, useAdminStore } from '@/stores';
 import { useHistoryStore } from '@/stores/useHistoryStore';
-import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings, Mic, FileText } from 'lucide-react';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings, Mic, FileText, MessageSquare, Headphones, Mail, MailX } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
@@ -121,6 +121,36 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                       <>
                         <FileText className="h-3 w-3 mr-1" />
                         Samenvatten
+                      </>
+                    )}
+                  </Badge>
+                )}
+                {preferences?.interaction_mode && (
+                  <Badge variant="outline" className="text-xs">
+                    {preferences.interaction_mode === 'feedback' ? (
+                      <>
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Feedback
+                      </>
+                    ) : (
+                      <>
+                        <Headphones className="h-3 w-3 mr-1" />
+                        Luisteren
+                      </>
+                    )}
+                  </Badge>
+                )}
+                {preferences?.email_reports !== undefined && (
+                  <Badge variant="outline" className="text-xs">
+                    {preferences.email_reports ? (
+                      <>
+                        <Mail className="h-3 w-3 mr-1" />
+                        E-mail
+                      </>
+                    ) : (
+                      <>
+                        <MailX className="h-3 w-3 mr-1" />
+                        Geen e-mail
                       </>
                     )}
                   </Badge>

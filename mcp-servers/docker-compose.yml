@@ -17,7 +17,7 @@ services:
       MCP_WEAVIATE_URL: "http://weaviate:8080"
       MCP_EMBEDDING_MODEL: "nomic-ai/nomic-embed-text-v1.5"
       MCP_EMBEDDING_DEVICE: "cpu"
-      MCP_OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
+      # MCP_OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
     depends_on:
       weaviate:
         condition: service_healthy
@@ -42,12 +42,14 @@ services:
     env_file:
       - ../.env
     environment:
-      OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
+      # OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
       AGORA_SERVER_URL: "http://host.docker.internal:5000"
+      # Microsoft Graph API for email notifications loaded from ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - reporting_storage:/app/storage
+      - reporting_data:/app/storage/reports
+      - reporting_history:/app/storage/conversation_history
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
       interval: 30s
@@ -105,5 +107,6 @@ networks:
 
 volumes:
   weaviate_data:
-  reporting_storage:
+  reporting_data:
+  reporting_history:
 

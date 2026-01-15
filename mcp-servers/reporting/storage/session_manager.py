@@ -18,15 +18,17 @@ class SessionManager:
         company_id: Optional[str] = None,
         company_name: Optional[str] = None,
         inspector_name: Optional[str] = None,
+        inspector_email: Optional[str] = None,
     ) -> Dict[str, Any]:
         report_id = f"HAP-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
-        
+
         session_data = {
             "session_id": session_id,
             "report_id": report_id,
             "company_id": company_id,
             "company_name": company_name,
             "inspector_name": inspector_name,
+            "inspector_email": inspector_email,
             "created_at": datetime.now().isoformat(),
             "status": "initialized",
             "phase": "data_extraction",
@@ -57,13 +59,24 @@ class SessionManager:
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         if session_id in self.active_sessions:
             return self.active_sessions[session_id]
-        
+
         draft = self.storage.load_draft(session_id)
         if draft and "metadata" in draft:
             self.active_sessions[session_id] = draft["metadata"]
             return draft["metadata"]
-        
+
         return None
+
+    def _save_session(self, session_id: str, session_data: Dict[str, Any]) -> None:
+        """Save updated session data to both memory and storage."""
+        session_data["updated_at"] = datetime.now().isoformat()
+        self.active_sessions[session_id] = session_data
+
+        draft = self.storage.load_draft(session_id)
+        if draft:
+            draft["metadata"] = session_data
+            draft["last_updated"] = datetime.now().isoformat()
+            self.storage.save_draft(session_id, draft)
     
     def store_conversation(self, session_id: str, messages: List[Dict[str, str]]) -> None:
         self.storage.save_conversation_history(session_id, messages)

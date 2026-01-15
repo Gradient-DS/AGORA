@@ -1,5 +1,5 @@
 import { Wrench, CheckCircle2, XCircle, Loader2, ExternalLink } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatToolName } from '@/lib/utils';
 
 interface ToolCallReferenceProps {
   toolName: string;
@@ -8,13 +8,6 @@ interface ToolCallReferenceProps {
 }
 
 export function ToolCallReference({ toolName, status, toolCallId }: ToolCallReferenceProps) {
-  const formatToolName = (name: string) => {
-    return name
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
   const statusConfig = {
     started: {
       icon: Loader2,

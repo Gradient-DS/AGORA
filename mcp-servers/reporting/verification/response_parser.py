@@ -44,6 +44,10 @@ Parse the responses and return updated JSON data that:
 
 Return the complete updated data structure."""
         
+        # Log prompt size for debugging
+        prompt_size = len(prompt)
+        logger.info(f"Response parser prompt size: {prompt_size} chars ({prompt_size / 1000:.1f}KB)")
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -53,6 +57,7 @@ Return the complete updated data structure."""
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.1,
+                timeout=60.0,
             )
             
             updated_data = json.loads(response.choices[0].message.content)

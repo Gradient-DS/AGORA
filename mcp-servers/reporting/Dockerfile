@@ -20,6 +20,7 @@ COPY storage/ ./storage/
 COPY analyzers/ ./analyzers/
 COPY verification/ ./verification/
 COPY generators/ ./generators/
+COPY services/ ./services/
 
 RUN mkdir -p /app/storage/reports /app/storage/conversation_history
 

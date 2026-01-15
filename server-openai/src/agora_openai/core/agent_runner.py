@@ -11,6 +11,7 @@ from agents.items import ToolCallItem, ToolCallOutputItem
 from agents.stream_events import RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
 
+from agora_openai.adapters.internal_tools import create_update_user_settings_tool
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.config import get_settings
 from agora_openai.core.agent_definitions import AgentConfig
@@ -66,6 +67,12 @@ class AgentRegistry:
         for server_name in agent_mcp_server_names:
             if server_name in self.tools_by_server:
                 agent_tools.extend(self.tools_by_server[server_name])
+
+        # Add internal tools for general-agent (settings management)
+        if agent_id == "general-agent":
+            settings_tool = create_update_user_settings_tool()
+            agent_tools.append(settings_tool)
+            log.info(f"{agent_id} gets internal tool: update_user_settings")
 
         # Agent SDK doesn't support temperature parameter directly
         # Temperature is set at the Runner.run level or via model string

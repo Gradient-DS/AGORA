@@ -4,37 +4,13 @@
 
 import { useMemo } from 'react';
 import { useAgentStore, useToolCallStore } from '@/stores';
+import { formatToolName } from '@/lib/utils';
 
 type ProcessingStatus = 'thinking' | 'routing' | 'executing_tools' | null;
 
 interface LoadingIndicatorProps {
   status: ProcessingStatus;
 }
-
-const TOOL_NAME_TRANSLATIONS: Record<string, string> = {
-  check_company_exists: 'Controleren bedrijfsgegevens',
-  get_inspection_history: 'Ophalen inspectiehistorie',
-  get_company_violations: 'Ophalen overtredingen',
-  check_repeat_violation: 'Controleren herhaalde overtredingen',
-  get_follow_up_status: 'Controleren follow-up status',
-  search_inspections_by_inspector: 'Zoeken inspecties per inspecteur',
-  search_regulations: 'Zoeken in regelgeving',
-  get_regulation_context: 'Ophalen regelgeving context',
-  lookup_regulation_articles: 'Opzoeken regelgeving artikelen',
-  analyze_document: 'Analyseren document',
-  get_database_stats: 'Ophalen database statistieken',
-  start_inspection_report: 'Starten inspectie rapport',
-  extract_inspection_data: 'Verwerken inspectiegegevens',
-  verify_inspection_data: 'Verifiëren inspectiegegevens',
-  submit_verification_answers: 'Verwerken antwoorden',
-  generate_final_report: 'Genereren eindrapport',
-  get_report_status: 'Ophalen rapport status',
-  search_kvk: 'Zoeken in het KVK',
-  analyze_regulations: 'Analyseren regelgeving',
-  generate_report: 'Genereren rapportage',
-  search_documents: 'Zoeken in documenten',
-  query_knowledge_base: 'Zoeken in kennisbank',
-};
 
 export function LoadingIndicator({ status }: LoadingIndicatorProps) {
   const activeAgents = useAgentStore((state) => state.getActiveAgents());
@@ -46,8 +22,7 @@ export function LoadingIndicator({ status }: LoadingIndicatorProps) {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
 
     if (activeToolCall) {
-      const toolDisplayName =
-        TOOL_NAME_TRANSLATIONS[activeToolCall.toolName] || activeToolCall.toolName;
+      const toolDisplayName = formatToolName(activeToolCall.toolName);
       return { showIndicator: true, displayText: toolDisplayName };
     }
 

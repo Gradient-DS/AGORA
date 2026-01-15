@@ -9,8 +9,9 @@ import uuid
 from typing import Any
 
 from ag_ui.core import Message as AGUIMessage
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Command
 
 from agora_langgraph.adapters.audit_logger import AuditLogger
 from agora_langgraph.adapters.session_metadata import SessionMetadataManager
@@ -20,8 +21,7 @@ from agora_langgraph.common.ag_ui_types import (
     ToolApprovalResponsePayload,
 )
 from agora_langgraph.common.schemas import ToolCall
-from agora_langgraph.core.agent_definitions import get_spoken_prompt
-from agora_langgraph.core.agents import get_llm_for_agent
+from agora_langgraph.config import get_settings
 from agora_langgraph.core.approval_logic import requires_human_approval
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
@@ -149,6 +149,7 @@ class Orchestrator:
         # Create or update session metadata
         if self.session_metadata:
             try:
+                settings = get_settings()
                 log.info(
                     f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}"
                 )
@@ -156,6 +157,8 @@ class Orchestrator:
                     session_id=thread_id,
                     user_id=user_id,
                     first_message=user_content,
+                    api_key=settings.openai_api_key.get_secret_value(),
+                    base_url=settings.openai_base_url,
                 )
                 log.info(
                     f"Session metadata created/updated successfully for {thread_id}"
@@ -183,32 +186,80 @@ class Orchestrator:
                 # Emit RUN_STARTED
                 await protocol_handler.send_run_started(thread_id, run_id)
 
-                # Send initial state snapshot
-                await protocol_handler.send_state_snapshot(
-                    {
-                        "thread_id": thread_id,
-                        "run_id": run_id,
-                        "current_agent": "general-agent",
-                        "status": "processing",
-                    }
-                )
+                # Note: Initial state snapshot will be sent after we determine current_agent
 
                 await protocol_handler.send_step_started("routing")
 
             message_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
 
-            input_state = {
-                "messages": [HumanMessage(content=user_content)],
-                "session_id": thread_id,
-                "current_agent": "general-agent",
-                "pending_approval": None,
-                "metadata": agent_input.context or {},
-            }
+            # Include user_id and user context in metadata so agents can access it
+            metadata = agent_input.context.copy() if agent_input.context else {}
+            metadata["user_id"] = user_id
+
+            # Fetch user email and preferences for reporting agent context
+            if self.user_manager:
+                try:
+                    user = await self.user_manager.get_user(user_id)
+                    if user:
+                        metadata["user_email"] = user.get("email")
+                        metadata["user_name"] = user.get("name")
+                        prefs = user.get("preferences", {})
+                        if prefs:
+                            metadata["email_reports"] = prefs.get("email_reports", True)
+                except Exception as e:
+                    log.warning(f"Failed to fetch user info for metadata: {e}")
+
+            # Check if thread is in interrupted state (e.g., waiting for user input
+            # during a clarification flow in reporting-agent)
+            is_interrupted = False
+
+            try:
+                existing_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+                if existing_state and existing_state.next:
+                    # Graph is interrupted - there are pending tasks waiting for resume
+                    is_interrupted = True
+                    log.info(
+                        f"Thread {thread_id} is interrupted at {existing_state.next}, "
+                        "will resume with user message"
+                    )
+            except Exception as e:
+                log.warning(f"Failed to read persisted state: {e}")
+
+            # Determine input for graph invocation
+            if is_interrupted:
+                # Resume interrupted graph with user's response
+                graph_input: dict[str, Any] | Command = Command(resume=user_content)
+                log.info(f"Resuming interrupted graph with: {user_content[:100]}...")
+            else:
+                # Normal invocation - ALWAYS start at general-agent for routing
+                # The general-agent will transfer to specialists as needed
+                # Only interrupted flows should resume at the specialist agent
+                graph_input = {
+                    "messages": [HumanMessage(content=user_content)],
+                    "session_id": thread_id,
+                    "current_agent": "general-agent",
+                    "pending_approval": None,
+                    "metadata": metadata,
+                }
+
+            # Send initial state snapshot with correct current_agent
+            if protocol_handler:
+                # For normal invocations, always start at general-agent
+                # For interrupted flows, we're resuming at reporting-agent
+                initial_agent = "reporting-agent" if is_interrupted else "general-agent"
+                await protocol_handler.send_state_snapshot(
+                    {
+                        "thread_id": thread_id,
+                        "run_id": run_id,
+                        "current_agent": initial_agent,
+                        "status": "processing",
+                    }
+                )
 
             if protocol_handler:
                 response_content, active_agent_id = await self._stream_response(
-                    input_state,
+                    graph_input,
                     config,
                     thread_id,
                     run_id,
@@ -218,7 +269,7 @@ class Orchestrator:
                 )
             else:
                 response_content, active_agent_id = await self._run_blocking(
-                    input_state, config
+                    graph_input, config
                 )
 
             # Validate output
@@ -290,11 +341,11 @@ class Orchestrator:
 
     async def _run_blocking(
         self,
-        input_state: dict[str, Any],
+        graph_input: dict[str, Any] | Command,
         config: dict[str, Any],
     ) -> tuple[str, str]:
         """Run graph in blocking mode without streaming."""
-        result = await self.graph.ainvoke(input_state, config=config)  # type: ignore[arg-type]
+        result = await self.graph.ainvoke(graph_input, config=config)  # type: ignore[arg-type]
 
         messages = result.get("messages", [])
         response_content = ""
@@ -308,7 +359,7 @@ class Orchestrator:
 
     async def _stream_response(
         self,
-        input_state: dict[str, Any],
+        graph_input: dict[str, Any] | Command,
         config: dict[str, Any],
         thread_id: str,
         run_id: str,
@@ -318,16 +369,32 @@ class Orchestrator:
     ) -> tuple[str, str]:
         """Stream graph response using astream_events with AG-UI Protocol.
 
+        The graph uses parallel generation nodes (generate_written, generate_spoken)
+        via the Send API. Both run simultaneously with shared context but different
+        prompts.
+
         Dual-channel streaming controlled by user's spoken_text_type preference:
-        - 'summarize': Two parallel LLM calls (written + speech-optimized spoken)
-        - 'dictate': Single LLM call, same content to both channels
+        - 'summarize': Uses generate_spoken output (speech-optimized)
+        - 'dictate': Ignores spoken stream, duplicates written to both channels
         """
         full_response: list[str] = []
-        current_agent_id = "general-agent"
+        # Handle both normal input and Command resume
+        if isinstance(graph_input, Command):
+            current_agent_id = "reporting-agent"  # Resuming interrupted reporting flow
+        else:
+            current_agent_id = graph_input.get("current_agent", "general-agent")
         current_step: str | None = "routing"
         active_tool_calls: dict[str, str] = {}
         message_started = False
         spoken_message_started = False
+
+        # Agent node names - we don't stream from these (ReAct loop)
+        agent_nodes = {
+            "general-agent",
+            "regulation-agent",
+            "reporting-agent",
+            "history-agent",
+        }
 
         await protocol_handler.send_step_finished("routing")
         await protocol_handler.send_step_started("thinking")
@@ -345,103 +412,72 @@ class Orchestrator:
             except Exception as e:
                 log.warning(f"Failed to fetch user preferences: {e}, using default")
 
-        # Parallel spoken task state (only used in 'summarize' mode)
-        spoken_task: asyncio.Task[None] | None = None
-        spoken_queue: asyncio.Queue[str | None] = asyncio.Queue()
-
-        async def generate_spoken_parallel(agent_id: str) -> None:
-            """Generate spoken response in TRUE PARALLEL with written stream.
-
-            Uses the same conversation context but a spoken-specific prompt
-            that produces shorter, TTS-friendly summary responses.
-            Only used when spoken_mode == 'summarize'.
-            """
-            try:
-                spoken_prompt = get_spoken_prompt(agent_id)
-                if not spoken_prompt:
-                    log.warning(f"No spoken prompt for agent {agent_id}")
-                    await protocol_handler.send_spoken_text_error(
-                        message_id,
-                        "prompt_not_found",
-                        f"No spoken prompt defined for agent: {agent_id}",
-                    )
-                    return
-
-                llm = get_llm_for_agent(agent_id)
-
-                # Use same conversation context as written stream
-                messages = list(input_state.get("messages", []))
-                spoken_messages = [SystemMessage(content=spoken_prompt)] + messages
-
-                async for chunk in llm.astream(spoken_messages):
-                    if hasattr(chunk, "content") and chunk.content:
-                        await spoken_queue.put(str(chunk.content))
-
-            except Exception as e:
-                error_msg = str(e)
-                log.error(f"Error generating spoken response: {error_msg}")
-                if protocol_handler.is_connected:
-                    await protocol_handler.send_spoken_text_error(
-                        message_id, "generation_failed", error_msg
-                    )
-            finally:
-                await spoken_queue.put(None)
-
-        async def stream_spoken_to_frontend() -> None:
-            """Stream spoken chunks to frontend as they arrive (summarize mode)."""
-            nonlocal spoken_message_started
-            while True:
-                chunk = await spoken_queue.get()
-                if chunk is None:
-                    # Send spoken_text_end immediately when spoken stream finishes
-                    if protocol_handler.is_connected and spoken_message_started:
-                        await protocol_handler.send_spoken_text_end(message_id)
-                        spoken_message_started = False  # Mark as ended
-                    break
-                if protocol_handler.is_connected:
-                    await protocol_handler.send_spoken_text_content(message_id, chunk)
+        log.info(f"Spoken mode for user {user_id}: {spoken_mode}")
 
         async for event in self.graph.astream_events(
-            input_state, config=config, version="v2"  # type: ignore[arg-type]
+            graph_input, config=config, version="v2"  # type: ignore[arg-type]
         ):
             kind = event.get("event", "")
+            metadata = event.get("metadata", {})
+            node_name = metadata.get("langgraph_node", "")
 
             if kind == "on_chat_model_stream":
                 chunk = event.get("data", {}).get("chunk")
                 if chunk and hasattr(chunk, "content") and chunk.content:
                     content = str(chunk.content)
-                    full_response.append(content)
 
-                    if protocol_handler.is_connected:
-                        # Start BOTH channels on first content
-                        if not message_started:
-                            await protocol_handler.send_text_message_start(
-                                message_id, "assistant"
-                            )
-                            await protocol_handler.send_spoken_text_start(
-                                message_id, "assistant"
-                            )
-                            message_started = True
-                            spoken_message_started = True
+                    # Only stream from generator nodes, not agent nodes
+                    # Agent nodes run during ReAct loop - their output is regenerated
+                    if node_name in agent_nodes:
+                        # Skip streaming from agent nodes (wasted call is filtered)
+                        continue
 
-                            # In 'summarize' mode: start parallel LLM call for spoken
-                            if spoken_mode == "summarize":
-                                spoken_task = asyncio.create_task(
-                                    generate_spoken_parallel(current_agent_id)
+                    if node_name == "generate_written":
+                        # Accumulate for final response
+                        full_response.append(content)
+
+                        if protocol_handler.is_connected:
+                            # Start both channels on first written content
+                            if not message_started:
+                                log.info(
+                                    f"Starting text streams (spoken_mode={spoken_mode})"
                                 )
-                                asyncio.create_task(stream_spoken_to_frontend())
+                                await protocol_handler.send_text_message_start(
+                                    message_id, "assistant"
+                                )
+                                await protocol_handler.send_spoken_text_start(
+                                    message_id, "assistant"
+                                )
+                                message_started = True
+                                spoken_message_started = True
 
-                        # Send written content
-                        await protocol_handler.send_text_message_content(
-                            message_id, content
-                        )
-
-                        # In 'dictate' mode: duplicate content to spoken channel
-                        if spoken_mode == "dictate":
-                            await protocol_handler.send_spoken_text_content(
+                            # Send to written channel
+                            await protocol_handler.send_text_message_content(
                                 message_id, content
                             )
 
+                            # In dictate mode: also send written to spoken channel
+                            if spoken_mode == "dictate":
+                                await protocol_handler.send_spoken_text_content(
+                                    message_id, content
+                                )
+
+                    elif node_name == "generate_spoken":
+                        # In summarize mode: send to spoken channel
+                        if spoken_mode == "summarize" and protocol_handler.is_connected:
+                            # Ensure spoken started (should be from written first chunk)
+                            if not spoken_message_started:
+                                await protocol_handler.send_spoken_text_start(
+                                    message_id, "assistant"
+                                )
+                                spoken_message_started = True
+
+                            await protocol_handler.send_spoken_text_content(
+                                message_id, content
+                            )
+                        elif spoken_mode == "dictate":
+                            # In dictate mode: ignore spoken stream (we duplicate written)
+                            pass
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 tool_run_id = event.get("run_id", str(uuid.uuid4()))
@@ -480,8 +516,17 @@ class Orchestrator:
 
             elif kind == "on_tool_end":
                 tool_run_id = event.get("run_id", "")
-                tool_name = active_tool_calls.pop(tool_run_id, "unknown")
+                tool_name = active_tool_calls.pop(tool_run_id, None)
                 output = event.get("data", {}).get("output", "")
+
+                # Skip if tool wasn't started in this stream (e.g., resumed from interrupt)
+                # Events were already sent when the interrupt was handled
+                if tool_name is None:
+                    log.info(
+                        f"Skipping on_tool_end for tool not in this stream "
+                        f"(run_id: {tool_run_id}) - likely resumed from interrupt"
+                    )
+                    continue
 
                 log.info(f"Tool completed: {tool_name} (run_id: {tool_run_id})")
 
@@ -504,8 +549,16 @@ class Orchestrator:
 
             elif kind == "on_tool_error":
                 tool_run_id = event.get("run_id", "")
-                tool_name = active_tool_calls.pop(tool_run_id, "unknown")
+                tool_name = active_tool_calls.pop(tool_run_id, None)
                 error = event.get("data", {}).get("error", "Unknown error")
+
+                # Skip if tool wasn't started in this stream
+                if tool_name is None:
+                    log.info(
+                        f"Skipping on_tool_error for tool not in this stream "
+                        f"(run_id: {tool_run_id})"
+                    )
+                    continue
 
                 log.error(f"Tool error: {tool_name} - {error}")
 
@@ -546,12 +599,93 @@ class Orchestrator:
                                 }
                             )
 
-        # Wait for spoken task to complete (only in 'summarize' mode)
-        if spoken_task:
-            try:
-                await spoken_task
-            except Exception as e:
-                log.error(f"Spoken task failed: {e}")
+        # After streaming completes, check if graph was interrupted
+        # Get the final state to check for interrupts
+        try:
+            final_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+            if final_state and final_state.next:
+                # Graph was interrupted - there are pending tasks
+                log.info(
+                    f"Graph interrupted at node(s): {final_state.next}, "
+                    f"thread: {thread_id}"
+                )
+
+                # Extract interrupt payload first (needed for tool result)
+                interrupt_value = None
+                if final_state.tasks:
+                    for task in final_state.tasks:
+                        if hasattr(task, "interrupts") and task.interrupts:
+                            interrupt_value = task.interrupts[0].value
+                            log.info(f"Interrupt payload: {interrupt_value}")
+                            break
+
+                # Close any active tool calls that were interrupted
+                # (they never got TOOL_CALL_END because interrupt() paused execution)
+                if active_tool_calls and protocol_handler.is_connected:
+                    for tool_run_id, tool_name in list(active_tool_calls.items()):
+                        log.info(f"Closing interrupted tool call: {tool_name}")
+                        await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
+                        # Send TOOL_CALL_RESULT so frontend marks tool as completed
+                        result_content = ""
+                        if interrupt_value and isinstance(interrupt_value, dict):
+                            result_content = interrupt_value.get("display_text", "")
+                        await protocol_handler.send_tool_call_result(
+                            tool_call_id=tool_run_id,
+                            content=result_content or "Clarification requested",
+                        )
+                    active_tool_calls.clear()
+
+                # Send clarification questions to user as text message
+                if final_state.tasks:
+                    for task in final_state.tasks:
+                        if hasattr(task, "interrupts") and task.interrupts:
+                            interrupt_value = task.interrupts[0].value
+                            log.info(f"Interrupt payload: {interrupt_value}")
+
+                            # Send clarification questions as text message
+                            if isinstance(interrupt_value, dict):
+                                display_text = interrupt_value.get("display_text", "")
+                                if display_text and protocol_handler.is_connected:
+                                    # Format the questions nicely
+                                    clarification_message = (
+                                        "Om het rapport te kunnen voltooien heb ik nog "
+                                        "enkele gegevens nodig:\n\n" + display_text
+                                    )
+
+                                    # Start message if not started
+                                    if not message_started:
+                                        await protocol_handler.send_text_message_start(
+                                            message_id, "assistant"
+                                        )
+                                        await protocol_handler.send_spoken_text_start(
+                                            message_id, "assistant"
+                                        )
+                                        message_started = True
+                                        spoken_message_started = True
+
+                                    # Send the questions
+                                    await protocol_handler.send_text_message_content(
+                                        message_id, clarification_message
+                                    )
+                                    await protocol_handler.send_spoken_text_content(
+                                        message_id, clarification_message
+                                    )
+                                    full_response.append(clarification_message)
+                                    log.info(
+                                        f"Sent clarification questions to user: "
+                                        f"{len(clarification_message)} chars"
+                                    )
+        except Exception as e:
+            log.warning(f"Failed to check interrupt state: {e}")
+
+        written_chars = len("".join(full_response))
+        spoken_source = (
+            "duplicated from written" if spoken_mode == "dictate" else "generate_spoken"
+        )
+        log.info(
+            f"Parallel generation complete: written={written_chars} chars, "
+            f"spoken_mode={spoken_mode}, spoken_source={spoken_source}"
+        )
 
         # Finalize BOTH channels
         if protocol_handler.is_connected:
@@ -567,7 +701,13 @@ class Orchestrator:
     async def get_conversation_history(
         self, thread_id: str, include_tool_calls: bool = False
     ) -> list[dict[str, Any]]:
-        """Get conversation history for a session."""
+        """Get conversation history for a session.
+
+        Note: Due to parallel generation architecture, the LangGraph checkpoint
+        may contain duplicate AIMessages (agent's response + regenerated response).
+        This method filters out consecutive AI messages without tool calls,
+        keeping only the last one in each sequence (the final regenerated version).
+        """
         config = {"configurable": {"thread_id": thread_id}}
 
         try:
@@ -578,9 +718,13 @@ class Orchestrator:
             messages = state.values.get("messages", [])
             history = []
 
+            # Track previous message type to filter consecutive AI messages
+            prev_was_ai_without_tools = False
+
             for msg in messages:
                 if hasattr(msg, "type"):
                     if msg.type == "human":
+                        prev_was_ai_without_tools = False
                         history.append(
                             {
                                 "role": "user",
@@ -593,26 +737,53 @@ class Orchestrator:
                         if hasattr(msg, "additional_kwargs"):
                             agent_id = msg.additional_kwargs.get("agent_id")
 
-                        if msg.content:
-                            history.append(
-                                {
-                                    "role": "assistant",
-                                    "content": str(msg.content),
-                                    "agent_id": agent_id or "",
-                                }
-                            )
-                        if include_tool_calls and hasattr(msg, "tool_calls"):
-                            for tc in msg.tool_calls or []:
+                        has_tool_calls = bool(getattr(msg, "tool_calls", None))
+
+                        if has_tool_calls:
+                            # AI message with tool calls - always include
+                            prev_was_ai_without_tools = False
+                            if msg.content:
                                 history.append(
                                     {
-                                        "role": "tool_call",
-                                        "tool_call_id": tc.get("id", ""),
-                                        "tool_name": tc.get("name", "unknown"),
-                                        "content": str(tc.get("args", {})),
+                                        "role": "assistant",
+                                        "content": str(msg.content),
                                         "agent_id": agent_id or "",
                                     }
                                 )
+                            if include_tool_calls:
+                                for tc in msg.tool_calls or []:
+                                    history.append(
+                                        {
+                                            "role": "tool_call",
+                                            "tool_call_id": tc.get("id", ""),
+                                            "tool_name": tc.get("name", "unknown"),
+                                            "content": str(tc.get("args", {})),
+                                            "agent_id": agent_id or "",
+                                        }
+                                    )
+                        else:
+                            # AI message without tool calls
+                            if msg.content:
+                                if prev_was_ai_without_tools and history:
+                                    # Replace the previous AI message (it was the
+                                    # agent's "wasted" response before regeneration)
+                                    history[-1] = {
+                                        "role": "assistant",
+                                        "content": str(msg.content),
+                                        "agent_id": agent_id or "",
+                                    }
+                                else:
+                                    history.append(
+                                        {
+                                            "role": "assistant",
+                                            "content": str(msg.content),
+                                            "agent_id": agent_id or "",
+                                        }
+                                    )
+                            prev_was_ai_without_tools = True
+
                     elif include_tool_calls and msg.type == "tool":
+                        prev_was_ai_without_tools = False
                         history.append(
                             {
                                 "role": "tool",

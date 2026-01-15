@@ -27,6 +27,7 @@ from agora_langgraph.common.ag_ui_types import (
 from agora_langgraph.config import get_settings, parse_mcp_servers
 from agora_langgraph.core.agent_definitions import list_all_agents
 from agora_langgraph.core.graph import build_agent_graph
+from agora_langgraph.core.tools import set_user_manager
 from agora_langgraph.logging_config import configure_logging
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 from agora_langgraph.pipelines.orchestrator import Orchestrator
@@ -66,6 +67,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
             user_manager = UserManager(db_path=settings.sessions_db_path)
             await user_manager.initialize()
+
+            # Set UserManager for settings tool
+            set_user_manager(user_manager)
 
             orchestrator = Orchestrator(
                 graph=compiled_graph,
@@ -236,6 +240,31 @@ async def delete_session(session_id: str) -> dict[str, Any]:
     }
 
 
+class UpdateSessionRequest(BaseModel):
+    """Request body for updating session metadata."""
+
+    title: str | None = Field(None, description="New session title", max_length=200)
+
+
+@app.put("/sessions/{session_id}")
+async def update_session(
+    session_id: str,
+    request: UpdateSessionRequest,
+) -> dict[str, Any]:
+    """Update session metadata (e.g., rename session)."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    if request.title is not None:
+        updated = await session_metadata.update_session_title(
+            session_id, request.title
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"success": True, "session": updated}
+
+    raise HTTPException(status_code=400, detail="No update fields provided")
+
+
 # ---------------------------------------------------------------------------
 # USER MANAGEMENT ENDPOINTS
 # ---------------------------------------------------------------------------
@@ -313,6 +342,8 @@ class UpdatePreferencesRequest(BaseModel):
     default_agent_id: str | None = None
     language: str | None = None
     spoken_text_type: str | None = None
+    interaction_mode: str | None = None
+    email_reports: bool | None = None
 
 
 @app.get("/users/me/preferences")
@@ -330,6 +361,8 @@ async def get_current_user_preferences(
         "default_agent_id": "general-agent",
         "language": "nl-NL",
         "spoken_text_type": "summarize",
+        "interaction_mode": "feedback",
+        "email_reports": True,
     }
     # Use default if preferences is None or missing
     user_prefs = user.get("preferences")
@@ -360,6 +393,14 @@ async def update_current_user_preferences(
                 detail="spoken_text_type must be 'dictate' or 'summarize'",
             )
 
+    # Validate interaction_mode
+    if request.interaction_mode is not None:
+        if request.interaction_mode not in ("feedback", "listen"):
+            raise HTTPException(
+                status_code=400,
+                detail="interaction_mode must be 'feedback' or 'listen'",
+            )
+
     # Get existing preferences to merge with
     user = await user_manager.get_user(user_id)
     if not user:
@@ -371,6 +412,8 @@ async def update_current_user_preferences(
         "default_agent_id": "general-agent",
         "language": "nl-NL",
         "spoken_text_type": "summarize",
+        "interaction_mode": "feedback",
+        "email_reports": True,
     }
     existing_prefs = user.get("preferences")
     preferences = (existing_prefs if existing_prefs else default_preferences).copy()
@@ -391,6 +434,12 @@ async def update_current_user_preferences(
         has_updates = True
     if request.spoken_text_type is not None:
         preferences["spoken_text_type"] = request.spoken_text_type
+        has_updates = True
+    if request.interaction_mode is not None:
+        preferences["interaction_mode"] = request.interaction_mode
+        has_updates = True
+    if request.email_reports is not None:
+        preferences["email_reports"] = request.email_reports
         has_updates = True
 
     if not has_updates:

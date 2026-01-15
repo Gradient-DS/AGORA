@@ -13,6 +13,7 @@ export function ConversationSidebar() {
   const isLoading = useHistoryStore((state) => state.isLoading);
   const fetchSessions = useHistoryStore((state) => state.fetchSessions);
   const deleteSessionFromStore = useHistoryStore((state) => state.deleteSession);
+  const renameSessionInStore = useHistoryStore((state) => state.renameSession);
 
   const currentSession = useSessionStore((state) => state.session);
   const switchToSession = useSessionStore((state) => state.switchToSession);
@@ -70,6 +71,10 @@ export function ConversationSidebar() {
       clearMessages();
       startNewSession();
     }
+  };
+
+  const handleRenameSession = async (sessionId: string, newTitle: string) => {
+    await renameSessionInStore(sessionId, newTitle);
   };
 
   const handleBackdropClick = () => {
@@ -141,6 +146,7 @@ export function ConversationSidebar() {
                 isDisabled={isDisabled}
                 onSelect={() => handleSelectSession(session.sessionId)}
                 onDelete={() => handleDeleteSession(session.sessionId)}
+                onRename={(newTitle) => handleRenameSession(session.sessionId, newTitle)}
               />
             ))
           )}

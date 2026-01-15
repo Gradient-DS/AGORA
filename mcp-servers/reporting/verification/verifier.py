@@ -16,10 +16,11 @@ class Verifier:
     async def generate_verification_questions(
         self,
         extracted_data: Dict[str, Any],
-        max_questions: int = 5
+        max_questions: int = 3,
+        min_questions: int = 1
     ) -> List[Dict[str, Any]]:
         fields_needing_verification = extracted_data.get("fields_needing_verification", [])
-        
+
         missing_critical_fields = self._identify_missing_critical_fields(extracted_data)
         
         context = {
@@ -30,11 +31,14 @@ class Verifier:
         }
         
         logger.info(f"Generating verification questions for {len(fields_needing_verification)} uncertain fields and {len(missing_critical_fields)} missing fields")
-        
+
+        # Create a minimal version of extracted_data for the prompt (exclude verbose fields)
+        minimal_data = self._create_minimal_data(extracted_data)
+
         prompt = f"""{VERIFICATION_PROMPT}
 
 EXTRACTED DATA:
-{json.dumps(extracted_data, indent=2, ensure_ascii=False)}
+{json.dumps(minimal_data, indent=2, ensure_ascii=False)}
 
 FIELDS NEEDING VERIFICATION (confidence < {self.confidence_threshold}):
 {json.dumps(fields_needing_verification, indent=2, ensure_ascii=False)}
@@ -43,7 +47,13 @@ MISSING CRITICAL FIELDS:
 {json.dumps(missing_critical_fields, indent=2, ensure_ascii=False)}
 
 Generate up to {max_questions} verification questions prioritized by importance."""
-        
+
+        # Log prompt size for debugging
+        prompt_size = len(prompt)
+        logger.info(f"Verification prompt size: {prompt_size} chars ({prompt_size / 1000:.1f}KB)")
+        if prompt_size > 50000:
+            logger.warning(f"Large prompt detected ({prompt_size} chars), this may cause slow responses or errors")
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -53,18 +63,27 @@ Generate up to {max_questions} verification questions prioritized by importance.
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.3,
+                timeout=60.0,
             )
             
             result = json.loads(response.choices[0].message.content)
             questions = result.get("questions", result.get("verification_questions", []))
-            
+
             logger.info(f"Generated {len(questions)} verification questions")
-            
-            return questions[:max_questions]
-            
+
+            # Ensure minimum number of questions (add confirmation if needed)
+            questions = questions[:max_questions]
+            if len(questions) < min_questions:
+                questions = self._ensure_minimum_questions(questions, extracted_data, min_questions)
+
+            return questions
+
         except Exception as e:
             logger.error(f"Error generating verification questions: {e}", exc_info=True)
-            return self._generate_fallback_questions(missing_critical_fields)
+            fallback = self._generate_fallback_questions(missing_critical_fields)
+            if len(fallback) < min_questions:
+                fallback = self._ensure_minimum_questions(fallback, extracted_data, min_questions)
+            return fallback
     
     def _identify_missing_critical_fields(self, extracted_data: Dict[str, Any]) -> List[str]:
         missing = []
@@ -94,6 +113,54 @@ Generate up to {max_questions} verification questions prioritized by importance.
         
         return missing
     
+    def _create_minimal_data(self, extracted_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a minimal version of extracted_data for the verification prompt.
+
+        Excludes verbose fields like full observations and long descriptions to keep
+        the prompt size manageable.
+        """
+        # Fields to include at top level
+        minimal = {
+            "company_name": extracted_data.get("company_name"),
+            "company_address": extracted_data.get("company_address"),
+            "inspection_type": extracted_data.get("inspection_type"),
+            "overall_confidence": extracted_data.get("overall_confidence"),
+        }
+
+        # For each section, include compliance status and violation count (not full details)
+        for section in ["hygiene_general", "pest_control", "food_safety", "allergen_info"]:
+            section_data = extracted_data.get(section, {})
+            if isinstance(section_data, dict):
+                minimal_section = {}
+                for key, value in section_data.items():
+                    if key == "violations":
+                        # Just include count and types, not full descriptions
+                        if isinstance(value, list):
+                            minimal_section["violation_count"] = len(value)
+                            minimal_section["violation_types"] = [v.get("type") for v in value if isinstance(v, dict)][:5]
+                    elif key == "observations":
+                        # Truncate long observations
+                        if isinstance(value, str) and len(value) > 200:
+                            minimal_section[key] = value[:200] + "..."
+                        else:
+                            minimal_section[key] = value
+                    else:
+                        minimal_section[key] = value
+                minimal[section] = minimal_section
+
+        # Include additional_info but truncate long strings
+        additional = extracted_data.get("additional_info", {})
+        if isinstance(additional, dict):
+            minimal_additional = {}
+            for key, value in additional.items():
+                if isinstance(value, str) and len(value) > 200:
+                    minimal_additional[key] = value[:200] + "..."
+                else:
+                    minimal_additional[key] = value
+            minimal["additional_info"] = minimal_additional
+
+        return minimal
+
     def _get_nested_value(self, data: Dict[str, Any], path: str) -> Any:
         keys = path.split(".")
         value = data
@@ -104,6 +171,64 @@ Generate up to {max_questions} verification questions prioritized by importance.
                 return None
         return value
     
+    def _ensure_minimum_questions(
+        self,
+        questions: List[Dict[str, Any]],
+        extracted_data: Dict[str, Any],
+        min_questions: int
+    ) -> List[Dict[str, Any]]:
+        """Ensure at least min_questions are returned by adding direct data questions."""
+        # Priority order: ask about missing critical data first
+        direct_questions = []
+
+        # Check what's missing and add direct questions
+        if not extracted_data.get("company_name"):
+            direct_questions.append({
+                "question": "Wat is de naam van het bedrijf?",
+                "field": "company_name",
+                "importance": "critical",
+                "options": None
+            })
+        if not extracted_data.get("company_address"):
+            direct_questions.append({
+                "question": "Wat is het adres van het bedrijf?",
+                "field": "company_address",
+                "importance": "critical",
+                "options": None
+            })
+        if not self._get_nested_value(extracted_data, "hygiene_general.compliant"):
+            direct_questions.append({
+                "question": "Voldeed de algemene hygiëne aan de eisen?",
+                "field": "hygiene_general.compliant",
+                "importance": "critical",
+                "options": ["Ja", "Nee", "Niet beoordeeld"]
+            })
+        if not extracted_data.get("violations") and not self._get_nested_value(extracted_data, "hygiene_general.violations"):
+            direct_questions.append({
+                "question": "Welke overtredingen zijn geconstateerd?",
+                "field": "violations",
+                "importance": "high",
+                "options": None
+            })
+        if not self._get_nested_value(extracted_data, "food_safety.storage_compliant"):
+            direct_questions.append({
+                "question": "Was de opslag van levensmiddelen in orde?",
+                "field": "food_safety.storage_compliant",
+                "importance": "high",
+                "options": ["Ja", "Nee", "Niet beoordeeld"]
+            })
+
+        # Add direct questions until we have min_questions
+        for dq in direct_questions:
+            if len(questions) >= min_questions:
+                break
+            # Don't add duplicate questions
+            if not any(q.get("field") == dq["field"] for q in questions):
+                questions.append(dq)
+                logger.info(f"Added direct question: {dq['question']}")
+
+        return questions
+
     def _generate_fallback_questions(self, missing_fields: List[str]) -> List[Dict[str, Any]]:
         questions = []
         
@@ -152,7 +277,7 @@ Generate up to {max_questions} verification questions prioritized by importance.
             },
         }
         
-        for missing in missing_fields[:5]:
+        for missing in missing_fields[:3]:
             if missing in field_question_map:
                 questions.append(field_question_map[missing])
         
