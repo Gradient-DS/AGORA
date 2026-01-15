@@ -16,10 +16,11 @@ class Verifier:
     async def generate_verification_questions(
         self,
         extracted_data: Dict[str, Any],
-        max_questions: int = 3
+        max_questions: int = 3,
+        min_questions: int = 1
     ) -> List[Dict[str, Any]]:
         fields_needing_verification = extracted_data.get("fields_needing_verification", [])
-        
+
         missing_critical_fields = self._identify_missing_critical_fields(extracted_data)
         
         context = {
@@ -67,14 +68,22 @@ Generate up to {max_questions} verification questions prioritized by importance.
             
             result = json.loads(response.choices[0].message.content)
             questions = result.get("questions", result.get("verification_questions", []))
-            
+
             logger.info(f"Generated {len(questions)} verification questions")
-            
-            return questions[:max_questions]
-            
+
+            # Ensure minimum number of questions (add confirmation if needed)
+            questions = questions[:max_questions]
+            if len(questions) < min_questions:
+                questions = self._ensure_minimum_questions(questions, extracted_data, min_questions)
+
+            return questions
+
         except Exception as e:
             logger.error(f"Error generating verification questions: {e}", exc_info=True)
-            return self._generate_fallback_questions(missing_critical_fields)
+            fallback = self._generate_fallback_questions(missing_critical_fields)
+            if len(fallback) < min_questions:
+                fallback = self._ensure_minimum_questions(fallback, extracted_data, min_questions)
+            return fallback
     
     def _identify_missing_critical_fields(self, extracted_data: Dict[str, Any]) -> List[str]:
         missing = []
@@ -162,6 +171,45 @@ Generate up to {max_questions} verification questions prioritized by importance.
                 return None
         return value
     
+    def _ensure_minimum_questions(
+        self,
+        questions: List[Dict[str, Any]],
+        extracted_data: Dict[str, Any],
+        min_questions: int
+    ) -> List[Dict[str, Any]]:
+        """Ensure at least min_questions are returned by adding confirmation questions."""
+        confirmation_questions = [
+            {
+                "question": "Klopt deze samenvatting van de inspectie? Zijn er nog aanvullingen of correcties?",
+                "field": "confirmation",
+                "importance": "medium",
+                "options": None
+            },
+            {
+                "question": f"Het bedrijf '{extracted_data.get('company_name', 'onbekend')}' is geïnspecteerd. Klopt dit?",
+                "field": "company_confirmation",
+                "importance": "medium",
+                "options": ["Ja, dit klopt", "Nee, dit moet anders"]
+            },
+            {
+                "question": "Zijn er nog opmerkingen die u wilt toevoegen aan het rapport?",
+                "field": "additional_remarks",
+                "importance": "low",
+                "options": None
+            },
+        ]
+
+        # Add confirmation questions until we have min_questions
+        for cq in confirmation_questions:
+            if len(questions) >= min_questions:
+                break
+            # Don't add duplicate questions
+            if not any(q.get("field") == cq["field"] for q in questions):
+                questions.append(cq)
+                logger.info(f"Added confirmation question: {cq['question'][:50]}...")
+
+        return questions
+
     def _generate_fallback_questions(self, missing_fields: List[str]) -> List[Dict[str, Any]]:
         questions = []
         
