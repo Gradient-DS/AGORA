@@ -392,6 +392,12 @@ class UpdatePreferencesRequest(BaseModel):
     )
 
 
+class UpdateSessionRequest(BaseModel):
+    """Request body for updating session metadata."""
+
+    title: str | None = Field(None, description="New session title")
+
+
 # ---------------------------------------------------------------------------
 # FASTAPI APPLICATION
 # ---------------------------------------------------------------------------
@@ -527,6 +533,20 @@ async def delete_session(session_id: str):
     del MOCK_SESSIONS[session_id]
     log_event("send", "HTTP", f"DELETE /sessions/{session_id}")
     return {"success": True, "message": "Session deleted"}
+
+
+@app.put("/sessions/{session_id}")
+async def update_session(session_id: str, request: UpdateSessionRequest):
+    """Update session metadata (e.g., rename)."""
+    if session_id not in MOCK_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if request.title is not None:
+        MOCK_SESSIONS[session_id]["title"] = request.title.strip()[:200]
+        MOCK_SESSIONS[session_id]["lastActivity"] = datetime.now().isoformat() + "Z"
+
+    log_event("send", "HTTP", f"PUT /sessions/{session_id}")
+    return {"success": True, "session": MOCK_SESSIONS[session_id]}
 
 
 # ---------------------------------------------------------------------------

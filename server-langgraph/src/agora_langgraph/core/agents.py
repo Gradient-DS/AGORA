@@ -82,7 +82,21 @@ async def _run_agent_node(
     else:
         llm_with_tools = llm
 
-    system_message = {"role": "system", "content": config["instructions"]}
+    # Build system message with optional user_id context
+    instructions = config["instructions"]
+    metadata = state.get("metadata", {})
+    user_id = metadata.get("user_id")
+
+    # Inject user_id into system message for general-agent so it can use settings tool
+    if agent_id == "general-agent" and user_id:
+        instructions = (
+            f"{instructions}\n\n"
+            f"CURRENT USER CONTEXT:\n"
+            f"- user_id: {user_id}\n"
+            f"Use this user_id when calling the update_user_settings tool."
+        )
+
+    system_message = {"role": "system", "content": instructions}
     messages_with_system = [system_message] + list(state["messages"])
 
     try:

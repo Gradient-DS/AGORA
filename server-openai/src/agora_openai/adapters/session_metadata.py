@@ -7,8 +7,16 @@ from datetime import UTC, datetime
 from typing import Any
 
 import aiosqlite
+from openai import AsyncOpenAI
 
 log = logging.getLogger(__name__)
+
+TITLE_GENERATION_PROMPT = (
+    "Generate a concise, descriptive title (3-8 words) for a conversation "
+    "that starts with this message. The title should capture the main topic "
+    "or intent. Do not use quotes or punctuation at the end. "
+    "Respond with only the title, nothing else.\n\nUser message: {message}"
+)
 
 
 class SessionMetadataManager:
@@ -217,11 +225,12 @@ class SessionMetadataManager:
         session_id: str,
         user_id: str,
         first_message: str | None = None,
+        api_key: str | None = None,
     ) -> None:
         """Create session metadata entry or update if exists.
 
         On first message for a session:
-        - Creates metadata entry with auto-generated title
+        - Creates metadata entry with auto-generated title (LLM if api_key provided)
         - Sets first_message_preview from message content
 
         On subsequent calls:
@@ -231,6 +240,7 @@ class SessionMetadataManager:
             session_id: Session identifier
             user_id: User identifier (inspector persona ID)
             first_message: First user message (for title generation)
+            api_key: OpenAI API key (enables LLM title generation)
         """
         if not self._connection:
             raise RuntimeError("SessionMetadataManager not initialized")
@@ -256,17 +266,21 @@ class SessionMetadataManager:
             )
         else:
             # Create new entry
-            title = (
-                self._generate_title(first_message)
-                if first_message
-                else "New Conversation"
-            )
+            # Generate title
+            if first_message:
+                if api_key:
+                    title = await self._generate_title_with_llm(first_message, api_key)
+                else:
+                    title = self._generate_title(first_message)
+            else:
+                title = "New Conversation"
             preview = first_message[:200] if first_message else None
 
             await self._connection.execute(
                 """
                 INSERT INTO session_metadata
-                (session_id, user_id, title, first_message_preview, message_count, created_at, last_activity)
+                (session_id, user_id, title, first_message_preview,
+                 message_count, created_at, last_activity)
                 VALUES (?, ?, ?, ?, 1, ?, ?)
                 """,
                 (session_id, user_id, title, preview, now, now),
@@ -294,6 +308,40 @@ class SessionMetadataManager:
             (now, session_id),
         )
         await self._connection.commit()
+
+    async def update_session_title(
+        self, session_id: str, title: str
+    ) -> dict[str, Any] | None:
+        """Update the title of a session.
+
+        Args:
+            session_id: Session identifier
+            title: New title (will be sanitized and truncated to 200 chars)
+
+        Returns:
+            Updated session metadata dict, or None if session not found
+        """
+        if not self._connection:
+            raise RuntimeError("SessionMetadataManager not initialized")
+
+        title = title.strip()[:200]
+        now = datetime.now(UTC).isoformat()
+
+        async with self._connection.cursor() as cursor:
+            await cursor.execute(
+                """
+                UPDATE session_metadata
+                SET title = ?, last_activity = ?
+                WHERE session_id = ?
+                """,
+                (title, now, session_id),
+            )
+            await self._connection.commit()
+
+            if cursor.rowcount == 0:
+                return None
+
+        return await self.get_session(session_id)
 
     def _generate_title(self, first_message: str) -> str:
         """Generate a title from the first message.
@@ -324,6 +372,50 @@ class SessionMetadataManager:
             truncated = truncated[:last_space]
 
         return truncated + "..."
+
+    async def _generate_title_with_llm(
+        self, first_message: str, api_key: str, model: str = "gpt-4o-mini"
+    ) -> str:
+        """Generate a title using an LLM.
+
+        Args:
+            first_message: The first user message
+            api_key: OpenAI API key
+            model: Model to use (default: gpt-4o-mini for speed/cost)
+
+        Returns:
+            Generated title or fallback to truncation
+        """
+        if not first_message:
+            return "New Conversation"
+
+        try:
+            client = AsyncOpenAI(api_key=api_key)
+
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": TITLE_GENERATION_PROMPT.format(
+                            message=first_message[:500]
+                        ),
+                    }
+                ],
+                max_tokens=50,
+                temperature=0.3,
+            )
+
+            title = response.choices[0].message.content
+            if title:
+                title = title.strip().strip("\"'")[:100]
+                if title:
+                    return title
+
+        except Exception as e:
+            log.warning(f"LLM title generation failed, falling back to truncation: {e}")
+
+        return self._generate_title(first_message)
 
     async def record_tool_call_agent(
         self,

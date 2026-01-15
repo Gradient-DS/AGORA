@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
+from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
@@ -11,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from agora_openai.adapters.audit_logger import AuditLogger
+from agora_openai.adapters.internal_tools import set_user_manager
 from agora_openai.adapters.mcp_tools import MCPToolRegistry
 from agora_openai.adapters.session_metadata import SessionMetadataManager
 from agora_openai.adapters.user_manager import UserManager
@@ -72,6 +74,9 @@ async def lifespan(app: FastAPI):
 
     user_manager = UserManager(db_path="sessions.db")
     await user_manager.initialize()
+
+    # Set UserManager for internal tools (settings)
+    set_user_manager(user_manager)
 
     orchestrator = Orchestrator(
         agent_runner=agent_runner,
@@ -236,6 +241,31 @@ async def delete_session(session_id: str):
         "success": True,
         "message": "Session deleted",
     }
+
+
+class UpdateSessionRequest(BaseModel):
+    """Request body for updating session metadata."""
+
+    title: str | None = Field(None, description="New session title", max_length=200)
+
+
+@app.put("/sessions/{session_id}")
+async def update_session(
+    session_id: str,
+    request: UpdateSessionRequest,
+) -> dict[str, Any]:
+    """Update session metadata (e.g., rename session)."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    if request.title is not None:
+        updated = await session_metadata.update_session_title(
+            session_id, request.title
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"success": True, "session": updated}
+
+    raise HTTPException(status_code=400, detail="No update fields provided")
 
 
 # ---------------------------------------------------------------------------

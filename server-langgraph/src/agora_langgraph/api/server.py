@@ -27,6 +27,7 @@ from agora_langgraph.common.ag_ui_types import (
 from agora_langgraph.config import get_settings, parse_mcp_servers
 from agora_langgraph.core.agent_definitions import list_all_agents
 from agora_langgraph.core.graph import build_agent_graph
+from agora_langgraph.core.tools import set_user_manager
 from agora_langgraph.logging_config import configure_logging
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 from agora_langgraph.pipelines.orchestrator import Orchestrator
@@ -66,6 +67,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
             user_manager = UserManager(db_path=settings.sessions_db_path)
             await user_manager.initialize()
+
+            # Set UserManager for settings tool
+            set_user_manager(user_manager)
 
             orchestrator = Orchestrator(
                 graph=compiled_graph,
@@ -234,6 +238,31 @@ async def delete_session(session_id: str) -> dict[str, Any]:
         "success": True,
         "message": "Session deleted",
     }
+
+
+class UpdateSessionRequest(BaseModel):
+    """Request body for updating session metadata."""
+
+    title: str | None = Field(None, description="New session title", max_length=200)
+
+
+@app.put("/sessions/{session_id}")
+async def update_session(
+    session_id: str,
+    request: UpdateSessionRequest,
+) -> dict[str, Any]:
+    """Update session metadata (e.g., rename session)."""
+    session_metadata: SessionMetadataManager = app.state.session_metadata
+
+    if request.title is not None:
+        updated = await session_metadata.update_session_title(
+            session_id, request.title
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"success": True, "session": updated}
+
+    raise HTTPException(status_code=400, detail="No update fields provided")
 
 
 # ---------------------------------------------------------------------------

@@ -142,6 +142,52 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /sessions/{session_id}:
+    put:
+      summary: Update a session
+      description: |
+        Updates session metadata such as the title. Useful for allowing users to rename conversations.
+      operationId: updateSession
+      tags:
+        - Sessions
+      parameters:
+        - in: path
+          name: session_id
+          schema:
+            type: string
+            example: "123e4567-e89b-12d3-a456-426614174000"
+          required: true
+          description: Unique session identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  session:
+                    $ref: '#/components/schemas/SessionMetadata'
+        '400':
+          description: No update fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete a session
       description: |
@@ -684,6 +730,15 @@ components:
     # -------------------------------------------------------------------------
     # SESSION SCHEMAS
     # -------------------------------------------------------------------------
+    UpdateSessionRequest:
+      type: object
+      description: Request body for updating session metadata
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          description: New session title
+
     SessionMetadata:
       type: object
       description: Metadata for a conversation session

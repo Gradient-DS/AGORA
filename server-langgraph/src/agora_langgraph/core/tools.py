@@ -3,11 +3,25 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from langchain_core.tools import BaseTool, tool
+from langchain_core.tools import BaseTool, StructuredTool, tool
+
+if TYPE_CHECKING:
+    from agora_langgraph.adapters.user_manager import UserManager
 
 log = logging.getLogger(__name__)
+
+
+# Module-level reference to UserManager (set during graph build)
+_user_manager: "UserManager | None" = None
+
+
+def set_user_manager(user_manager: "UserManager | None") -> None:
+    """Set the UserManager instance for settings tools."""
+    global _user_manager
+    _user_manager = user_manager
+    log.info(f"UserManager set: {user_manager is not None}")
 
 
 @tool
@@ -60,6 +74,71 @@ async def transfer_to_general() -> str:
     return "Transferring to general-agent"
 
 
+async def _update_user_settings_impl(
+    user_id: str,
+    spoken_text_type: str | None = None,
+) -> str:
+    """Implementation of update_user_settings that uses the module-level UserManager.
+
+    Args:
+        user_id: The ID of the user whose settings to update
+        spoken_text_type: Set to 'dictate' for full text reading or 'summarize' for
+                         AI-generated TTS summaries. Leave empty to not change.
+
+    Returns:
+        Confirmation message with the updated settings
+    """
+    if not _user_manager:
+        return "Error: Instellingen service is niet beschikbaar."
+
+    if not user_id:
+        return "Error: Geen gebruikers-ID opgegeven. Kan instellingen niet bijwerken."
+
+    # Validate spoken_text_type
+    valid_spoken_types = {"dictate", "summarize"}
+    if spoken_text_type and spoken_text_type not in valid_spoken_types:
+        return (
+            f"Error: Ongeldige waarde '{spoken_text_type}' voor spraakweergave. "
+            f"Geldige opties: 'dictate' (dicteren) of 'summarize' (samenvatten)."
+        )
+
+    # Build updates dict with only provided values
+    updates: dict[str, Any] = {}
+    if spoken_text_type:
+        updates["spoken_text_type"] = spoken_text_type
+
+    if not updates:
+        return "Geen instellingen om bij te werken opgegeven."
+
+    try:
+        await _user_manager.update_preferences(user_id, updates)
+
+        # Build confirmation message
+        changes = []
+        if spoken_text_type:
+            mode_nl = "dicteren" if spoken_text_type == "dictate" else "samenvatten"
+            changes.append(f"spraakweergave naar '{mode_nl}'")
+
+        return f"Instellingen bijgewerkt: {', '.join(changes)}."
+
+    except Exception as e:
+        log.error(f"Failed to update user settings: {e}")
+        return f"Error: Kon instellingen niet bijwerken: {e}"
+
+
+def create_update_user_settings_tool() -> StructuredTool:
+    """Create the update_user_settings tool with proper schema."""
+    return StructuredTool.from_function(
+        coroutine=_update_user_settings_impl,
+        name="update_user_settings",
+        description=(
+            "Update user preferences/settings. Use this when the user wants to change "
+            "their settings like speech mode (dictate vs summarize). "
+            "The user_id should be obtained from the conversation context metadata."
+        ),
+    )
+
+
 HANDOFF_TOOLS = [
     transfer_to_history,
     transfer_to_regulation,
@@ -95,9 +174,12 @@ def get_tools_for_agent(
         tools.extend(
             [transfer_to_history, transfer_to_regulation, transfer_to_reporting]
         )
+        # Add settings tool for general-agent
+        settings_tool = create_update_user_settings_tool()
+        tools.append(settings_tool)
         log.info(
             f"{agent_id} gets handoff tools: transfer_to_history, "
-            "transfer_to_regulation, transfer_to_reporting"
+            "transfer_to_regulation, transfer_to_reporting + update_user_settings"
         )
     else:
         tools.append(transfer_to_general)

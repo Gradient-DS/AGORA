@@ -49,6 +49,11 @@ interface DeleteResponse {
   message: string;
 }
 
+interface UpdateSessionResponse {
+  success: boolean;
+  session: SessionMetadata;
+}
+
 /**
  * Fetch all sessions for a user.
  */
@@ -195,4 +200,40 @@ export async function deleteSession(sessionId: string): Promise<void> {
   if (!data.success) {
     throw new Error('Failed to delete session');
   }
+}
+
+/**
+ * Update a session's metadata (e.g., rename).
+ */
+export async function updateSession(
+  sessionId: string,
+  updates: { title?: string }
+): Promise<SessionMetadata> {
+  const baseUrl = getBaseUrl();
+
+  const response = await apiFetch(`${baseUrl}/sessions/${sessionId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Session not found');
+    }
+    if (response.status === 400) {
+      throw new Error('No update fields provided');
+    }
+    throw new Error(`Failed to update session: ${response.statusText}`);
+  }
+
+  const data: UpdateSessionResponse = await response.json();
+
+  if (!data.success) {
+    throw new Error('Failed to update session');
+  }
+
+  return data.session;
 }

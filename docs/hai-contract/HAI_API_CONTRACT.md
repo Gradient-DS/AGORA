@@ -1,6 +1,6 @@
 # AGORA HAI API Contract
 
-**Version:** 2.5.0
+**Version:** 2.5.1
 **Last Updated:** January 2026
 
 This document defines the complete API contract between the HAI (Human Agent Interface) frontend and the AGORA orchestrator backend. It covers both real-time WebSocket communication and REST endpoints.
@@ -189,6 +189,61 @@ Get session metadata without the full conversation history.
     "createdAt": "2025-12-01T10:30:00Z",
     "lastActivity": "2025-12-01T11:45:00Z"
   }
+}
+```
+
+#### PUT /sessions/{session_id}
+
+Update session metadata (e.g., rename a conversation).
+
+**Path Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `session_id` | string | Session/thread identifier |
+
+**Request Body:**
+
+```json
+{
+  "title": "New Conversation Title"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | No | New session title (max 200 chars) |
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "session": {
+    "sessionId": "abc-123-def-456",
+    "userId": "koen",
+    "title": "New Conversation Title",
+    "firstMessagePreview": "Start inspectie bij Restaurant...",
+    "messageCount": 12,
+    "createdAt": "2025-12-01T10:30:00Z",
+    "lastActivity": "2025-12-01T11:45:00Z"
+  }
+}
+```
+
+**Error Response (400 - No update fields):**
+
+```json
+{
+  "detail": "No update fields provided"
+}
+```
+
+**Error Response (404):**
+
+```json
+{
+  "detail": "Session not found"
 }
 ```
 
@@ -1267,6 +1322,11 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ---
 
 ## Changelog
+
+### v2.5.1 (January 2026)
+- **Added** `PUT /sessions/{session_id}` endpoint for updating session metadata (rename conversations)
+- **Added** `UpdateSessionRequest` schema to OpenAPI spec
+- **Added** LLM-based title generation for new sessions (uses gpt-4o-mini)
 
 ### v2.5.0 (January 2026)
 - **Added** Health & Info REST API section (`/health`, `/`, `/agents` endpoints)

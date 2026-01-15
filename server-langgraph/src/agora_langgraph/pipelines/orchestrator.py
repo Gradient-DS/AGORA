@@ -20,6 +20,7 @@ from agora_langgraph.common.ag_ui_types import (
     ToolApprovalResponsePayload,
 )
 from agora_langgraph.common.schemas import ToolCall
+from agora_langgraph.config import get_settings
 from agora_langgraph.core.agent_definitions import get_spoken_prompt
 from agora_langgraph.core.agents import get_llm_for_agent
 from agora_langgraph.core.approval_logic import requires_human_approval
@@ -149,6 +150,7 @@ class Orchestrator:
         # Create or update session metadata
         if self.session_metadata:
             try:
+                settings = get_settings()
                 log.info(
                     f"Creating/updating session metadata: session_id={thread_id}, user_id={user_id}"
                 )
@@ -156,6 +158,8 @@ class Orchestrator:
                     session_id=thread_id,
                     user_id=user_id,
                     first_message=user_content,
+                    api_key=settings.openai_api_key.get_secret_value(),
+                    base_url=settings.openai_base_url,
                 )
                 log.info(
                     f"Session metadata created/updated successfully for {thread_id}"
@@ -198,12 +202,16 @@ class Orchestrator:
             message_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
 
+            # Include user_id in metadata so tools can access it
+            metadata = agent_input.context.copy() if agent_input.context else {}
+            metadata["user_id"] = user_id
+
             input_state = {
                 "messages": [HumanMessage(content=user_content)],
                 "session_id": thread_id,
                 "current_agent": "general-agent",
                 "pending_approval": None,
-                "metadata": agent_input.context or {},
+                "metadata": metadata,
             }
 
             if protocol_handler:
@@ -345,6 +353,11 @@ class Orchestrator:
             except Exception as e:
                 log.warning(f"Failed to fetch user preferences: {e}, using default")
 
+        # Log the spoken mode for debugging
+        print(f"########################################################")
+        print(f"[SPOKEN MODE] user_id={user_id}, spoken_mode={spoken_mode}")
+        print(f"########################################################")
+
         # Parallel spoken task state (only used in 'summarize' mode)
         spoken_task: asyncio.Task[None] | None = None
         spoken_queue: asyncio.Queue[str | None] = asyncio.Queue()
@@ -372,11 +385,15 @@ class Orchestrator:
                 # Use same conversation context as written stream
                 messages = list(input_state.get("messages", []))
                 spoken_messages = [SystemMessage(content=spoken_prompt)] + messages
-
+                print(f"Spoken messages: {spoken_messages}")
+                print("########################################################")
+                spoken_answer = ""
                 async for chunk in llm.astream(spoken_messages):
+                    spoken_answer += str(chunk.content)
                     if hasattr(chunk, "content") and chunk.content:
                         await spoken_queue.put(str(chunk.content))
-
+                print(f"Spoken answer: {spoken_answer}")
+                print("########################################################")
             except Exception as e:
                 error_msg = str(e)
                 log.error(f"Error generating spoken response: {error_msg}")
@@ -406,7 +423,14 @@ class Orchestrator:
         ):
             kind = event.get("event", "")
 
-            if kind == "on_chat_model_stream":
+            if kind == "on_chat_model_start":
+                # Print what goes into the written LLM invocation
+                input_messages = event.get("data", {}).get("input", {})
+                print("########################################################")
+                print(f"Written LLM input messages: {input_messages}")
+                print("########################################################")
+
+            elif kind == "on_chat_model_stream":
                 chunk = event.get("data", {}).get("chunk")
                 if chunk and hasattr(chunk, "content") and chunk.content:
                     content = str(chunk.content)
@@ -438,10 +462,10 @@ class Orchestrator:
 
                         # In 'dictate' mode: duplicate content to spoken channel
                         if spoken_mode == "dictate":
+                            print(f"[DICTATE MODE] Duplicating to spoken: {content[:50]}...")
                             await protocol_handler.send_spoken_text_content(
                                 message_id, content
                             )
-
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 tool_run_id = event.get("run_id", str(uuid.uuid4()))
@@ -545,7 +569,9 @@ class Orchestrator:
                                     "status": "processing",
                                 }
                             )
-
+        print("########################################################")
+        print(f"Full response: {''.join(full_response)}")
+        print("########################################################")
         # Wait for spoken task to complete (only in 'summarize' mode)
         if spoken_task:
             try:

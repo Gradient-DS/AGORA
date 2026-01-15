@@ -7,6 +7,7 @@ import type { SessionMetadata } from '@/types';
 import {
   fetchSessions as apiFetchSessions,
   deleteSession as apiDeleteSession,
+  updateSession as apiUpdateSession,
 } from '@/lib/api/sessions';
 
 interface HistoryStore {
@@ -17,6 +18,7 @@ interface HistoryStore {
 
   fetchSessions: (userId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
+  renameSession: (sessionId: string, newTitle: string) => Promise<void>;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   addOrUpdateSession: (session: SessionMetadata) => void;
@@ -54,6 +56,22 @@ export const useHistoryStore = create<HistoryStore>((set) => ({
       const message = error instanceof Error ? error.message : 'Failed to delete session';
       console.error('[HistoryStore] Error deleting session:', message);
       set({ error: message });
+    }
+  },
+
+  renameSession: async (sessionId: string, newTitle: string) => {
+    try {
+      const updatedSession = await apiUpdateSession(sessionId, { title: newTitle });
+      set((state) => ({
+        sessions: state.sessions.map((s) =>
+          s.sessionId === sessionId ? updatedSession : s
+        ),
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to rename session';
+      console.error('[HistoryStore] Error renaming session:', message);
+      set({ error: message });
+      throw error; // Re-throw so UI can handle it
     }
   },
 

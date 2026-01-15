@@ -131,10 +131,12 @@ class Orchestrator:
         # Create or update session metadata
         if self.session_metadata:
             try:
+                settings = get_settings()
                 await self.session_metadata.create_or_update_metadata(
                     session_id=thread_id,
                     user_id=user_id,
                     first_message=user_content,
+                    api_key=settings.openai_api_key.get_secret_value(),
                 )
             except Exception as e:
                 log.warning(f"Failed to update session metadata: {e}")
@@ -459,8 +461,16 @@ class Orchestrator:
                             await protocol_handler.send_step_started("thinking")
                             current_step = "thinking"
 
+                # Include user_id context for settings tool
+                # This allows the general-agent to use update_user_settings
+                message_with_context = user_content
+                if user_id:
+                    message_with_context = (
+                        f"[SYSTEM CONTEXT: user_id={user_id}]\n\n{user_content}"
+                    )
+
                 response_content, active_agent_id = await self.agent_runner.run_agent(
-                    message=user_content,
+                    message=message_with_context,
                     session_id=thread_id,
                     stream_callback=stream_callback,
                     tool_callback=tool_callback,
