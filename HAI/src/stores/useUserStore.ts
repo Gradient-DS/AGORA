@@ -4,7 +4,7 @@
 
 import { create } from 'zustand';
 import type { UserProfile, UserPreferences } from '@/types/user';
-import { fetchUsers as apiFetchUsers, fetchUserPreferences } from '@/lib/api/users';
+import { fetchUsers as apiFetchUsers, fetchUserPreferences, updateUserPreferences } from '@/lib/api/users';
 
 interface UserStore {
   // State
@@ -20,6 +20,7 @@ interface UserStore {
   initializeUser: () => void;
   loadUsers: () => Promise<void>;
   loadPreferences: (userId: string) => Promise<void>;
+  updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => Promise<void>;
 }
 
 export const useUserStore = create<UserStore>((set, get) => ({
@@ -93,5 +94,23 @@ export const useUserStore = create<UserStore>((set, get) => ({
   initializeUser: () => {
     // Load users from API - this will also restore the saved user if exists
     get().loadUsers();
+  },
+
+  updatePreference: async <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
+    const { currentUser, preferences } = get();
+    if (!currentUser) return;
+
+    // Optimistically update local state
+    const newPreferences = { ...preferences, [key]: value };
+    set({ preferences: newPreferences });
+
+    try {
+      // Persist to server
+      await updateUserPreferences(currentUser.id, { [key]: value });
+    } catch (error) {
+      // Revert on error
+      set({ preferences });
+      console.error('Failed to update preference:', error);
+    }
   },
 }));

@@ -11,8 +11,16 @@ from langchain_openai import ChatOpenAI
 from agora_langgraph.config import get_settings
 from agora_langgraph.core.agent_definitions import get_agent_by_id
 from agora_langgraph.core.state import AgentState
+from agora_langgraph.core.tools import AGENT_MCP_MAPPING
 
 log = logging.getLogger(__name__)
+
+# Friendly Dutch names for agents (used in error messages)
+AGENT_FRIENDLY_NAMES = {
+    "regulation-agent": "de Regelgeving Expert",
+    "reporting-agent": "de Rapportage Specialist",
+    "history-agent": "de Bedrijfshistorie Specialist",
+}
 
 _agent_tools: dict[str, list[Any]] = {}
 _llm_cache: dict[str, ChatOpenAI] = {}
@@ -77,12 +85,30 @@ async def _run_agent_node(
     llm = get_llm_for_agent(agent_id)
     tools = get_agent_tools(agent_id)
 
+    # Check if specialist agent is missing its required MCP tools (server down)
+    required_mcp_servers = AGENT_MCP_MAPPING.get(agent_id, [])
+    if required_mcp_servers and not tools:
+        # This specialist agent needs MCP tools but has none - server is down
+        friendly_name = AGENT_FRIENDLY_NAMES.get(agent_id, agent_id)
+        log.warning(f"{agent_id} has no tools - MCP server(s) {required_mcp_servers} unavailable")
+        error_message = (
+            f"⚠️ **Service Niet Beschikbaar**\n\n"
+            f"Helaas is {friendly_name} momenteel niet beschikbaar. "
+            f"De achterliggende service is offline.\n\n"
+            f"Probeer het later opnieuw of neem contact op met de beheerder "
+            f"als het probleem aanhoudt."
+        )
+        return {
+            "messages": [AIMessage(content=error_message)],
+            "current_agent": agent_id,
+        }
+
     if tools:
         llm_with_tools = llm.bind_tools(tools)
     else:
         llm_with_tools = llm
 
-    # Build system message with optional user_id context
+    # Build system message with optional user context
     instructions = config["instructions"]
     metadata = state.get("metadata", {})
     user_id = metadata.get("user_id")
@@ -95,6 +121,28 @@ async def _run_agent_node(
             f"- user_id: {user_id}\n"
             f"Use this user_id when calling the update_user_settings tool."
         )
+
+    # Inject user context for reporting-agent so it can include email info when generating reports
+    if agent_id == "reporting-agent":
+        user_email = metadata.get("user_email")
+        user_name = metadata.get("user_name")
+        email_reports = metadata.get("email_reports", True)
+
+        context_parts = ["CURRENT USER CONTEXT:"]
+        if user_name:
+            context_parts.append(f"- inspector_name: {user_name}")
+        if user_email:
+            context_parts.append(f"- inspector_email: {user_email}")
+        context_parts.append(f"- email_reports_enabled: {email_reports}")
+        context_parts.append("")
+        context_parts.append(
+            "When calling start_inspection_report, include inspector_name and inspector_email."
+        )
+        context_parts.append(
+            "When calling generate_final_report, set send_email based on email_reports_enabled."
+        )
+
+        instructions = f"{instructions}\n\n" + "\n".join(context_parts)
 
     system_message = {"role": "system", "content": instructions}
     messages_with_system = [system_message] + list(state["messages"])

@@ -16,7 +16,7 @@ class Verifier:
     async def generate_verification_questions(
         self,
         extracted_data: Dict[str, Any],
-        max_questions: int = 5
+        max_questions: int = 3
     ) -> List[Dict[str, Any]]:
         fields_needing_verification = extracted_data.get("fields_needing_verification", [])
         
@@ -210,7 +210,7 @@ Generate up to {max_questions} verification questions prioritized by importance.
             },
         }
         
-        for missing in missing_fields[:5]:
+        for missing in missing_fields[:3]:
             if missing in field_question_map:
                 questions.append(field_question_map[missing])
         

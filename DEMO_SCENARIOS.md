@@ -13,6 +13,10 @@ Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854
 ```
 
 ```
+Welke europese wetgeving heeft betrekking op het niet ingevulde schoonmaakschema?
+```
+
+```
 Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?
 ```
 

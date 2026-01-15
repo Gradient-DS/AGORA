@@ -46,6 +46,7 @@ async def _update_user_settings_invoke(ctx: ToolContext[Any], args: str) -> str:
 
     user_id = parsed_args.get("user_id")
     spoken_text_type = parsed_args.get("spoken_text_type")
+    interaction_mode = parsed_args.get("interaction_mode")
 
     if not user_id:
         return "Error: Geen gebruikers-ID opgegeven. Kan instellingen niet bijwerken."
@@ -58,10 +59,20 @@ async def _update_user_settings_invoke(ctx: ToolContext[Any], args: str) -> str:
             f"Geldige opties: 'dictate' (dicteren) of 'summarize' (samenvatten)."
         )
 
+    # Validate interaction_mode
+    valid_interaction_modes = {"feedback", "listen"}
+    if interaction_mode and interaction_mode not in valid_interaction_modes:
+        return (
+            f"Error: Ongeldige waarde '{interaction_mode}' voor interactiemodus. "
+            f"Geldige opties: 'feedback' (actief meedenken) of 'listen' (alleen noteren)."
+        )
+
     # Build updates dict with only provided values
     updates: dict[str, Any] = {}
     if spoken_text_type:
         updates["spoken_text_type"] = spoken_text_type
+    if interaction_mode:
+        updates["interaction_mode"] = interaction_mode
 
     if not updates:
         return "Geen instellingen om bij te werken opgegeven."
@@ -74,6 +85,9 @@ async def _update_user_settings_invoke(ctx: ToolContext[Any], args: str) -> str:
         if spoken_text_type:
             mode_nl = "dicteren" if spoken_text_type == "dictate" else "samenvatten"
             changes.append(f"spraakweergave naar '{mode_nl}'")
+        if interaction_mode:
+            mode_nl = "feedback" if interaction_mode == "feedback" else "luisteren"
+            changes.append(f"interactiemodus naar '{mode_nl}'")
 
         return f"Instellingen bijgewerkt: {', '.join(changes)}."
 
@@ -92,8 +106,8 @@ def create_update_user_settings_tool() -> FunctionTool:
         name="update_user_settings",
         description=(
             "Update user preferences/settings. Use this when the user wants to change "
-            "their settings like speech mode (dictate vs summarize). "
-            "The user_id should be obtained from the conversation context."
+            "their settings like speech mode (dictate vs summarize) or interaction mode "
+            "(feedback vs listen). The user_id should be obtained from the conversation context."
         ),
         params_json_schema={
             "type": "object",
@@ -108,6 +122,14 @@ def create_update_user_settings_tool() -> FunctionTool:
                     "description": (
                         "Set to 'dictate' for full text reading or 'summarize' for "
                         "AI-generated TTS summaries"
+                    ),
+                },
+                "interaction_mode": {
+                    "type": "string",
+                    "enum": ["feedback", "listen"],
+                    "description": (
+                        "Set to 'feedback' for active suggestions and engagement, or "
+                        "'listen' for passive note-taking without interruptions"
                     ),
                 },
             },

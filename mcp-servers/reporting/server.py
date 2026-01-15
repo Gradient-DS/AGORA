@@ -34,11 +34,11 @@ pdf_generator = PDFGenerator()
 async def extract_inspection_data(
     session_id: str,
     inspection_summary: str,
-    company_name: str = None,
-    company_address: str = None,
-    inspector_name: str = None,
-    inspector_email: str = None,
-    max_questions: int = 5,
+    company_name: str | None = None,
+    company_address: str | None = None,
+    inspector_name: str | None = None,
+    inspector_email: str | None = None,
+    max_questions: int = 3,
 ) -> dict:
     """Extract structured HAP inspection data and generate verification questions.
 
@@ -61,7 +61,7 @@ async def extract_inspection_data(
         company_address: Address of the inspected company
         inspector_name: Name of the inspector conducting the inspection
         inspector_email: Email address of the inspector for report delivery
-        max_questions: Maximum number of verification questions to generate (default: 5)
+        max_questions: Maximum number of verification questions to generate (default: 3)
 
     Returns:
         Extracted data, completeness info, and verification questions to ask

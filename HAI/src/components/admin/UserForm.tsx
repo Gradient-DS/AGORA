@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminStore } from '@/stores/useAdminStore';
 import { fetchUserPreferences, updateUserPreferences } from '@/lib/api/users';
-import { X, Loader2, Save, UserPlus, Mic, FileText } from 'lucide-react';
+import { X, Loader2, Save, UserPlus, Mic, FileText, MessageSquare, Headphones, Mail, MailX } from 'lucide-react';
 import type { CreateUserRequest, UpdateUserRequest } from '@/types/user';
 
 interface UserFormProps {
@@ -35,6 +35,8 @@ export function UserForm({ mode }: UserFormProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [spokenTextType, setSpokenTextType] = useState<'dictate' | 'summarize'>('summarize');
+  const [interactionMode, setInteractionMode] = useState<'feedback' | 'listen'>('feedback');
+  const [emailReports, setEmailReports] = useState<boolean>(true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -48,6 +50,12 @@ export function UserForm({ mode }: UserFormProps) {
         .then((prefs) => {
           if (prefs.spoken_text_type) {
             setSpokenTextType(prefs.spoken_text_type);
+          }
+          if (prefs.interaction_mode) {
+            setInteractionMode(prefs.interaction_mode);
+          }
+          if (prefs.email_reports !== undefined) {
+            setEmailReports(prefs.email_reports);
           }
         })
         .catch((err) => {
@@ -104,6 +112,8 @@ export function UserForm({ mode }: UserFormProps) {
         // Update preferences separately
         await updateUserPreferences(selectedUser.id, {
           spoken_text_type: spokenTextType,
+          interaction_mode: interactionMode,
+          email_reports: emailReports,
         });
       }
     } catch {
@@ -190,44 +200,124 @@ export function UserForm({ mode }: UserFormProps) {
             </div>
 
             {mode === 'edit' && (
-              <div className="space-y-2">
-                <label htmlFor="spokenTextType" className="text-sm font-medium">
-                  Spraakweergave
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSpokenTextType('summarize')}
-                    disabled={isFormLoading}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-                      spokenTextType === 'summarize'
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm font-medium">Samenvatten</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSpokenTextType('dictate')}
-                    disabled={isFormLoading}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
-                      spokenTextType === 'dictate'
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
-                    }`}
-                  >
-                    <Mic className="h-4 w-4" />
-                    <span className="text-sm font-medium">Dicteer</span>
-                  </button>
+              <>
+                <div className="space-y-2">
+                  <label htmlFor="spokenTextType" className="text-sm font-medium">
+                    Spraakweergave
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSpokenTextType('summarize')}
+                      disabled={isFormLoading}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                        spokenTextType === 'summarize'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="text-sm font-medium">Samenvatten</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSpokenTextType('dictate')}
+                      disabled={isFormLoading}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                        spokenTextType === 'dictate'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <Mic className="h-4 w-4" />
+                      <span className="text-sm font-medium">Dicteer</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {spokenTextType === 'summarize'
+                      ? 'AI vat antwoorden samen voor spraak'
+                      : 'AI leest antwoorden volledig voor'}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {spokenTextType === 'summarize'
-                    ? 'AI vat antwoorden samen voor spraak'
-                    : 'AI leest antwoorden volledig voor'}
-                </p>
-              </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="interactionMode" className="text-sm font-medium">
+                    Interactiemodus
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInteractionMode('feedback')}
+                      disabled={isFormLoading}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                        interactionMode === 'feedback'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="text-sm font-medium">Feedback</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInteractionMode('listen')}
+                      disabled={isFormLoading}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                        interactionMode === 'listen'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <Headphones className="h-4 w-4" />
+                      <span className="text-sm font-medium">Luisteren</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {interactionMode === 'feedback'
+                      ? 'AI denkt actief mee en geeft suggesties'
+                      : 'AI noteert alleen zonder tussenkomst'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="emailReports" className="text-sm font-medium">
+                    Rapporten per e-mail
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEmailReports(true)}
+                      disabled={isFormLoading}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                        emailReports
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <Mail className="h-4 w-4" />
+                      <span className="text-sm font-medium">Aan</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEmailReports(false)}
+                      disabled={isFormLoading}
+                      className={`flex items-center justify-center gap-2 p-3 rounded-md border transition-colors ${
+                        !emailReports
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      <MailX className="h-4 w-4" />
+                      <span className="text-sm font-medium">Uit</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {emailReports
+                      ? 'Rapporten worden automatisch per e-mail verzonden'
+                      : 'Rapporten worden niet per e-mail verzonden'}
+                  </p>
+                </div>
+              </>
             )}
           </CardContent>
 

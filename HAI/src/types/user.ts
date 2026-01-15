@@ -8,6 +8,8 @@ export interface UserPreferences {
   default_agent_id?: string;
   language?: string;
   spoken_text_type?: 'dictate' | 'summarize';
+  interaction_mode?: 'feedback' | 'listen';
+  email_reports?: boolean;
 }
 
 export interface UserProfile {

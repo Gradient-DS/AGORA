@@ -248,16 +248,28 @@ class UserManager:
         user_id: str,
         preferences: dict[str, Any],
     ) -> dict[str, Any] | None:
-        """Update user preferences.
+        """Update user preferences by merging with existing preferences.
+
+        This method performs a shallow merge, preserving existing preferences
+        that are not specified in the update.
 
         Args:
             user_id: User identifier
-            preferences: Preferences dict
+            preferences: Preferences dict with fields to update
 
         Returns:
             Updated user dict or None if not found
         """
-        return await self.update_user(user_id, preferences=preferences)
+        # Get existing user to merge preferences
+        user = await self.get_user(user_id)
+        if not user:
+            return None
+
+        # Merge with existing preferences (new values override existing)
+        existing_prefs = user.get("preferences") or {}
+        merged_prefs = {**existing_prefs, **preferences}
+
+        return await self.update_user(user_id, preferences=merged_prefs)
 
     async def delete_user(self, user_id: str) -> tuple[bool, int]:
         """Delete a user and their sessions.

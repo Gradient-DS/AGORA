@@ -27,6 +27,38 @@ from agora_langgraph.core.tools import get_tools_for_agent
 log = logging.getLogger(__name__)
 
 
+VALID_AGENTS = {
+    "general-agent",
+    "regulation-agent",
+    "reporting-agent",
+    "history-agent",
+}
+
+
+def route_from_start(state: AgentState) -> str:
+    """Route from START to the appropriate agent based on persisted state.
+
+    This enables specialist agents to continue handling follow-up messages
+    (e.g., user responses to clarifying questions) instead of always routing
+    through general-agent.
+
+    Args:
+        state: Current graph state with persisted current_agent
+
+    Returns:
+        Target agent ID to start execution
+    """
+    current = state.get("current_agent", "general-agent")
+
+    # Validate agent ID - default to general-agent for unknown values
+    if current not in VALID_AGENTS:
+        log.info(f"route_from_start: Unknown agent '{current}', defaulting to general-agent")
+        return "general-agent"
+
+    log.info(f"route_from_start: Routing to persisted agent '{current}'")
+    return current
+
+
 def detect_handoff_target(tool_name: str) -> str | None:
     """Detect target agent from a handoff tool call.
 
@@ -369,8 +401,18 @@ def build_agent_graph(
     graph.add_node("generate_spoken", generate_spoken_node)
     graph.add_node("merge", merge_parallel_outputs)
 
-    # Entry point
-    graph.add_edge(START, "general-agent")
+    # Entry point - dynamic routing based on persisted current_agent
+    # This allows specialist agents to continue handling follow-up messages
+    graph.add_conditional_edges(
+        START,
+        route_from_start,
+        {
+            "general-agent": "general-agent",
+            "regulation-agent": "regulation-agent",
+            "reporting-agent": "reporting-agent",
+            "history-agent": "history-agent",
+        },
+    )
 
     # Agent routing - routes to tools or directly dispatches parallel generation via Send
     for agent_id in [

@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from langchain_core.tools import BaseTool, StructuredTool, tool
+from langgraph.types import interrupt
 
 if TYPE_CHECKING:
     from agora_langgraph.adapters.user_manager import UserManager
@@ -74,9 +75,42 @@ async def transfer_to_general() -> str:
     return "Transferring to general-agent"
 
 
+@tool
+def request_clarification(questions: list[dict[str, Any]]) -> str:
+    """Request clarification from the user during report creation.
+
+    Use this tool when you need additional information from the inspector
+    to complete the report. The graph will pause and wait for the user's
+    response before continuing.
+
+    Args:
+        questions: List of question objects from verify_inspection_data tool.
+                   Each has 'question', 'field', 'importance', and optional 'options'.
+
+    Returns:
+        The user's response to the questions.
+    """
+    # Format questions for display
+    formatted = []
+    for i, q in enumerate(questions, 1):
+        formatted.append(f"{i}. {q.get('question', '')}")
+
+    question_text = "\n".join(formatted)
+
+    # This will pause the graph and return the user's response when resumed
+    user_response = interrupt({
+        "type": "clarification_request",
+        "questions": questions,
+        "display_text": question_text,
+    })
+
+    return user_response
+
+
 async def _update_user_settings_impl(
     user_id: str,
     spoken_text_type: str | None = None,
+    interaction_mode: str | None = None,
 ) -> str:
     """Implementation of update_user_settings that uses the module-level UserManager.
 
@@ -84,6 +118,8 @@ async def _update_user_settings_impl(
         user_id: The ID of the user whose settings to update
         spoken_text_type: Set to 'dictate' for full text reading or 'summarize' for
                          AI-generated TTS summaries. Leave empty to not change.
+        interaction_mode: Set to 'feedback' for active suggestions or 'listen' for
+                         passive note-taking. Leave empty to not change.
 
     Returns:
         Confirmation message with the updated settings
@@ -102,10 +138,20 @@ async def _update_user_settings_impl(
             f"Geldige opties: 'dictate' (dicteren) of 'summarize' (samenvatten)."
         )
 
+    # Validate interaction_mode
+    valid_interaction_modes = {"feedback", "listen"}
+    if interaction_mode and interaction_mode not in valid_interaction_modes:
+        return (
+            f"Error: Ongeldige waarde '{interaction_mode}' voor interactiemodus. "
+            f"Geldige opties: 'feedback' (actief meedenken) of 'listen' (alleen noteren)."
+        )
+
     # Build updates dict with only provided values
     updates: dict[str, Any] = {}
     if spoken_text_type:
         updates["spoken_text_type"] = spoken_text_type
+    if interaction_mode:
+        updates["interaction_mode"] = interaction_mode
 
     if not updates:
         return "Geen instellingen om bij te werken opgegeven."
@@ -118,6 +164,9 @@ async def _update_user_settings_impl(
         if spoken_text_type:
             mode_nl = "dicteren" if spoken_text_type == "dictate" else "samenvatten"
             changes.append(f"spraakweergave naar '{mode_nl}'")
+        if interaction_mode:
+            mode_nl = "feedback" if interaction_mode == "feedback" else "luisteren"
+            changes.append(f"interactiemodus naar '{mode_nl}'")
 
         return f"Instellingen bijgewerkt: {', '.join(changes)}."
 
@@ -181,9 +230,12 @@ def get_tools_for_agent(
             f"{agent_id} gets handoff tools: transfer_to_history, "
             "transfer_to_regulation, transfer_to_reporting + update_user_settings"
         )
-    else:
-        tools.append(transfer_to_general)
-        log.info(f"{agent_id} gets transfer_to_general tool")
+    elif agent_id == "reporting-agent":
+        # Reporting agent gets the clarification tool for multi-turn workflows
+        tools.append(request_clarification)
+        log.info(f"{agent_id} gets request_clarification tool")
+    # Specialist agents only get their MCP tools - no transfer_to_general
+    # They provide the final answer and don't need to hand back
 
     mcp_server_names = AGENT_MCP_MAPPING.get(agent_id, [])
     for server_name in mcp_server_names:
