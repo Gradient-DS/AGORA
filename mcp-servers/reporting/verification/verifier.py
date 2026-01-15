@@ -30,11 +30,14 @@ class Verifier:
         }
         
         logger.info(f"Generating verification questions for {len(fields_needing_verification)} uncertain fields and {len(missing_critical_fields)} missing fields")
-        
+
+        # Create a minimal version of extracted_data for the prompt (exclude verbose fields)
+        minimal_data = self._create_minimal_data(extracted_data)
+
         prompt = f"""{VERIFICATION_PROMPT}
 
 EXTRACTED DATA:
-{json.dumps(extracted_data, indent=2, ensure_ascii=False)}
+{json.dumps(minimal_data, indent=2, ensure_ascii=False)}
 
 FIELDS NEEDING VERIFICATION (confidence < {self.confidence_threshold}):
 {json.dumps(fields_needing_verification, indent=2, ensure_ascii=False)}
@@ -43,7 +46,13 @@ MISSING CRITICAL FIELDS:
 {json.dumps(missing_critical_fields, indent=2, ensure_ascii=False)}
 
 Generate up to {max_questions} verification questions prioritized by importance."""
-        
+
+        # Log prompt size for debugging
+        prompt_size = len(prompt)
+        logger.info(f"Verification prompt size: {prompt_size} chars ({prompt_size / 1000:.1f}KB)")
+        if prompt_size > 50000:
+            logger.warning(f"Large prompt detected ({prompt_size} chars), this may cause slow responses or errors")
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -53,6 +62,7 @@ Generate up to {max_questions} verification questions prioritized by importance.
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.3,
+                timeout=60.0,
             )
             
             result = json.loads(response.choices[0].message.content)
@@ -94,6 +104,54 @@ Generate up to {max_questions} verification questions prioritized by importance.
         
         return missing
     
+    def _create_minimal_data(self, extracted_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a minimal version of extracted_data for the verification prompt.
+
+        Excludes verbose fields like full observations and long descriptions to keep
+        the prompt size manageable.
+        """
+        # Fields to include at top level
+        minimal = {
+            "company_name": extracted_data.get("company_name"),
+            "company_address": extracted_data.get("company_address"),
+            "inspection_type": extracted_data.get("inspection_type"),
+            "overall_confidence": extracted_data.get("overall_confidence"),
+        }
+
+        # For each section, include compliance status and violation count (not full details)
+        for section in ["hygiene_general", "pest_control", "food_safety", "allergen_info"]:
+            section_data = extracted_data.get(section, {})
+            if isinstance(section_data, dict):
+                minimal_section = {}
+                for key, value in section_data.items():
+                    if key == "violations":
+                        # Just include count and types, not full descriptions
+                        if isinstance(value, list):
+                            minimal_section["violation_count"] = len(value)
+                            minimal_section["violation_types"] = [v.get("type") for v in value if isinstance(v, dict)][:5]
+                    elif key == "observations":
+                        # Truncate long observations
+                        if isinstance(value, str) and len(value) > 200:
+                            minimal_section[key] = value[:200] + "..."
+                        else:
+                            minimal_section[key] = value
+                    else:
+                        minimal_section[key] = value
+                minimal[section] = minimal_section
+
+        # Include additional_info but truncate long strings
+        additional = extracted_data.get("additional_info", {})
+        if isinstance(additional, dict):
+            minimal_additional = {}
+            for key, value in additional.items():
+                if isinstance(value, str) and len(value) > 200:
+                    minimal_additional[key] = value[:200] + "..."
+                else:
+                    minimal_additional[key] = value
+            minimal["additional_info"] = minimal_additional
+
+        return minimal
+
     def _get_nested_value(self, data: Dict[str, Any], path: str) -> Any:
         keys = path.split(".")
         value = data

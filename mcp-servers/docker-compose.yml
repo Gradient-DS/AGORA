@@ -44,10 +44,12 @@ services:
     environment:
       # OPENAI_API_KEY: ${MCP_OPENAI_API_KEY}
       AGORA_SERVER_URL: "http://host.docker.internal:5000"
+      # Microsoft Graph API for email notifications loaded from ../.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - reporting_storage:/app/storage
+      - reporting_data:/app/storage/reports
+      - reporting_history:/app/storage/conversation_history
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
       interval: 30s
@@ -105,5 +107,6 @@ networks:
 
 volumes:
   weaviate_data:
-  reporting_storage:
+  reporting_data:
+  reporting_history:
 
