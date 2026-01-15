@@ -516,8 +516,17 @@ class Orchestrator:
 
             elif kind == "on_tool_end":
                 tool_run_id = event.get("run_id", "")
-                tool_name = active_tool_calls.pop(tool_run_id, "unknown")
+                tool_name = active_tool_calls.pop(tool_run_id, None)
                 output = event.get("data", {}).get("output", "")
+
+                # Skip if tool wasn't started in this stream (e.g., resumed from interrupt)
+                # Events were already sent when the interrupt was handled
+                if tool_name is None:
+                    log.info(
+                        f"Skipping on_tool_end for tool not in this stream "
+                        f"(run_id: {tool_run_id}) - likely resumed from interrupt"
+                    )
+                    continue
 
                 log.info(f"Tool completed: {tool_name} (run_id: {tool_run_id})")
 
@@ -540,8 +549,16 @@ class Orchestrator:
 
             elif kind == "on_tool_error":
                 tool_run_id = event.get("run_id", "")
-                tool_name = active_tool_calls.pop(tool_run_id, "unknown")
+                tool_name = active_tool_calls.pop(tool_run_id, None)
                 error = event.get("data", {}).get("error", "Unknown error")
+
+                # Skip if tool wasn't started in this stream
+                if tool_name is None:
+                    log.info(
+                        f"Skipping on_tool_error for tool not in this stream "
+                        f"(run_id: {tool_run_id})"
+                    )
+                    continue
 
                 log.error(f"Tool error: {tool_name} - {error}")
 

@@ -177,36 +177,55 @@ Generate up to {max_questions} verification questions prioritized by importance.
         extracted_data: Dict[str, Any],
         min_questions: int
     ) -> List[Dict[str, Any]]:
-        """Ensure at least min_questions are returned by adding confirmation questions."""
-        confirmation_questions = [
-            {
-                "question": "Klopt deze samenvatting van de inspectie? Zijn er nog aanvullingen of correcties?",
-                "field": "confirmation",
-                "importance": "medium",
-                "options": None
-            },
-            {
-                "question": f"Het bedrijf '{extracted_data.get('company_name', 'onbekend')}' is geïnspecteerd. Klopt dit?",
-                "field": "company_confirmation",
-                "importance": "medium",
-                "options": ["Ja, dit klopt", "Nee, dit moet anders"]
-            },
-            {
-                "question": "Zijn er nog opmerkingen die u wilt toevoegen aan het rapport?",
-                "field": "additional_remarks",
-                "importance": "low",
-                "options": None
-            },
-        ]
+        """Ensure at least min_questions are returned by adding direct data questions."""
+        # Priority order: ask about missing critical data first
+        direct_questions = []
 
-        # Add confirmation questions until we have min_questions
-        for cq in confirmation_questions:
+        # Check what's missing and add direct questions
+        if not extracted_data.get("company_name"):
+            direct_questions.append({
+                "question": "Wat is de naam van het bedrijf?",
+                "field": "company_name",
+                "importance": "critical",
+                "options": None
+            })
+        if not extracted_data.get("company_address"):
+            direct_questions.append({
+                "question": "Wat is het adres van het bedrijf?",
+                "field": "company_address",
+                "importance": "critical",
+                "options": None
+            })
+        if not self._get_nested_value(extracted_data, "hygiene_general.compliant"):
+            direct_questions.append({
+                "question": "Voldeed de algemene hygiëne aan de eisen?",
+                "field": "hygiene_general.compliant",
+                "importance": "critical",
+                "options": ["Ja", "Nee", "Niet beoordeeld"]
+            })
+        if not extracted_data.get("violations") and not self._get_nested_value(extracted_data, "hygiene_general.violations"):
+            direct_questions.append({
+                "question": "Welke overtredingen zijn geconstateerd?",
+                "field": "violations",
+                "importance": "high",
+                "options": None
+            })
+        if not self._get_nested_value(extracted_data, "food_safety.storage_compliant"):
+            direct_questions.append({
+                "question": "Was de opslag van levensmiddelen in orde?",
+                "field": "food_safety.storage_compliant",
+                "importance": "high",
+                "options": ["Ja", "Nee", "Niet beoordeeld"]
+            })
+
+        # Add direct questions until we have min_questions
+        for dq in direct_questions:
             if len(questions) >= min_questions:
                 break
             # Don't add duplicate questions
-            if not any(q.get("field") == cq["field"] for q in questions):
-                questions.append(cq)
-                logger.info(f"Added confirmation question: {cq['question'][:50]}...")
+            if not any(q.get("field") == dq["field"] for q in questions):
+                questions.append(dq)
+                logger.info(f"Added direct question: {dq['question']}")
 
         return questions
 
