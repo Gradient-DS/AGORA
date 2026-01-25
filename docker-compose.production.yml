@@ -149,6 +149,12 @@ services:
     restart: unless-stopped
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REPORTING_PUBLIC_URL=https://${DOMAIN:-localhost}/api/reporting
+      - MCP_GRAPH_TENANT_ID=${MCP_GRAPH_TENANT_ID}
+      - MCP_GRAPH_CLIENT_ID=${MCP_GRAPH_CLIENT_ID}
+      - MCP_GRAPH_CLIENT_SECRET=${MCP_GRAPH_CLIENT_SECRET}
+      - MCP_GRAPH_MAIL_SENDER_ADDRESS=${MCP_GRAPH_MAIL_SENDER_ADDRESS}
+      - MCP_GRAPH_MAIL_SENDER_DISPLAY=${MCP_GRAPH_MAIL_SENDER_DISPLAY:-AGORA}
     volumes:
       - reporting_data:/app/storage/reports
       - reporting_history:/app/storage/conversation_history
