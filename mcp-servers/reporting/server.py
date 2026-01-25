@@ -283,9 +283,11 @@ async def generate_final_report(
         summary = json_generator.generate_summary(hap_report)
 
         # Generate download URLs
+        # Use REPORTING_PUBLIC_URL for production, fall back to localhost for development
+        base_url = os.getenv("REPORTING_PUBLIC_URL", "http://localhost:5003")
         download_urls = {
-            "json": f"http://localhost:5003/reports/{session_id}/json",
-            "pdf": f"http://localhost:5003/reports/{session_id}/pdf"
+            "json": f"{base_url}/reports/{session_id}/json",
+            "pdf": f"{base_url}/reports/{session_id}/pdf"
         }
 
         # Send email if requested and configured
