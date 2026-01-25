@@ -68,6 +68,10 @@ services:
       - LANGGRAPH_OPENAI_BASE_URL=${LANGGRAPH_OPENAI_BASE_URL:-https://api.openai.com/v1}
       - LANGGRAPH_OPENAI_MODEL=${LANGGRAPH_OPENAI_MODEL:-gpt-4o}
       - LANGGRAPH_MCP_SERVERS=regulation=http://regulation-analysis:8000,reporting=http://reporting:8000,history=http://inspection-history:8000
+      # Optional: Faster model for spoken text generation
+      - LANGGRAPH_SPOKEN_MODEL=${LANGGRAPH_SPOKEN_MODEL:-}
+      - LANGGRAPH_SPOKEN_BASE_URL=${LANGGRAPH_SPOKEN_BASE_URL:-}
+      - LANGGRAPH_SPOKEN_API_KEY=${LANGGRAPH_SPOKEN_API_KEY:-}
     volumes:
       - langgraph_sessions:/app/sessions
     depends_on:
