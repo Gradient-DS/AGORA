@@ -61,6 +61,41 @@ def get_llm_for_agent(agent_id: str) -> ChatOpenAI:
     return _llm_cache[agent_id]
 
 
+_spoken_llm: ChatOpenAI | None = None
+
+
+def get_llm_for_spoken() -> ChatOpenAI:
+    """Get LLM instance for spoken text generation.
+
+    Uses separate config if LANGGRAPH_SPOKEN_* env vars are set,
+    otherwise falls back to the default OpenAI config.
+    """
+    global _spoken_llm
+    if _spoken_llm is None:
+        settings = get_settings()
+
+        # Use spoken-specific config if available, otherwise fall back to defaults
+        model = settings.spoken_model or settings.openai_model
+        base_url = settings.spoken_base_url or settings.openai_base_url
+        api_key = (
+            settings.spoken_api_key.get_secret_value()
+            if settings.spoken_api_key
+            else settings.openai_api_key.get_secret_value()
+        )
+
+        _spoken_llm = ChatOpenAI(
+            model=model,
+            temperature=0.7,
+            streaming=True,
+            api_key=api_key,  # type: ignore[arg-type]
+            base_url=base_url,
+        )
+
+        log.info(f"Initialized spoken LLM: model={model}, base_url={base_url}")
+
+    return _spoken_llm
+
+
 async def _run_agent_node(
     state: AgentState,
     agent_id: str,

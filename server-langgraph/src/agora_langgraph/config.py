@@ -25,6 +25,20 @@ class Settings(BaseSettings):
     )
     openai_model: str = Field(default="gpt-4o", description="Default OpenAI model")
 
+    # Spoken text generation (can use faster/different model)
+    spoken_model: str | None = Field(
+        default=None,
+        description="Model for spoken text generation (defaults to openai_model if not set)",
+    )
+    spoken_base_url: str | None = Field(
+        default=None,
+        description="Base URL for spoken model API (defaults to openai_base_url if not set)",
+    )
+    spoken_api_key: SecretStr | None = Field(
+        default=None,
+        description="API key for spoken model (defaults to openai_api_key if not set)",
+    )
+
     mcp_servers: str = Field(
         default="",
         description=(

@@ -16,6 +16,7 @@ from agora_langgraph.core.agents import (
     general_agent,
     get_agent_tools,
     get_llm_for_agent,
+    get_llm_for_spoken,
     history_agent,
     regulation_agent,
     reporting_agent,
@@ -254,7 +255,8 @@ async def _generate_stream(
         f"at t={start_time:.3f}"
     )
 
-    llm = get_llm_for_agent(agent_id)
+    # Use separate LLM for spoken (can be faster model via LANGGRAPH_SPOKEN_* config)
+    llm = get_llm_for_spoken() if stream_type == "spoken" else get_llm_for_agent(agent_id)
 
     # Build message list with system prompt
     full_messages: list[BaseMessage] = [SystemMessage(content=system_prompt)] + list(
