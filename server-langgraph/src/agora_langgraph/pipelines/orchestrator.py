@@ -230,7 +230,7 @@ class Orchestrator:
             if is_interrupted:
                 # Resume interrupted graph with user's response
                 graph_input: dict[str, Any] | Command = Command(resume=user_content)
-                log.info(f"Resuming interrupted graph with: {user_content[:100]}...")
+                log.info(f"[DEBUG] RESUMING interrupted graph with: {user_content[:100]}...")
             else:
                 # Normal invocation - ALWAYS start at general-agent for routing
                 # The general-agent will transfer to specialists as needed
@@ -379,7 +379,9 @@ class Orchestrator:
         """
         full_response: list[str] = []
         # Handle both normal input and Command resume
-        if isinstance(graph_input, Command):
+        is_resuming_from_interrupt = isinstance(graph_input, Command)
+        resumed_tool_handled = False  # Track if we've skipped the resumed tool's start event
+        if is_resuming_from_interrupt:
             current_agent_id = "reporting-agent"  # Resuming interrupted reporting flow
         else:
             current_agent_id = graph_input.get("current_agent", "general-agent")
@@ -486,8 +488,18 @@ class Orchestrator:
                     _sanitize_params(raw_input) if isinstance(raw_input, dict) else {}
                 )
 
+                # When resuming from interrupt, skip TOOL_CALL_START for the resumed tool
+                # (we already sent events for it during interrupt handling in the previous stream)
+                if is_resuming_from_interrupt and not resumed_tool_handled and tool_name == "request_clarification":
+                    log.info(f"[DEBUG] Skipping TOOL_CALL_START for resumed tool: {tool_name} ({tool_run_id})")
+                    resumed_tool_handled = True
+                    # Still track it so we can skip TOOL_CALL_END/RESULT too
+                    active_tool_calls[tool_run_id] = f"_resumed_{tool_name}"
+                    continue
+
                 active_tool_calls[tool_run_id] = tool_name
-                log.info(f"Tool started: {tool_name} (run_id: {tool_run_id})")
+                log.info(f"[DEBUG] on_tool_start: {tool_name} (run_id: {tool_run_id})")
+                log.info(f"[DEBUG] active_tool_calls after start: {list(active_tool_calls.keys())}")
 
                 # Finish current step before starting tool execution
                 if current_step and current_step != "executing_tools":
@@ -502,6 +514,7 @@ class Orchestrator:
                 )
 
                 if protocol_handler.is_connected:
+                    log.info(f"[DEBUG] Sending TOOL_CALL_START: {tool_name} ({tool_run_id})")
                     await protocol_handler.send_tool_call_start(
                         tool_call_id=tool_run_id,
                         tool_call_name=tool_name,
@@ -516,31 +529,41 @@ class Orchestrator:
 
             elif kind == "on_tool_end":
                 tool_run_id = event.get("run_id", "")
+                log.info(f"[DEBUG] on_tool_end received: run_id={tool_run_id}")
+                log.info(f"[DEBUG] active_tool_calls before pop: {list(active_tool_calls.keys())}")
                 tool_name = active_tool_calls.pop(tool_run_id, None)
                 output = event.get("data", {}).get("output", "")
+                log.info(f"[DEBUG] on_tool_end: tool_name={tool_name}, output_len={len(str(output)) if output else 0}")
 
                 # Skip if tool wasn't started in this stream (e.g., resumed from interrupt)
                 # Events were already sent when the interrupt was handled
                 if tool_name is None:
                     log.info(
-                        f"Skipping on_tool_end for tool not in this stream "
+                        f"[DEBUG] Skipping on_tool_end for tool not in this stream "
                         f"(run_id: {tool_run_id}) - likely resumed from interrupt"
                     )
                     continue
 
-                log.info(f"Tool completed: {tool_name} (run_id: {tool_run_id})")
+                # Skip sending events for resumed tools (we already sent them during interrupt handling)
+                if tool_name.startswith("_resumed_"):
+                    log.info(f"[DEBUG] Skipping TOOL_CALL_END/RESULT for resumed tool: {tool_name} ({tool_run_id})")
+                    continue
+
+                log.info(f"[DEBUG] Tool completed: {tool_name} (run_id: {tool_run_id})")
 
                 if protocol_handler.is_connected:
                     # Send TOOL_CALL_END to signal end of streaming
+                    log.info(f"[DEBUG] Sending TOOL_CALL_END for {tool_run_id}")
                     await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
                     # Send TOOL_CALL_RESULT with the actual result
+                    # Always send TOOL_CALL_RESULT so frontend marks tool as completed
                     result_str = str(output)[:500] if output else ""
-                    if result_str:
-                        await protocol_handler.send_tool_call_result(
-                            message_id=f"tool-result-{tool_run_id}",
-                            tool_call_id=tool_run_id,
-                            content=result_str,
-                        )
+                    log.info(f"[DEBUG] Sending TOOL_CALL_RESULT for {tool_run_id}, content_len={len(result_str)}")
+                    await protocol_handler.send_tool_call_result(
+                        message_id=f"tool-result-{tool_run_id}",
+                        tool_call_id=tool_run_id,
+                        content=result_str,
+                    )
 
                     # Finish executing_tools step and return to thinking
                     await protocol_handler.send_step_finished("executing_tools")
@@ -549,8 +572,21 @@ class Orchestrator:
 
             elif kind == "on_tool_error":
                 tool_run_id = event.get("run_id", "")
-                tool_name = active_tool_calls.pop(tool_run_id, None)
                 error = event.get("data", {}).get("error", "Unknown error")
+                error_str = str(error)
+
+                # Check if this is an interrupt (not a real error)
+                # LangGraph reports interrupt() as a tool error
+                is_interrupt = "Interrupt(" in error_str
+
+                if is_interrupt:
+                    # Don't pop from active_tool_calls - let interrupt handling close it
+                    tool_name = active_tool_calls.get(tool_run_id)
+                    log.info(f"[DEBUG] Tool interrupted (not error): {tool_name} (run_id: {tool_run_id})")
+                    # Don't send any events here - interrupt handling will do it
+                    continue
+
+                tool_name = active_tool_calls.pop(tool_run_id, None)
 
                 # Skip if tool wasn't started in this stream
                 if tool_name is None:
@@ -563,8 +599,13 @@ class Orchestrator:
                 log.error(f"Tool error: {tool_name} - {error}")
 
                 if protocol_handler.is_connected:
-                    # Send TOOL_CALL_END (no result event for errors)
+                    # Send TOOL_CALL_END and TOOL_CALL_RESULT for errors
                     await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
+                    await protocol_handler.send_tool_call_result(
+                        message_id=f"tool-result-{tool_run_id}",
+                        tool_call_id=tool_run_id,
+                        content=f"Error: {error_str[:400]}",
+                    )
 
                     # Finish executing_tools step and return to thinking
                     await protocol_handler.send_step_finished("executing_tools")
@@ -601,12 +642,14 @@ class Orchestrator:
 
         # After streaming completes, check if graph was interrupted
         # Get the final state to check for interrupts
+        log.info(f"[DEBUG] Stream completed, checking for interrupt. active_tool_calls: {list(active_tool_calls.keys())}")
         try:
             final_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+            log.info(f"[DEBUG] final_state.next: {final_state.next if final_state else 'None'}")
             if final_state and final_state.next:
                 # Graph was interrupted - there are pending tasks
                 log.info(
-                    f"Graph interrupted at node(s): {final_state.next}, "
+                    f"[DEBUG] Graph interrupted at node(s): {final_state.next}, "
                     f"thread: {thread_id}"
                 )
 
@@ -616,24 +659,29 @@ class Orchestrator:
                     for task in final_state.tasks:
                         if hasattr(task, "interrupts") and task.interrupts:
                             interrupt_value = task.interrupts[0].value
-                            log.info(f"Interrupt payload: {interrupt_value}")
+                            log.info(f"[DEBUG] Interrupt payload: {interrupt_value}")
                             break
 
                 # Close any active tool calls that were interrupted
                 # (they never got TOOL_CALL_END because interrupt() paused execution)
+                log.info(f"[DEBUG] About to close interrupted tool calls. active_tool_calls: {list(active_tool_calls.items())}, is_connected: {protocol_handler.is_connected}")
                 if active_tool_calls and protocol_handler.is_connected:
                     for tool_run_id, tool_name in list(active_tool_calls.items()):
-                        log.info(f"Closing interrupted tool call: {tool_name}")
+                        log.info(f"[DEBUG] Closing interrupted tool call: {tool_name} ({tool_run_id})")
                         await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
                         # Send TOOL_CALL_RESULT so frontend marks tool as completed
                         result_content = ""
                         if interrupt_value and isinstance(interrupt_value, dict):
                             result_content = interrupt_value.get("display_text", "")
+                        log.info(f"[DEBUG] Sending TOOL_CALL_RESULT for interrupted tool {tool_run_id}")
                         await protocol_handler.send_tool_call_result(
+                            message_id=f"tool-result-{tool_run_id}",
                             tool_call_id=tool_run_id,
                             content=result_content or "Clarification requested",
                         )
                     active_tool_calls.clear()
+                else:
+                    log.info(f"[DEBUG] NOT closing tool calls: active_tool_calls={bool(active_tool_calls)}, is_connected={protocol_handler.is_connected}")
 
                 # Send clarification questions to user as text message
                 if final_state.tasks:
@@ -676,7 +724,7 @@ class Orchestrator:
                                         f"{len(clarification_message)} chars"
                                     )
         except Exception as e:
-            log.warning(f"Failed to check interrupt state: {e}")
+            log.error(f"[DEBUG] Failed to check interrupt state: {e}", exc_info=True)
 
         written_chars = len("".join(full_response))
         spoken_source = (
