@@ -136,9 +136,9 @@ class AgentState(TypedDict):
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] Type checking passes: `cd server-langgraph && mypy src/`
-- [ ] Lint passes: `cd server-langgraph && ruff check src/`
-- [ ] Existing tests pass: `cd server-langgraph && pytest`
+- [x] Type checking passes: `cd server-langgraph && mypy src/`
+- [x] Lint passes: `cd server-langgraph && ruff check src/`
+- [x] Existing tests pass: `cd server-langgraph && pytest`
 
 #### Manual Verification:
 - [ ] Confirm state.py imports correctly in Python REPL
@@ -417,9 +417,9 @@ def build_agent_graph(
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] Type checking passes: `cd server-langgraph && mypy src/`
-- [ ] Lint passes: `cd server-langgraph && ruff check src/`
-- [ ] Unit tests pass: `cd server-langgraph && pytest`
+- [x] Type checking passes: `cd server-langgraph && mypy src/`
+- [x] Lint passes: `cd server-langgraph && ruff check src/`
+- [x] Unit tests pass: `cd server-langgraph && pytest`
 
 #### Manual Verification:
 - [ ] Graph builds without errors in Python REPL
@@ -531,9 +531,9 @@ if final_interaction_mode and final_interaction_mode != interaction_mode:
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] Type checking passes: `cd server-langgraph && mypy src/`
-- [ ] Lint passes: `cd server-langgraph && ruff check src/`
-- [ ] Tests pass: `cd server-langgraph && pytest`
+- [x] Type checking passes: `cd server-langgraph && mypy src/`
+- [x] Lint passes: `cd server-langgraph && ruff check src/`
+- [x] Tests pass: `cd server-langgraph && pytest`
 
 #### Manual Verification:
 - [ ] Set user preference to "listen" mode via API or UI
@@ -584,8 +584,8 @@ async def _run_agent_node(state: AgentState, agent_id: str) -> dict[str, Any]:
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] Type checking passes: `cd server-langgraph && mypy src/`
-- [ ] Tests pass: `cd server-langgraph && pytest`
+- [x] Type checking passes: `cd server-langgraph && mypy src/`
+- [x] Tests pass: `cd server-langgraph && pytest`
 
 #### Manual Verification:
 - [ ] Accumulate 3+ messages in listen mode
@@ -679,9 +679,9 @@ if (content.includes('Feedback modus geactiveerd')) {
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] TypeScript compiles: `cd HAI && pnpm run type-check`
-- [ ] Lint passes: `cd HAI && pnpm run lint`
-- [ ] Tests pass: `cd HAI && pnpm run test`
+- [x] TypeScript compiles: `cd HAI && pnpm run type-check`
+- [x] Lint passes: `cd HAI && pnpm run lint`
+- [x] Tests pass: `cd HAI && pnpm run test` (no tests exist yet)
 
 #### Manual Verification:
 - [ ] Listen mode badge pulses with amber color
@@ -852,8 +852,8 @@ this.ws.onopen = async () => {
 ### Success Criteria
 
 #### Automated Verification:
-- [ ] TypeScript compiles: `cd HAI && pnpm run type-check`
-- [ ] Tests pass: `cd HAI && pnpm run test`
+- [x] TypeScript compiles: `cd HAI && pnpm run type-check`
+- [x] Tests pass: `cd HAI && pnpm run test` (no tests exist yet)
 
 #### Manual Verification:
 - [ ] Disconnect from network

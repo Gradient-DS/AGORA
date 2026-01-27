@@ -147,26 +147,29 @@ async def _update_user_settings_impl(
         )
 
     # Build updates dict with only provided values
+    # NOTE: interaction_mode is SESSION-LEVEL only, not persisted to DB
+    # It's handled by the graph state and checkpointer
     updates: dict[str, Any] = {}
     if spoken_text_type:
         updates["spoken_text_type"] = spoken_text_type
-    if interaction_mode:
-        updates["interaction_mode"] = interaction_mode
+    # interaction_mode is NOT saved to DB - it's session-level only
 
-    if not updates:
+    # Build confirmation message for all changes (including session-level ones)
+    changes = []
+    if spoken_text_type:
+        mode_nl = "dicteren" if spoken_text_type == "dictate" else "samenvatten"
+        changes.append(f"spraakweergave naar '{mode_nl}'")
+    if interaction_mode:
+        mode_nl = "feedback" if interaction_mode == "feedback" else "luisteren"
+        changes.append(f"interactiemodus naar '{mode_nl}'")
+
+    if not updates and not interaction_mode:
         return "Geen instellingen om bij te werken opgegeven."
 
     try:
-        await _user_manager.update_preferences(user_id, updates)
-
-        # Build confirmation message
-        changes = []
-        if spoken_text_type:
-            mode_nl = "dicteren" if spoken_text_type == "dictate" else "samenvatten"
-            changes.append(f"spraakweergave naar '{mode_nl}'")
-        if interaction_mode:
-            mode_nl = "feedback" if interaction_mode == "feedback" else "luisteren"
-            changes.append(f"interactiemodus naar '{mode_nl}'")
+        # Only update DB for non-session-level settings
+        if updates:
+            await _user_manager.update_preferences(user_id, updates)
 
         return f"Instellingen bijgewerkt: {', '.join(changes)}."
 

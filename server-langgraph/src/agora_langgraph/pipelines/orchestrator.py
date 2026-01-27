@@ -197,7 +197,7 @@ class Orchestrator:
             metadata = agent_input.context.copy() if agent_input.context else {}
             metadata["user_id"] = user_id
 
-            # Fetch user email and preferences for reporting agent context
+            # Fetch user email and preferences (NOT interaction_mode - that's session-level)
             if self.user_manager:
                 try:
                     user = await self.user_manager.get_user(user_id)
@@ -210,12 +210,32 @@ class Orchestrator:
                 except Exception as e:
                     log.warning(f"Failed to fetch user info for metadata: {e}")
 
-            # Check if thread is in interrupted state (e.g., waiting for user input
-            # during a clarification flow in reporting-agent)
+            # Check if thread exists and get its persisted state
             is_interrupted = False
+            is_existing_thread = False
+            interaction_mode = "feedback"  # Default for new sessions
 
             try:
                 existing_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+                # Check if this is truly an existing thread with messages
+                # (not just an empty state object)
+                if (
+                    existing_state
+                    and existing_state.values
+                    and existing_state.values.get("messages")
+                ):
+                    is_existing_thread = True
+                    # interaction_mode is session-level, read from checkpointed state only
+                    interaction_mode = existing_state.values.get(
+                        "interaction_mode", "feedback"
+                    )
+                    log.info(
+                        f"Existing thread {thread_id}, "
+                        f"interaction_mode={interaction_mode}"
+                    )
+                else:
+                    log.info(f"New thread {thread_id}, will start in feedback mode")
+
                 if existing_state and existing_state.next:
                     # Graph is interrupted - there are pending tasks waiting for resume
                     is_interrupted = True
@@ -231,16 +251,25 @@ class Orchestrator:
                 # Resume interrupted graph with user's response
                 graph_input: dict[str, Any] | Command = Command(resume=user_content)
                 log.info(f"[DEBUG] RESUMING interrupted graph with: {user_content[:100]}...")
+            elif is_existing_thread:
+                # Existing thread - only send new message
+                # interaction_mode is persisted in checkpointed state
+                graph_input = {
+                    "messages": [HumanMessage(content=user_content)],
+                    "metadata": metadata,
+                }
             else:
-                # Normal invocation - ALWAYS start at general-agent for routing
-                # The general-agent will transfer to specialists as needed
-                # Only interrupted flows should resume at the specialist agent
+                # NEW session - always start in feedback mode
                 graph_input = {
                     "messages": [HumanMessage(content=user_content)],
                     "session_id": thread_id,
                     "current_agent": "general-agent",
                     "pending_approval": None,
                     "metadata": metadata,
+                    # Listen mode fields - new sessions always start in feedback mode
+                    "interaction_mode": "feedback",
+                    "message_buffer": [],
+                    "buffer_context": "",
                 }
 
             # Send initial state snapshot with correct current_agent
@@ -266,6 +295,7 @@ class Orchestrator:
                     message_id,
                     user_id,
                     protocol_handler,
+                    interaction_mode,
                 )
             else:
                 response_content, active_agent_id = await self._run_blocking(
@@ -366,6 +396,7 @@ class Orchestrator:
         message_id: str,
         user_id: str,
         protocol_handler: Any,
+        interaction_mode: str = "feedback",
     ) -> tuple[str, str]:
         """Stream graph response using astream_events with AG-UI Protocol.
 
@@ -646,6 +677,28 @@ class Orchestrator:
         try:
             final_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
             log.info(f"[DEBUG] final_state.next: {final_state.next if final_state else 'None'}")
+
+            # Check if update_user_settings was called with interaction_mode in THIS turn
+            # Only check the most recent AIMessage to avoid re-applying old tool calls
+            if final_state and final_state.values:
+                messages = final_state.values.get("messages", [])
+                # Find the most recent AIMessage with tool_calls (from this turn)
+                for msg in reversed(messages):
+                    if hasattr(msg, "tool_calls") and msg.tool_calls:
+                        for tool_call in msg.tool_calls:
+                            if tool_call.get("name") == "update_user_settings":
+                                args = tool_call.get("args", {})
+                                new_mode = args.get("interaction_mode")
+                                if new_mode and new_mode in ("feedback", "listen"):
+                                    log.info(
+                                        f"Updating session interaction_mode to '{new_mode}' "
+                                        f"via update_user_settings tool"
+                                    )
+                                    await self.graph.aupdate_state(
+                                        config,
+                                        {"interaction_mode": new_mode},
+                                    )
+                        break  # Only check the most recent AIMessage with tool calls
             if final_state and final_state.next:
                 # Graph was interrupted - there are pending tasks
                 log.info(
@@ -725,6 +778,43 @@ class Orchestrator:
                                     )
         except Exception as e:
             log.error(f"[DEBUG] Failed to check interrupt state: {e}", exc_info=True)
+
+        # Handle listen mode responses (final_written set but no streaming happened)
+        try:
+            if final_state and final_state.values:
+                final_written = final_state.values.get("final_written", "")
+                final_spoken = final_state.values.get("final_spoken", "")
+                final_interaction_mode = final_state.values.get("interaction_mode")
+
+                # If we have final_written but didn't stream (listen mode), send it now
+                if final_written and not message_started:
+                    await protocol_handler.send_text_message_start(message_id, "assistant")
+                    await protocol_handler.send_text_message_content(message_id, final_written)
+                    message_started = True
+                    full_response.append(final_written)
+
+                    # Also send spoken if present
+                    if final_spoken:
+                        await protocol_handler.send_spoken_text_start(
+                            message_id, "assistant"
+                        )
+                        await protocol_handler.send_spoken_text_content(
+                            message_id, final_spoken
+                        )
+                        spoken_message_started = True
+
+                    log.info(
+                        f"Sent listen mode response: written={len(final_written)} chars"
+                    )
+
+                # Log interaction_mode change (per-session, persisted in graph state)
+                if final_interaction_mode and final_interaction_mode != interaction_mode:
+                    log.info(
+                        f"interaction_mode changed to '{final_interaction_mode}' "
+                        f"(persisted in session state)"
+                    )
+        except Exception as e:
+            log.warning(f"Failed to handle listen mode response: {e}")
 
         written_chars = len("".join(full_response))
         spoken_source = (

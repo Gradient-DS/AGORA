@@ -14,6 +14,7 @@ import {
 } from '@/types/schemas';
 import { generateUUID } from '@/lib/utils';
 import { getStoredApiKey } from '@/stores/useAuthStore';
+import { offlineBuffer } from './offlineBuffer';
 
 type EventCallback = (event: AGUIEvent) => void;
 type StatusCallback = (status: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error') => void;
@@ -105,6 +106,7 @@ export class AGUIWebSocketClient {
 
   /**
    * Send a run input to start a new agent run.
+   * If offline, buffers the message in IndexedDB for later replay.
    */
   sendRunInput(threadId: string, userId: string, content: string, context?: Record<string, unknown>): string {
     const runId = generateUUID();
@@ -116,7 +118,23 @@ export class AGUIWebSocketClient {
       context,
     };
 
-    this.sendRaw(JSON.stringify(input));
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.sendRaw(JSON.stringify(input));
+    } else {
+      // Buffer for later replay
+      offlineBuffer.addMessage({
+        id: runId,
+        content,
+        timestamp: Date.now(),
+        threadId,
+        userId,
+      }).then(() => {
+        console.log('Message buffered offline');
+      }).catch((error) => {
+        console.error('Failed to buffer message:', error);
+      });
+    }
+
     return runId;
   }
 
@@ -193,10 +211,36 @@ export class AGUIWebSocketClient {
   private setupEventHandlers(): void {
     if (!this.ws) return;
 
-    this.ws.onopen = () => {
+    this.ws.onopen = async () => {
       this.isConnecting = false;
       this.updateStatus('connected');
       this.reconnectAttempts = 0;
+
+      // Replay offline buffer
+      try {
+        const buffered = await offlineBuffer.getAndClearMessages();
+        const firstMessage = buffered[0];
+        if (firstMessage && this.ws?.readyState === WebSocket.OPEN) {
+          // Combine buffered messages into a single batch
+          const batchContent = buffered
+            .map(m => `[${new Date(m.timestamp).toLocaleTimeString()}] ${m.content}`)
+            .join('\n');
+
+          const batchInput: RunAgentInput = {
+            threadId: firstMessage.threadId,
+            runId: generateUUID(),
+            userId: firstMessage.userId,
+            messages: [{ role: 'user', content: batchContent }],
+            context: { isOfflineBatch: true, messageCount: buffered.length },
+          };
+
+          this.ws.send(JSON.stringify(batchInput));
+          console.log(`Replayed ${buffered.length} offline messages`);
+        }
+      } catch (error) {
+        console.error('Failed to replay offline buffer:', error);
+      }
+
       this.flushMessageQueue();
     };
 

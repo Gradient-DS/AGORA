@@ -10,5 +10,6 @@ export { useHistoryStore } from './useHistoryStore';
 export { useTTSStore } from './useTTSStore';
 export { useAdminStore } from './useAdminStore';
 export { useAuthStore, getStoredApiKey } from './useAuthStore';
+export { useListenModeStore } from './useListenModeStore';
 export type { UserProfile } from '@/types/user';
 

@@ -364,9 +364,9 @@ async def get_current_user_preferences(
         "interaction_mode": "feedback",
         "email_reports": True,
     }
-    # Use default if preferences is None or missing
-    user_prefs = user.get("preferences")
-    preferences = user_prefs if user_prefs else default_preferences
+    # Merge defaults with user preferences (user prefs override defaults)
+    user_prefs = user.get("preferences") or {}
+    preferences = {**default_preferences, **user_prefs}
     return {"success": True, "preferences": preferences}
 
 

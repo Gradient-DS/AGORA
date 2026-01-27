@@ -14,6 +14,7 @@ import {
   useUserStore,
   useHistoryStore,
   useAuthStore,
+  useListenModeStore,
 } from '@/stores';
 import {
   EventType,
@@ -152,11 +153,23 @@ export function useWebSocket() {
           }
           break;
 
-        case EventType.TEXT_MESSAGE_CONTENT:
+        case EventType.TEXT_MESSAGE_CONTENT: {
+          const delta = event.delta ?? '';
           if (currentMessageId.current === event.messageId) {
-            updateMessageContent(event.messageId, event.delta, true);
+            updateMessageContent(event.messageId, delta, true);
+
+            // Update listen mode store based on message content
+            if (delta.startsWith('[Luistermodus actief')) {
+              const match = delta.match(/bericht (\d+)/);
+              if (match?.[1]) {
+                useListenModeStore.getState().setBufferedCount(parseInt(match[1], 10));
+              }
+            } else if (delta.includes('Feedback modus geactiveerd')) {
+              useListenModeStore.getState().resetBufferedCount();
+            }
           }
           break;
+        }
 
         case EventType.TEXT_MESSAGE_END:
           if (currentMessageId.current === event.messageId) {
