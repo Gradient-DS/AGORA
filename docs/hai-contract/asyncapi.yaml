@@ -583,6 +583,13 @@ components:
             Human-readable spoken description of the tool action.
             Used for TTS to announce what the agent is doing.
             Example: "Ik ga de regelgeving doorzoeken"
+        toolDisplayName:
+          type: string
+          nullable: true
+          description: |
+            Human-readable display name for UI rendering.
+            Falls back to toolCallName if not provided.
+            Example: "Zoeken in regelgeving"
         parentMessageId:
           type: string
           nullable: true

@@ -94,6 +94,7 @@ export const ToolCallStartEventSchema = z.object({
   toolCallId: z.string(),
   toolCallName: z.string(),
   toolDescription: z.string().nullable().optional(),
+  toolDisplayName: z.string().nullable().optional(),
   parentMessageId: z.string().nullable().optional(),
   timestamp: z.number().nullable().optional(),
 });

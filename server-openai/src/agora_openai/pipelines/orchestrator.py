@@ -25,6 +25,7 @@ from agora_openai.config import get_settings
 from agora_openai.core.agent_definitions import get_spoken_prompt
 from agora_openai.core.agent_runner import AgentRunner
 from agora_openai.core.approval_logic import requires_human_approval
+from agora_openai.core.tool_display_names import get_tool_display_name
 from agora_openai.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
@@ -422,6 +423,7 @@ class Orchestrator:
                         await protocol_handler.send_tool_call_start(
                             tool_call_id=tool_call_id,
                             tool_call_name=tool_name,
+                            tool_display_name=get_tool_display_name(tool_name),
                             parent_message_id=message_id,
                         )
 

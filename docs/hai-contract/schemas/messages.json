@@ -258,6 +258,10 @@
           "type": ["string", "null"],
           "description": "Human-readable spoken description of the tool action for TTS"
         },
+        "toolDisplayName": {
+          "type": ["string", "null"],
+          "description": "Human-readable display name for UI rendering"
+        },
         "parentMessageId": { "type": ["string", "null"] },
         "timestamp": { "type": "integer" }
       }

@@ -1,13 +1,19 @@
 import { Wrench, CheckCircle2, XCircle, Loader2, ExternalLink } from 'lucide-react';
-import { cn, formatToolName } from '@/lib/utils';
+import { cn, formatToolNameFallback } from '@/lib/utils';
 
 interface ToolCallReferenceProps {
   toolName: string;
+  displayName?: string;
   status: 'started' | 'completed' | 'failed';
   toolCallId: string;
 }
 
-export function ToolCallReference({ toolName, status, toolCallId }: ToolCallReferenceProps) {
+export function ToolCallReference({
+  toolName,
+  displayName,
+  status,
+  toolCallId,
+}: ToolCallReferenceProps) {
   const statusConfig = {
     started: {
       icon: Loader2,
@@ -54,7 +60,7 @@ export function ToolCallReference({ toolName, status, toolCallId }: ToolCallRefe
       title="Klik om details te bekijken in het Onder de Motorkap paneel"
     >
       <Wrench className="h-3 w-3" aria-hidden="true" />
-      <span>{formatToolName(toolName)}</span>
+      <span>{displayName ?? formatToolNameFallback(toolName)}</span>
       <StatusIcon
         className={cn('h-3 w-3', config.color, status === 'started' && 'animate-spin')}
         aria-hidden="true"

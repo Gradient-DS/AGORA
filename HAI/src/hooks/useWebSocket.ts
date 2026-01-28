@@ -28,6 +28,7 @@ import {
   parseAgoraError,
 } from '@/types/schemas';
 import { getWebSocketUrl } from '@/lib/env';
+import { formatToolNameFallback } from '@/lib/utils';
 import { emitTTSEvent } from './useTTS';
 
 let globalClient: AGUIWebSocketClient | null = null;
@@ -183,9 +184,13 @@ export function useWebSocket() {
 
         case EventType.TOOL_CALL_START: {
           const toolEvent = event as ToolCallStartEvent;
+          // Use protocol display name, fallback to Title Case formatting
+          const displayName =
+            toolEvent.toolDisplayName ?? formatToolNameFallback(toolEvent.toolCallName);
           addToolCall({
             id: toolEvent.toolCallId,
             toolName: toolEvent.toolCallName,
+            displayName: displayName,
             status: 'started',
             parentMessageId: toolEvent.parentMessageId ?? undefined,
             agentId: currentAgentId.current,
@@ -193,8 +198,9 @@ export function useWebSocket() {
           addMessage({
             id: toolEvent.toolCallId,
             role: 'tool',
-            content: toolEvent.toolCallName,
+            content: displayName,
             toolName: toolEvent.toolCallName,
+            toolDisplayName: displayName,
             toolStatus: 'started',
             agentId: currentAgentId.current,
           });

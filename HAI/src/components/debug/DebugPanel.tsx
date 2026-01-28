@@ -110,6 +110,7 @@ export function DebugPanel() {
                       <div key={toolCall.id} id={`tool-call-${toolCall.id}`} className="transition-all">
                         <ToolCallCard
                           toolName={toolCall.toolName}
+                          displayName={toolCall.displayName}
                           status={toolCall.status}
                           parameters={toolCall.parameters}
                           result={toolCall.result}
@@ -153,6 +154,7 @@ export function DebugPanel() {
                     <div key={toolCall.id} id={`tool-call-${toolCall.id}`} className="transition-all">
                       <ToolCallCard
                         toolName={toolCall.toolName}
+                        displayName={toolCall.displayName}
                         status={toolCall.status}
                         parameters={toolCall.parameters}
                         result={toolCall.result}
