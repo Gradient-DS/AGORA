@@ -281,7 +281,7 @@ async def get_inspection_history(kvk_number: str, limit: int = 10) -> dict:
     }
 
 
-@mcp.tool()
+# @mcp.tool()  # Temporarily disabled for demo
 async def get_company_violations(kvk_number: str, limit: int = 10, severity: Optional[str] = None) -> dict:
     """
     Get all violations for a company across all inspections.
@@ -339,7 +339,7 @@ async def get_company_violations(kvk_number: str, limit: int = 10, severity: Opt
     }
 
 
-@mcp.tool()
+# @mcp.tool()  # Temporarily disabled for demo
 async def check_repeat_violation(kvk_number: str, violation_category: str) -> dict:
     """
     Check if a violation category has occurred before for this company.
@@ -410,7 +410,7 @@ async def check_repeat_violation(kvk_number: str, violation_category: str) -> di
     return result
 
 
-@mcp.tool()
+# @mcp.tool()  # Temporarily disabled for demo
 async def get_follow_up_status(kvk_number: str, inspection_id: Optional[str] = None) -> dict:
     """
     Get follow-up status for inspections requiring additional action.
@@ -478,7 +478,7 @@ async def get_follow_up_status(kvk_number: str, inspection_id: Optional[str] = N
     }
 
 
-@mcp.tool()
+# @mcp.tool()  # Temporarily disabled for demo
 async def search_inspections_by_inspector(inspector_name: str, limit: int = 20) -> dict:
     """
     Search for inspections conducted by a specific inspector.

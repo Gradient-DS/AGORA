@@ -12,12 +12,16 @@ interface TTSState {
   isEnabled: boolean;
   /** Whether audio is currently playing */
   isSpeaking: boolean;
+  /** Whether to show spoken text comparison in chat */
+  showSpokenComparison: boolean;
   /** Toggle TTS on/off */
   toggleEnabled: () => void;
   /** Set enabled state directly */
   setEnabled: (enabled: boolean) => void;
   /** Set speaking state */
   setIsSpeaking: (speaking: boolean) => void;
+  /** Toggle spoken text comparison display */
+  toggleSpokenComparison: () => void;
 }
 
 export const useTTSStore = create<TTSState>()(
@@ -25,13 +29,15 @@ export const useTTSStore = create<TTSState>()(
     (set) => ({
       isEnabled: false,
       isSpeaking: false,
+      showSpokenComparison: false,
       toggleEnabled: () => set((state) => ({ isEnabled: !state.isEnabled })),
       setEnabled: (enabled) => set({ isEnabled: enabled }),
       setIsSpeaking: (speaking) => set({ isSpeaking: speaking }),
+      toggleSpokenComparison: () => set((state) => ({ showSpokenComparison: !state.showSpokenComparison })),
     }),
     {
       name: 'agora-tts-settings',
-      partialize: (state) => ({ isEnabled: state.isEnabled }),
+      partialize: (state) => ({ isEnabled: state.isEnabled, showSpokenComparison: state.showSpokenComparison }),
     }
   )
 );

@@ -11,6 +11,10 @@ export interface ChatMessage {
   isStreaming?: boolean;
   toolName?: string;
   toolStatus?: 'started' | 'completed' | 'failed';
+  /** Spoken text variant (for TTS consistency comparison) */
+  spokenContent?: string;
+  /** Whether spoken content is still streaming */
+  isSpokenStreaming?: boolean;
 }
 
 // Tool call UI representation

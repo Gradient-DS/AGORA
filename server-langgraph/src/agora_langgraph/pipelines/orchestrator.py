@@ -470,7 +470,7 @@ class Orchestrator:
                         full_response.append(content)
 
                         if protocol_handler.is_connected:
-                            # Start both channels on first written content
+                            # Start written channel on first content
                             if not message_started:
                                 log.info(
                                     f"Starting text streams (spoken_mode={spoken_mode})"
@@ -478,11 +478,13 @@ class Orchestrator:
                                 await protocol_handler.send_text_message_start(
                                     message_id, "assistant"
                                 )
-                                await protocol_handler.send_spoken_text_start(
-                                    message_id, "assistant"
-                                )
                                 message_started = True
-                                spoken_message_started = True
+                                # Only start spoken channel if not already started by generate_spoken
+                                if not spoken_message_started:
+                                    await protocol_handler.send_spoken_text_start(
+                                        message_id, "assistant"
+                                    )
+                                    spoken_message_started = True
 
                             # Send to written channel
                             await protocol_handler.send_text_message_content(

@@ -9,9 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
-import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, useAdminStore } from '@/stores';
+import { useConnectionStore, useSessionStore, useMessageStore, useUserStore, useAdminStore, useTTSStore } from '@/stores';
 import { useHistoryStore } from '@/stores/useHistoryStore';
-import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings, Mic, FileText, Mail, MailX } from 'lucide-react';
+import { Wifi, WifiOff, Loader2, RefreshCw, Plus, ChevronDown, User, Menu, Settings, Mic, FileText, Mail, MailX, SplitSquareVertical } from 'lucide-react';
 import { env } from '@/lib/env';
 
 export function Header({ onReconnect }: { onReconnect?: () => void }) {
@@ -29,6 +29,8 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
   const toggleSidebar = useHistoryStore((state) => state.toggleSidebar);
   const fetchSessions = useHistoryStore((state) => state.fetchSessions);
   const openAdminPanel = useAdminStore((state) => state.openAdminPanel);
+  const showSpokenComparison = useTTSStore((state) => state.showSpokenComparison);
+  const toggleSpokenComparison = useTTSStore((state) => state.toggleSpokenComparison);
 
   const handleNewConversation = (userId?: string) => {
     if (userId) {
@@ -195,6 +197,16 @@ export function Header({ onReconnect }: { onReconnect?: () => void }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+            <Button
+              size="sm"
+              variant={showSpokenComparison ? 'secondary' : 'ghost'}
+              onClick={toggleSpokenComparison}
+              aria-label={showSpokenComparison ? 'Verberg tekstvergelijking' : 'Toon tekstvergelijking'}
+              title={showSpokenComparison ? 'Verberg geschreven/gesproken vergelijking' : 'Toon geschreven/gesproken vergelijking'}
+            >
+              <SplitSquareVertical className="h-4 w-4" />
+            </Button>
 
             <Button
               size="sm"

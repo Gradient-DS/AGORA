@@ -469,6 +469,9 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     and produces final merged output. Also adds written response
     as AIMessage to conversation history.
 
+    Note: The written/spoken lists use operator.add reducer and accumulate
+    across turns. We only use the LAST item (current turn's generation).
+
     Args:
         state: State with accumulated written/spoken lists
 
@@ -478,8 +481,10 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     written_parts = state.get("written", [])
     spoken_parts = state.get("spoken", [])
 
-    written_content = "".join(written_parts)
-    spoken_content = "".join(spoken_parts)
+    # Only use the last item from each list (current turn's generation)
+    # The lists accumulate across turns due to operator.add reducer
+    written_content = written_parts[-1] if written_parts else ""
+    spoken_content = spoken_parts[-1] if spoken_parts else ""
 
     log.info(
         f"merge_parallel_outputs: written={len(written_content)} chars, "
