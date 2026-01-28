@@ -426,10 +426,6 @@ components:
           items:
             $ref: '#/components/schemas/Message'
           description: Input messages
-        context:
-          type: object
-          additionalProperties: true
-          description: Additional context
 
     Message:
       type: object

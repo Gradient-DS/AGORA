@@ -135,7 +135,10 @@ export default function App() {
     }
   };
 
-  const isDisabled = connectionStatus !== 'connected';
+  // Only disable input on permanent error state - allow typing when disconnected for offline buffering
+  const isDisabled = connectionStatus === 'error';
+  // Voice mode requires active connection
+  const isVoiceDisabled = connectionStatus !== 'connected';
 
   return (
     <>
@@ -176,6 +179,7 @@ export default function App() {
               disabled={isDisabled}
               onToggleVoice={toggleVoice}
               isVoiceActive={isVoiceActive}
+              voiceDisabled={isVoiceDisabled}
             />
           </div>
 

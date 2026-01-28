@@ -215,7 +215,6 @@ export const RunAgentInputSchema = z.object({
       toolCallId: z.string().optional(),
     })
   ),
-  context: z.record(z.unknown()).optional(),
 });
 
 export const MessageSchema = z.object({

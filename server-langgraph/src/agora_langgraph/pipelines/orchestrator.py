@@ -136,12 +136,13 @@ class Orchestrator:
         thread_id = agent_input.thread_id
         run_id = agent_input.run_id or str(uuid.uuid4())
 
-        # Extract user message from input
-        user_content = ""
-        for msg in agent_input.messages:
-            if msg.get("role") == "user":
-                user_content = msg.get("content", "")
-                break
+        # Extract and join all user messages from input
+        user_contents = [
+            msg.get("content", "")
+            for msg in agent_input.messages
+            if msg.get("role") == "user"
+        ]
+        user_content = "\n".join(user_contents)
 
         # Get user_id from top-level field
         user_id = agent_input.user_id
@@ -178,7 +179,7 @@ class Orchestrator:
             session_id=thread_id,
             role="user",
             content=user_content,
-            metadata=agent_input.context or {},
+            metadata={},
         )
 
         try:
@@ -193,9 +194,8 @@ class Orchestrator:
             message_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
 
-            # Include user_id and user context in metadata so agents can access it
-            metadata = agent_input.context.copy() if agent_input.context else {}
-            metadata["user_id"] = user_id
+            # Include user_id in metadata so agents can access it
+            metadata: dict[str, Any] = {"user_id": user_id}
 
             # Fetch user email and preferences (NOT interaction_mode - that's session-level)
             if self.user_manager:

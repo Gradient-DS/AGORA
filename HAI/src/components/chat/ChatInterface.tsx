@@ -13,6 +13,8 @@ interface ChatInterfaceProps {
   disabled?: boolean;
   onToggleVoice?: () => void;
   isVoiceActive?: boolean;
+  /** Separate disabled state for voice mode (requires active connection) */
+  voiceDisabled?: boolean;
 }
 
 export function ChatInterface({
@@ -20,6 +22,7 @@ export function ChatInterface({
   disabled = false,
   onToggleVoice,
   isVoiceActive,
+  voiceDisabled = false,
 }: ChatInterfaceProps) {
   const messages = useMessageStore((state) => state.messages);
   const processingStatus = useMessageStore((state) => state.processingStatus);
@@ -50,6 +53,7 @@ export function ChatInterface({
           disabled={disabled}
           onToggleVoice={onToggleVoice}
           isVoiceActive={isVoiceActive}
+          voiceDisabled={voiceDisabled}
         />
       </div>
     </Card>

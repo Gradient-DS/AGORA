@@ -108,14 +108,13 @@ export class AGUIWebSocketClient {
    * Send a run input to start a new agent run.
    * If offline, buffers the message in IndexedDB for later replay.
    */
-  sendRunInput(threadId: string, userId: string, content: string, context?: Record<string, unknown>): string {
+  sendRunInput(threadId: string, userId: string, content: string): string {
     const runId = generateUUID();
     const input: RunAgentInput = {
       threadId,
       runId,
       userId,
       messages: [{ role: 'user', content }],
-      context,
     };
 
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -221,17 +220,12 @@ export class AGUIWebSocketClient {
         const buffered = await offlineBuffer.getAndClearMessages();
         const firstMessage = buffered[0];
         if (firstMessage && this.ws?.readyState === WebSocket.OPEN) {
-          // Combine buffered messages into a single batch
-          const batchContent = buffered
-            .map(m => `[${new Date(m.timestamp).toLocaleTimeString()}] ${m.content}`)
-            .join('\n');
-
+          // Send each buffered message as a separate message in the array
           const batchInput: RunAgentInput = {
             threadId: firstMessage.threadId,
             runId: generateUUID(),
             userId: firstMessage.userId,
-            messages: [{ role: 'user', content: batchContent }],
-            context: { isOfflineBatch: true, messageCount: buffered.length },
+            messages: buffered.map(m => ({ role: 'user' as const, content: m.content })),
           };
 
           this.ws.send(JSON.stringify(batchInput));

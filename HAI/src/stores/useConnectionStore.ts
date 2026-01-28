@@ -17,7 +17,12 @@ export const useConnectionStore = create<ConnectionStore>((set) => ({
   reconnectAttempts: 0,
 
   setStatus: (status) => {
-    set({ status });
+    // Clear error when successfully connected
+    if (status === 'connected') {
+      set({ status, error: null });
+    } else {
+      set({ status });
+    }
   },
 
   setError: (error) => {

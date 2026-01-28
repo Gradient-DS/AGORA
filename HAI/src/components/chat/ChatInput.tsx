@@ -12,6 +12,8 @@ interface ChatInputProps {
   placeholder?: string;
   onToggleVoice?: () => void;
   isVoiceActive?: boolean;
+  /** Separate disabled state for voice mode (requires active connection) */
+  voiceDisabled?: boolean;
 }
 
 export function ChatInput({
@@ -19,7 +21,8 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Typ uw bericht...',
   onToggleVoice,
-  isVoiceActive = false
+  isVoiceActive = false,
+  voiceDisabled = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -70,7 +73,7 @@ export function ChatInput({
         {onToggleVoice && (
           <Button
             onClick={onToggleVoice}
-            disabled={disabled}
+            disabled={voiceDisabled}
             size="icon"
             variant={isVoiceActive ? 'default' : 'outline'}
             className={cn(
