@@ -10,7 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { DownloadLinks } from './DownloadLinks';
 import { ToolCallReference } from './ToolCallReference';
-import { useAgentStore } from '@/stores';
+import { useAgentStore, useTTSStore } from '@/stores';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -18,6 +18,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const getAgent = useAgentStore((state) => state.getAgent);
+  const showSpokenComparison = useTTSStore((state) => state.showSpokenComparison);
 
   if (message.role === 'tool') {
     return (
@@ -70,15 +71,44 @@ export function ChatMessage({ message }: ChatMessageProps) {
             isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
           )}
         >
-          <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/5 dark:prose-pre:bg-white/5 prose-pre:p-4">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-            {message.isStreaming && (
-              <span
-                className="inline-block w-2 h-4 ml-1 bg-current animate-pulse"
-                aria-label="Streaming indicatie"
-              />
-            )}
-          </div>
+          {showSpokenComparison && !isUser && message.spokenContent !== undefined ? (
+            <div className="space-y-3">
+              <div>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Geschreven:</span>
+                <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/5 dark:prose-pre:bg-white/5 prose-pre:p-4 mt-1">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                  {message.isStreaming && (
+                    <span
+                      className="inline-block w-2 h-4 ml-1 bg-current animate-pulse"
+                      aria-label="Streaming indicatie"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-border pt-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gesproken:</span>
+                <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/5 dark:prose-pre:bg-white/5 prose-pre:p-4 mt-1">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.spokenContent || ''}</ReactMarkdown>
+                  {message.isSpokenStreaming && (
+                    <span
+                      className="inline-block w-2 h-4 ml-1 bg-current animate-pulse"
+                      aria-label="Spoken streaming indicatie"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-black/5 dark:prose-pre:bg-white/5 prose-pre:p-4">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              {message.isStreaming && (
+                <span
+                  className="inline-block w-2 h-4 ml-1 bg-current animate-pulse"
+                  aria-label="Streaming indicatie"
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {hasDownloadLinks && !isUser && (

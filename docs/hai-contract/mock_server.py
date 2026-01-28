@@ -165,6 +165,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 "role": "assistant",
                 "content": "Inspectie gestart voor **Restaurant Bella Rosa**.\n\n**Bedrijfsgegevens:**\n- KVK: 92251854\n- Rechtsvorm: Besloten Vennootschap\n- Status: Actief\n\n**Inspectiehistorie:**\n⚠️ Er is 1 openstaande overtreding uit 15 mei 2022.",
                 "agent_id": Agents.HISTORY,
+                "spoken_text": "Inspectie gestart voor Restaurant Bella Rosa. Bedrijfsgegevens: Kamer van Koophandel nummer 92251854, Rechtsvorm Besloten Vennootschap, Status Actief. Inspectiehistorie: Let op, er is 1 openstaande overtreding uit 15 mei 2022.",
             },
             {
                 "role": "user",
@@ -174,6 +175,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 "role": "assistant",
                 "content": "🚨 **ERNSTIGE OVERTREDING GECONSTATEERD**\n\nRauwe vis op kamertemperatuur is een direct risico voor voedselvergiftiging. Bederfelijke levensmiddelen moeten onder 7°C bewaard worden.\n\n**Toepasselijke regelgeving:**\n- Hygiënecode Horeca artikel 4.2\n- Warenwetregeling Hygiëne van Levensmiddelen",
                 "agent_id": Agents.REGULATION,
+                "spoken_text": "Waarschuwing: Ernstige overtreding geconstateerd. Rauwe vis op kamertemperatuur is een direct risico voor voedselvergiftiging. Bederfelijke levensmiddelen moeten onder 7 graden Celsius bewaard worden. Toepasselijke regelgeving: Hygiënecode Horeca artikel 4.2. Warenwetregeling Hygiëne van Levensmiddelen.",
             },
         ]
 
@@ -241,6 +243,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 "role": "assistant",
                 "content": "Inspectie gestart voor Hotel Sunset. Bedrijfsgegevens worden opgehaald...",
                 "agent_id": Agents.HISTORY,
+                "spoken_text": "Inspectie gestart voor Hotel Sunset. Bedrijfsgegevens worden opgehaald.",
             },
             {
                 "role": "user",
@@ -250,6 +253,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 "role": "assistant",
                 "content": "Voor ontbijtbuffetten gelden de volgende temperatuurregels...",
                 "agent_id": Agents.REGULATION,
+                "spoken_text": "Voor ontbijtbuffetten gelden de volgende temperatuurregels.",
             },
         ]
 
@@ -263,12 +267,14 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 "role": "assistant",
                 "content": "Prima, ik help u graag met de inspectie. Heeft u het KVK-nummer?",
                 "agent_id": Agents.GENERAL,
+                "spoken_text": "Prima, ik help u graag met de inspectie. Heeft u het Kamer van Koophandel nummer?",
             },
             {"role": "user", "content": "Ja, het is 87654321"},
             {
                 "role": "assistant",
                 "content": "Inspectie gestart voor Bakkerij De Gouden Korenschoof.",
                 "agent_id": Agents.HISTORY,
+                "spoken_text": "Inspectie gestart voor Bakkerij De Gouden Korenschoof.",
             },
         ]
 
@@ -282,6 +288,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 "role": "assistant",
                 "content": "Welkom! Ik help u graag met vragen over de koelketen. Wat wilt u weten?",
                 "agent_id": Agents.GENERAL,
+                "spoken_text": "Welkom! Ik help u graag met vragen over de koelketen. Wat wilt u weten?",
             },
         ]
 

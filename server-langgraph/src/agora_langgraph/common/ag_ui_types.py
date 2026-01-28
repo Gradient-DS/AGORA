@@ -102,9 +102,6 @@ class RunAgentInput(AgoraBaseModel):
     messages: list[dict[str, Any]] = Field(
         default_factory=list, description="Input messages"
     )
-    context: dict[str, Any] | None = Field(
-        default=None, description="Additional context"
-    )
 
 
 # AGORA-specific custom event payloads for HITL approval

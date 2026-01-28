@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from typing import Any, Literal
 
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
-from langgraph.types import Send
+from langgraph.types import Overwrite, Send
 
 from agora_langgraph.core.agent_definitions import get_agent_by_id, get_spoken_prompt
 from agora_langgraph.core.agents import (
@@ -35,29 +36,182 @@ VALID_AGENTS = {
     "history-agent",
 }
 
+# Wake word to switch from listen mode to feedback mode
+# Just "AGORA" (case-insensitive) anywhere in the message
+WAKE_WORD = "agora"
+
+
+def detect_wake_word(content: str) -> bool:
+    """Detect if message contains the AGORA wake word.
+
+    Returns True if wake word found, False otherwise.
+    Only used to switch FROM listen mode TO feedback mode.
+    """
+    return WAKE_WORD in content.lower()
+
+
+def buffer_message_node(state: AgentState) -> dict[str, Any]:
+    """Store incoming message in buffer without agent processing.
+
+    In listen mode, messages are stored for later batch processing.
+    Returns minimal acknowledgment without LLM call.
+    """
+    messages = state.get("messages", [])
+
+    # Get latest human message to buffer
+    latest_human = None
+    for msg in reversed(messages):
+        if isinstance(msg, HumanMessage):
+            latest_human = msg
+            break
+
+    if latest_human:
+        buffer_count = len(state.get("message_buffer", [])) + 1
+        return {
+            "message_buffer": [{
+                "content": latest_human.content,
+                "timestamp": time.time(),
+            }],
+            # Minimal acknowledgment - no full response generation
+            "final_written": f"[Luistermodus actief - bericht {buffer_count} opgeslagen]",
+            "final_spoken": "",
+        }
+
+    return {}
+
+
+def process_buffer_node(state: AgentState) -> dict[str, Any]:
+    """Process all buffered messages and prepare context for agent.
+
+    Called when transitioning from listen to feedback mode.
+    Summarizes accumulated context and clears buffer.
+    """
+    buffer = state.get("message_buffer", [])
+
+    if not buffer:
+        return {}
+
+    # Build context summary from buffered messages
+    buffer_lines = []
+    for i, msg in enumerate(buffer, 1):
+        content = msg.get("content", "")
+        buffer_lines.append(f"{i}. {content}")
+
+    buffer_content = "\n".join(buffer_lines)
+
+    context_summary = (
+        f"--- Context verzameld tijdens luistermodus ({len(buffer)} berichten) ---\n"
+        f"{buffer_content}\n"
+        f"--- Einde luistermodus context ---"
+    )
+
+    log.info(f"process_buffer_node: Processed {len(buffer)} buffered messages")
+
+    return {
+        "buffer_context": context_summary,
+        # Clear buffer using Overwrite to bypass reducer
+        "message_buffer": Overwrite([]),
+    }
+
+
+def wake_word_handler_node(state: AgentState) -> dict[str, Any]:
+    """Handle wake word detection - switch from listen to feedback mode.
+
+    When "AGORA" is detected in a message while in listen mode:
+    1. Switches interaction_mode to "feedback"
+    2. Processes any buffered messages into buffer_context
+    3. Strips the wake word and passes remaining content for processing
+
+    Note: The preference is also persisted via user_manager in the orchestrator
+    after this node runs (see Phase 3).
+    """
+    messages = state.get("messages", [])
+    buffer = state.get("message_buffer", [])
+
+    if not messages:
+        return {}
+
+    latest = messages[-1]
+    if not isinstance(latest, HumanMessage):
+        return {}
+
+    # Remove "AGORA" from message (case-insensitive) and get remaining content
+    remaining_content = re.sub(
+        r'\bagora\b', '', str(latest.content), flags=re.IGNORECASE
+    ).strip()
+
+    result: dict[str, Any] = {
+        "interaction_mode": "feedback",
+    }
+
+    # Process buffer if we have buffered messages
+    if buffer:
+        buffer_lines = [f"{i+1}. {m['content']}" for i, m in enumerate(buffer)]
+        result["buffer_context"] = (
+            f"Context uit luistermodus ({len(buffer)} berichten):\n"
+            + "\n".join(buffer_lines)
+        )
+        result["message_buffer"] = Overwrite([])
+
+    result["final_written"] = (
+        f"[Feedback modus geactiveerd - {len(buffer)} berichten verwerkt]"
+    )
+    result["final_spoken"] = "Feedback modus geactiveerd"
+
+    # If there's content after removing the wake word, update message for processing
+    if remaining_content:
+        result["messages"] = [HumanMessage(content=remaining_content)]
+
+    log.info(
+        f"wake_word_handler: Switching to feedback mode, {len(buffer)} messages buffered"
+    )
+    return result
+
 
 def route_from_start(state: AgentState) -> str:
-    """Route from START to the appropriate agent based on persisted state.
+    """Route from START based on interaction mode and wake word.
 
-    This enables specialist agents to continue handling follow-up messages
-    (e.g., user responses to clarifying questions) instead of always routing
-    through general-agent.
+    Priority:
+    1. If in listen mode AND wake word detected → wake_word_handler
+    2. If in listen mode (no wake word) → buffer_message
+    3. If buffer exists and in feedback mode → process_buffer first
+    4. Otherwise → general-agent for triage (decides handoffs)
 
     Args:
-        state: Current graph state with persisted current_agent
+        state: Current graph state
 
     Returns:
-        Target agent ID to start execution
+        Target node ID to start execution
     """
-    current = state.get("current_agent", "general-agent")
+    messages = state.get("messages", [])
+    mode = state.get("interaction_mode", "feedback")
+    buffer = state.get("message_buffer", [])
 
-    # Validate agent ID - default to general-agent for unknown values
-    if current not in VALID_AGENTS:
-        log.info(f"route_from_start: Unknown agent '{current}', defaulting to general-agent")
-        return "general-agent"
+    # In listen mode, check for wake word to switch back to feedback
+    if mode == "listen":
+        if messages:
+            latest = messages[-1]
+            if isinstance(latest, HumanMessage) and detect_wake_word(str(latest.content)):
+                log.info(
+                    "route_from_start: Wake word 'AGORA' detected, "
+                    "routing to wake_word_handler"
+                )
+                return "wake_word_handler"
 
-    log.info(f"route_from_start: Routing to persisted agent '{current}'")
-    return current
+        # No wake word - buffer the message
+        log.info("route_from_start: Listen mode active, routing to buffer_message")
+        return "buffer_message"
+
+    # Feedback mode with buffer - process buffer first
+    if mode == "feedback" and buffer:
+        log.info(f"route_from_start: Processing {len(buffer)} buffered messages")
+        return "process_buffer"
+
+    # Feedback mode - always route to general-agent for triage
+    # general-agent will hand off to specialists as needed based on message content
+    # This ensures proper routing decisions for each new user message
+    log.info("route_from_start: Feedback mode, routing to general-agent for triage")
+    return "general-agent"
 
 
 def detect_handoff_target(tool_name: str) -> str | None:
@@ -315,6 +469,9 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     and produces final merged output. Also adds written response
     as AIMessage to conversation history.
 
+    Note: The written/spoken lists use operator.add reducer and accumulate
+    across turns. We only use the LAST item (current turn's generation).
+
     Args:
         state: State with accumulated written/spoken lists
 
@@ -324,8 +481,10 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     written_parts = state.get("written", [])
     spoken_parts = state.get("spoken", [])
 
-    written_content = "".join(written_parts)
-    spoken_content = "".join(spoken_parts)
+    # Only use the last item from each list (current turn's generation)
+    # The lists accumulate across turns due to operator.add reducer
+    written_content = written_parts[-1] if written_parts else ""
+    spoken_content = spoken_parts[-1] if spoken_parts else ""
 
     log.info(
         f"merge_parallel_outputs: written={len(written_content)} chars, "
@@ -344,7 +503,12 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     print("=" * 80 + "\n")
 
     return {
-        "messages": [AIMessage(content=written_content)],
+        "messages": [
+            AIMessage(
+                content=written_content,
+                additional_kwargs={"spoken_text": spoken_content} if spoken_content else {},
+            )
+        ],
         "final_written": written_content,
         "final_spoken": spoken_content,
     }
@@ -387,6 +551,11 @@ def build_agent_graph(
 
     graph = StateGraph(AgentState)
 
+    # Listen mode nodes (add BEFORE agent nodes)
+    graph.add_node("buffer_message", buffer_message_node)
+    graph.add_node("process_buffer", process_buffer_node)
+    graph.add_node("wake_word_handler", wake_word_handler_node)
+
     # Agent nodes
     graph.add_node("general-agent", general_agent)
     graph.add_node("regulation-agent", regulation_agent)
@@ -403,12 +572,15 @@ def build_agent_graph(
     graph.add_node("generate_spoken", generate_spoken_node)
     graph.add_node("merge", merge_parallel_outputs)
 
-    # Entry point - dynamic routing based on persisted current_agent
-    # This allows specialist agents to continue handling follow-up messages
+    # Entry point - dynamic routing based on interaction mode and current_agent
+    # Priority: listen mode → wake word → buffer, feedback mode → process buffer → agent
     graph.add_conditional_edges(
         START,
         route_from_start,
         {
+            "buffer_message": "buffer_message",
+            "process_buffer": "process_buffer",
+            "wake_word_handler": "wake_word_handler",
             "general-agent": "general-agent",
             "regulation-agent": "regulation-agent",
             "reporting-agent": "reporting-agent",
@@ -451,6 +623,32 @@ def build_agent_graph(
                 "history-agent": "history-agent",
             },
         )
+
+    # Listen mode edges
+    # Buffer goes directly to END (no response generation)
+    graph.add_edge("buffer_message", END)
+
+    # Process buffer then continues to general-agent
+    graph.add_edge("process_buffer", "general-agent")
+
+    # Wake word handler routes to general-agent if content, otherwise END
+    def route_after_wake(state: AgentState) -> str:
+        messages = state.get("messages", [])
+        if messages:
+            latest = messages[-1]
+            # Check if there's content after stripping AGORA
+            if hasattr(latest, 'content') and str(latest.content).strip():
+                return "general-agent"
+        return END
+
+    graph.add_conditional_edges(
+        "wake_word_handler",
+        route_after_wake,
+        {
+            "general-agent": "general-agent",
+            END: END,
+        },
+    )
 
     # Parallel generation edges
     # fork_generation uses Send API - edges are implicit from Send targets

@@ -849,6 +849,12 @@ components:
           type: string
           description: Name of the tool (for tool_call and tool roles)
           example: "get_company_info"
+        spoken_text:
+          type: string
+          description: |
+            TTS-optimized version of the message content.
+            Only present for assistant messages. May be null for historical
+            messages created before this feature was implemented.
       example:
         role: "assistant"
         content: "Inspectie gestart voor Restaurant Bella Rosa..."

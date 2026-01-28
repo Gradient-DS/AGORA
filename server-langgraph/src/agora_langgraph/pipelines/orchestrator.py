@@ -136,12 +136,13 @@ class Orchestrator:
         thread_id = agent_input.thread_id
         run_id = agent_input.run_id or str(uuid.uuid4())
 
-        # Extract user message from input
-        user_content = ""
-        for msg in agent_input.messages:
-            if msg.get("role") == "user":
-                user_content = msg.get("content", "")
-                break
+        # Extract and join all user messages from input
+        user_contents = [
+            msg.get("content", "")
+            for msg in agent_input.messages
+            if msg.get("role") == "user"
+        ]
+        user_content = "\n".join(user_contents)
 
         # Get user_id from top-level field
         user_id = agent_input.user_id
@@ -178,7 +179,7 @@ class Orchestrator:
             session_id=thread_id,
             role="user",
             content=user_content,
-            metadata=agent_input.context or {},
+            metadata={},
         )
 
         try:
@@ -193,11 +194,10 @@ class Orchestrator:
             message_id = str(uuid.uuid4())
             config = {"configurable": {"thread_id": thread_id}}
 
-            # Include user_id and user context in metadata so agents can access it
-            metadata = agent_input.context.copy() if agent_input.context else {}
-            metadata["user_id"] = user_id
+            # Include user_id in metadata so agents can access it
+            metadata: dict[str, Any] = {"user_id": user_id}
 
-            # Fetch user email and preferences for reporting agent context
+            # Fetch user email and preferences (NOT interaction_mode - that's session-level)
             if self.user_manager:
                 try:
                     user = await self.user_manager.get_user(user_id)
@@ -210,12 +210,32 @@ class Orchestrator:
                 except Exception as e:
                     log.warning(f"Failed to fetch user info for metadata: {e}")
 
-            # Check if thread is in interrupted state (e.g., waiting for user input
-            # during a clarification flow in reporting-agent)
+            # Check if thread exists and get its persisted state
             is_interrupted = False
+            is_existing_thread = False
+            interaction_mode = "feedback"  # Default for new sessions
 
             try:
                 existing_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+                # Check if this is truly an existing thread with messages
+                # (not just an empty state object)
+                if (
+                    existing_state
+                    and existing_state.values
+                    and existing_state.values.get("messages")
+                ):
+                    is_existing_thread = True
+                    # interaction_mode is session-level, read from checkpointed state only
+                    interaction_mode = existing_state.values.get(
+                        "interaction_mode", "feedback"
+                    )
+                    log.info(
+                        f"Existing thread {thread_id}, "
+                        f"interaction_mode={interaction_mode}"
+                    )
+                else:
+                    log.info(f"New thread {thread_id}, will start in feedback mode")
+
                 if existing_state and existing_state.next:
                     # Graph is interrupted - there are pending tasks waiting for resume
                     is_interrupted = True
@@ -230,17 +250,26 @@ class Orchestrator:
             if is_interrupted:
                 # Resume interrupted graph with user's response
                 graph_input: dict[str, Any] | Command = Command(resume=user_content)
-                log.info(f"Resuming interrupted graph with: {user_content[:100]}...")
+                log.info(f"[DEBUG] RESUMING interrupted graph with: {user_content[:100]}...")
+            elif is_existing_thread:
+                # Existing thread - only send new message
+                # interaction_mode is persisted in checkpointed state
+                graph_input = {
+                    "messages": [HumanMessage(content=user_content)],
+                    "metadata": metadata,
+                }
             else:
-                # Normal invocation - ALWAYS start at general-agent for routing
-                # The general-agent will transfer to specialists as needed
-                # Only interrupted flows should resume at the specialist agent
+                # NEW session - always start in feedback mode
                 graph_input = {
                     "messages": [HumanMessage(content=user_content)],
                     "session_id": thread_id,
                     "current_agent": "general-agent",
                     "pending_approval": None,
                     "metadata": metadata,
+                    # Listen mode fields - new sessions always start in feedback mode
+                    "interaction_mode": "feedback",
+                    "message_buffer": [],
+                    "buffer_context": "",
                 }
 
             # Send initial state snapshot with correct current_agent
@@ -266,6 +295,7 @@ class Orchestrator:
                     message_id,
                     user_id,
                     protocol_handler,
+                    interaction_mode,
                 )
             else:
                 response_content, active_agent_id = await self._run_blocking(
@@ -366,6 +396,7 @@ class Orchestrator:
         message_id: str,
         user_id: str,
         protocol_handler: Any,
+        interaction_mode: str = "feedback",
     ) -> tuple[str, str]:
         """Stream graph response using astream_events with AG-UI Protocol.
 
@@ -379,7 +410,9 @@ class Orchestrator:
         """
         full_response: list[str] = []
         # Handle both normal input and Command resume
-        if isinstance(graph_input, Command):
+        is_resuming_from_interrupt = isinstance(graph_input, Command)
+        resumed_tool_handled = False  # Track if we've skipped the resumed tool's start event
+        if is_resuming_from_interrupt:
             current_agent_id = "reporting-agent"  # Resuming interrupted reporting flow
         else:
             current_agent_id = graph_input.get("current_agent", "general-agent")
@@ -437,7 +470,7 @@ class Orchestrator:
                         full_response.append(content)
 
                         if protocol_handler.is_connected:
-                            # Start both channels on first written content
+                            # Start written channel on first content
                             if not message_started:
                                 log.info(
                                     f"Starting text streams (spoken_mode={spoken_mode})"
@@ -445,11 +478,13 @@ class Orchestrator:
                                 await protocol_handler.send_text_message_start(
                                     message_id, "assistant"
                                 )
-                                await protocol_handler.send_spoken_text_start(
-                                    message_id, "assistant"
-                                )
                                 message_started = True
-                                spoken_message_started = True
+                                # Only start spoken channel if not already started by generate_spoken
+                                if not spoken_message_started:
+                                    await protocol_handler.send_spoken_text_start(
+                                        message_id, "assistant"
+                                    )
+                                    spoken_message_started = True
 
                             # Send to written channel
                             await protocol_handler.send_text_message_content(
@@ -486,8 +521,18 @@ class Orchestrator:
                     _sanitize_params(raw_input) if isinstance(raw_input, dict) else {}
                 )
 
+                # When resuming from interrupt, skip TOOL_CALL_START for the resumed tool
+                # (we already sent events for it during interrupt handling in the previous stream)
+                if is_resuming_from_interrupt and not resumed_tool_handled and tool_name == "request_clarification":
+                    log.info(f"[DEBUG] Skipping TOOL_CALL_START for resumed tool: {tool_name} ({tool_run_id})")
+                    resumed_tool_handled = True
+                    # Still track it so we can skip TOOL_CALL_END/RESULT too
+                    active_tool_calls[tool_run_id] = f"_resumed_{tool_name}"
+                    continue
+
                 active_tool_calls[tool_run_id] = tool_name
-                log.info(f"Tool started: {tool_name} (run_id: {tool_run_id})")
+                log.info(f"[DEBUG] on_tool_start: {tool_name} (run_id: {tool_run_id})")
+                log.info(f"[DEBUG] active_tool_calls after start: {list(active_tool_calls.keys())}")
 
                 # Finish current step before starting tool execution
                 if current_step and current_step != "executing_tools":
@@ -502,6 +547,7 @@ class Orchestrator:
                 )
 
                 if protocol_handler.is_connected:
+                    log.info(f"[DEBUG] Sending TOOL_CALL_START: {tool_name} ({tool_run_id})")
                     await protocol_handler.send_tool_call_start(
                         tool_call_id=tool_run_id,
                         tool_call_name=tool_name,
@@ -516,31 +562,41 @@ class Orchestrator:
 
             elif kind == "on_tool_end":
                 tool_run_id = event.get("run_id", "")
+                log.info(f"[DEBUG] on_tool_end received: run_id={tool_run_id}")
+                log.info(f"[DEBUG] active_tool_calls before pop: {list(active_tool_calls.keys())}")
                 tool_name = active_tool_calls.pop(tool_run_id, None)
                 output = event.get("data", {}).get("output", "")
+                log.info(f"[DEBUG] on_tool_end: tool_name={tool_name}, output_len={len(str(output)) if output else 0}")
 
                 # Skip if tool wasn't started in this stream (e.g., resumed from interrupt)
                 # Events were already sent when the interrupt was handled
                 if tool_name is None:
                     log.info(
-                        f"Skipping on_tool_end for tool not in this stream "
+                        f"[DEBUG] Skipping on_tool_end for tool not in this stream "
                         f"(run_id: {tool_run_id}) - likely resumed from interrupt"
                     )
                     continue
 
-                log.info(f"Tool completed: {tool_name} (run_id: {tool_run_id})")
+                # Skip sending events for resumed tools (we already sent them during interrupt handling)
+                if tool_name.startswith("_resumed_"):
+                    log.info(f"[DEBUG] Skipping TOOL_CALL_END/RESULT for resumed tool: {tool_name} ({tool_run_id})")
+                    continue
+
+                log.info(f"[DEBUG] Tool completed: {tool_name} (run_id: {tool_run_id})")
 
                 if protocol_handler.is_connected:
                     # Send TOOL_CALL_END to signal end of streaming
+                    log.info(f"[DEBUG] Sending TOOL_CALL_END for {tool_run_id}")
                     await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
                     # Send TOOL_CALL_RESULT with the actual result
+                    # Always send TOOL_CALL_RESULT so frontend marks tool as completed
                     result_str = str(output)[:500] if output else ""
-                    if result_str:
-                        await protocol_handler.send_tool_call_result(
-                            message_id=f"tool-result-{tool_run_id}",
-                            tool_call_id=tool_run_id,
-                            content=result_str,
-                        )
+                    log.info(f"[DEBUG] Sending TOOL_CALL_RESULT for {tool_run_id}, content_len={len(result_str)}")
+                    await protocol_handler.send_tool_call_result(
+                        message_id=f"tool-result-{tool_run_id}",
+                        tool_call_id=tool_run_id,
+                        content=result_str,
+                    )
 
                     # Finish executing_tools step and return to thinking
                     await protocol_handler.send_step_finished("executing_tools")
@@ -549,8 +605,21 @@ class Orchestrator:
 
             elif kind == "on_tool_error":
                 tool_run_id = event.get("run_id", "")
-                tool_name = active_tool_calls.pop(tool_run_id, None)
                 error = event.get("data", {}).get("error", "Unknown error")
+                error_str = str(error)
+
+                # Check if this is an interrupt (not a real error)
+                # LangGraph reports interrupt() as a tool error
+                is_interrupt = "Interrupt(" in error_str
+
+                if is_interrupt:
+                    # Don't pop from active_tool_calls - let interrupt handling close it
+                    tool_name = active_tool_calls.get(tool_run_id)
+                    log.info(f"[DEBUG] Tool interrupted (not error): {tool_name} (run_id: {tool_run_id})")
+                    # Don't send any events here - interrupt handling will do it
+                    continue
+
+                tool_name = active_tool_calls.pop(tool_run_id, None)
 
                 # Skip if tool wasn't started in this stream
                 if tool_name is None:
@@ -563,8 +632,13 @@ class Orchestrator:
                 log.error(f"Tool error: {tool_name} - {error}")
 
                 if protocol_handler.is_connected:
-                    # Send TOOL_CALL_END (no result event for errors)
+                    # Send TOOL_CALL_END and TOOL_CALL_RESULT for errors
                     await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
+                    await protocol_handler.send_tool_call_result(
+                        message_id=f"tool-result-{tool_run_id}",
+                        tool_call_id=tool_run_id,
+                        content=f"Error: {error_str[:400]}",
+                    )
 
                     # Finish executing_tools step and return to thinking
                     await protocol_handler.send_step_finished("executing_tools")
@@ -601,12 +675,36 @@ class Orchestrator:
 
         # After streaming completes, check if graph was interrupted
         # Get the final state to check for interrupts
+        log.info(f"[DEBUG] Stream completed, checking for interrupt. active_tool_calls: {list(active_tool_calls.keys())}")
         try:
             final_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+            log.info(f"[DEBUG] final_state.next: {final_state.next if final_state else 'None'}")
+
+            # Check if update_user_settings was called with interaction_mode in THIS turn
+            # Only check the most recent AIMessage to avoid re-applying old tool calls
+            if final_state and final_state.values:
+                messages = final_state.values.get("messages", [])
+                # Find the most recent AIMessage with tool_calls (from this turn)
+                for msg in reversed(messages):
+                    if hasattr(msg, "tool_calls") and msg.tool_calls:
+                        for tool_call in msg.tool_calls:
+                            if tool_call.get("name") == "update_user_settings":
+                                args = tool_call.get("args", {})
+                                new_mode = args.get("interaction_mode")
+                                if new_mode and new_mode in ("feedback", "listen"):
+                                    log.info(
+                                        f"Updating session interaction_mode to '{new_mode}' "
+                                        f"via update_user_settings tool"
+                                    )
+                                    await self.graph.aupdate_state(
+                                        config,
+                                        {"interaction_mode": new_mode},
+                                    )
+                        break  # Only check the most recent AIMessage with tool calls
             if final_state and final_state.next:
                 # Graph was interrupted - there are pending tasks
                 log.info(
-                    f"Graph interrupted at node(s): {final_state.next}, "
+                    f"[DEBUG] Graph interrupted at node(s): {final_state.next}, "
                     f"thread: {thread_id}"
                 )
 
@@ -616,24 +714,29 @@ class Orchestrator:
                     for task in final_state.tasks:
                         if hasattr(task, "interrupts") and task.interrupts:
                             interrupt_value = task.interrupts[0].value
-                            log.info(f"Interrupt payload: {interrupt_value}")
+                            log.info(f"[DEBUG] Interrupt payload: {interrupt_value}")
                             break
 
                 # Close any active tool calls that were interrupted
                 # (they never got TOOL_CALL_END because interrupt() paused execution)
+                log.info(f"[DEBUG] About to close interrupted tool calls. active_tool_calls: {list(active_tool_calls.items())}, is_connected: {protocol_handler.is_connected}")
                 if active_tool_calls and protocol_handler.is_connected:
                     for tool_run_id, tool_name in list(active_tool_calls.items()):
-                        log.info(f"Closing interrupted tool call: {tool_name}")
+                        log.info(f"[DEBUG] Closing interrupted tool call: {tool_name} ({tool_run_id})")
                         await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
                         # Send TOOL_CALL_RESULT so frontend marks tool as completed
                         result_content = ""
                         if interrupt_value and isinstance(interrupt_value, dict):
                             result_content = interrupt_value.get("display_text", "")
+                        log.info(f"[DEBUG] Sending TOOL_CALL_RESULT for interrupted tool {tool_run_id}")
                         await protocol_handler.send_tool_call_result(
+                            message_id=f"tool-result-{tool_run_id}",
                             tool_call_id=tool_run_id,
                             content=result_content or "Clarification requested",
                         )
                     active_tool_calls.clear()
+                else:
+                    log.info(f"[DEBUG] NOT closing tool calls: active_tool_calls={bool(active_tool_calls)}, is_connected={protocol_handler.is_connected}")
 
                 # Send clarification questions to user as text message
                 if final_state.tasks:
@@ -676,7 +779,44 @@ class Orchestrator:
                                         f"{len(clarification_message)} chars"
                                     )
         except Exception as e:
-            log.warning(f"Failed to check interrupt state: {e}")
+            log.error(f"[DEBUG] Failed to check interrupt state: {e}", exc_info=True)
+
+        # Handle listen mode responses (final_written set but no streaming happened)
+        try:
+            if final_state and final_state.values:
+                final_written = final_state.values.get("final_written", "")
+                final_spoken = final_state.values.get("final_spoken", "")
+                final_interaction_mode = final_state.values.get("interaction_mode")
+
+                # If we have final_written but didn't stream (listen mode), send it now
+                if final_written and not message_started:
+                    await protocol_handler.send_text_message_start(message_id, "assistant")
+                    await protocol_handler.send_text_message_content(message_id, final_written)
+                    message_started = True
+                    full_response.append(final_written)
+
+                    # Also send spoken if present
+                    if final_spoken:
+                        await protocol_handler.send_spoken_text_start(
+                            message_id, "assistant"
+                        )
+                        await protocol_handler.send_spoken_text_content(
+                            message_id, final_spoken
+                        )
+                        spoken_message_started = True
+
+                    log.info(
+                        f"Sent listen mode response: written={len(final_written)} chars"
+                    )
+
+                # Log interaction_mode change (per-session, persisted in graph state)
+                if final_interaction_mode and final_interaction_mode != interaction_mode:
+                    log.info(
+                        f"interaction_mode changed to '{final_interaction_mode}' "
+                        f"(persisted in session state)"
+                    )
+        except Exception as e:
+            log.warning(f"Failed to handle listen mode response: {e}")
 
         written_chars = len("".join(full_response))
         spoken_source = (
@@ -732,10 +872,12 @@ class Orchestrator:
                             }
                         )
                     elif msg.type == "ai":
-                        # Extract agent_id from additional_kwargs if present
+                        # Extract agent_id and spoken_text from additional_kwargs if present
                         agent_id = None
+                        spoken_text = None
                         if hasattr(msg, "additional_kwargs"):
                             agent_id = msg.additional_kwargs.get("agent_id")
+                            spoken_text = msg.additional_kwargs.get("spoken_text")
 
                         has_tool_calls = bool(getattr(msg, "tool_calls", None))
 
@@ -748,6 +890,7 @@ class Orchestrator:
                                         "role": "assistant",
                                         "content": str(msg.content),
                                         "agent_id": agent_id or "",
+                                        "spoken_text": spoken_text,
                                     }
                                 )
                             if include_tool_calls:
@@ -771,6 +914,7 @@ class Orchestrator:
                                         "role": "assistant",
                                         "content": str(msg.content),
                                         "agent_id": agent_id or "",
+                                        "spoken_text": spoken_text,
                                     }
                                 else:
                                     history.append(
@@ -778,6 +922,7 @@ class Orchestrator:
                                             "role": "assistant",
                                             "content": str(msg.content),
                                             "agent_id": agent_id or "",
+                                            "spoken_text": spoken_text,
                                         }
                                     )
                             prev_was_ai_without_tools = True

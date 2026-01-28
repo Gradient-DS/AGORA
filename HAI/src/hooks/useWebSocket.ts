@@ -14,6 +14,7 @@ import {
   useUserStore,
   useHistoryStore,
   useAuthStore,
+  useListenModeStore,
 } from '@/stores';
 import {
   EventType,
@@ -64,6 +65,9 @@ export function useWebSocket() {
   const addMessage = useMessageStore((state) => state.addMessage);
   const updateMessageContent = useMessageStore((state) => state.updateMessageContent);
   const finalizeMessage = useMessageStore((state) => state.finalizeMessage);
+  const startSpokenContent = useMessageStore((state) => state.startSpokenContent);
+  const updateSpokenContent = useMessageStore((state) => state.updateSpokenContent);
+  const finalizeSpokenMessage = useMessageStore((state) => state.finalizeSpokenMessage);
   const setProcessingStatus = useMessageStore((state) => state.setProcessingStatus);
   const session = useSessionStore((state) => state.session);
   const updateActivity = useSessionStore((state) => state.updateActivity);
@@ -152,11 +156,23 @@ export function useWebSocket() {
           }
           break;
 
-        case EventType.TEXT_MESSAGE_CONTENT:
+        case EventType.TEXT_MESSAGE_CONTENT: {
+          const delta = event.delta ?? '';
           if (currentMessageId.current === event.messageId) {
-            updateMessageContent(event.messageId, event.delta, true);
+            updateMessageContent(event.messageId, delta, true);
+
+            // Update listen mode store based on message content
+            if (delta.startsWith('[Luistermodus actief')) {
+              const match = delta.match(/bericht (\d+)/);
+              if (match?.[1]) {
+                useListenModeStore.getState().setBufferedCount(parseInt(match[1], 10));
+              }
+            } else if (delta.includes('Feedback modus geactiveerd')) {
+              useListenModeStore.getState().resetBufferedCount();
+            }
           }
           break;
+        }
 
         case EventType.TEXT_MESSAGE_END:
           if (currentMessageId.current === event.messageId) {
@@ -275,6 +291,10 @@ export function useWebSocket() {
           type: 'spoken_text_start',
           messageId: value.messageId,
         });
+        // Also store for comparison display
+        if (value.messageId) {
+          startSpokenContent(value.messageId);
+        }
       } else if (event.name === 'agora:spoken_text_content') {
         // TTS: Spoken text content chunk
         const value = event.value as { messageId?: string; delta?: string };
@@ -283,6 +303,10 @@ export function useWebSocket() {
           messageId: value.messageId,
           content: value.delta,
         });
+        // Also store for comparison display
+        if (value.messageId && value.delta) {
+          updateSpokenContent(value.messageId, value.delta, true);
+        }
       } else if (event.name === 'agora:spoken_text_end') {
         // TTS: End of spoken text stream
         const value = event.value as { messageId?: string };
@@ -290,6 +314,10 @@ export function useWebSocket() {
           type: 'spoken_text_end',
           messageId: value.messageId,
         });
+        // Also finalize for comparison display
+        if (value.messageId) {
+          finalizeSpokenMessage(value.messageId);
+        }
       }
     }
 
@@ -325,6 +353,9 @@ export function useWebSocket() {
     addMessage,
     updateMessageContent,
     finalizeMessage,
+    startSpokenContent,
+    updateSpokenContent,
+    finalizeSpokenMessage,
     setProcessingStatus,
     addApproval,
     addToolCall,

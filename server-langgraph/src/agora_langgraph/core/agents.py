@@ -148,6 +148,12 @@ async def _run_agent_node(
     metadata = state.get("metadata", {})
     user_id = metadata.get("user_id")
 
+    # Prepend buffer context if present (from listen mode)
+    buffer_context = state.get("buffer_context", "")
+    if buffer_context:
+        instructions = f"{buffer_context}\n\n{instructions}"
+        log.info(f"Injected buffer context ({len(buffer_context)} chars) into {agent_id}")
+
     # Inject user_id into system message for general-agent so it can use settings tool
     if agent_id == "general-agent" and user_id:
         instructions = (
