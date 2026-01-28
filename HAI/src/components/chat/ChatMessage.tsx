@@ -25,6 +25,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className="flex justify-center mb-2">
         <ToolCallReference
           toolName={message.toolName || message.content}
+          displayName={message.toolDisplayName}
           status={message.toolStatus || 'started'}
           toolCallId={message.id}
         />

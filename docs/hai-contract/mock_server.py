@@ -101,6 +101,16 @@ DEMO_REGULATIONS = [
     },
 ]
 
+# Tool display names for UI (Dutch)
+TOOL_DISPLAY_NAMES: dict[str, str] = {
+    "get_company_info": "Ophalen bedrijfsgegevens",
+    "get_inspection_history": "Ophalen inspectiehistorie",
+    "search_regulations": "Zoeken in regelgeving",
+    "check_repeat_violation": "Controleren herhaalde overtredingen",
+    "generate_inspection_report": "Genereren inspectierapport",
+    "transfer_to_agent": "Overdracht naar specialist",
+}
+
 
 # ---------------------------------------------------------------------------
 # MOCK SESSION DATA FOR TESTING
@@ -1304,8 +1314,13 @@ async def send_tool_call(
     args: dict,
     result: str,
     tool_description: str | None = None,
+    tool_display_name: str | None = None,
 ) -> None:
     """Send complete tool call sequence."""
+    # Auto-lookup display name if not provided
+    if tool_display_name is None:
+        tool_display_name = TOOL_DISPLAY_NAMES.get(tool_name)
+
     await send_event(
         websocket,
         {
@@ -1313,6 +1328,7 @@ async def send_tool_call(
             "toolCallId": tool_call_id,
             "toolCallName": tool_name,
             "toolDescription": tool_description,
+            "toolDisplayName": tool_display_name,
             "parentMessageId": None,
             "timestamp": now_timestamp(),
         },

@@ -10,6 +10,7 @@ export interface ChatMessage {
   metadata?: Record<string, unknown>;
   isStreaming?: boolean;
   toolName?: string;
+  toolDisplayName?: string;
   toolStatus?: 'started' | 'completed' | 'failed';
   /** Spoken text variant (for TTS consistency comparison) */
   spokenContent?: string;
@@ -21,6 +22,7 @@ export interface ChatMessage {
 export interface ToolCallInfo {
   id: string;
   toolName: string;
+  displayName?: string;
   parameters?: Record<string, unknown>;
   result?: string;
   error?: string;

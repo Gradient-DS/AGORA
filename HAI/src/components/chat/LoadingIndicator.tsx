@@ -4,7 +4,7 @@
 
 import { useMemo } from 'react';
 import { useAgentStore, useToolCallStore } from '@/stores';
-import { formatToolName } from '@/lib/utils';
+import { formatToolNameFallback } from '@/lib/utils';
 
 type ProcessingStatus = 'thinking' | 'routing' | 'executing_tools' | null;
 
@@ -22,7 +22,8 @@ export function LoadingIndicator({ status }: LoadingIndicatorProps) {
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
 
     if (activeToolCall) {
-      const toolDisplayName = formatToolName(activeToolCall.toolName);
+      const toolDisplayName =
+        activeToolCall.displayName ?? formatToolNameFallback(activeToolCall.toolName);
       return { showIndicator: true, displayText: toolDisplayName };
     }
 

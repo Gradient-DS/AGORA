@@ -1,17 +1,25 @@
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Wrench, CheckCircle2, XCircle, Loader2, ExternalLink } from 'lucide-react';
-import { cn, formatToolName } from '@/lib/utils';
+import { cn, formatToolNameFallback } from '@/lib/utils';
 
 interface ToolCallCardProps {
   toolName: string;
+  displayName?: string;
   status: 'started' | 'completed' | 'failed';
   parameters?: Record<string, unknown>;
   result?: string;
   toolCallId?: string;
 }
 
-export function ToolCallCard({ toolName, status, parameters, result, toolCallId }: ToolCallCardProps) {
+export function ToolCallCard({
+  toolName,
+  displayName,
+  status,
+  parameters,
+  result,
+  toolCallId,
+}: ToolCallCardProps) {
   const scrollToChatMessage = () => {
     if (!toolCallId) return;
     const element = document.getElementById(`chat-tool-${toolCallId}`);
@@ -76,7 +84,9 @@ export function ToolCallCard({ toolName, status, parameters, result, toolCallId 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Wrench className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-            <span className="text-sm font-medium">{formatToolName(toolName)}</span>
+            <span className="text-sm font-medium">
+              {displayName ?? formatToolNameFallback(toolName)}
+            </span>
             <Badge variant="secondary" className={cn('text-xs', config.labelColor)}>
               {config.label}
             </Badge>

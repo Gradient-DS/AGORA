@@ -286,15 +286,21 @@ class AGUIProtocolHandler:
         self,
         tool_call_id: str,
         tool_call_name: str,
+        tool_display_name: str | None = None,
         parent_message_id: str | None = None,
     ) -> None:
         """Emit TOOL_CALL_START event."""
-        event = ToolCallStartEvent(
-            tool_call_id=tool_call_id,
-            tool_call_name=tool_call_name,
-            parent_message_id=parent_message_id,
-            timestamp=_now_timestamp(),
-        )
+        # Build kwargs with optional toolDisplayName
+        kwargs: dict[str, Any] = {
+            "tool_call_id": tool_call_id,
+            "tool_call_name": tool_call_name,
+            "parent_message_id": parent_message_id,
+            "timestamp": _now_timestamp(),
+        }
+        if tool_display_name:
+            kwargs["toolDisplayName"] = tool_display_name
+        event = ToolCallStartEvent(**kwargs)
+        log.info(f"[DEBUG] TOOL_CALL_START JSON: {event.model_dump_json(by_alias=True, exclude_none=True)}")
         await self._send_event(event)
 
     async def send_tool_call_args(self, tool_call_id: str, args_json: str) -> None:
