@@ -13,39 +13,6 @@ interface SpokenBuffer {
   isStreaming: boolean;
 }
 
-/** localStorage key for persisted spoken content */
-const SPOKEN_CONTENT_STORAGE_KEY = 'agora-spoken-content';
-
-/** Load persisted spoken content from localStorage */
-function loadPersistedSpokenContent(): Record<string, string> {
-  try {
-    const stored = localStorage.getItem(SPOKEN_CONTENT_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
-}
-
-/** Save spoken content to localStorage */
-function persistSpokenContent(messageId: string, content: string): void {
-  try {
-    const existing = loadPersistedSpokenContent();
-    existing[messageId] = content;
-    localStorage.setItem(SPOKEN_CONTENT_STORAGE_KEY, JSON.stringify(existing));
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-/** Clear persisted spoken content from localStorage */
-function clearPersistedSpokenContent(): void {
-  try {
-    localStorage.removeItem(SPOKEN_CONTENT_STORAGE_KEY);
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 interface MessageStore {
   messages: ChatMessage[];
   processingStatus: ProcessingStatus;
@@ -191,28 +158,19 @@ export const useMessageStore = create<MessageStore>((set) => ({
 
   finalizeSpokenMessage: (messageId) => {
     set((state) => {
-      // Check if message exists
       const existingMsg = state.messages.find((msg) => msg.id === messageId);
       if (existingMsg) {
-        // Persist spoken content to localStorage when finalized
-        if (existingMsg.spokenContent) {
-          persistSpokenContent(messageId, existingMsg.spokenContent);
-        }
         return {
           messages: state.messages.map((msg) =>
             msg.id === messageId ? { ...msg, isSpokenStreaming: false } : msg
           ),
         };
       }
-      // Update buffer and persist
+      // Update buffer
       const newBuffers = new Map(state.spokenBuffers);
       const existing = newBuffers.get(messageId);
       if (existing) {
         newBuffers.set(messageId, { ...existing, isStreaming: false });
-        // Persist buffered content
-        if (existing.content) {
-          persistSpokenContent(messageId, existing.content);
-        }
       }
       return { spokenBuffers: newBuffers };
     });
@@ -228,20 +186,10 @@ export const useMessageStore = create<MessageStore>((set) => ({
   },
 
   clearMessages: () => {
-    clearPersistedSpokenContent();
     set({ messages: [], processingStatus: null, isTyping: false, spokenBuffers: new Map() });
   },
 
   replaceMessages: (messages: ChatMessage[]) => {
-    // Merge persisted spoken content from localStorage
-    const persistedSpoken = loadPersistedSpokenContent();
-    const messagesWithSpoken = messages.map((msg) => {
-      const spokenContent = persistedSpoken[msg.id];
-      if (spokenContent) {
-        return { ...msg, spokenContent };
-      }
-      return msg;
-    });
-    set({ messages: messagesWithSpoken, processingStatus: null, isTyping: false });
+    set({ messages, processingStatus: null, isTyping: false, spokenBuffers: new Map() });
   },
 }));

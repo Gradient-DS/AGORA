@@ -872,10 +872,12 @@ class Orchestrator:
                             }
                         )
                     elif msg.type == "ai":
-                        # Extract agent_id from additional_kwargs if present
+                        # Extract agent_id and spoken_text from additional_kwargs if present
                         agent_id = None
+                        spoken_text = None
                         if hasattr(msg, "additional_kwargs"):
                             agent_id = msg.additional_kwargs.get("agent_id")
+                            spoken_text = msg.additional_kwargs.get("spoken_text")
 
                         has_tool_calls = bool(getattr(msg, "tool_calls", None))
 
@@ -888,6 +890,7 @@ class Orchestrator:
                                         "role": "assistant",
                                         "content": str(msg.content),
                                         "agent_id": agent_id or "",
+                                        "spoken_text": spoken_text,
                                     }
                                 )
                             if include_tool_calls:
@@ -911,6 +914,7 @@ class Orchestrator:
                                         "role": "assistant",
                                         "content": str(msg.content),
                                         "agent_id": agent_id or "",
+                                        "spoken_text": spoken_text,
                                     }
                                 else:
                                     history.append(
@@ -918,6 +922,7 @@ class Orchestrator:
                                             "role": "assistant",
                                             "content": str(msg.content),
                                             "agent_id": agent_id or "",
+                                            "spoken_text": spoken_text,
                                         }
                                     )
                             prev_was_ai_without_tools = True

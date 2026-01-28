@@ -30,6 +30,7 @@ interface HistoryMessage {
   tool_name?: string;
   tool_call_id?: string;
   agent_id?: string;
+  spoken_text?: string;
 }
 
 interface HistoryResponse {
@@ -130,6 +131,7 @@ export async function fetchSessionHistory(
         role: msg.role,
         content: msg.content,
         agentId: msg.agent_id,
+        spokenContent: msg.spoken_text,
         timestamp: new Date(),
         isStreaming: false,
       });

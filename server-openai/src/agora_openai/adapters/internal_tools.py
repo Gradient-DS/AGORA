@@ -87,7 +87,8 @@ async def _update_user_settings_invoke(ctx: ToolContext[Any], args: str) -> str:
             changes.append(f"spraakweergave naar '{mode_nl}'")
         if interaction_mode:
             mode_nl = "feedback" if interaction_mode == "feedback" else "luisteren"
-            changes.append(f"interactiemodus naar '{mode_nl}'")
+            changes.append(f"interactiemodus naar '{mode_nl}'"
+                           + (" (zeg 'Agora' om me weer aan te spreken)" if interaction_mode == "listen" else ""))
 
         return f"Instellingen bijgewerkt: {', '.join(changes)}."
 

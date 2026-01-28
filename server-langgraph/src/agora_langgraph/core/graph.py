@@ -503,7 +503,12 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     print("=" * 80 + "\n")
 
     return {
-        "messages": [AIMessage(content=written_content)],
+        "messages": [
+            AIMessage(
+                content=written_content,
+                additional_kwargs={"spoken_text": spoken_content} if spoken_content else {},
+            )
+        ],
         "final_written": written_content,
         "final_spoken": spoken_content,
     }

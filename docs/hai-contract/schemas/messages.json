@@ -83,6 +83,10 @@
         "tool_name": {
           "type": ["string", "null"],
           "description": "Name of the tool (for tool_call and tool roles)"
+        },
+        "spoken_text": {
+          "type": ["string", "null"],
+          "description": "TTS-optimized version of the content (assistant messages only)"
         }
       }
     },
