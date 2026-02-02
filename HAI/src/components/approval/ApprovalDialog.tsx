@@ -88,7 +88,7 @@ export function ApprovalDialog({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <CardTitle id="approval-title" className="flex items-center gap-2">
-                {approval.toolName}
+                {approval.toolDisplayName ?? approval.toolName}
                 <Badge
                   variant={
                     approval.riskLevel === 'critical' || approval.riskLevel === 'high'

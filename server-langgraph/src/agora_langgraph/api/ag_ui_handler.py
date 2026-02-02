@@ -356,10 +356,12 @@ class AGUIProtocolHandler:
         reasoning: str,
         risk_level: str,
         approval_id: str,
+        tool_display_name: str | None = None,
     ) -> None:
         """Emit agora:tool_approval_request custom event."""
         payload = ToolApprovalRequestPayload(
             tool_name=tool_name,
+            tool_display_name=tool_display_name,
             tool_description=tool_description,
             parameters=parameters,
             reasoning=reasoning,
