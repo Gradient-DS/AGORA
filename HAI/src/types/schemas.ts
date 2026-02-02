@@ -158,7 +158,6 @@ export const RawEventSchema = z.object({
 // AGORA-specific custom event payloads
 export const ToolApprovalRequestPayloadSchema = z.object({
   toolName: z.string(),
-  toolDisplayName: z.string().nullable().optional(),
   toolDescription: z.string(),
   parameters: z.record(z.unknown()),
   reasoning: z.string(),

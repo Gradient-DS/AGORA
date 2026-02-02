@@ -8,7 +8,6 @@ import type { RiskLevel } from '@/types/schemas';
 export interface ApprovalRequest {
   approvalId: string;
   toolName: string;
-  toolDisplayName?: string;
   toolDescription: string;
   parameters: Record<string, unknown>;
   reasoning: string;

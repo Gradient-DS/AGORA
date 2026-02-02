@@ -110,9 +110,6 @@ class ToolApprovalRequestPayload(AgoraBaseModel):
     """Payload for agora:tool_approval_request custom event."""
 
     tool_name: str = Field(description="Name of the tool requiring approval")
-    tool_display_name: str | None = Field(
-        default=None, description="Human-readable display name for UI"
-    )
     tool_description: str = Field(description="Description of what the tool does")
     parameters: dict[str, Any] = Field(description="Tool parameters")
     reasoning: str = Field(description="Why the agent wants to use this tool")

@@ -349,7 +349,6 @@ components:
             name: "agora:tool_approval_request"
             value:
               toolName: "generate_final_report"
-              toolDisplayName: "Genereren eindrapport"
               toolDescription: "Generates an official inspection report PDF"
               parameters:
                 inspection_id: "INS-2024-001"

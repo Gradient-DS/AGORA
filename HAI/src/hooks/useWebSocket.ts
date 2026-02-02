@@ -279,7 +279,6 @@ export function useWebSocket() {
           addApproval({
             approvalId: payload.approvalId,
             toolName: payload.toolName,
-            toolDisplayName: payload.toolDisplayName ?? formatToolNameFallback(payload.toolName),
             toolDescription: payload.toolDescription,
             parameters: payload.parameters as Record<string, unknown>,
             reasoning: payload.reasoning,
