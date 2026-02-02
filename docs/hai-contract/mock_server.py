@@ -1156,6 +1156,7 @@ async def handle_report_request(
             "name": "agora:tool_approval_request",
             "value": {
                 "toolName": "generate_inspection_report",
+                "toolDisplayName": TOOL_DISPLAY_NAMES.get("generate_inspection_report"),
                 "toolDescription": "Genereert een officieel inspectierapport (PDF) dat permanent wordt opgeslagen en naar het bedrijf wordt verzonden",
                 "parameters": {
                     "company_name": DEMO_COMPANY["name"],

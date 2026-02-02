@@ -983,6 +983,7 @@ Sent by server to request approval for a tool execution.
   "name": "agora:tool_approval_request",
   "value": {
     "toolName": "generate_final_report",
+    "toolDisplayName": "Genereren eindrapport",
     "toolDescription": "Generates an official inspection report PDF",
     "parameters": { "inspectionId": "INS-2024-001" },
     "reasoning": "User requested to finalize the inspection report",
@@ -992,6 +993,8 @@ Sent by server to request approval for a tool execution.
   "timestamp": 1705318202000
 }
 ```
+
+> **Note:** `toolDisplayName` is optional. If not provided, the frontend falls back to `toolName`.
 
 ### agora:tool_approval_response
 

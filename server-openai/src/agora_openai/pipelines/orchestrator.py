@@ -77,6 +77,7 @@ class Orchestrator:
                 reasoning=reason or "Operation requires human approval",
                 risk_level=risk_level,
                 approval_id=approval_id,
+                tool_display_name=get_tool_display_name(tool_name),
             )
 
             try:

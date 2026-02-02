@@ -350,6 +350,10 @@
       "required": ["toolName", "toolDescription", "parameters", "reasoning", "riskLevel", "approvalId"],
       "properties": {
         "toolName": { "type": "string" },
+        "toolDisplayName": {
+          "type": ["string", "null"],
+          "description": "Human-readable display name for UI rendering"
+        },
         "toolDescription": { "type": "string" },
         "parameters": { "type": "object" },
         "reasoning": { "type": "string" },
