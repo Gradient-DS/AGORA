@@ -35,6 +35,7 @@ plt.rcParams.update(
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 RAW_PATH = RESULTS_DIR / "raw_results.json"
 PAIRWISE_PATH = RESULTS_DIR / "pairwise_results.json"
+DISTRACTOR_PATH = RESULTS_DIR / "distractor_results.json"
 PLOTS_DIR = RESULTS_DIR / "plots"
 PLOTS_DIR.mkdir(exist_ok=True)
 
@@ -93,6 +94,12 @@ def load_pairwise() -> list[dict] | None:
         print("Draai de benchmark zonder --skip-scoring voor pairwise vergelijkingen")
         return None
     return json.loads(PAIRWISE_PATH.read_text())
+
+
+def load_distractor_results() -> dict | None:
+    if not DISTRACTOR_PATH.exists():
+        return None
+    return json.loads(DISTRACTOR_PATH.read_text())
 
 
 def get_model_color(idx: int) -> str:
@@ -789,6 +796,93 @@ def plot_pairwise_per_scenario(comparisons: list[dict]) -> None:
     print(f"  Opgeslagen: {path}")
 
 
+# ─── Plot 10: Distractor tool scaling (heatmap) ─────────────────────────────
+
+
+def plot_tool_scaling(distractor_data: dict) -> None:
+    """Heatmap: models (rows) × distractor counts (cols), colour = F1 score."""
+    import matplotlib.colors as mcolors
+
+    # Preferred display order (top to bottom); unlisted models appended at end
+    _preferred_order = [
+        "gpt-4o", "mistral-large", "qwen-2.5-72b",
+        "gpt-5.2", "gpt-oss-120b", "ministral-14b",
+    ]
+    ordered = [m for m in _preferred_order if m in distractor_data]
+    ordered += [m for m in distractor_data if m not in ordered]
+    models = ordered
+
+    # Collect sorted distractor counts from the data
+    all_counts: set[int] = set()
+    for entries in distractor_data.values():
+        for e in entries:
+            all_counts.add(e["num_distractors"])
+    counts = sorted(all_counts)
+
+    # Build matrix (rows = models, cols = distractor counts)
+    matrix = np.full((len(models), len(counts)), np.nan)
+    has_error: list[list[bool]] = [[False] * len(counts) for _ in range(len(models))]
+
+    for row, model_id in enumerate(models):
+        entries = {e["num_distractors"]: e for e in distractor_data[model_id]}
+        for col, n in enumerate(counts):
+            if n in entries:
+                e = entries[n]
+                if e.get("error"):
+                    matrix[row, col] = 0.0
+                    has_error[row][col] = True
+                else:
+                    matrix[row, col] = e["f1"]
+
+    # Colour map: red (0) → yellow (0.5) → green (1)
+    cmap = mcolors.LinearSegmentedColormap.from_list(
+        "rg", ["#d73027", "#fee08b", "#1a9850"], N=256
+    )
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    fig.suptitle(
+        "Tool Selectie F1 bij Toenemend Aantal Afleidingstools",
+        fontsize=16,
+        fontweight="bold",
+    )
+
+    im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=1, aspect="auto")
+
+    # Annotate each cell with the F1 value
+    for row in range(len(models)):
+        for col in range(len(counts)):
+            val = matrix[row, col]
+            if np.isnan(val):
+                continue
+            # Black text on light cells, white on dark
+            text_color = "white" if val < 0.45 else "black"
+            label = f"{val:.2f}"
+            if has_error[row][col]:
+                label += "\n(fout)"
+            ax.text(
+                col, row, label,
+                ha="center", va="center",
+                fontsize=11, fontweight="bold",
+                color=text_color,
+            )
+
+    ax.set_xticks(range(len(counts)))
+    ax.set_xticklabels([str(n) for n in counts])
+    ax.set_yticks(range(len(models)))
+    ax.set_yticklabels(models)
+    ax.set_xlabel("Aantal afleidingstools (N)", fontsize=12)
+
+    # Colour bar
+    cbar = fig.colorbar(im, ax=ax, shrink=0.8, pad=0.02)
+    cbar.set_label("F1-score", fontsize=11)
+
+    plt.tight_layout()
+    path = PLOTS_DIR / "tool_scaling.png"
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  Opgeslagen: {path}")
+
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 
@@ -856,6 +950,17 @@ def main() -> None:
         plot_pairwise_per_scenario(comparisons)
     else:
         print("  SKIP  Pairwise plots (geen pairwise_results.json)")
+
+    # Distractor scaling plot
+    distractor_data = load_distractor_results()
+    if distractor_data:
+        if args.drop_models:
+            for mid in drop_ids:
+                distractor_data.pop(mid, None)
+        if distractor_data:
+            plot_tool_scaling(distractor_data)
+    else:
+        print("  SKIP  Distractor plot (geen distractor_results.json)")
 
     print(f"\n  Alle plots opgeslagen in: {PLOTS_DIR}/")
     print()

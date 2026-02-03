@@ -216,6 +216,124 @@ class PairwiseComparison:
     reasoning: str = ""
 
 
+# ─── Distractor Tool Scaling ────────────────────────────────────────────────
+
+DISTRACTOR_COUNTS = [0, 2, 5, 10, 20, 50]
+
+# All distractor tool names (must match DISTRACTOR_TEMPLATES in tools.py)
+DISTRACTOR_TOOL_NAMES = {
+    "search_violation_records", "search_inspection_reports", "search_audit_findings",
+    "search_incident_logs", "search_complaint_records", "search_inspector_directory",
+    "search_company_database", "search_supplier_directory", "search_laboratory_directory",
+    "search_expert_contacts", "search_product_catalog", "search_equipment_database",
+    "search_packaging_materials", "search_ingredient_database", "search_chemical_database",
+    "search_internal_memos", "search_meeting_minutes", "search_training_materials",
+    "search_policy_updates", "search_faq_database", "search_news_articles",
+    "search_recall_notices", "search_press_releases", "search_scientific_publications",
+    "search_conference_proceedings", "search_lab_results", "search_sample_database",
+    "search_test_methods", "search_calibration_records", "search_reference_standards",
+    "search_inspection_schedule", "search_task_assignments", "search_route_planner",
+    "search_resource_availability", "search_budget_allocations", "search_facility_database",
+    "search_floor_plans", "search_regional_statistics", "search_risk_maps",
+    "search_zoning_permits", "search_report_templates", "search_checklist_templates",
+    "search_letter_templates", "search_form_library", "search_guidance_documents",
+    "search_translation_glossary", "search_photo_archive", "search_video_library",
+    "search_case_studies", "search_benchmarking_data",
+}
+
+# Real MCP tools from the regulation server — these are legitimate calls, not distractors
+REGULATION_MCP_TOOLS = {
+    "search_regulations", "get_regulation_context", "lookup_regulation_articles",
+    "analyze_document", "get_database_stats",
+}
+
+
+@dataclass
+class DistractorResult:
+    """Result of one model run at one distractor level."""
+
+    model_id: str
+    num_distractors: int
+    # From the ScenarioResult
+    tool_calls: list[ToolCallRecord] = field(default_factory=list)
+    error: str | None = None
+    total_ms: float | None = None
+    # Computed metrics
+    expected_tools_called: list[str] = field(default_factory=list)
+    distractor_tools_called: list[str] = field(default_factory=list)
+    other_tools_called: list[str] = field(default_factory=list)
+    precision: float = 0.0
+    recall: float = 0.0
+    f1: float = 0.0
+
+
+def compute_tool_metrics(
+    result: ScenarioResult,
+    expected_tools: set[str],
+    num_distractors: int,
+) -> DistractorResult:
+    """Compute deterministic tool selection metrics from a scenario result.
+
+    Only distractor tool calls count as errors. Calls to other real MCP tools
+    (e.g. lookup_regulation_articles) are ignored — they're legitimate tools
+    the model can reasonably use.
+    """
+    # Classify each tool call (exclude transfer_to_* handoff tools)
+    called_names = [
+        tc.name
+        for tc in result.tool_calls
+        if not tc.name.startswith("transfer_to_")
+    ]
+
+    expected_called = [n for n in called_names if n in expected_tools]
+    distractor_called = [n for n in called_names if n in DISTRACTOR_TOOL_NAMES]
+    other_called = [
+        n
+        for n in called_names
+        if n not in expected_tools
+        and n not in DISTRACTOR_TOOL_NAMES
+        and n not in REGULATION_MCP_TOOLS
+    ]
+
+    # For metrics, only consider expected tools and distractor tools.
+    # Real MCP tools (lookup_regulation_articles etc.) are excluded — they're
+    # legitimate calls, not errors.
+    called_set = set(called_names)
+    relevant_called = called_set & (expected_tools | DISTRACTOR_TOOL_NAMES)
+
+    correct = len(relevant_called & expected_tools)
+    wrong = len(relevant_called & DISTRACTOR_TOOL_NAMES)
+    total_relevant = len(relevant_called)
+
+    # Precision: of tools called that are either expected or distractor,
+    # what fraction were expected? (ignores real MCP tools)
+    precision = correct / total_relevant if total_relevant > 0 else 1.0
+
+    # Recall: of expected tools, what fraction were called?
+    recall = correct / len(expected_tools) if expected_tools else 1.0
+
+    # F1
+    f1 = (
+        (2 * precision * recall / (precision + recall))
+        if (precision + recall) > 0
+        else 0.0
+    )
+
+    return DistractorResult(
+        model_id=result.model_id,
+        num_distractors=num_distractors,
+        tool_calls=result.tool_calls,
+        error=result.error,
+        total_ms=result.total_ms,
+        expected_tools_called=expected_called,
+        distractor_tools_called=distractor_called,
+        other_tools_called=other_called,
+        precision=precision,
+        recall=recall,
+        f1=f1,
+    )
+
+
 # ─── WebSocket Benchmark Runner ──────────────────────────────────────────────
 
 
@@ -327,7 +445,14 @@ async def run_scenario(
 # ─── Server Lifecycle ─────────────────────────────────────────────────────────
 
 
-def build_server_env(model_config: dict) -> dict[str, str]:
+MCP_REGULATION_ONLY = "regulation=http://localhost:5002"
+
+
+def build_server_env(
+    model_config: dict,
+    num_distractors: int = 0,
+    regulation_only: bool = False,
+) -> dict[str, str]:
     """Build environment variables for a server-langgraph subprocess."""
     env = os.environ.copy()
 
@@ -342,7 +467,7 @@ def build_server_env(model_config: dict) -> dict[str, str]:
     env["LANGGRAPH_SPOKEN_API_KEY"] = OPENAI_API_KEY
 
     # MCP servers
-    env["LANGGRAPH_MCP_SERVERS"] = MCP_SERVERS
+    env["LANGGRAPH_MCP_SERVERS"] = MCP_REGULATION_ONLY if regulation_only else MCP_SERVERS
 
     # Isolated DB per model
     db_path = str(RESULTS_DIR / f"{model_config['id']}_sessions.db")
@@ -356,12 +481,24 @@ def build_server_env(model_config: dict) -> dict[str, str]:
     env["LANGGRAPH_LOG_LEVEL"] = "WARNING"
     env["LANGGRAPH_RELOAD"] = "false"
 
+    # Distractor tools for scaling benchmark
+    if num_distractors > 0:
+        env["LANGGRAPH_DISTRACTOR_TOOLS"] = str(num_distractors)
+
     return env
 
 
-def start_server(model_config: dict) -> subprocess.Popen:
+def start_server(
+    model_config: dict,
+    num_distractors: int = 0,
+    regulation_only: bool = False,
+) -> subprocess.Popen:
     """Start server-langgraph as a subprocess with the given model config."""
-    env = build_server_env(model_config)
+    env = build_server_env(
+        model_config,
+        num_distractors=num_distractors,
+        regulation_only=regulation_only,
+    )
 
     # Clean up any leftover DB files to avoid "database is locked"
     db_path = Path(env["LANGGRAPH_SESSIONS_DB_PATH"])
@@ -373,8 +510,14 @@ def start_server(model_config: dict) -> subprocess.Popen:
     venv_python = SERVER_DIR / ".venv" / "bin" / "python"
     python_exe = str(venv_python) if venv_python.exists() else sys.executable
 
+    if num_distractors > 0:
+        wrapper = str(Path(__file__).resolve().parent / "server_wrapper.py")
+        cmd = [python_exe, wrapper]
+    else:
+        cmd = [python_exe, "-m", "agora_langgraph.api.server"]
+
     proc = subprocess.Popen(
-        [python_exe, "-m", "agora_langgraph.api.server"],
+        cmd,
         cwd=str(SERVER_DIR),
         env=env,
         stdout=subprocess.PIPE,
@@ -956,6 +1099,159 @@ def save_markdown_report(
     return path
 
 
+# ─── Distractor Benchmark Runner ─────────────────────────────────────────────
+
+
+async def run_distractor_benchmark(
+    models_to_run: list[dict],
+    distractor_counts: list[int],
+    timeout: int = 180,
+) -> dict[str, list[DistractorResult]]:
+    """Run the regulation_query scenario at each distractor level for each model."""
+    scenario = next(s for s in SCENARIOS if s["id"] == "regulation_query")
+    expected_tools = set(scenario["expected_tools"])
+
+    all_results: dict[str, list[DistractorResult]] = {}
+
+    for model_config in models_to_run:
+        model_id = model_config["id"]
+        model_results: list[DistractorResult] = []
+
+        print(f"\n{'─' * 60}")
+        print(f"  Model: {model_id} ({model_config['model']})")
+        print(f"  Provider: {model_config['base_url']}")
+        print(f"{'─' * 60}")
+
+        for n_distractors in distractor_counts:
+            print(f"\n  Distractors: {n_distractors}")
+            print(f"  Starting server...", end="", flush=True)
+
+            proc = start_server(
+                model_config,
+                num_distractors=n_distractors,
+                regulation_only=True,
+            )
+
+            if not wait_for_health(timeout=90):
+                print(f" FAILED (server did not become healthy)")
+                stop_server(proc)
+                dr = DistractorResult(
+                    model_id=model_id,
+                    num_distractors=n_distractors,
+                    error="Server failed to start",
+                )
+                model_results.append(dr)
+                continue
+
+            print(f" OK")
+
+            user_id = create_test_user()
+
+            # Warm-up
+            print(f"    Warming up...", end="", flush=True)
+            warmup = await run_scenario(
+                {
+                    "id": "warmup",
+                    "prompt": "Hallo",
+                    "expected_agent": "general-agent",
+                    "expected_tools": [],
+                },
+                model_id,
+                0,
+                user_id,
+                timeout=timeout,
+            )
+            if warmup.error:
+                print(f" WARN: {warmup.error}")
+            else:
+                print(f" OK ({warmup.total_ms:.0f}ms)")
+
+            # Run regulation_query
+            print(
+                f"    regulation_query (N={n_distractors})...", end="", flush=True
+            )
+            result = await run_scenario(
+                scenario, model_id, 1, user_id, timeout=timeout
+            )
+
+            if result.error:
+                print(f" ERROR: {result.error[:60]}")
+            else:
+                tools = [
+                    tc.name
+                    for tc in result.tool_calls
+                    if not tc.name.startswith("transfer_to_")
+                ]
+                print(f" tools={tools}")
+
+            # Compute metrics
+            dr = compute_tool_metrics(result, expected_tools, n_distractors)
+            model_results.append(dr)
+
+            print(
+                f"    P={dr.precision:.2f}  R={dr.recall:.2f}  F1={dr.f1:.2f}  "
+                f"distractors_called={dr.distractor_tools_called}"
+            )
+
+            # Stop server
+            print(f"  Stopping server...", end="", flush=True)
+            stop_server(proc)
+            print(" done")
+            await asyncio.sleep(2)
+
+        all_results[model_id] = model_results
+
+    return all_results
+
+
+def save_distractor_results(results: dict[str, list[DistractorResult]]) -> Path:
+    """Save distractor benchmark results as JSON."""
+    path = RESULTS_DIR / "distractor_results.json"
+    data = {}
+    for model_id, dr_list in results.items():
+        data[model_id] = [asdict(dr) for dr in dr_list]
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    return path
+
+
+def print_distractor_table(results: dict[str, list[DistractorResult]]) -> None:
+    """Print distractor benchmark results table."""
+    from tabulate import tabulate
+
+    print("\n" + "=" * 100)
+    print("DISTRACTOR TOOL SCALING RESULTS")
+    print("=" * 100)
+
+    headers = [
+        "Model",
+        "N Distractors",
+        "Precision",
+        "Recall",
+        "F1",
+        "Distractors Called",
+        "Total Time (ms)",
+        "Error?",
+    ]
+    rows = []
+
+    for model_id, dr_list in results.items():
+        for dr in dr_list:
+            rows.append(
+                [
+                    model_id,
+                    dr.num_distractors,
+                    f"{dr.precision:.2f}" if not dr.error else "-",
+                    f"{dr.recall:.2f}" if not dr.error else "-",
+                    f"{dr.f1:.2f}" if not dr.error else "-",
+                    ", ".join(dr.distractor_tools_called) or "-",
+                    f"{dr.total_ms:.0f}" if dr.total_ms else "-",
+                    dr.error[:30] if dr.error else "",
+                ]
+            )
+
+    print(tabulate(rows, headers=headers, tablefmt="grid"))
+
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 
 
@@ -1046,6 +1342,11 @@ async def main() -> None:
         type=str,
         default=None,
         help="Comma-separated model IDs to exclude from rescore comparison",
+    )
+    parser.add_argument(
+        "--distractor-benchmark",
+        action="store_true",
+        help="Run distractor tool scaling benchmark (regulation_query only)",
     )
     args = parser.parse_args()
 
@@ -1146,6 +1447,74 @@ async def main() -> None:
         print(f"\n  Results saved:")
         print(f"    Pairwise JSON: {pw_path}")
         print(f"    Report:       {md_path}")
+        print()
+        return
+
+    # ── Distractor benchmark mode ──
+    if args.distractor_benchmark:
+        # Filter models
+        models_to_run = MODELS
+        if args.models:
+            selected = [m.strip() for m in args.models.split(",")]
+            models_to_run = [m for m in MODELS if m["id"] in selected]
+            if not models_to_run:
+                print(f"No matching models. Available: {[m['id'] for m in MODELS]}")
+                sys.exit(1)
+
+        # Drop models if requested
+        if args.drop_models:
+            drop_ids = {m.strip() for m in args.drop_models.split(",")}
+            models_to_run = [m for m in models_to_run if m["id"] not in drop_ids]
+
+        # Skip models without API keys
+        models_to_run = [m for m in models_to_run if m["api_key"]]
+
+        # Preflight: only check regulation MCP (only server needed for this benchmark)
+        print("\n=== Pre-flight Checks ===\n")
+        if not OPENAI_API_KEY:
+            print("  FAIL  No OpenAI API key found")
+            sys.exit(1)
+        print("  OK    OpenAI API key found")
+        try:
+            resp = httpx.get(MCP_HEALTH_URLS["regulation"], timeout=5)
+            if resp.status_code == 200:
+                print("  OK    MCP regulation server")
+            else:
+                print(f"  FAIL  MCP regulation returned {resp.status_code}")
+                sys.exit(1)
+        except Exception:
+            print(f"  FAIL  MCP regulation not reachable at {MCP_HEALTH_URLS['regulation']}")
+            print("        Start it: cd mcp-servers && docker-compose up -d regulation-analysis")
+            sys.exit(1)
+        print()
+
+        print(f"=== Distractor Tool Scaling Benchmark ===")
+        print(f"  Models:    {[m['id'] for m in models_to_run]}")
+        print(f"  Scenario:  regulation_query")
+        print(f"  Distractor counts: {DISTRACTOR_COUNTS}")
+        print()
+
+        distractor_results = await run_distractor_benchmark(
+            models_to_run,
+            DISTRACTOR_COUNTS,
+            timeout=args.timeout,
+        )
+
+        print_distractor_table(distractor_results)
+
+        path = save_distractor_results(distractor_results)
+        print(f"\n  Results saved: {path}")
+
+        # Generate plot
+        try:
+            from plot_results import plot_tool_scaling
+
+            distractor_data = json.loads(path.read_text())
+            plot_tool_scaling(distractor_data)
+        except Exception as e:
+            print(f"  Plot generation failed: {e}")
+            print("  Run manually: python benchmark/plot_results.py")
+
         print()
         return
 
