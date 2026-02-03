@@ -602,7 +602,7 @@ def main() -> None:
         "agora_langgraph.api.server:app",
         host=settings.host,
         port=settings.port,
-        reload=True,
+        reload=settings.reload,
     )
 
 

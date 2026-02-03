@@ -1,0 +1,302 @@
+[
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-4o",
+    "model_b": "gpt-5.2",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Tool usage and routing are identical - both called the same tools (transfer_to_history, check_company_exists, get_inspection_history) and activated the same agents appropriately. Response A is superior in answer quality and language: it provides a more structured analysis with clear risk indicators and actionable focus points for the inspector ('Focuspunten bij start'), uses professional compliance terminology ('Trendbeeld', 'Normkader'), and offers to provide additional breakdown. While both use formatting, A's headers create logical flow whereas B's numbered list format feels more mechanical. A's Dutch is more polished with appropriate formal government language ('bedrijfsleiding eerder niet volledig bekend met voorschriften') compared to B's slightly more generic phrasing. A provides clearer context for the inspector to act on the open follow-up issue."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-4o",
+    "model_b": "qwen-2.5-72b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-4o",
+    "winner_language": "gpt-4o",
+    "reasoning": "Both responses call the same three tools (transfer_to_history, check_company_exists, get_inspection_history) and route identically through general-agent to history-agent, making tool_usage and agent_routing tied. For answer_quality, Response A presents information in natural, flowing prose with clear sections and hierarchical structure, while Response B relies heavily on markdown headers and a more rigid, list-like format that's less readable. Response A's narrative approach ('Restaurant Bella Rosa heeft in totaal 2 inspecties ondergaan') flows better than Response B's bulleted structure. For language_quality, Response A uses more natural Dutch phrasing ('Er is een lichte verslechtering zichtbaar') compared to Response B's somewhat stilted constructions ('Verslechtering sinds de laatste inspectie'). Response A also provides a more coherent risk assessment narrative, while Response B's conclusion feels repetitive of already-presented data."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-4o",
+    "model_b": "gpt-oss-120b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-4o",
+    "winner_language": "gpt-4o",
+    "reasoning": "Both responses called the expected tools (check_company_exists, get_inspection_history) and routed to history-agent correctly. Tool usage is identical in substance - both made the same calls via transfer_to_history. Agent routing is also equivalent - both went from general-agent to history-agent as expected. However, Response A provides a complete, well-structured answer in professional Dutch with all relevant inspection details, risk assessment, and actionable recommendations for the inspector, while Response B is empty despite making the correct tool calls. Response A uses clear formatting with headers and bullet points (not penalized markdown tables) and maintains appropriate professional Dutch language throughout. The empty Response B cannot compete on answer_quality or language_quality dimensions."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-4o",
+    "model_b": "mistral-large",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-4o",
+    "winner_language": "gpt-4o",
+    "reasoning": "Both responses call the same tools (transfer_to_history, check_company_exists, get_inspection_history) successfully, just in different order - this is functionally equivalent. Both route correctly to history-agent. However, Response A heavily violates the formatting requirement by using multiple markdown tables, which the instructions explicitly penalize. Response B presents the same information in a cleaner, more readable prose format with structured lists. While Response A is more detailed, it's excessive for a simple inspection start and becomes harder to read due to table overuse. Response B provides all essential information in clearer, more professional Dutch without the table clutter, making it more suitable for a government inspector who needs quick, actionable information."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-4o",
+    "model_b": "ministral-14b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-4o",
+    "winner_language": "gpt-4o",
+    "reasoning": "Both responses correctly route to history-agent and call the expected tools (check_company_exists and get_inspection_history). Tool usage is equivalent - both make the same calls in slightly different order, which doesn't matter functionally. Agent routing is identical. However, Response A violates the formatting guidelines by using multiple markdown tables instead of natural prose, making it harder to read despite being comprehensive. Response B presents the same information in a clearer, more readable format with proper paragraphs and bullet points rather than heavy table formatting. Response B's Dutch is also more natural and professional ('Bedrijfsgegevens' followed by clear bullets vs. the emoji-heavy table approach). Both are accurate and complete, but B delivers the information in the preferred format for professional government use."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-5.2",
+    "model_b": "qwen-2.5-72b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Both responses call identical tools (transfer_to_history, check_company_exists, get_inspection_history) and route through general-agent to history-agent appropriately, so tool_usage and agent_routing are tied. For answer_quality, Response B edges ahead by being more concise, providing clearer risk indicators for the inspector ('Focuspunten bij start'), and offering actionable next steps at the end. Response A is more verbose with repetitive formatting. For language_quality, Response B uses more professional, government-appropriate Dutch with better flow ('trendbeeld', 'normkader', 'risico-indicatoren') and avoids the slightly redundant presentation in Response A. Response B also maintains natural prose better while Response A relies more heavily on formatted sections that feel less integrated."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-5.2",
+    "model_b": "gpt-oss-120b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Both responses make identical tool calls (transfer_to_history, check_company_exists, get_inspection_history) and route through the same agents (general-agent → history-agent), resulting in ties for tool_usage and agent_routing. However, Response A wins decisively on answer_quality and language_quality because it provides a complete, well-structured response in professional Dutch with all necessary inspection context, while Response B is completely empty. Response A uses clear prose with appropriate formatting (headers and bullets for readability, not heavy tables), professional government-appropriate language, and delivers actionable intelligence including verification status, historical trends, open violations with legal references, follow-up requirements, and risk-focused inspection starting points. An empty response cannot compete on any qualitative dimension."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-5.2",
+    "model_b": "mistral-large",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Both responses call identical tools (transfer_to_history, check_company_exists, get_inspection_history) and route through general-agent to history-agent correctly, so tool_usage and agent_routing are tied. However, Response B heavily uses markdown tables (three tables throughout), which violates the formatting preference for 'natural, flowing prose' over 'ASCII/markdown tables.' Response A uses more narrative structure with strategic formatting (headers, bold) but maintains readability. Response A also flows more naturally as a compliance briefing, while Response B's table-heavy approach (inspection history table, risk assessment table) reads more like a template. Both are in professional Dutch, but Response A's prose style ('Trendbeeld: verslechtering t.o.v. 2020') is slightly more natural than Response B's structured tables with column headers in Dutch. Response A better fits the stated preference to 'penalize responses that use ASCII/markdown tables instead of well-written paragraphs.'"
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-5.2",
+    "model_b": "ministral-14b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Both responses call identical tools (transfer_to_history, check_company_exists, get_inspection_history) and route through general-agent to history-agent correctly, so tool_usage and agent_routing are tied. For answer_quality, Response A presents information in flowing prose with clear sections and natural paragraphs, while Response B heavily relies on markdown tables (3 tables total), which violates the formatting preference for natural prose over tables. Response A is more readable and professional. For language_quality, Response A uses more appropriate formal Dutch for government compliance ('Bedrijfsgegevens', 'Historisch Overzicht', 'Trendbeeld') while Response B uses informal elements like emoji overuse (📌📊⚠️🔍🚨🚀) and casual phrasing ('Laat het weten! 🚀') that are less suitable for official NVWA documentation. Response A wins on both quality dimensions."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "qwen-2.5-72b",
+    "model_b": "gpt-oss-120b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "qwen-2.5-72b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "Both responses called identical tools (transfer_to_history, check_company_exists, get_inspection_history) without redundancy, and both routed correctly through general-agent to history-agent. However, Response A provides no output to the inspector, making it unusable in practice. Response B delivers comprehensive inspection history with company details, past inspections, violations, and risk assessment in clear, professional Dutch prose. While it uses some formatting (headers, bold), it avoids markdown tables and presents information in readable paragraphs with actionable insights. Response B is clearly superior for answer_quality and language_quality as it actually provides the expected inspection information in proper Dutch, while Response A is empty."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "qwen-2.5-72b",
+    "model_b": "mistral-large",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "qwen-2.5-72b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "Both responses make identical tool calls (transfer_to_history, check_company_exists, get_inspection_history) and route through the same agents, so tool_usage and agent_routing are tied. For answer_quality, Response A presents information in natural, flowing prose using headers and bullet points, while Response B relies heavily on markdown tables (3 tables total), which violates the explicit formatting preference. Response A is more readable and actionable for an inspector. For language_quality, Response A uses cleaner, more professional Dutch appropriate for government work ('Bedrijfsgegevens', 'Historisch Overzicht'), while Response B mixes in excessive emoji usage (📌📜⚠️🔍🔄📊🔎⚖️) and informal table layouts that feel less professional for official NVWA documentation. Response A is superior on the dimensions that matter for formatting and professional communication."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "qwen-2.5-72b",
+    "model_b": "ministral-14b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "qwen-2.5-72b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "Both responses use identical tools (transfer_to_history, check_company_exists, get_inspection_history) and routing (general-agent → history-agent), so tool_usage and agent_routing are tied. For answer_quality, Response A presents information in clear, flowing prose with appropriate structure, while Response B violates the formatting requirements by using multiple markdown tables and excessive formatting (emojis, bold headers, horizontal rules). The instructions explicitly penalize 'ASCII/markdown tables' and prefer 'natural, flowing prose' over 'heavy formatting.' Response A provides all necessary information in a more readable, professional format. For language_quality, Response A uses more consistent, formal Dutch appropriate for government compliance work ('Conclusie: Restaurant Bella Rosa heeft...'), while Response B mixes casual elements ('Laat het weten! 🚀') with professional content, making it less suitable for official NVWA documentation."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-oss-120b",
+    "model_b": "mistral-large",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "mistral-large",
+    "winner_language": "mistral-large",
+    "reasoning": "Both responses made identical tool calls (transfer_to_history, check_company_exists, get_inspection_history) and routing (general-agent → history-agent), so tool_usage and agent_routing are tied. However, Response B provided no output at all (empty response), making it completely unusable for an inspector. Response A provides comprehensive information about the company and inspection history. While Response A uses tables (which should be penalized per instructions), it still provides actionable intelligence in Dutch for the inspector, including company details, historical violations, risk assessment, and recommendations. The Dutch is professional and appropriate for government compliance work. Despite the table formatting issue, Response A is clearly superior to an empty response in both answer_quality and language_quality."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "gpt-oss-120b",
+    "model_b": "ministral-14b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-oss-120b",
+    "winner_language": "gpt-oss-120b",
+    "reasoning": "Both responses called identical tools (transfer_to_history, check_company_exists, get_inspection_history) and routed through the same agents (general-agent → history-agent), making tool_usage and agent_routing tied. However, Response A wins on answer_quality and language_quality. The scenario explicitly states 'Company inspection start' — this is the beginning phase where the inspector needs concise handoff confirmation, not a full report. Response B's extensive markdown table-heavy formatting violates the judge's instruction to penalize table-heavy responses over natural prose. For an inspection *start*, Response A's empty/minimal response is more appropriate — it correctly executes the handoff without prematurely generating a full report. Response B's overly detailed tables (multiple markdown grids) and emoji-heavy presentation are inappropriate for professional government work at the start phase. Response A better respects the 'start inspectie' context by completing the handoff without over-generating content."
+  },
+  {
+    "scenario_id": "inspection_start",
+    "model_a": "mistral-large",
+    "model_b": "ministral-14b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "mistral-large",
+    "winner_language": "mistral-large",
+    "reasoning": "Both responses called identical tools (transfer_to_history, check_company_exists, get_inspection_history) and routed through general-agent to history-agent correctly, so tool_usage and agent_routing are tied. For answer_quality, while both are comprehensive, Response B is superior because it provides a more actionable structure with clearer recommendations for the current inspection, better risk assessment framing, and more logical flow despite both using tables. Response A is overly formatted with excessive emojis and bold text that makes it harder to read professionally. For language_quality, Response B uses more appropriate professional Dutch for government compliance work - terms like 'verzachtende omstandigheden', 'handhavingsopties', and clearer regulatory language. Response A's tone with multiple emoji warnings (🚨) and casual phrasing ('Laat het weten! 🚀') is less suitable for official NVWA documentation. Response B maintains professional government tone throughout."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-4o",
+    "model_b": "gpt-5.2",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Response B uses more precise professional Dutch terminology appropriate for official NVWA compliance documentation ('koudeketen doorbroken', 'food-grade containers', 'blokkeren en traceerbaar markeren'). The risk warning header and systematic violation breakdown demonstrate better command of formal inspection language. Response A is clear but less technical and specific in its regulatory terminology, making it less suitable for official government compliance work."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-4o",
+    "model_b": "qwen-2.5-72b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "qwen-2.5-72b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "Both responses correctly routed to regulation-agent and called search_regulations appropriately with no redundant calls. Response A provides significantly more detail with specific article references (Artikel 17, Bijlage II, Hoofdstuk III, Punt 2 and 3), making it more actionable for an inspector who needs to cite exact violations. Response A also includes a proper warning about sanctions and provides three detailed recommendation categories versus B's more generic advice. Both use acceptable formatting with headers and bullets rather than tables. Response A demonstrates superior professional Dutch with more precise regulatory terminology ('passende voedseltemperaturen handhaven en bewaken', 'ongeschikt kan maken voor menselijke consumptie') compared to B's simpler phrasing. Response A's language is more befitting of formal NVWA documentation."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-4o",
+    "model_b": "gpt-oss-120b",
+    "winner_tools": "gpt-4o",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-4o",
+    "winner_language": "gpt-4o",
+    "reasoning": "**Tool usage**: Response A made redundant tool calls (search_regulations twice, plus get_regulation_context), while B efficiently called search_regulations once. Redundancy is penalized. **Agent routing**: Both routed general→regulation correctly. **Answer quality**: While A provides more detail, the instructions explicitly penalize table-heavy responses. A uses multiple markdown tables extensively (violation table, sources table), violating the 'natural flowing prose' requirement. B provides complete, accurate information in readable paragraphs with appropriate structure. Both are actionable, but B follows formatting guidelines. **Language quality**: B uses cleaner, more professional Dutch without excessive formatting. A's heavy use of tables, bold text, and technical symbols (≤, §, etc.) makes it less readable as professional government prose."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-4o",
+    "model_b": "mistral-large",
+    "winner_tools": "gpt-4o",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-4o",
+    "winner_language": "gpt-4o",
+    "reasoning": "**tool_usage**: Response A called search_regulations THREE times (redundant), while B called it once appropriately. Redundant calls are inefficient. **agent_routing**: Both correctly transferred to regulation-agent (TIE). **answer_quality**: Despite A being more detailed, the instructions explicitly penalize table/markdown grid formatting. A uses a large compliance table which violates the 'natural flowing prose' requirement. B provides complete, actionable information in proper paragraph format with clear structure. Both are accurate, but B follows formatting requirements. **language_quality**: Both use professional Dutch, but A's heavy formatting (headers, tables, bold) detracts from readability. B uses cleaner, more natural prose suitable for government documentation."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-4o",
+    "model_b": "ministral-14b",
+    "winner_tools": "gpt-4o",
+    "winner_routing": "tie",
+    "winner_quality": "ministral-14b",
+    "winner_language": "gpt-4o",
+    "reasoning": "**tool_usage**: A wins clearly — it called search_regulations once, while B called it three times redundantly. Multiple calls to the same tool without justification is inefficient. **agent_routing**: Both activated general-agent and regulation-agent appropriately, so TIE. **answer_quality**: B is significantly more comprehensive and actionable for an NVWA inspector. It provides specific regulation articles (852/2004 Article 17, Bijlage II), exact temperature requirements (≤7°C), risk classifications (HOOG RISICO, overtredingsklasse 'Zwaar'), and detailed corrective actions with timelines. A is accurate but more generic. B's use of formatting (headers, bold) aids readability without resorting to tables — this is acceptable professional formatting. **language_quality**: A wins on language. While both are professional, A uses cleaner, more natural Dutch prose. B overuses bold text, warning boxes, and emphatic formatting ('**HOOG RISICO**', '**WAARSCHUWING**') that feels less measured and professional for government compliance documentation. A maintains appropriate formal tone throughout without excessive emphasis."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-5.2",
+    "model_b": "qwen-2.5-72b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Tool usage and agent routing are identical (both call transfer_to_regulation and search_regulations once each, both route through general-agent to regulation-agent). For answer quality, Response B is superior due to its greater specificity about pathogen risks relevant to raw fish, more detailed immediate action protocols (blocking, destruction), and better integration of multiple regulations (852/2004, 853/2004, 178/2002). Response B also better addresses the chemical contamination aspect with specific control measures. For language quality, Response B uses more precise professional Dutch terminology ('koudeketen doorbroken', 'food-grade containers', 'kritische beheersmaatregelen') and maintains a more authoritative inspector tone with clear risk categorization ('HOOG RISICO'), making it more suitable for official NVWA documentation."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-5.2",
+    "model_b": "gpt-oss-120b",
+    "winner_tools": "gpt-5.2",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "**tool_usage**: Response A made 4 tool calls (transfer_to_regulation, search_regulations, get_regulation_context, search_regulations) with duplicate search_regulations calls, while B made only 2 calls (transfer_to_regulation, search_regulations) achieving the same result more efficiently. Redundant calls are penalized. **agent_routing**: Both correctly transferred to regulation-agent. **answer_quality**: Despite A's apparent detail, it heavily relies on markdown tables which the instructions explicitly penalize ('Responses should be natural, flowing prose — NOT tables or markdown grids'). B provides equally comprehensive regulatory information in well-structured prose with clear sections, making it more suitable for professional use. B's flowing text format with headers is preferred over A's table-heavy approach. **language_quality**: B uses cleaner, more natural professional Dutch without excessive formatting. A's repeated use of tables and heavy markdown formatting detracts from readability as professional government documentation. B's prose flows better and reads more naturally for an NVWA inspector."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-5.2",
+    "model_b": "mistral-large",
+    "winner_tools": "gpt-5.2",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "Tool usage: Response A made 3 separate search_regulations calls (redundant), while B made only 1 efficient call. Agent routing: Both correctly transferred to regulation-agent, so TIE. Answer quality: While A is more detailed, it violates the formatting requirement by using a markdown table for the compliance assessment. B provides a well-structured prose response with clear sections, practical recommendations, and appropriate warnings without relying on tables. The instructions explicitly penalize table-heavy responses. Language quality: B uses clearer, more concise professional Dutch suitable for NVWA inspectors ('WAARSCHUWING – HOOG RISICO', clear section headers), while A is verbose and over-formatted with excessive headers and a table. B better matches government compliance communication style."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-5.2",
+    "model_b": "ministral-14b",
+    "winner_tools": "gpt-5.2",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-5.2",
+    "winner_language": "gpt-5.2",
+    "reasoning": "**tool_usage**: Response A made 3 separate search_regulations calls (redundant), while B made just 1 efficient call. Redundant tool calls are penalized. **agent_routing**: Both routed identically (general-agent → regulation-agent), so TIE. **answer_quality**: While A is more detailed, it uses heavy markdown formatting (headers, bold, dashes) that creates a table-like structure rather than flowing prose. B provides complete, actionable guidance in cleaner, more readable paragraphs without excessive formatting. Both are accurate and cite correct regulations. **language_quality**: B uses more natural, professional Dutch suitable for government inspectors ('wijst op', 'reëel risico', 'borg opslag'). A's Dutch is correct but more mechanical with repetitive structure ('Regelgeving:', 'Risico:', 'Overtredingsklasse:') that feels template-driven rather than naturally written."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "qwen-2.5-72b",
+    "model_b": "gpt-oss-120b",
+    "winner_tools": "qwen-2.5-72b",
+    "winner_routing": "tie",
+    "winner_quality": "qwen-2.5-72b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "**tool_usage**: Response A made 2 tool calls (transfer + search_regulations), while Response B made 4 calls including redundant search_regulations calls and get_regulation_context. Response A was more efficient. **agent_routing**: Both routed correctly from general-agent to regulation-agent. **answer_quality**: Response A provides clear, flowing prose with well-structured paragraphs. Response B uses multiple markdown tables (overtredingen table, bronnen table) which violates the formatting preference for natural prose over grids. While B is detailed, the table-heavy format is explicitly penalized. Response A is more readable and actionable for an inspector. **language_quality**: Response A uses cleaner, more professional Dutch government language. Response B has awkward constructions like 'easily cleanable' in English within Dutch text, and overly technical formatting (°C symbols, mathematical notation ≤) that feels less natural for a compliance document."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "qwen-2.5-72b",
+    "model_b": "mistral-large",
+    "winner_tools": "qwen-2.5-72b",
+    "winner_routing": "tie",
+    "winner_quality": "qwen-2.5-72b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "Tool usage: Response B made 1 search_regulations call while A made 3 redundant calls — efficiency matters. Agent routing: Both correctly transferred to regulation-agent (TIE). Answer quality: While A is more comprehensive, it violates the formatting requirement with a large markdown table in the middle, which should be penalized per instructions. B provides clear, actionable information in proper prose format. Language quality: B uses cleaner, more professional Dutch without the over-formatted structure. A's excessive formatting (headers, tables, bold text throughout) detracts from readability in a compliance context."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "qwen-2.5-72b",
+    "model_b": "ministral-14b",
+    "winner_tools": "qwen-2.5-72b",
+    "winner_routing": "tie",
+    "winner_quality": "ministral-14b",
+    "winner_language": "qwen-2.5-72b",
+    "reasoning": "**tool_usage**: B wins because it made 1 search_regulations call vs A's 3 calls - A made redundant searches. **agent_routing**: TIE - both routed identically through general-agent to regulation-agent. **answer_quality**: A wins despite using headers/formatting because it provides significantly more actionable detail: specific temperature thresholds (≤7°C), concrete timeframes (2-hour limit), references to EU 853/2004 for fish specifically, detailed HACCP recommendations, and clear risk classifications. B is vaguer (mentions 4°C without clear regulatory basis) and less comprehensive. **language_quality**: B wins with cleaner, more professional prose. A uses excessive formatting (headers, bold, bullet points) and repetitive structure that reads less naturally. B's flowing paragraphs are more appropriate for government documentation despite being less detailed."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-oss-120b",
+    "model_b": "mistral-large",
+    "winner_tools": "gpt-oss-120b",
+    "winner_routing": "tie",
+    "winner_quality": "gpt-oss-120b",
+    "winner_language": "gpt-oss-120b",
+    "reasoning": "**tool_usage**: Response A made 4 tool calls (transfer, search, get_context, search) while B made 4 calls but with 3 separate search_regulations calls - this appears redundant. A's use of get_regulation_context shows more strategic retrieval. **agent_routing**: Both correctly routed from general-agent to regulation-agent. **answer_quality**: While both responses are comprehensive, Response A presents information in flowing prose with tables used only for structured data (compliant with formatting rules), whereas Response B relies heavily on markdown tables and headers throughout, which the instructions explicitly penalize. Response A also provides more actionable HACCP-specific guidance. **language_quality**: Response A uses more natural, professional Dutch prose suitable for NVWA inspectors ('vormt een **HOOG RISICO**', 'duidelijke overtreding'), while Response B is more mechanical and table-dependent in structure."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "gpt-oss-120b",
+    "model_b": "ministral-14b",
+    "winner_tools": "gpt-oss-120b",
+    "winner_routing": "tie",
+    "winner_quality": "ministral-14b",
+    "winner_language": "ministral-14b",
+    "reasoning": "**tool_usage**: Response A calls search_regulations three times (redundant), while B calls it twice plus get_regulation_context (more efficient and purposeful). **agent_routing**: Both route identically to regulation-agent. **answer_quality**: Despite the formatting instruction against tables, this dimension prioritizes completeness and actionability. Response A provides more thorough, actionable guidance with clear risk classifications, immediate actions, structural measures, and HACCP implementation steps in natural prose format. Response B relies heavily on markdown tables (penalized per instructions) and is less comprehensive in practical guidance. **language_quality**: Response A uses more natural, flowing Dutch prose throughout with better professional terminology (\"ernstig non-compliant\", \"overtredingsklasse\"), while Response B's table-heavy format disrupts readability and feels less like professional government communication."
+  },
+  {
+    "scenario_id": "regulation_query",
+    "model_a": "mistral-large",
+    "model_b": "ministral-14b",
+    "winner_tools": "tie",
+    "winner_routing": "tie",
+    "winner_quality": "ministral-14b",
+    "winner_language": "ministral-14b",
+    "reasoning": "Both responses made identical tool calls (transfer_to_regulation + 3x search_regulations), so tool_usage and agent_routing are tied. For answer_quality, Response A wins because it presents information in flowing prose with clear sections, while Response B heavily relies on a markdown table in the 'Conclusie' section, which violates the formatting preference for natural text over tables. Both responses are comprehensive and accurate, but A's formatting is superior. For language_quality, Response A uses slightly more natural and professional Dutch phrasing throughout, with better flow in sentences like 'De situatie met een geopende ton rauwe vis...' versus B's more mechanical structure. Response A also integrates warnings more naturally into the text rather than using excessive headers and tables."
+  }
+]

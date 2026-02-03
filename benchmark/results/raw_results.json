@@ -1,0 +1,459 @@
+{
+  "gpt-4o": [
+    {
+      "model_id": "gpt-4o",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": 13481.00745800184,
+      "response_ms": 20997.756458004005,
+      "total_ms": 20998.467625002377,
+      "response_text": "**Bedrijfsgegevens:**\n- **Naam:** Restaurant Bella Rosa\n- **KVK Nummer:** 92251854\n- **Locatie:** Den Haag\n- **Status:** Actief\n\n**Historisch Overzicht:**\nRestaurant Bella Rosa heeft in totaal 2 inspecties ondergaan. De inspecties vonden plaats in 2020 en 2022, beide gericht op hygiëne.\n\n**Overtredingen:**\n1. **Inspectie op 15 mei 2022:**\n   - **Type:** Hygiëne routine\n   - **Score:** Voldoende met opmerkingen\n   - **Overtreding:** Onvoldoende hygiënemaatregelen in de keuken\n     - **Categorie:** Hygiëne maatregelen\n     - **Ernst:** Waarschuwing\n     - **Beschrijving:** Schoonmaakschema niet volledig ingevuld, keukenvloer had vlekken\n     - **Regelgeving:** Hygiënecode Horeca artikel 4.2\n     - **Opmerking:** Bedrijfsleider was coöperatief maar leek niet volledig op de hoogte van alle hygiënevoorschriften.\n     - **Follow-up:** Vereist, maar nog niet voltooid (gepland voor 15 augustus 2022)\n\n2. **Inspectie op 10 september 2020:**\n   - **Type:** Hygiëne routine\n   - **Score:** Voldoende\n   - **Overtredingen:** Geen\n   - **Opmerking:** Geen bijzonderheden. Restaurant voldeed aan alle eisen.\n\n**Follow-up Status:**\n- **OPENSTAANDE ACTIES:** Er is een follow-up vereist voor de inspectie van 2022, die nog niet is voltooid.\n\n**Risico-inschatting:**\n- **Trend:** Er is een lichte verslechtering zichtbaar in de hygiënepraktijken van 2020 naar 2022, met een waarschuwing voor onvoldoende hygiënemaatregelen in de laatste inspectie.\n- **Aanbeveling:** Het is belangrijk dat Restaurant Bella Rosa de openstaande follow-up actie voltooit en de hygiënevoorschriften strikt naleeft om toekomstige overtredingen te voorkomen.",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='call_XiU8E7YEPRcofCj0HcQIQDeI'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='call_zvnjeJVjUtKemvTty2HAmA7K'"
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "gpt-4o",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 16824.80495798518,
+      "response_ms": 26083.100791001925,
+      "total_ms": 26084.05379098258,
+      "response_text": "### Samenvatting\nDe situatie met een geopende ton rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten overtreedt meerdere hygiënevoorschriften. Deze overtredingen betreffen zowel de opslagtemperatuur van de vis als de risico's op verontreiniging door de nabijheid van schoonmaakmiddelen.\n\n### Details\n1. **Opslagtemperatuur van rauwe vis**:\n   - Volgens EU Verordening 852/2004 (Levensmiddelenhygiëne) moeten levensmiddelen, zoals rauwe vis, worden opgeslagen bij temperaturen die de groei van schadelijke micro-organismen voorkomen. Het bewaren van rauwe vis op kamertemperatuur is een directe overtreding van deze voorschriften.\n\n2. **Risico op verontreiniging**:\n   - De nabijheid van een afvoerputje vol schoonmaakmiddelresten vormt een significant risico op verontreiniging van de vis. Volgens dezelfde verordening moeten levensmiddelen worden beschermd tegen verontreiniging, wat in deze situatie niet het geval is.\n\n### Aanbevelingen\n- **Directe actie**: Verplaats de rauwe vis naar een gekoelde omgeving met een temperatuur van maximaal 4 °C om de veiligheid en kwaliteit van het product te waarborgen.\n- **Schoonmaak en onderhoud**: Zorg ervoor dat afvoerputjes en andere potentieel verontreinigende bronnen schoon en goed onderhouden zijn om risico's op verontreiniging te minimaliseren.\n- **HACCP-principes**: Implementeer en volg de HACCP-principes om de voedselveiligheid te waarborgen en dergelijke situaties in de toekomst te voorkomen.\n\n### Bronnen\n- EU Verordening 852/2004 (Levensmiddelenhygiëne)\n- Warenwetbesluit hygiëne van levensmiddelen\n\nDeze maatregelen zijn essentieel om te voldoen aan de hygiënevoorschriften en de voedselveiligheid te garanderen. Het niet naleven kan leiden tot ernstige gezondheidsrisico's en mogelijke sancties.",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='call_75jyy2NhINKIswxOSj6GSkvG'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"rauwe vis opslag kamertemperatuur afvoerputje schoonmaakmiddel\", \"limit\": 10}",
+          "result": "content='{\"query\":\"rauwe vis opslag kamertemperatuur afvoerputje schoonmaakmiddel\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"melk en rauwe room onmiddellijk na het winnen gekoeld worden tot een temperatuur van ten hoogste 4 °C en tot het moment van levering op die temperatuur worden bewaard: binnen 72 uur na het winnen. b.\\\\n- De exploitant, bedoeld in het tweede lid, mag rauwe melk en rauwe room in diepgevroren staat ter plaatse aan de consument leveren of verzenden: 3\\\\n- indien de rauwe "
+        }
+      ],
+      "error": null
+    }
+  ],
+  "gpt-4o-mini": [
+    {
+      "model_id": "gpt-4o-mini",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": 16370.646416995442,
+      "response_ms": 26456.030250003096,
+      "total_ms": 26456.58695799648,
+      "response_text": "**Bedrijfsgegevens**  \n- **Naam:** Restaurant Bella Rosa  \n- **KVK-nummer:** 92251854  \n- **Status:** Actief  \n\n**Historisch Overzicht**  \nRestaurant Bella Rosa heeft in totaal 2 inspecties ondergaan. De inspecties zijn als volgt:\n\n1. **Inspectie ID:** INS-2020-005432  \n   - **Datum:** 10 september 2020  \n   - **Inspecteur:** Maria de Vries  \n   - **Type inspectie:** Hygiëne routine  \n   - **Locatie:** Den Haag  \n   - **Algemene score:** Voldoende  \n   - **Opmerkingen:** Geen bijzonderheden. Restaurant voldeed aan alle eisen.  \n\n2. **Inspectie ID:** INS-2022-001234  \n   - **Datum:** 15 mei 2022  \n   - **Inspecteur:** Jan Pietersen  \n   - **Type inspectie:** Hygiëne routine  \n   - **Locatie:** Den Haag  \n   - **Algemene score:** Voldoende met opmerkingen  \n   - **Opmerkingen:** Bedrijfsleider was coöperatief maar leek niet volledig op de hoogte van alle hygiënevoorschriften.  \n\n**Overtredingen**  \nTijdens de inspectie op 15 mei 2022 zijn er de volgende overtredingen vastgesteld:\n\n- **Overtreding ID:** VIO-2022-001234-01  \n  - **Categorie:** Hygiënemaatregelen  \n  - **Ernst:** WAARSCHUWING  \n  - **Beschrijving:** Onvoldoende hygiënemaatregelen in de keuken.  \n  - **Specifieke bevinding:** Schoonmaakschema niet volledig ingevuld, keukenvloer had vlekken.  \n  - **Regelgeving:** Hygiënecode Horeca artikel 4.2  \n  - **Artikel:** Artikel 4.2 - Hygiënische werkwijze  \n  - **Opgelost:** Nee  \n  - **Follow-up vereist:** Ja  \n  - **Follow-up datum:** 15 augustus 2022  \n  - **Follow-up voltooid:** Nee  \n\n**Follow-up Status**  \nEr zijn OPENSTAANDE ACTIES met betrekking tot de follow-up van de overtreding die is vastgesteld tijdens de inspectie op 15 mei 2022. De follow-up is vereist en moet voor 15 augustus 2022 worden afgerond, maar is nog niet voltooid.\n\n**Risicoanalyse**  \nRestaurant Bella Rosa heeft een gemengde inspectiegeschiedenis. Hoewel de eerste inspectie geen overtredingen vertoonde, zijn er tijdens de tweede inspectie wel problemen vastgesteld die nog niet zijn opgelost. Dit kan wijzen op een risico in de naleving van hygiënevoorschriften, vooral gezien de openstaande acties. Het is belangrijk dat het restaurant deze problemen aanpakt om verdere complicaties te voorkomen.",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='call_80cBPuDXNWbi5631yo9KEv52'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='call_VSkLeCCCuXNlaEw6FIQkEsrD'"
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "gpt-4o-mini",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 32445.996334019583,
+      "response_ms": 51486.91779200453,
+      "total_ms": 51487.353042000905,
+      "response_text": "**Samenvatting:**\nDe situatie waarin een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten is aangetroffen, schendt verschillende hygiëneregels die zijn vastgelegd in de EU Verordening 852/2004 (Levensmiddelenhygiëne) en de EU Verordening 853/2004 (Specifieke hygiëne-eisen voor levensmiddelen van dierlijke oorsprong).\n\n**Details:**\n1. **Temperatuur en opslag**: Volgens Artikel 15 van de EU Verordening 853/2004 moeten visserijproducten zo snel mogelijk na het aan boord brengen worden gekoeld. Het bewaren van rauwe vis op kamertemperatuur is in strijd met deze vereiste, omdat dit het risico op bacteriële groei en voedselvergiftiging verhoogt.\n\n2. **Verontreiniging**: De aanwezigheid van schoonmaakmiddelresten in de nabijheid van voedselproducten kan leiden tot chemische verontreiniging. Artikel 17 van de EU Verordening 852/2004 stelt dat oppervlakken die in contact komen met levensmiddelen goed onderhouden moeten worden en dat verontreiniging door schadelijke stoffen moet worden voorkomen.\n\n3. **Hygiënepraktijken**: Artikel 17 van de EU Verordening 852/2004 vereist dat er adequate voorzieningen zijn voor het hygiënisch wassen van handen en dat er maatregelen moeten worden genomen om kruisbesmetting te voorkomen. De situatie zoals beschreven, voldoet hier niet aan.\n\n**Aanbevelingen:**\n- **Onmiddellijke actie**: De rauwe vis moet onmiddellijk worden verwijderd en op de juiste manier worden opgeslagen in een gekoelde omgeving.\n- **Reiniging**: De ruimte waar de vis is opgeslagen moet grondig worden gereinigd om eventuele verontreinigingen van schoonmaakmiddelen te verwijderen.\n- **Training**: Zorg ervoor dat personeel goed getraind is in voedselveiligheid en hygiënepraktijken om herhaling van dergelijke situaties te voorkomen.\n- **Inspectie**: Voer een inspectie uit om te controleren of alle hygiëne- en opslagprocedures worden nageleefd.\n\n**Bronnen:**\n- EU Verordening 852/2004 (Levensmiddelenhygiëne)\n- EU Verordening 853/2004 (Specifieke hygiëne-eisen voor levensmiddelen van dierlijke oorsprong)",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='call_t6rPmDOklHhk1PJmtPPnpo2F'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"geopende ton rauwe vis kamertemperatuur afvoerputje schoonmaakmiddel\"}",
+          "result": "content='{\"query\":\"geopende ton rauwe vis kamertemperatuur afvoerputje schoonmaakmiddel\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"h) een voorziening voor het handenwassen voor het personeel dat blootgestelde visserijproducten bewerkt, met kranen die zodanig ontworpen zijn dat de verspreiding van verontreiniging wordt voorkomen.\\\\n2. Fabrieksvaartuigen aan boord waarvan schaal- en schelpdieren en weekdieren worden gekookt, gekoeld en in een onmiddellijke verpakking worden geplaatst, behoeve"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "gpt-5.2": [
+    {
+      "model_id": "gpt-5.2",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": 17110.090458008926,
+      "response_ms": 28122.834790992783,
+      "total_ms": 28123.27287500375,
+      "response_text": "## Bedrijfsgegevens\n- **Bedrijfsnaam:** Restaurant Bella Rosa  \n- **KVK-nummer:** 92251854  \n- **Status:** **Actief** (geverifieerd)\n\n---\n\n## Historisch Overzicht\n- **Totaal geregistreerde inspecties:** 2  \n- **Laatste inspectie:** **15-05-2022** (Den Haag) – **hygiëne routine**\n  - **Eindoordeel:** *voldoende met opmerkingen*\n  - Opmerking uit dossier: bedrijfsleider was coöperatief, maar niet volledig op de hoogte van alle hygiënevoorschriften.\n- **Vorige inspectie:** **10-09-2020** (Den Haag) – **hygiëne routine**\n  - **Eindoordeel:** *voldoende*\n  - **Geen overtredingen**\n\n**Trendbeeld:** verslechtering t.o.v. 2020 (van “voldoende” naar “voldoende met opmerkingen” met een waarschuwing in 2022).\n\n---\n\n## Overtredingen\n### Inspectie INS-2022-001234 (15-05-2022)\n- **Categorie:** hygiene_measures (hygiënemaatregelen)\n- **Ernst:** **warning (waarschuwing)**\n- **Omschrijving:** Onvoldoende hygiënemaatregelen in de keuken\n- **Concrete bevinding:** schoonmaakschema niet volledig ingevuld; keukenvloer had vlekken\n- **Normkader:** Hygiënecode Horeca **artikel 4.2** (Hygiënische werkwijze)\n- **Status oplossing:** **Niet opgelost (resolved: false)**\n- **Follow-up vereist:** **Ja**\n\n**WAARSCHUWING: Eerdere overtreding**  \n- Er is **1 eerdere (historische) overtreding** bekend (in 2022).  \n- Op basis van de beschikbare data is dit **geen herhaalde overtreding over meerdere inspecties** (2020 was schoon), maar het punt stond in 2022 wél open.\n\n---\n\n## Follow-up Status\n**OPENSTAANDE ACTIES**\n- Voor overtreding **VIO-2022-001234-01**:\n  - **Follow-up gepland/vereist per:** **15-08-2022**\n  - **Follow-up afgerond:** **Nee** (follow_up_completed: false)\n\n---\n\n### Risico-indicatoren voor start inspectie (op basis van historie)\n- **Openstaande follow-up op hygiënebasismaatregelen** (schoonmaakborging/registraties + zichtbare vervuiling).\n- **Kennis/awareness-risico**: bedrijfsleiding eerder niet volledig bekend met voorschriften.\n- **Focuspunten bij start:** actuele schoonmaakplanning/registraties, structurele schoonmaak (vloeren/werkruimtes), borging hygiënische werkwijze conform Hygiënecode Horeca art. 4.2.\n\nAls je wilt, kan ik ook de overtredingen uitsplitsen naar prioriteit voor het inspectiegesprek en controlepunten voor bewijsvoering (registraties, rondgang keuken, interviews).",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='call_CYFF6I9YFuBtOaVx2IJaSEEf'"
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='call_UmDxmS5K16qjwtnZEaBI54RN'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\", \"limit\": 10}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "gpt-5.2",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 33776.065790996654,
+      "response_ms": 62097.283415991114,
+      "total_ms": 62097.87966599106,
+      "response_text": "## Samenvatting\n**WAARSCHUWING – HOOG RISICO:** Een **geopende ton met rauwe vis op kamertemperatuur** naast een **afvoerputje met schoonmaakmiddelresten** wijst op (1) **onvoldoende temperatuurbeheersing** en (2) **(chemische en microbiologische) verontreinigingsrisico’s**. Dit is **niet conform** de EU-hygiëne-eisen en levert een reëel voedselveiligheidsrisico op.\n\n## Details (welke regels worden overtreden)\n### 1) Temperatuurbeheersing / koudeketen (rauwe vis op kamertemperatuur)\n- **EU Verordening 852/2004 (Levensmiddelenhygiëne), Bijlage II**: levensmiddelenbedrijven moeten **passende voedseltemperaturen handhaven en bewaken** en bederf/uitgroei van pathogenen voorkomen (in de toolresultaten: “adequate regelingen… voor het handhaven en bewaken van passende voedseltemperaturen”).\n- **EU Verordening 852/2004, Bijlage II** (algemene hygiëneprincipes): grondstoffen/ingrediënten moeten in **adequate omstandigheden** worden bewaard om **bederf te voorkomen** en **verontreiniging tegen te gaan**.\n- **EU Verordening 178/2002 (General Food Law)** in samenhang met hygiëneplicht: levensmiddelen mogen niet zodanig worden bewaard dat ze **onveilig** kunnen worden (algemene voedselveiligheidsplicht; in de praktijk wordt dit bij inspecties gekoppeld aan hygiëne/temperatuurbeheersing).\n- Voor visserijproducten gelden bovendien specifieke hygiëne-eisen (sector-specifiek):\n  - **EU Verordening 853/2004 (Specifieke hygiënevoorschriften voor levensmiddelen van dierlijke oorsprong)**: visserijproducten moeten zodanig worden gehanteerd/opgeslagen dat **verontreiniging wordt voorkomen** en (waar van toepassing) **snel gekoeld** worden. Ruwe vis is zeer bederfelijk en hoort normaliter onder gekoelde condities te staan.\n\n**Waarom overtreding:** Rauwe vis **op kamertemperatuur** betekent doorgaans dat de **koudeketen is doorbroken** en dat er risico is op snelle groei van o.a. *Listeria*, *Salmonella*, *Vibrio* en histaminevorming (bij bepaalde soorten).\n\n### 2) Bescherming tegen verontreiniging (open opslag + naast afvoer)\n- **EU Verordening 852/2004, Bijlage II**: levensmiddelen moeten zo worden geplaatst en beschermd dat **risico op verontreiniging** zoveel mogelijk wordt voorkomen (o.a. kruisbesmetting en omgevingscontaminatie).\n- **EU Verordening 852/2004, Bijlage II, eisen aan ruimten/afvoeren**:\n  - **Afvoervoorzieningen** moeten geschikt zijn en zo ontworpen dat **elk risico van verontreiniging wordt voorkomen**; open afvoeren mogen geen besmet materiaal van “vuil” naar “schoon/voedselzone” laten gaan.\n- Het feit dat de ton **geopend** is, vergroot het risico op **spatten/aerosolen**, ongedierte, vuilinslag en contact met de omgeving.\n\n**Waarom overtreding:** Een afvoerputje is een **vuil punt** (biofilm, terugslag, spatten). Voedsel (zeker rauwe vis) direct ernaast, en ook nog **open**, is strijdig met het principe van scheiding “vuil–schoon” en contaminatiepreventie.\n\n### 3) Chemische verontreiniging door schoonmaakmiddelresten\n- **EU Verordening 852/2004, Bijlage II**:\n  - Er moeten voorzieningen/werkwijzen zijn voor **hygiënische opslag en verwijdering van gevaarlijke stoffen en afval**.\n  - **Reinigings- en ontsmettingsmiddelen** mogen niet zodanig aanwezig/opgeslagen/gebruikt worden dat ze levensmiddelen kunnen verontreinigen (in toolresultaten staat ook expliciet dat dergelijke middelen niet in ruimten waar levensmiddelen worden gehanteerd opgeslagen mogen worden; “naast afvoerput met resten” wijst op ontoereikende beheersing).\n- **EU Verordening 178/2002** (algemene voedselveiligheid): chemische contaminatie maakt het product potentieel **onveilig**.\n\n**Waarom overtreding:** Resten schoonmaakmiddel in/om de afvoer kunnen via **spatten, dampen of contact** op de vis terechtkomen → **chemisch contaminatierisico**.\n\n## Aanbevelingen (inspectie- en herstelmaatregelen)\n1. **Directe maatregel (HOOG RISICO):**\n   - **Stop gebruik/uitgifte** van de rauwe vis uit deze ton.\n   - Beoordeel als **mogelijk onveilig product**: **apart zetten, blokkeren en traceerbaar markeren**; afhankelijk van tijd/temperatuur en blootstelling: **afkeuren/vernietigen**.\n2. **Herstel temperatuurbeheersing:**\n   - Ruwe vis direct **gekoeld opslaan** (koelcel/koeling) en **temperatuurregistratie** borgen.\n   - Leg vast wat de **maximale tijd buiten koeling** mag zijn (HACCP/werkprocedures).\n3. **Voorkom verontreiniging (layout/werkorganisatie):**\n   - **Geen voedselopslag** naast afvoeren; creëer fysieke scheiding “vuil/schoon”.\n   - Gebruik **afsluitbare, food-grade** containers (deksel erop) voor rauwe vis.\n4. **Chemische beheersing schoonmaakmiddelen:**\n   - Reinig/neutraliseer de afvoerzone; voorkom resten door juiste dosering/naspoelen.\n   - Borg opslag en gebruik van chemie buiten voedselzones en met duidelijke werkinstructies.\n5. **Verifieer via HACCP:**\n   - Laat het bedrijf aantonen dat gevaren (temperatuur, chemische contaminatie, kruisbesmetting) zijn geanalyseerd en dat **kritische beheersmaatregelen** effectief zijn.\n\n## Bronnen\n- **EU Verordening 852/2004 (Levensmiddelenhygiëne)** – Bijlage II (o.a. ontwerp/inrichting, afvoeren, scheiding/verontreinigingspreventie, temperatuurbeheersing, omgang met gevaarlijke stoffen/reinigingsmiddelen).  \n- **EU Verordening 853/2004 (Specifieke hygiënevoorschriften voor levensmiddelen van dierlijke oorsprong)** – bepalingen voor visserijproducten (snelle koeling/adequate hygiënische hantering en opslag).  \n- **EU Verordening 178/2002 (General Food Law)** – algemene plicht om geen onveilig voedsel in de handel te brengen en levensmiddelen te beschermen tegen onveiligheid (in samenhang toegepast).",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='call_JI2NEGcqcNifPyJMy0W6gsrw'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"geopende ton rauwe vis op kamertemperatuur naast afvoerputje schoonmaakmiddelresten kruisbesmetting chemische besmetting temperatuurbeheersing opslag hygi\\u00ebne eisen\", \"filters\": null, \"limit\": 10}",
+          "result": "content='{\"query\":\"geopende ton rauwe vis op kamertemperatuur naast afvoerputje schoonmaakmiddelresten kruisbesmetting chemische besmetting temperatuurbeheersing opslag hygiëne eisen\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"rmale sorteer- en/of voorbereidings- of verwerkingsproces dat door de exploitant van het levensmiddelenbedrijf hygiënisch wordt toegepast, nog steeds ongeschikt zouden zijn voor menselijke consumptie.\\\\n2. Grondstoffen en alle ingrediënten die in het bedrijf zijn opges"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "qwen-2.5-72b": [
+    {
+      "model_id": "qwen-2.5-72b",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": 30367.53220797982,
+      "response_ms": 57217.75295797852,
+      "total_ms": 57218.148041982204,
+      "response_text": "### Bedrijfsgegevens\n- **Bedrijfsnaam:** Restaurant Bella Rosa\n- **KVK-nummer:** 92251854\n- **Actief:** Ja\n\n### Historisch Overzicht\n**Totaal aantal inspecties:** 2\n\n1. **Inspectie ID:** INS-2022-001234\n   - **Datum:** 15-05-2022\n   - **Inspecteur:** Jan Pietersen\n   - **Type inspectie:** Routine-hygiëne\n   - **Locatie:** Den Haag\n   - **Algemene score:** Voldoende met opmerkingen\n   - **Notities:** Bedrijfsleider was coöperatief maar leek niet volledig op de hoogte van alle hygiënevoorschriften.\n\n2. **Inspectie ID:** INS-2020-005432\n   - **Datum:** 10-09-2020\n   - **Inspecteur:** Maria de Vries\n   - **Type inspectie:** Routine-hygiëne\n   - **Locatie:** Den Haag\n   - **Algemene score:** Voldoende\n   - **Notities:** Geen bijzonderheden. Restaurant voldeed aan alle eisen.\n\n### Overtredingen\n**Inspectie ID: INS-2022-001234**\n- **Overtreding ID:** VIO-2022-001234-01\n  - **Categorie:** Hygiënemaatregelen\n  - **Zwaarte:** Waarschuwing\n  - **Beschrijving:** Onvoldoende hygiënemaatregelen in de keuken\n  - **Specifieke bevinding:** Schoonmaakschema niet volledig ingevuld, keukenvloer had vlekken\n  - **Regelgeving:** Hygiënecode Horeca artikel 4.2\n  - **Regelgeving artikel:** Artikel 4.2 - Hygiënische werkwijze\n  - **Opgelost:** Nee\n  - **Follow-up vereist:** Ja\n  - **Follow-up datum:** 15-08-2022\n  - **Follow-up afgerond:** Nee\n\n**Inspectie ID: INS-2020-005432**\n- **Overtredingen:** Geen\n\n### Follow-up Status\n- **Openstaande acties:**\n  - **Overtreding ID:** VIO-2022-001234-01\n    - **Follow-up datum:** 15-08-2022\n    - **Status:** Nog niet afgerond\n\n### Risicobeoordeling\n- **Herhaalde overtredingen:** WAARSCHUWING: Eerdere overtreding in de categorie \"hygiënemaatregelen\" (2022).\n- **Zwaartegradiënten trend:** Verslechtering sinds de laatste inspectie in 2020.\n- **Openstaande acties:** OPENSTAANDE ACTIES: De overtreding van 2022 is nog niet opgelost en vereist een follow-up.\n\nConclusie: Restaurant Bella Rosa heeft in het verleden voldaan aan de hygiëne-eisen, maar de recente inspectie heeft aanleiding gegeven tot zorgen over de hygiënemaatregelen. Het is cruciaal dat de openstaande acties worden afgerond om te voorkomen dat de situatie verder verslechtert.",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='call_6c970a51779849c8884f38'"
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='call_056f83aae68242418755a0'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\", \"limit\": 10}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "qwen-2.5-72b",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 32739.41191699123,
+      "response_ms": 63522.72174999234,
+      "total_ms": 63523.28024999588,
+      "response_text": "### Samenvatting\nDe situatie waarbij rauwe vis op kamertemperatuur wordt opgeslagen naast een afvoerputje vol schoonmaakmiddelresten, schendt meerdere regels uit de EU Verordening 852/2004 (Levensmiddelenhygiëne) en de bijbehorende Nederlandse implementaties. Deze schendingen kunnen ernstige gevolgen hebben voor de volksgezondheid.\n\n### Details\n1. **Temperatuurregeling (EU Verordening 852/2004, Bijlage II, Hoofdstuk III, Punt 2)**\n   - **Regel:** Bedrijven moeten passende voedseltemperaturen handhaven en bewaken. Rauwe vis moet bij de juiste temperatuur worden bewaard om bederf en verontreiniging te voorkomen.\n   - **Afwijking:** De rauwe vis wordt op kamertemperatuur opgeslagen, wat het risico op bederf en verontreiniging vergroot.\n\n2. **Bescherming tegen verontreiniging (EU Verordening 852/2004, Artikel 17)**\n   - **Regel:** Levensmiddelen moeten in alle stadia van de productie, verwerking, en distributie worden beschermd tegen verontreiniging die ze ongeschikt kan maken voor menselijke consumptie of schadelijk kan zijn voor de gezondheid.\n   - **Afwijking:** De rauwe vis ligt naast een afvoerputje vol schoonmaakmiddelresten, wat een hoge kans op verontreiniging creëert.\n\n3. **Hygiënische voorzieningen (EU Verordening 852/2004, Bijlage II, Hoofdstuk III, Punt 3)**\n   - **Regel:** Ruimtes en uitrusting moeten goed worden onderhouden om levensmiddelen tegen verontreiniging te beschermen en, indien nodig, zo zijn ontworpen en geconstrueerd dat ze goed kunnen worden schoongemaakt en ontsmet.\n   - **Afwijking:** De nabijheid van schoonmaakmiddelresten suggereert een gebrek aan hygiënische voorzieningen en praktijken.\n\n### Aanbevelingen\n1. **Temperatuurregeling:**\n   - Zorg ervoor dat rauwe vis altijd bij de juiste temperatuur (maximaal 4°C) wordt bewaard.\n   - Implementeer een systeem voor het regelmatig monitoren van de temperatuur.\n\n2. **Verontreinigingspreventie:**\n   - Verplaats de rauwe vis naar een hygiënische locatie, weg van schoonmaakmiddelen en andere mogelijke bronnen van verontreiniging.\n   - Zorg voor adequaat afvalbeheer en schoonmaakpraktijken om verontreiniging te voorkomen.\n\n3. **Hygiënische voorzieningen:**\n   - Controleer en onderhoud regelmatig alle ruimtes en uitrusting die in aanraking komen met levensmiddelen.\n   - Voer regelmatige schoonmaak- en ontsmettingsprocedures uit.\n\n### Bronnen\n- **EU Verordening 852/2004 (Levensmiddelenhygiëne)**\n- **Warenwetbesluit hygiëne van levensmiddelen**\n- **Specifiek interventiebeleid NVWA voedselveiligheid**\n\n**WAARSCHUWING:** Deze schendingen kunnen leiden tot ernstige gevolgen voor de volksgezondheid en kunnen resulteren in administratieve boetes of andere sancties. Het is cruciaal om onmiddellijk maatregelen te nemen om de situatie te corrigeren.",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='call_54aded7f0eda42a1838ba9'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"rauwe vis op kamertemperatuur bij schoonmaakmiddelen\", \"limit\": 5}",
+          "result": "content='{\"query\":\"rauwe vis op kamertemperatuur bij schoonmaakmiddelen\",\"filters\":{},\"found\":5,\"results\":[{\"content\":\"p gevaar voor de volksgezondheid         | Middelzwaar          | (Risico op) gevaar voor volksgezondheid            | Officiële waarschuwing Corrigerende interventie               | O w B sa        |\\\\n\\\\n| ID regel   | Wet- en regelgeving                                                                                                                                             "
+        }
+      ],
+      "error": null
+    }
+  ],
+  "gpt-oss-120b": [
+    {
+      "model_id": "gpt-oss-120b",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": null,
+      "response_ms": null,
+      "total_ms": 5252.620375016704,
+      "response_text": "",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='fc_9c3f4b01-14b1-48ad-9b9d-85d52953d143'"
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='fc_fe31966f-aa59-4108-9f65-f654e8890b3f'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\", \"limit\": 20}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "gpt-oss-120b",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 15005.777291982668,
+      "response_ms": 21547.987999976613,
+      "total_ms": 21548.54766698554,
+      "response_text": "**Samenvatting**  \nDe situatie met een geopende ton rauwe vis die op kamertemperatuur (≈ 20 °C) ligt en direct naast een afvoerputje met schoonmaakmiddelresten is een duidelijke overtreding van meerdere hygiëne‑ en temperatuurvoorschriften uit de EU‑wetgeving (Verordening (EG) nr. 852/2004 en Verordening (EG) nr. 853/2004) en uit de Nederlandse Warenwet‑besluiten.  \n\n- **Temperatuur**: rauwe vis moet gekoeld worden (≤ 4 °C of op ijs) – kamertemperatuur is onacceptabel.  \n- **Bescherming tegen besmetting**: een open ton biedt geen bescherming tegen fysieke of chemische contaminatie.  \n- **Scheiding van reinigingsmiddelen**: schoonmaakmiddelen mogen niet in dezelfde ruimte of in direct contact met levensmiddelen worden bewaard.  \n\nDeze tekortkomingen vormen een **HOOG RISICO** voor de volksgezondheid (microbiologische groei, chemische verontreiniging en kruisbesmetting).\n\n---\n\n## Details  \n\n| Overtreding | Relevante regelgeving | Kernbepaling (NL‑samenvatting) |\n|-------------|----------------------|--------------------------------|\n| **Opslagtemperatuur rauwe vis** | **EU Verordening 853/2004**, Annex III, Hoofdstuk I, § 1.1 <br> (ook **EU Verordening 852/2004**, Art. 4, lid 2) | Vis van dierlijke oorsprong moet **direct na ontvangst gekoeld** worden tot een temperatuur die de groei van pathogene micro‑organismen voorkomt. Voor verse vis geldt een maximale temperatuur van **≤ 4 °C** (of onder ijs, ≈ 0 °C). |\n| **Open, onbeveiligde verpakking** | **EU Verordening 852/2004**, Art. 4, lid 2 <br> **Warenwetbesluit hygiëne**, Art. 4, lid 2 | Levensmiddelen moeten **beschermd** worden tegen fysieke, chemische en microbiologische contaminatie. Open containers zonder afdekking zijn niet toegestaan. |\n| **Plaatsing naast afvoerputje met schoonmaakmiddelresten** | **EU Verordening 852/2004**, Art. 4, lid 2 <br> **Warenwetbesluit hygiëne**, Art. 4, lid 2 <br> **Specifiek Interventiebeleid NVWA**, 37R082420 | Reinigings‑ en desinfectiemiddelen moeten **gescheiden** worden van voedsel‑opslag‑ en verwerkingsruimten om kruis‑contaminatie te voorkomen. Het naast elkaar plaatsen van een afvoerputje met chemische resten en een open voedselcontainer is een directe schending. |\n| **Ontbreken van HACCP‑kritieke controle (CCP) voor “koude‑keten”** | **EU Verordening 852/2004**, Art. 5 (HACCP‑principe) | De koude‑keten is een kritieke controle‑punt; het niet handhaven van de juiste temperatuur en bescherming vormt een falen in het HACCP‑plan. |\n| **Mogelijke overtreding van hygiënische inrichting** | **EU Verordening 852/2004**, Art. 17 (uitrusting) | Alle oppervlakken, wanden, vloeren en apparatuur moeten **easily cleanable** en **niet‑absorberend** zijn. Een ton die open staat naast een chemisch verontreinigd putje voldoet hier niet aan. |\n\n**Gevolgen**  \n- Snelle microbiologische groei (bijv. *Listeria monocytogenes*, *Vibrio spp.*) waardoor de vis binnen enkele uren onveilig wordt.  \n- Risico op chemische verontreiniging (resten van schoonmaakmiddelen) die bij contact met de vis kunnen overgaan.  \n- Schending van de **koud‑keten** en **cross‑contamination**‑regels leidt tot een formele overtreding die door de NVWA als **HOOG RISICO** wordt geclassificeerd (art. 4, lid 2 + 37R082420).  \n\n---\n\n## Aanbevelingen  \n\n1. **Directe corrigerende actie**  \n   - **Verwijder** de ton uit de ruimte, **gooi** de rauwe vis weg (of breng onmiddellijk onder koeling/ijs).  \n   - **Reinig** en **desinfecteer** de ton en de omgeving grondig volgens de hygiënecode.  \n   - **Verplaats** het afvoerputje of zorg voor een fysieke scheiding (bijv. een aparte, afgedichte ruimte) zodat reinigingsmiddelen nooit in direct contact kunnen komen met levensmiddelen.  \n\n2. **Temperatuurbeheer**  \n   - Installeer een **koelinstallatie** of zorg voor **ijs‑opslag** zodat rauwe vis altijd ≤ 4 °C wordt bewaard.  \n   - Documenteer de temperatuur in een **logboek** (of digitaal) en voer **periodieke controles** uit (minstens elke 2 uur).  \n\n3. **HACCP‑herziening**  \n   - Voeg een **kritieke controle‑punt (CCP)** toe voor “opslag van rauwe vis” met een maximale temperatuur‑limiet en een **monitoringsprocedure**.  \n   - Stel een **correctieve actie‑plan** op voor afwijkingen (bijv. > 4 °C of open container).  \n\n4. **Scheiding van reinigingsmiddelen**  \n   - Bewaar alle schoonmaak‑ en desinfectiemiddelen in een **afgesloten, gelabelde kast** buiten de voedsel‑opslagruimte.  \n   - Zorg voor een **duidelijke signalisatie** (bijv. “geen levensmiddelen in deze ruimte”).  \n\n5. **Training personeel**  \n   - Geef een **herhalingscursus** over de regels uit EU 852/2004, EU 853/2004 en de Warenwet‑hygiënecode, met nadruk op:  \n     - Koude‑keten en temperatuur‑monitoring  \n     - Bescherming tegen kruis‑contaminatie  \n     - Correcte opslag van chemische middelen  \n\n6. **Documentatie & rapportage**  \n   - Leg de incidenten vast in het **interne audit‑systeem** en meld de overtreding aan de bevoegde NVWA‑inspecteur (art. 4, lid 2).  \n   - Volg de **NVWA‑interventieprocedure** (37R082420) – bij een hoog‑risico‑incident kan een **officiële waarschuwing** of **corrigerende interventie** worden opgelegd.  \n\n---\n\n## Bronnen  \n\n| Bron | Relevante passage |\n|------|-------------------|\n| **EU Verordening 853/2004**, Annex III, Hoofdstuk I, § 1.1 | “Verse vis moet onmiddellijk na ontvangst gekoeld worden tot een temperatuur die de groei van pathogene micro‑organismen voorkomt; maximaal 4 °C of onder ijs.” |\n| **EU Verordening 852/2004**, Art. 4, lid 2 | “Levensmiddelen moeten beschermd worden tegen besmetting; open containers en contact met chemische stoffen zijn verboden.” |\n| **Warenwetbesluit hygiëne**, Art. 4, lid 2 | “Reinigings‑ en desinfectiemiddelen moeten gescheiden worden van levensmiddelen; opslagruimten moeten gemakkelijk te reinigen en te ontsmetten zijn.” |\n| **Specifiek Interventiebeleid NVWA**, 37R082420 | “Wanneer levensmiddelen koel moeten worden bewaard, moet dit zo snel mogelijk na de laatste fase van de bereiding gebeuren tot een temperatuur die geen risico’s voor de gezondheid oplevert; kruis‑contaminatie door chemische resten is een overtreding.” |\n| **EU Verordening 852/2004**, Art. 5 (HACCP‑principe) | “Alle voedselbedrijven moeten een HACCP‑plan opstellen waarin kritieke controle‑punten, waaronder de koude‑keten, worden geïdentificeerd.” |\n| **EU Verordening 852/2004**, Art. 17 (uitrusting) | “Alle uitrusting die in contact komt met levensmiddelen moet afdoende schoonbaar en ontsmetbaar zijn.” |\n\n---  \n\n**Conclusie**  \nDe open ton rauwe vis op kamertemperatuur naast een afvoerputje met schoonmaakmiddelresten schendt ten minste drie fundamentele hygiëne‑ en temperatuurvoorschriften (EU 853/2004, EU 852/2004, Warenwet‑hygiëne). Dit vormt een **hoog risico** voor de volksgezondheid en vereist onmiddellijke corrigerende maatregelen, herziening van het HACCP‑plan en training van het personeel.",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='fc_0a5c9be6-eb28-4b5e-877b-638d09719465'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"limit\": 10, \"query\": \"open container raw fish room temperature storage temperature fish EU regulation 852/2004 853/2004 cleaning chemicals near food area cross contamination\"}",
+          "result": "content='{\"query\":\"open container raw fish room temperature storage temperature fish EU regulation 852/2004 853/2004 cleaning chemicals near food area cross contamination\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"jke consumptie bestemde producten. Voor menselijke consumptie bestemde levers, kuit en hom moeten onder ijs worden bewaard bij de temperatuur welke die van smeltend ijs benadert, of worden ingevroren.\\\\n7. Wanneer de hele vis die bestemd is voor de bereiding van conserven, wordt i"
+        },
+        {
+          "name": "get_regulation_context",
+          "args": "{\"chunk_id\": \"EU_852_2004_Article4_2\", \"context_size\": 2}",
+          "result": "content='{\"error\":\"Chunk not found: EU_852_2004_Article4_2\"}' name='get_regulation_context' tool_call_id='fc_dc452e6b-65c9-46cf-8802-5c2248d1beff'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"limit\": 10, \"query\": \"temperature rauwe vis kamertemperatuur opslag EU 852/2004 artikel 4\"}",
+          "result": "content='{\"query\":\"temperature rauwe vis kamertemperatuur opslag EU 852/2004 artikel 4\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"melk en rauwe room onmiddellijk na het winnen gekoeld worden tot een temperatuur van ten hoogste 4 °C en tot het moment van levering op die temperatuur worden bewaard: binnen 72 uur na het winnen. b.\\\\n- De exploitant, bedoeld in het tweede lid, mag rauwe melk en rauwe room in diepgevroren staat ter plaatse aan de consument leveren of verzenden: 3\\\\n- indien de r"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "mistral-large": [
+    {
+      "model_id": "mistral-large",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": 27005.92041699565,
+      "response_ms": 55007.905209000455,
+      "total_ms": 55008.56745900819,
+      "response_text": "**Inspectierapport: Restaurant Bella Rosa (KVK-nummer: 92251854)**\n\n---\n\n### **📌 Bedrijfsgegevens**\n- **Bedrijfsnaam:** Restaurant Bella Rosa\n- **KVK-nummer:** 92251854\n- **Status:** Actief\n- **Vestigingslocatie:** Den Haag\n\n---\n\n### **📜 Historisch Overzicht Inspecties**\nRestaurant Bella Rosa is **tweemaal geïnspecteerd** door de NVWA, beide keren op het gebied van **routine hygiënecontroles**.\n\n| **Inspectie**       | **Datum**      | **Inspecteur**   | **Type**            | **Algemene Beoordeling**          | **Bijzonderheden**                                                                 |\n|---------------------|----------------|------------------|---------------------|-----------------------------------|------------------------------------------------------------------------------------|\n| **INS-2022-001234** | 15 mei 2022    | Jan Pietersen    | Hygiëne (routine)   | Voldoende met opmerkingen         | **Overtreding vastgesteld** (zie hieronder). Bedrijfsleider coöperatief, maar niet volledig op de hoogte van hygiënevoorschriften. |\n| **INS-2020-005432** | 10 september 2020 | Maria de Vries   | Hygiëne (routine)   | Voldoende                         | Geen overtredingen. Restaurant voldeed aan alle eisen.                             |\n\n---\n\n### **⚠️ Overtredingen & Compliance-Patronen**\n#### **1. Overtreding 2022 (INS-2022-001234)**\n- **Categorie:** Hygiënemaatregelen\n- **Ernst:** **Waarschuwing** (geen directe sluiting, maar corrigerende maatregelen vereist)\n- **Beschrijving:**\n  - Onvoldoende hygiënemaatregelen in de keuken.\n  - **Specifieke bevindingen:**\n    - Schoonmaakschema niet volledig ingevuld.\n    - Keukenvloer vertoonde vlekken (onvoldoende reiniging).\n- **Toepasselijke regelgeving:**\n  - **Hygiënecode Horeca, Artikel 4.2** (*Hygiënische werkwijze*).\n- **Status:**\n  - **Niet opgelost** (volgens laatste gegevens).\n  - **Follow-up vereist** (deadline: **15 augustus 2022** – **verlopen**).\n\n#### **🔍 Analyse Compliance-Patroon**\n- **Verslechtering sinds 2020:**\n  - In 2020 voldeed het restaurant aan alle eisen (**geen overtredingen**).\n  - In 2022 werd een **hygiëne-overtreding** vastgesteld, wat wijst op een **achteruitgang in naleving**.\n- **Risico-indicatoren:**\n  - **Herhaald risico op hygiëneproblemen** (schoonmaakschema’s en vloerreiniging).\n  - **Onvoldoende kennis bij bedrijfsleiding** (volgens inspecteur).\n  - **Openstaande follow-up** (zie hieronder).\n\n---\n\n### **🔄 Follow-up Status**\n- **Openstaande acties (INS-2022-001234):**\n  - **Follow-up vereist:** Ja (deadline: **15-08-2022**).\n  - **Status:** **Niet voltooid** (volgens laatste gegevens).\n  - **WAARSCHUWING:** Het niet nakomen van de follow-up kan leiden tot **verdere handhaving**, zoals een **herinspectie, boete of (in ernstige gevallen) sluiting**.\n\n---\n\n### **📊 Risico-Assessment (op basis van historie)**\n| **Risicofactor**               | **Beoordeling**                                                                 | **Prioriteit**       |\n|--------------------------------|-------------------------------------------------------------------------------|----------------------|\n| **Hygiëne-naleving**           | **Matig** (verslechtering sinds 2020, openstaande overtreding).               | **Hoog**             |\n| **Kennis bedrijfsleiding**     | **Onvoldoende** (inspecteur noteerde gebrek aan kennis in 2022).              | **Gemiddeld**        |\n| **Follow-up compliance**       | **Slecht** (deadline overschreden, geen actie ondernomen).                    | **Zeer hoog**        |\n| **Herhalingsrisico**           | **Hoog** (eerdere overtreding in dezelfde categorie).                         | **Hoog**             |\n\n---\n\n### **🔎 Aanbevelingen voor Huidige Inspectie**\n1. **Controleer of de eerdere overtreding (2022) is opgelost:**\n   - Is het schoonmaakschema nu volledig ingevuld?\n   - Is de keukenvloer (en andere hygiënegevoelige zones) schoon?\n2. **Verifieer follow-up status:**\n   - Waarom is de follow-up niet voltooid? Zijn er verzachtende omstandigheden?\n3. **Beoordeel kennis van de bedrijfsleiding:**\n   - Zijn er trainingen of instructies gegeven sinds 2022?\n4. **Let op herhalingsrisico:**\n   - **WAARSCHUWING:** Eerdere overtreding in dezelfde categorie (hygiëne) verhoogt het risico op herhaling.\n\n---\n\n### **⚖️ Mogelijke Handhavingsopties (indien overtredingen worden bevestigd)**\n- **Eerste stap:** **Officiële waarschuwing** met duidelijke deadline voor correctie.\n- **Tweede stap (bij herhaling):** **Boete** (afhankelijk van ernst).\n- **Derde stap (ernstige of herhaalde overtredingen):** **Tijdelijke sluiting** of **intrekking vergunning**.\n\n---\n**Conclusie:**\nRestaurant Bella Rosa heeft een **wisselend compliance-patroon**, met een **duidelijke verslechtering sinds 2020**. De **openstaande overtreding en gemiste follow-up** zijn zorgwekkend en vereisen **directe aandacht**. Tijdens de huidige inspectie moet **specifiek worden gecontroleerd op hygiëne en opvolging van eerdere tekortkomingen**.",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='Tru2n1Hsu'"
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='Owzh6JZMe'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "mistral-large",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 96924.51941699255,
+      "response_ms": 166475.67266700207,
+      "total_ms": 166475.97154200776,
+      "response_text": "### **Samenvatting van overtredingen en risico's**\nDe situatie die u beschrijft – een **geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten** – is in **ernstige overtreding** van meerdere hygiënevoorschriften uit de **EU Verordening 852/2004 (Levensmiddelenhygiëne)**, **EU Verordening 853/2004 (Specifieke hygiënevoorschriften voor levensmiddelen van dierlijke oorsprong)** en het **Warenwetbesluit Bereiding en behandeling van levensmiddelen**. Hieronder volgt een gedetailleerde analyse van de overtredingen en de bijbehorende risico's.\n\n---\n\n### **1. Overtreding: Opslag rauwe vis bij onjuiste temperatuur**\n#### **Regelgeving:**\n- **EU Verordening 853/2004, Hoofdstuk VII (Opslag van visserijproducten), Artikel 15**:\n  - Verse visserijproducten moeten worden bewaard bij een temperatuur die **die van smeltend ijs benadert** (ca. 0–2 °C).\n  - Rauwe vis mag **niet bij kamertemperatuur** worden opgeslagen, omdat dit microbiologisch bederf en de groei van pathogene bacteriën (zoals *Listeria monocytogenes*, *Salmonella* en *Vibrio*) bevordert.\n- **Warenwetbesluit Bereiding en behandeling van levensmiddelen, Artikel 15**:\n  - Bederfelijke levensmiddelen (zoals rauwe vis) moeten worden bewaard bij een temperatuur van **maximaal 7 °C**, tenzij anders aangegeven.\n  - Uitzonderingen gelden alleen voor zeer korte periodes (bijv. tijdens bereiding), maar **niet voor langdurige opslag**.\n\n#### **Risico's:**\n- **HOOG RISICO**: Snelle groei van pathogenen, met name bij temperaturen tussen 4 °C en 60 °C (de \"gevarenzone\").\n- **Mogelijke gevolgen**: Voedselvergiftiging, bederf, en afkeuring van producten door de NVWA.\n- **NVWA-classificatie**: **Zware overtreding** (risico op ernstig gevaar voor de volksgezondheid).\n\n#### **Aanbevelingen:**\n- **Onmiddellijke actie**: De vis moet direct worden gekoeld tot **≤ 2 °C** (bijv. met ijs of in een gekoelde ruimte).\n- **Structurele maatregelen**:\n  - Gebruik **gekoelde opslagruimtes** of **ijskasten** voor rauwe vis.\n  - Implementeer een **temperatuurregistratiesysteem** (bijv. HACCP-plan).\n  - Train personeel in **temperatuurbeheersing** en hygiëne.\n\n---\n\n### **2. Overtreding: Afvoerputje met schoonmaakmiddelresten naast levensmiddelen**\n#### **Regelgeving:**\n- **EU Verordening 852/2004, Bijlage II, Hoofdstuk I (Algemene voorschriften voor bedrijfsruimten), Artikel 4**:\n  - Afval (inclusief chemicaliën) moet **hygiënisch en gescheiden van levensmiddelen** worden opgeslagen en afgevoerd.\n  - Afvoerputjes moeten **goed onderhouden** en **vrij van verontreiniging** zijn.\n- **EU Verordening 852/2004, Bijlage II, Hoofdstuk VI (Levensmiddelenafval), Artikel 17**:\n  - Afval mag **geen bron van verontreiniging** zijn voor levensmiddelen.\n  - Reinigingsmiddelen moeten **gescheiden van levensmiddelen** worden opgeslagen.\n- **Warenwetbesluit Hygiëne van levensmiddelen, Artikel 2**:\n  - Exploitanten moeten **voorkomen dat levensmiddelen worden verontreinigd** door chemicaliën, afval of andere gevaarlijke stoffen.\n\n#### **Risico's:**\n- **HOOG RISICO**: Kruisbesmetting van vis met **chemische residuen** (bijv. chloor, detergentia), wat kan leiden tot:\n  - **Toxische contaminatie** (bijv. door opname van chemicaliën in de vis).\n  - **Allergische reacties** bij consumenten.\n  - **Afkeuring van producten** door de NVWA.\n- **NVWA-classificatie**: **Zware overtreding** (risico op ernstig gevaar voor de volksgezondheid).\n\n#### **Aanbevelingen:**\n- **Onmiddellijke actie**:\n  - **Verwijder de ton met vis** uit de buurt van het afvoerputje.\n  - **Reinig het afvoerputje grondig** en zorg dat er geen chemicaliënresten achterblijven.\n  - **Controleer de vis op mogelijke contaminatie** (bijv. geur, kleur, residuen).\n- **Structurele maatregelen**:\n  - **Scheid opslag van chemicaliën en levensmiddelen**: Gebruik aparte ruimtes of afgesloten kasten voor schoonmaakmiddelen.\n  - **Implementeer een reinigingsprotocol**: Zorg voor duidelijke procedures voor het gebruik en opslag van chemicaliën.\n  - **Gebruik afsluitbare afvalcontainers** voor chemicaliën en afval.\n  - **Train personeel** in het voorkomen van kruisbesmetting.\n\n---\n\n### **3. Overtreding: Gebrek aan scheiding tussen rauwe vis en chemicaliën**\n#### **Regelgeving:**\n- **EU Verordening 852/2004, Bijlage II, Hoofdstuk IX (Bepalingen van toepassing op levensmiddelen), Artikel 17**:\n  - Levensmiddelen moeten **tegen elke vorm van verontreiniging** worden beschermd.\n  - **Rauwe producten (zoals vis) mogen niet in contact komen met chemicaliën** of andere verontreinigende stoffen.\n- **EU Verordening 853/2004, Hoofdstuk II (Voorschriften bij en na het aanlanden), Artikel 15**:\n  - Exploitanten moeten **verontreiniging van visserijproducten voorkomen**, met name door:\n    - **Scheiding van schone en vuile zones**.\n    - **Gebruik van geschikte opslagvoorzieningen**.\n\n#### **Risico's:**\n- **HOOG RISICO**: Chemische contaminatie van vis, met mogelijke **acute gezondheidsrisico's** voor consumenten (bijv. vergiftiging).\n- **NVWA-classificatie**: **Zware overtreding** (risico op ernstig gevaar voor de volksgezondheid).\n\n#### **Aanbevelingen:**\n- **Onmiddellijke actie**:\n  - **Verplaats de vis onmiddellijk** naar een schone, gekoelde ruimte.\n  - **Controleer de vis op chemische residuen** (bijv. via laboratoriumanalyse).\n- **Structurele maatregelen**:\n  - **Scheid opslag- en werkzones**:\n    - Gebruik **aparte ruimtes** voor rauwe vis en chemicaliën.\n    - Zorg voor **fysieke barrières** (bijv. deuren, schotten) tussen schone en vuile zones.\n  - **Implementeer een HACCP-plan** met duidelijke procedures voor:\n    - Opslag van rauwe vis.\n    - Gebruik en opslag van chemicaliën.\n    - Reiniging en desinfectie van ruimtes en apparatuur.\n  - **Gebruik kleurgecodeerde containers en gereedschappen** om kruisbesmetting te voorkomen.\n\n---\n\n### **4. Algemene hygiëne-overtredingen**\n#### **Regelgeving:**\n- **EU Verordening 852/2004, Bijlage II, Hoofdstuk I (Algemene voorschriften voor bedrijfsruimten)**:\n  - Vloeren, wanden en afvoeren moeten **gemakkelijk te reinigen en te desinfecteren** zijn.\n  - Afvoersystemen moeten **zo zijn ontworpen dat verontreiniging wordt voorkomen**.\n- **EU Verordening 852/2004, Bijlage II, Hoofdstuk V (Voorschriften inzake de uitrusting)**:\n  - Apparatuur en containers die met levensmiddelen in contact komen, moeten **regelmatig worden gereinigd en gedesinfecteerd**.\n\n#### **Risico's:**\n- **Middelzwaar tot zwaar risico**:\n  - **Ophoping van bacteriën en schimmels** in afvoerputjes en slecht onderhouden ruimtes.\n  - **Verspreiding van pathogenen** via besmette oppervlakken of apparatuur.\n\n#### **Aanbevelingen:**\n- **Onmiddellijke actie**:\n  - **Reinig en desinfecteer** alle oppervlakken, afvoeren en apparatuur die in contact komen met vis.\n  - **Repareer of vervang** beschadigde afvoeren of vloeren.\n- **Structurele maatregelen**:\n  - **Implementeer een reinigings- en desinfectieschema** (bijv. dagelijks, wekelijks).\n  - **Gebruik geschikte materialen** voor vloeren en wanden (bijv. glad, niet-poreus, corrosiebestendig).\n  - **Zorg voor voldoende ventilatie** om schimmelgroei te voorkomen.\n\n---\n\n### **Conclusie: Compliance-beoordeling**\n| **Overtreding**                          | **Toepasselijke regelgeving**                                                                 | **Risico-classificatie (NVWA)** | **Ernst**          |\n|------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------|--------------------|\n| Rauwe vis bij kamertemperatuur           | EU 853/2004 (Art. 15), Warenwetbesluit Bereiding en behandeling van levensmiddelen (Art. 15) | Zwaar                           | Ernstig gevaar     |\n| Afvoerputje met chemicaliën naast vis    | EU 852/2004 (Art. 4, 17), Warenwetbesluit Hygiëne van levensmiddelen (Art. 2)               | Zwaar                           | Ernstig gevaar     |\n| Geen scheiding tussen vis en chemicaliën | EU 852/2004 (Art. 17), EU 853/2004 (Art. 15)                                                | Zwaar                           | Ernstig gevaar     |\n| Slechte hygiëne afvoersysteem            | EU 852/2004 (Bijlage II, Hoofdstuk I, V)                                                    | Middelzwaar                     | Gevaar             |\n\n#### **WAARSCHUWING**:\nDeze situatie vormt een **ernstig risico voor de volksgezondheid** en kan leiden tot:\n- **Afkeuring van producten** door de NVWA.\n- **Bestuursrechtelijke sancties** (bijv. boetes, stillegging van de productie).\n- **Strafrechtelijke vervolging** bij herhaalde of opzettelijke overtredingen.\n- **Reputatieschade** voor het bedrijf.\n\n---\n\n### **Aanbevolen acties voor naleving**\n1. **Onmiddellijke corrigerende maatregelen**:\n   - Koel de rauwe vis direct tot **≤ 2 °C**.\n   - Verwijder de vis uit de buurt van het afvoerputje en controleer op contaminatie.\n   - Reinig het afvoerputje en de omgeving grondig.\n   - Documenteer de genomen maatregelen (voor NVWA-inspecties).\n\n2. **Structurele verbeteringen**:\n   - **Scheid opslag van vis en chemicaliën**: Gebruik aparte ruimtes of afgesloten kasten.\n   - **Implementeer een HACCP-plan** met duidelijke procedures voor:\n     - Temperatuurbeheersing.\n     - Opslag en gebruik van chemicaliën.\n     - Reiniging en desinfectie.\n   - **Train personeel** in hygiënevoorschriften en temperatuurbeheersing.\n   - **Voer regelmatige controles uit** (bijv. temperatuurmetingen, hygiëne-audits).\n\n3. **NVWA-melding (indien van toepassing)**:\n   - Als de vis mogelijk is verontreinigd, **meld dit aan de NVWA** en trek de producten terug uit de handel.\n\n---\n\n### **Bronnen**\n1. **EU Verordening 852/2004** (Levensmiddelenhygiëne):\n   - [Bijlage II, Hoofdstukken I, VI, IX](https://eur-lex.europa.eu/legal-content/NL/TXT/HTML/?uri=CELEX:02004R0852-20041222)\n2. **EU Verordening 853/2004** (Specifieke hygiënevoorschriften voor levensmiddelen van dierlijke oorsprong):\n   - [Hoofdstuk VII (Opslag van visserijproducten), Artikel 15](https://eur-lex.europa.eu/legal-content/NL/TXT/HTML/?uri=CELEX:02004R0853-20041231)\n3. **Warenwetbesluit Bereiding en behandeling van levensmiddelen**:\n   - [Artikel 15 (Temperatuurvoorschriften)](https://wetten.overheid.nl/BWBR0015038/2023-01-01)\n4. **Specifiek interventiebeleid NVWA voedselveiligheid**:\n   - [Bijlage (Risicoclassificatie en sancties)](https://www.nvwa.nl/documenten/handhaving/specifiek-interventiebeleid-voedselveiligheid)",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='Xvfb8Ulhs'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"afvoerputje schoonmaakmiddelen levensmiddelenbedrijf hygi\\u00ebnevoorschriften NVWA\", \"limit\": 10}",
+          "result": "content='{\"query\":\"afvoerputje schoonmaakmiddelen levensmiddelenbedrijf hygiënevoorschriften NVWA\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"erontreiniging van levensmiddelen door dieren en schadelijke organismen zoveel mogelijk worden voorkomen.\\\\n2. Meer in het bijzonder moet, indien nodig, aan de onderstaande voorschriften worden voldaan:\\\\n- a) er moeten passende voorzieningen aanwezig zijn voor een voldoende persoonlijke hygiëne (waaronder voorzieningen voor het hygiënisch wassen en dr"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"scheiding rauwe vis en chemicali\\u00ebn levensmiddelenhygi\\u00ebne EU Verordening 852/2004\", \"limit\": 5}",
+          "result": "content='{\"query\":\"scheiding rauwe vis en chemicaliën levensmiddelenhygiëne EU Verordening 852/2004\",\"filters\":{},\"found\":5,\"results\":[{\"content\":\"## Artikel 1\\\\n\\\\n## Onderwerp en toepassingsgebied\\\\n\\\\nBij deze verordening worden de microbiologische criteria voor bepaalde micro-organismen en de bijbehorende uitvoeringsbepalingen vastgesteld waaraan exploitanten van levensmiddelenbedrijven moeten voldoen bij de toepassing van de algemene en specifieke hygiënemaatregelen zoals bedoeld in artikel"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"opslag rauwe vis temperatuurvoorschriften hygi\\u00ebne levensmiddelen NVWA\", \"limit\": 10}",
+          "result": "content='{\"query\":\"opslag rauwe vis temperatuurvoorschriften hygiëne levensmiddelen NVWA\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"jke consumptie bestemde producten. Voor menselijke consumptie bestemde levers, kuit en hom moeten onder ijs worden bewaard bij de temperatuur welke die van smeltend ijs benadert, of worden ingevroren.\\\\n7. Wanneer de hele vis die bestemd is voor de bereiding van conserven, wordt ingevroren in pekel, moet het product op een temperatuur van ten hoogste -9 ºC word"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "ministral-14b": [
+    {
+      "model_id": "ministral-14b",
+      "scenario_id": "inspection_start",
+      "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+      "run_number": 1,
+      "ttft_ms": 8303.130042011617,
+      "response_ms": 18010.73395801359,
+      "total_ms": 18011.380417010514,
+      "response_text": "### **Inspectierapport Restaurant Bella Rosa (KVK: 92251854)**\n\n---\n\n### **📌 Bedrijfsgegevens**\n- **Bedrijfsnaam:** Restaurant Bella Rosa\n- **KVK-nummer:** 92251854\n- **Status:** **Actief** ✅\n- **Locatie:** Den Haag\n\n---\n\n### **📊 Historisch Overzicht Inspecties**\nRestaurant Bella Rosa heeft **2 inspecties** ondergaan in de afgelopen jaren, beide gericht op **hygienecontroles** binnen de horeca.\n\n| **Inspectiedatum** | **Inspectietype**       | **Algemene Score**          | **Aantal Overtredingen** | **Opmerkingen**                                                                 |\n|---------------------|-------------------------|-----------------------------|--------------------------|---------------------------------------------------------------------------------|\n| 15-05-2022          | Hygiëne (routine)       | **Voldoende met opmerkingen** | **1 (WAARSCHUWING)**      | **Onvoldoende hygiënemaatregelen** (zie details onderaan).                   |\n| 10-09-2020          | Hygiëne (routine)       | **Voldoende**              | **0**                    | Geen overtredingen, volledig in orde.                                           |\n\n**Trendanalyse:**\n- **Verslechtering in 2022** ten opzichte van 2020.\n- **Herhalingsrisico:** **WAARSCHUWING: Eerdere overtreding** in 2022 (hygiëne), terwijl 2020 zonder opmerkingen verliep.\n- **Coöperatie:** Bedrijfsleider was in 2022 **coöperatief maar niet volledig op de hoogte** van alle voorschriften.\n\n---\n\n### **⚠️ Overtredingen & Risico’s**\n#### **1. Overtreding (2022-05-15) – Hygiëne**\n- **Categorie:** Hygiënemaatregelen (Artikel 4.2 Hygiënecode Horeca)\n- **Zwaarte:** **Waarschuwing** (maar **niet opgelost** en **follow-up uitstaan**)\n- **Details:**\n  - Schoonmaakschema **niet volledig ingevuld**.\n  - **Keukenvloer had vlekken** (duidelijke indicatie van slechte hygiëne).\n- **Regelgeving:** [Hygiënecode Horeca, Artikel 4.2](https://www.rivm.nl/hygiëne-in-de-horeca)\n- **Status:**\n  - **OPENSTAANDE ACTIES:**\n    - Follow-up gepland voor **15-08-2022**, maar **niet uitgevoerd**.\n    - Overtreding **nog niet verholpen**.\n\n**Risico-indicatie:**\n⚠️ **Hoge kans op herhaling** als de structurele hygiëneproblemen niet worden aangepakt.\n🔴 **Directe impact op voedselveiligheid** (vlekken op vloer kunnen kruisbesmetting veroorzaken).\n\n---\n\n### **📋 Follow-up Status**\n- **Follow-up gepland:** 15-08-2022 (hygiëne-overeenkomst)\n- **Status:** **Niet uitgevoerd** ❌\n- **Aanbevolen actie:**\n  - **Direct contact opnemen** met het restaurant om de follow-up af te ronden.\n  - **Herinspectie** overwegen als er geen verbetering is gebleken.\n\n---\n\n### **🔍 Risico-assessment & Aanbevelingen**\n| **Risicogebied**          | **Score (1-5)** | **Aanbeveling**                                                                 |\n|---------------------------|----------------|---------------------------------------------------------------------------------|\n| Hygiënecompliance         | **4/5**        | **Dringend:** Structurele controle op schoonmaakprocedures en -registratie.     |\n| Herhalingsrisico          | **4/5**        | **Follow-up inspectie** uitvoeren om naleving te verifiëren.                  |\n| Bedrijfsleider kennis     | **3/5**        | **Opleiding/advies** over Hygiënecode Horeca.                                    |\n| Voedselveiligheid        | **4/5**        | **Specifieke focus** op keukenhygiëne tijdens volgende inspectie.               |\n\n**Algemene conclusie:**\nRestaurant Bella Rosa had in 2020 **geen problemen**, maar de **onvoldoende hygiëne in 2022** (met een **openstaande follow-up**) wijst op **structurele zwaktes**. **Dringend aanbevolen** om de hygiëneprocedures te versterken en de follow-up af te ronden.\n\n---\n**Volgende stappen voor inspectie:**\n1. **Follow-up inspectie** uitvoeren (hygiëneovereenkomst).\n2. **Focus op:**\n   - Schoonmaakregistratie (of deze nu volledig wordt bijgehouden).\n   - Fysieke hygiëne (keukenvloer, apparatuur).\n3. **Opleiding** aanbevelen voor medewerkers/bedrijfsleider.\n\n---\n**Indicatie voor verdere actie:**\n🚨 **WAARSCHUWING:** Bij gebrek aan verbetering kan een **formele waarschuwing** of **boete** noodzakelijk zijn (Artikel 4.2 Hygiënecode Horeca).\n\n---\n**Vragen of aanvullende acties?** Laat het weten! 🚀",
+      "agents_seen": [
+        "general-agent",
+        "history-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_history",
+          "args": "",
+          "result": "content='Transferring to history-agent' name='transfer_to_history' tool_call_id='XWW2LdB6F'"
+        },
+        {
+          "name": "check_company_exists",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"exists\":true,\"kvk_number\":\"92251854\",\"active\":true}' name='check_company_exists' tool_call_id='IGF8THPGs'"
+        },
+        {
+          "name": "get_inspection_history",
+          "args": "{\"kvk_number\": \"92251854\"}",
+          "result": "content='{\"status\":\"success\",\"kvk_number\":\"92251854\",\"company_name\":\"Restaurant Bella Rosa\",\"total_inspections\":2,\"returned_inspections\":2,\"inspections\":[{\"inspection_id\":\"INS-2022-001234\",\"date\":\"2022-05-15\",\"inspector\":\"Jan Pietersen\",\"inspection_type\":\"hygiene_routine\",\"location\":\"Den Haag\",\"overall_score\":\"voldoende_met_opmerkingen\",\"violations\":[{\"violation_id\":\"VIO-2022-001234-01\",\"category\":\"hygiene_measures\",\"severity\":\"warning\",\"description\":\"Onvoldoende hygiënemaatregelen in de keuken\""
+        }
+      ],
+      "error": null
+    },
+    {
+      "model_id": "ministral-14b",
+      "scenario_id": "regulation_query",
+      "prompt": "Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?",
+      "run_number": 1,
+      "ttft_ms": 15992.97116699745,
+      "response_ms": 30705.37208300084,
+      "total_ms": 30705.707292014267,
+      "response_text": "### **Samenvatting**\nDe situatie met een **geopende ton rauwe vis op kamertemperatuur** en een **afvoerputje met schoonmaakmiddelresten** in de buurt is **ernstig non-compliant** met de geldende voedselhygiënevoorschriften. Dit vormt een **HOOG RISICO** voor de volksgezondheid door microbiële groei en chemische verontreiniging.\n\n---\n\n### **Details: Overtredingen en Risico’s**\n\n#### **1. Opslag van rauwe vis op kamertemperatuur**\n**Regelgeving:**\n- **EU Verordening 852/2004 (Levensmiddelenhygiëne)** – Artikel 17 en Bijlage II, Hoofdstuk III, punt 5:\n  *\"Levensmiddelen die een voedingsbodem vormen voor pathogene micro-organismen of toxines, mogen niet worden bewaard bij temperaturen die risico’s inhouden voor de gezondheid. De koudeketen mag niet worden verbroken.\"*\n  - **Specifiek voor vis:** Rauwe vis is een **hoogriskovoedsel** en moet volgens **EU Verordening 853/2004 (Specifieke hygiënevoorschriften voor levensmiddelen van dierlijke oorsprong)** en **Warenwetbesluit Hygiëne van levensmiddelen (Artikel 15)** worden bewaard op **ten hoogste 7°C** (of de door de producent aangegeven temperatuur).\n  - **Uitzondering:** Alleen als de vis **direct wordt verwerkt** (bv. binnen 24 uur) en onder strikte hygiënevoorwaarden mag van koeling worden afgezien.\n\n**Risico:**\n- **Snelle groei van pathogene bacteriën** (zoals *Salmonella*, *Listeria*, *Vibrio* en *E. coli*), wat kan leiden tot **voedselvergiftiging**.\n- **Overtredingsklasse:** **Zwaar** (ernstig gevaar voor volksgezondheid, risico op uitbraken).\n\n---\n\n#### **2. Afvoerputje met schoonmaakmiddelresten in de buurt van voedsel**\n**Regelgeving:**\n- **EU Verordening 852/2004 (Artikel 17, Bijlage II, Hoofdstuk I, punt 8):**\n  *\"Afvoervoorzieningen moeten zo zijn ontworpen en geconstrueerd dat elk risico van verontreiniging wordt voorkomen. Wanneer afvoerkanalen geheel of gedeeltelijk open zijn, moeten zij zo zijn ontworpen dat het afval niet van een verontreinigde zone kan stromen naar een schone zone, met name niet naar een zone waar wordt omgegaan met levensmiddelen die een aanzienlijk risico kunnen inhouden voor de consument.\"*\n- **Warenwetbesluit Hygiëne van levensmiddelen (Artikel 4, tweede lid):**\n  *\"Er moeten adequate maatregelen worden getroffen om te voorkomen dat schadelijke stoffen (zoals schoonmaakmiddelen) in contact komen met levensmiddelen.\"*\n\n**Risico:**\n- **Chemische verontreiniging:** Schoonmaakmiddelresten kunnen **residuen achterlaten** die schadelijk zijn voor de gezondheid (irritatie, vergiftiging).\n- **Kruisbesmetting:** Druppels of spattingen uit de afvoerput kunnen de rauwe vis besmetten.\n- **Overtredingsklasse:** **Middelzwaar tot zwaar**, afhankelijk van de concentratie en het type schoonmaakmiddel.\n\n---\n\n### **Aanbevelingen voor Compliance**\n#### **1. Directe acties (onmiddellijke correctie)**\n- **Rauwe vis:**\n  - **Onmiddellijk koelen** tot **≤ 7°C** (of de door de producent aangegeven temperatuur).\n  - **Indien niet direct te koelen:** Vis **direct verwerken** (bv. bereiden of diepvriezen) en **niet langer dan 24 uur** op kamertemperatuur laten staan.\n  - **Vis weggooien** als deze al langer dan 2 uur op kamertemperatuur heeft gestaan (tenzij deze direct wordt verwerkt onder hygiënische omstandigheden).\n- **Afvoerputje:**\n  - **Direct reinigen en ontsmetten** met **voedselveilig schoonmaakmiddel** (geen agressieve chemicaliën die residuen achterlaten).\n  - **Afvoerput afdekken** met een **goed sluitend rooster** om besmetting te voorkomen.\n  - **Ruimte grondig schoonmaken** met **voedselveilig desinfectiemiddel** (bv. chloor of waterstofperoxide).\n\n#### **2. Structurele maatregelen (langetermijnoplossingen)**\n- **Opslagruimte:**\n  - **Koelvoorzieningen** (koelkast/vrieskast) direct bij de opslag van rauwe vis plaatsen.\n  - **Afzonderlijke opslag** voor rauwe vis en gereed voedsel om kruisbesmetting te voorkomen.\n- **Afvoersysteem:**\n  - **Gesloten afvoersysteem** installeren of **afvoerput verplaatsen** naar een zone die niet in contact komt met voedsel.\n  - **Regelmatig onderhoud** van afvoersystemen om ophoping van schoonmaakmiddelresten te voorkomen.\n- **HACCP-plan:**\n  - **Critical Control Points (CCP’s)** identificeren voor:\n    - Temperatuurbeheersing van rauwe vis.\n    - Preventie van kruisbesmetting door schoonmaakmiddelen.\n  - **Documenteren** van temperatuurmetingen en schoonmaakprocedures.\n\n#### **3. Overige verplichtingen**\n- **Personeel opleiden** over:\n  - Risico’s van rauwe vis op kamertemperatuur.\n  - Hygiënische hantering van schoonmaakmiddelen.\n- **NVWA melden** als de situatie niet direct kan worden opgelost (risico op **bestrafende sancties** of **corrigerende interventie**).\n\n---\n\n### **Bronnen**\n1. **EU Verordening 852/2004 (Levensmiddelenhygiëne)** – Artikel 17, Bijlage II.\n2. **EU Verordening 853/2004 (Specifieke hygiënevoorschriften voor levensmiddelen van dierlijke oorsprong)**.\n3. **Warenwetbesluit Hygiëne van levensmiddelen (Artikel 15 en Artikel 4)**.\n4. **Specifiek Interventiebeleid NVWA (Risicoklassen en sancties)** – Overtredingsklasse \"Zwaar\" voor ernstige risico’s op volksgezondheid.\n\n---\n### **WAARSCHUWING**\nDeze situatie vormt een **HOOG RISICO** voor voedselveiligheid en kan leiden tot:\n- **Voedselvergiftiging** (bacteriële groei in rauwe vis).\n- **Chemische besmetting** door schoonmaakmiddelresten.\n- **Bestrafende maatregelen** van de NVWA (fijn, sluiting, of strafrechtelijke vervolging).\n\n**Aanbevolen actie:** **Onmiddellijke correctie** en **structurele verbeteringen** om compliance te herstellen.",
+      "agents_seen": [
+        "general-agent",
+        "regulation-agent"
+      ],
+      "tool_calls": [
+        {
+          "name": "transfer_to_regulation",
+          "args": "",
+          "result": "content='Transferring to regulation-agent' name='transfer_to_regulation' tool_call_id='RLsS12xkR'"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"rauwe vis op kamertemperatuur opslag hygi\\u00ebne regels Nederland\", \"limit\": 10}",
+          "result": "content='{\"query\":\"rauwe vis op kamertemperatuur opslag hygiëne regels Nederland\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"melk en rauwe room onmiddellijk na het winnen gekoeld worden tot een temperatuur van ten hoogste 4 °C en tot het moment van levering op die temperatuur worden bewaard: binnen 72 uur na het winnen. b.\\\\n- De exploitant, bedoeld in het tweede lid, mag rauwe melk en rauwe room in diepgevroren staat ter plaatse aan de consument leveren of verzenden: 3\\\\n- indien de rauwe m"
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"schoonmaakmiddelresten in afvoerputje hygi\\u00ebne risico's voedselbedrijven\", \"limit\": 10}",
+          "result": "content='{\"query\":\"schoonmaakmiddelresten in afvoerputje hygiëne risico\\'s voedselbedrijven\",\"filters\":{},\"found\":10,\"results\":[{\"content\":\"-----------------------------------------|----------------------|----------------------------------------------------|---------------------------------------------------------------|-----------------|\\\\n|            |                                                                                                                                               "
+        },
+        {
+          "name": "search_regulations",
+          "args": "{\"query\": \"EU Verordening 852/2004 en 853/2004 voedselhygi\\u00ebne rauwe vis\", \"limit\": 5}",
+          "result": "content='{\"query\":\"EU Verordening 852/2004 en 853/2004 voedselhygiëne rauwe vis\",\"filters\":{},\"found\":5,\"results\":[{\"content\":\". 1/2005 (EG) nr. 1099/2009 98/58/EG 1999/74/EG 2007/43/EG 2008/119/EG 2008/120/EG (EG) nr. 854/2004 (EG) nr. 882/2004 89/608/EEG 89/662/EEG 90/425/EEG 91/496/EEG 96/23/EG 96/93/EG 97/78/EG 92/438/EEG\\\\n- : van de Commissie van de Europese Gemeenschappen van 15 november 2005 inzake microbiologische criteria voor levensmiddelen (PbEU L 338). f. verordening (EG) 2073/2005 "
+        }
+      ],
+      "error": null
+    }
+  ]
+}

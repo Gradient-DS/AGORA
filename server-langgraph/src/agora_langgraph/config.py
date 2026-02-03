@@ -62,6 +62,8 @@ class Settings(BaseSettings):
         default="sessions.db", description="SQLite database path for sessions"
     )
 
+    reload: bool = Field(default=True, description="Enable uvicorn auto-reload")
+
     model_config = SettingsConfigDict(
         env_prefix="LANGGRAPH_",
         case_sensitive=False,
