@@ -92,8 +92,12 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
         }
         
         group "Core Layer [OpenAI]" {
+          oaiAgentLoader = component "[Shared] Agent Loader" "Python" {
+            description "[NOT IMPLEMENTED] Dynamically instantiates Agent objects from the Agent Registry at startup or runtime, resolving MCP tool mappings and handoff targets"
+            tags "NotImplemented" "Shared"
+          }
           oaiAgentDefinitions = component "[OpenAI] Agent Definitions" "agents.Agent" {
-            description "SDK Agent instances with instructions and handoff configuration"
+            description "SDK Agent instances with instructions and handoff configuration (currently hardcoded in agent_definitions.py)"
             tags "OpenAI"
           }
           oaiAgentExecutor = component "[OpenAI] Agent Executor" "agents.Runner" {
@@ -140,6 +144,8 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
         oaiOrchestratorPipeline -> oaiAgentExecutor "runs agents"
         oaiOrchestratorPipeline -> oaiModerator "validates I/O"
         oaiOrchestratorPipeline -> oaiApprovalLogic "checks approval"
+        oaiAgentLoader -> oaiAgentDefinitions "creates agents"
+        oaiAgentLoader -> oaiMcpAdapter "resolves MCP tool mappings"
         oaiAgentExecutor -> oaiAgentDefinitions "gets agents"
         oaiAgentExecutor -> oaiHandoffLogic "handles handoffs"
         oaiAgentExecutor -> oaiSessionPersistence "persists state" "SQLite"
@@ -181,8 +187,12 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
         }
         
         group "Core Layer [OpenSource]" {
+          lgAgentLoader = component "[Shared] Agent Loader" "Python" {
+            description "[NOT IMPLEMENTED] Programmatically creates StateGraph nodes from Agent Registry definitions at startup or runtime, resolving MCP tool mappings"
+            tags "NotImplemented" "Shared"
+          }
           lgAgentDefinitions = component "[OpenSource] Agent Definitions" "Python async functions" {
-            description "Async functions (general_agent, regulation_agent, etc.) invoking ChatOpenAI with bound tools"
+            description "Async functions (general_agent, regulation_agent, etc.) invoking ChatOpenAI with bound tools (currently hardcoded in agent_definitions.py)"
             tags "OpenSource"
           }
           lgAgentExecutor = component "[OpenSource] Agent Executor" "langgraph.StateGraph" {
@@ -237,6 +247,8 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
         lgOrchestratorPipeline -> lgAgentExecutor "invokes graph"
         lgOrchestratorPipeline -> lgModerator "validates I/O"
         lgOrchestratorPipeline -> lgApprovalLogic "checks approval"
+        lgAgentLoader -> lgAgentDefinitions "creates agent nodes"
+        lgAgentLoader -> lgMcpAdapter "resolves MCP tool mappings"
         lgAgentExecutor -> lgToolExecutor "executes tools"
         lgAgentExecutor -> lgRoutingLogic "determines next"
         lgToolExecutor -> lgHandoffLogic "executes handoffs"
@@ -268,28 +280,43 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       }
       
       # =======================================================================
-      # MISSING CONTAINERS [Shared] - Production Gap Analysis
+      # SUPPORTING CONTAINERS [Shared]
       # =======================================================================
-      userProfile = container "User Profile" "PostgreSQL" "Database" {
-        description "[Shared] [NOT IMPLEMENTED] User profiles, preferences, roles (RBAC)"
-        tags "Database" "NotImplemented" "Shared"
+      userProfile = container "User Profiles & Preferences" "SQLite" "Database" {
+        description "[Shared] User profiles, preferences (spoken_text_type, email_reports, interaction_mode), session metadata. Stored in sessions.db."
+        tags "Database" "Shared"
       }
-      
-      memory = container "Memory Service" "Vector DB + PostgreSQL" "Service" {
-        description "[Shared] [NOT IMPLEMENTED] Long-term memory, cross-session context"
-        tags "Backend" "NotImplemented" "Shared"
+
+      agentManagement = container "Agent Management" "React SPA + SQLite/PostgreSQL + Vector DB" "Service" {
+        description "[Shared] [NOT IMPLEMENTED] Agent lifecycle management: registry, memory, and administration interface"
+        tags "NotImplemented" "Shared"
+
+        registry = component "Agent Registry" "SQLite/PostgreSQL" {
+          description "Central register of agent definitions: name, system prompt, MCP server mappings, tool risk levels, LLM model, temperature, handoff targets"
+          tags "NotImplemented" "Shared"
+        }
+        memory = component "Agent Memory" "Vector DB + PostgreSQL" {
+          description "Long-term agent memory, cross-session context, learned patterns and preferences per agent"
+          tags "NotImplemented" "Shared"
+        }
+        adminInterface = component "Beheersinterface" "React SPA" {
+          description "Admin application for managing agent configurations, activating/deactivating agents, and configuring MCP server mappings without code changes"
+          tags "NotImplemented" "Shared"
+        }
+
+        adminInterface -> registry "manages agent configs" "REST API"
       }
-      
+
       visibility = container "Visibility Stack" "Grafana + Prometheus + Jaeger" "Observability" {
         description "[Shared] [NOT IMPLEMENTED] Monitoring, logging, tracing dashboards"
         tags "Observability" "NotImplemented" "Shared"
       }
-      
+
       evalService = container "Evaluation Service" "Langfuse" "Observability" {
         description "[Shared] [NOT IMPLEMENTED] LLM tracing, quality evaluations, cost tracking"
         tags "Observability" "NotImplemented" "Shared"
       }
-      
+
       authService = container "Auth Service" "Auth0/Keycloak" "Security" {
         description "[Shared] [NOT IMPLEMENTED] OAuth2/OIDC authentication, RBAC"
         tags "Security" "NotImplemented" "Shared"
@@ -304,6 +331,12 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       # Unified orchestrator connects to shared MCP servers
       orchestrator -> mcpServers "MCP Protocol" "HTTP/SSE Streamable"
       
+      # Orchestrator reads user profiles & preferences
+      orchestrator -> userProfile "reads user preferences" "SQLite"
+
+      # Agent management connections (not implemented)
+      orchestrator -> agentManagement "[NOT CONNECTED] reads agent definitions & memory" "SQL/API"
+
       # Observability connections (not implemented)
       orchestrator -> visibility "[NOT CONNECTED]" "OpenTelemetry OTLP"
       orchestrator -> evalService "[NOT CONNECTED]" "Langfuse SDK"
@@ -332,6 +365,10 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       agora.orchestrator -> agora.mcpServers.regulationServer "MCP" "HTTP POST /mcp"
       agora.orchestrator -> agora.mcpServers.reportingServer "MCP" "HTTP POST /mcp"
       agora.orchestrator -> agora.mcpServers.historyServer "MCP" "HTTP POST /mcp"
+
+      # Agent Loader to Agent Registry connections (for C3 orchestrator views)
+      agora.orchestratorOpenAI.oaiAgentLoader -> agora.agentManagement.registry "[NOT CONNECTED] reads agent configs" "SQL"
+      agora.orchestratorLangGraph.lgAgentLoader -> agora.agentManagement.registry "[NOT CONNECTED] reads agent configs" "SQL"
     }
     
     # =========================================================================
@@ -368,12 +405,12 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       include agora.orchestrator
       include agora.mcpServers
       include agora.userProfile
-      include agora.memory
+      include agora.agentManagement
       include agora.visibility
       include agora.evalService
       include agora.authService
       autolayout tb 350 200
-      description "Container Diagram (C2): HAI → Orchestrator [OpenAI/OpenSource] → MCP Agent Servers (+ future services)"
+      description "Container Diagram (C2): HAI → Orchestrator [OpenAI/OpenSource] → MCP Agent Servers (+ agent management & supporting services)"
     }
     
     # =========================================================================
@@ -395,8 +432,9 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       include *
       include agora.hai
       include agora.mcpServers
+      include agora.agentManagement
       autolayout tb 250 150
-      description "Component Diagram (C3): Orchestrator [OpenAI] - SDK Agent/Runner/Handoffs"
+      description "Component Diagram (C3): Orchestrator [OpenAI] - SDK Agent/Runner/Handoffs + Agent Loader"
     }
     
     # =========================================================================
@@ -406,10 +444,23 @@ workspace "AGORA v1.0 — Multi-Agent Platform for NVWA" {
       include *
       include agora.hai
       include agora.mcpServers
+      include agora.agentManagement
       autolayout tb 250 150
-      description "Component Diagram (C3): Orchestrator [OpenSource] - StateGraph/ToolNode/Routing"
+      description "Component Diagram (C3): Orchestrator [OpenSource] - StateGraph/ToolNode/Routing + Agent Loader"
     }
     
+    # =========================================================================
+    # C3: AGENT MANAGEMENT [Shared]
+    # =========================================================================
+    component agora.agentManagement "C3_Agent_Management" {
+      include *
+      include agora.orchestrator
+      exclude agora.orchestratorOpenAI
+      exclude agora.orchestratorLangGraph
+      autolayout lr 300 150
+      description "Component Diagram (C3): Agent Management - Registry, Memory, Beheersinterface"
+    }
+
     # =========================================================================
     # C3: MCP AGENT SERVERS [Shared]
     # =========================================================================
