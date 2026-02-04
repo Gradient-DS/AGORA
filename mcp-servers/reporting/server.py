@@ -117,13 +117,11 @@ async def extract_inspection_data(
             {"role": "assistant", "content": inspection_summary}
         ]
 
-        draft = storage.load_draft(session_id)
-        existing_data = draft.get("extracted_data", {}) if draft else {}
-
-        # Step 1: Extract structured data
+        # Step 1: Extract structured data (always start fresh to avoid
+        # contamination from previous extractions for the same session_id)
         extracted_data = await extractor.extract_from_conversation(
             messages=messages,
-            existing_data=existing_data
+            existing_data={}
         )
 
         # Merge in session metadata
