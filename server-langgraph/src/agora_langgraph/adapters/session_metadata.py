@@ -48,6 +48,8 @@ class SessionMetadataManager:
         Must be called during application startup (lifespan).
         """
         self._connection = await aiosqlite.connect(self.db_path)
+        await self._connection.execute("PRAGMA journal_mode=WAL")
+        await self._connection.execute("PRAGMA busy_timeout=5000")
         await self._ensure_tables()
         log.info(f"SessionMetadataManager initialized with database: {self.db_path}")
 

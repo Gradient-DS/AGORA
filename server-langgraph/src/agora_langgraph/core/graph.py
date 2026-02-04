@@ -7,7 +7,13 @@ import re
 import time
 from typing import Any, Literal
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Overwrite, Send
@@ -337,11 +343,43 @@ def _create_parallel_sends(state: AgentState) -> list[Send]:
     written_prompt = agent_config["instructions"] if agent_config else ""
     spoken_prompt = get_spoken_prompt(agent_id) or ""
 
-    # Filter out system messages - we'll add our own per-stream
+    # Build messages for generation nodes.
+    # We can't pass ToolMessages or AIMessages with tool_calls to models
+    # that have no tools bound (OpenAI-compatible APIs like HuggingFace Router
+    # reject them). Instead, we convert tool call/result sequences into plain
+    # text context so the generation model has the data it needs.
     raw_messages = state.get("messages", [])
-    messages: list[BaseMessage] = [
-        m for m in raw_messages if not isinstance(m, SystemMessage)
-    ]
+
+    # First pass: collect tool execution context as plain text
+    tool_context_parts: list[str] = []
+    for m in raw_messages:
+        if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
+            for tc in m.tool_calls:
+                name = tc.get("name", "unknown")
+                args = tc.get("args", {})
+                if is_handoff_tool(name):
+                    continue  # Skip handoff tools — not useful context
+                args_str = ", ".join(f"{k}={v!r}" for k, v in args.items()) if args else ""
+                tool_context_parts.append(f"[Tool aanroep: {name}({args_str})]")
+        elif isinstance(m, ToolMessage):
+            content = str(m.content)
+            # Skip handoff tool results
+            if "Transferring to" in content:
+                continue
+            tool_context_parts.append(f"[Resultaat: {content}]")
+
+    # Second pass: keep only HumanMessages and text-only AIMessages
+    messages: list[BaseMessage] = []
+    for m in raw_messages:
+        if isinstance(m, SystemMessage):
+            continue
+        if isinstance(m, ToolMessage):
+            continue
+        if isinstance(m, AIMessage):
+            if getattr(m, "tool_calls", None):
+                continue  # Strip all AI messages with tool calls
+            # This is the agent's final plain-text response — we'll remove it below
+        messages.append(m)
 
     # Filter out the last AI message if it has no tool calls
     # This is the "wasted" response from the agent that we're regenerating
@@ -350,6 +388,15 @@ def _create_parallel_sends(state: AgentState) -> list[Send]:
         if not getattr(last_msg, "tool_calls", None):
             log.info("_create_parallel_sends: Filtering out agent's final response")
             messages = messages[:-1]
+
+    # Inject tool execution context as a plain-text message so the generation
+    # model has access to all tool results without needing tool bindings.
+    if tool_context_parts:
+        tool_context = "\n".join(tool_context_parts)
+        messages.append(HumanMessage(content=f"[Uitgevoerde tools en resultaten]\n{tool_context}"))
+        log.info(
+            f"_create_parallel_sends: Injected {len(tool_context_parts)} tool context entries"
+        )
 
     log.info(
         f"_create_parallel_sends: Dispatching parallel streams for {agent_id} "

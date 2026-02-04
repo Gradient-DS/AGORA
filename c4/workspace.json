@@ -6,12 +6,11 @@
   "documentation" : { },
   "id" : 1,
   "lastModifiedAgent" : "structurizr-ui",
-  "lastModifiedDate" : "2025-12-02T10:07:13Z",
+  "lastModifiedDate" : "2026-02-03T15:59:46Z",
   "model" : {
     "people" : [ {
       "description" : "Food safety inspector using AGORA for daily inspection work",
       "id" : "1",
-      "location" : "Unspecified",
       "name" : "NVWA Inspecteur",
       "properties" : {
         "structurizr.dsl.identifier" : "inspector"
@@ -19,7 +18,7 @@
       "relationships" : [ {
         "description" : "uses for inspections",
         "destinationId" : "2",
-        "id" : "113",
+        "id" : "133",
         "sourceId" : "1",
         "tags" : "Relationship",
         "technology" : "HTTPS/WebSocket"
@@ -34,7 +33,7 @@
           "id" : "4",
           "name" : "[Shared] Chat Components",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.chatcomponents"
+            "structurizr.dsl.identifier" : "agora.hai.chatComponents"
           },
           "relationships" : [ {
             "description" : "reads/writes",
@@ -51,7 +50,7 @@
           "id" : "5",
           "name" : "[Shared] Approval Dialog",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.approvaldialog"
+            "structurizr.dsl.identifier" : "agora.hai.approvalDialog"
           },
           "relationships" : [ {
             "description" : "reads/writes",
@@ -68,7 +67,7 @@
           "id" : "6",
           "name" : "[Shared] Debug Panel",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.debugpanel"
+            "structurizr.dsl.identifier" : "agora.hai.debugPanel"
           },
           "relationships" : [ {
             "description" : "reads",
@@ -85,7 +84,7 @@
           "id" : "7",
           "name" : "[Shared] State Management",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.statemanagement"
+            "structurizr.dsl.identifier" : "agora.hai.stateManagement"
           },
           "relationships" : [ {
             "description" : "dispatches messages",
@@ -102,41 +101,41 @@
           "id" : "8",
           "name" : "[Shared] WebSocket Client",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.websocketclient"
+            "structurizr.dsl.identifier" : "agora.hai.websocketClient"
           },
           "relationships" : [ {
             "description" : "AG-UI Protocol",
             "destinationId" : "14",
-            "id" : "84",
+            "id" : "96",
             "sourceId" : "8",
             "tags" : "Relationship",
             "technology" : "WebSocket"
           }, {
             "description" : "AG-UI Protocol",
             "destinationId" : "16",
-            "id" : "101",
+            "id" : "113",
             "sourceId" : "8",
             "tags" : "Relationship",
             "technology" : "WebSocket"
           }, {
             "description" : "AG-UI Protocol",
             "destinationId" : "15",
-            "id" : "102",
-            "linkedRelationshipId" : "101",
+            "id" : "114",
+            "linkedRelationshipId" : "113",
             "sourceId" : "8",
             "technology" : "WebSocket"
           }, {
             "description" : "AG-UI Protocol",
-            "destinationId" : "42",
-            "id" : "105",
+            "destinationId" : "45",
+            "id" : "117",
             "sourceId" : "8",
             "tags" : "Relationship",
             "technology" : "WebSocket"
           }, {
             "description" : "AG-UI Protocol",
-            "destinationId" : "41",
-            "id" : "106",
-            "linkedRelationshipId" : "105",
+            "destinationId" : "44",
+            "id" : "118",
+            "linkedRelationshipId" : "117",
             "sourceId" : "8",
             "technology" : "WebSocket"
           } ],
@@ -147,7 +146,7 @@
           "id" : "9",
           "name" : "[Shared] Voice Interface",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.hai.voiceinterface"
+            "structurizr.dsl.identifier" : "agora.hai.voiceInterface"
           },
           "tags" : "Element,Component,NotImplemented,Shared"
         } ],
@@ -161,36 +160,36 @@
         "relationships" : [ {
           "description" : "AG-UI Protocol",
           "destinationId" : "14",
-          "id" : "80",
+          "id" : "90",
           "sourceId" : "3",
           "tags" : "Relationship",
           "technology" : "WebSocket/JSON :8001"
         }, {
           "description" : "AG-UI Protocol",
           "destinationId" : "16",
-          "id" : "103",
-          "linkedRelationshipId" : "101",
+          "id" : "115",
+          "linkedRelationshipId" : "113",
           "sourceId" : "3",
           "technology" : "WebSocket"
         }, {
           "description" : "AG-UI Protocol",
           "destinationId" : "15",
-          "id" : "104",
-          "linkedRelationshipId" : "101",
+          "id" : "116",
+          "linkedRelationshipId" : "113",
           "sourceId" : "3",
           "technology" : "WebSocket"
         }, {
           "description" : "AG-UI Protocol",
-          "destinationId" : "42",
-          "id" : "107",
-          "linkedRelationshipId" : "105",
+          "destinationId" : "45",
+          "id" : "119",
+          "linkedRelationshipId" : "117",
           "sourceId" : "3",
           "technology" : "WebSocket"
         }, {
           "description" : "AG-UI Protocol",
-          "destinationId" : "41",
-          "id" : "108",
-          "linkedRelationshipId" : "105",
+          "destinationId" : "44",
+          "id" : "120",
+          "linkedRelationshipId" : "117",
           "sourceId" : "3",
           "technology" : "WebSocket"
         } ],
@@ -206,43 +205,57 @@
         },
         "relationships" : [ {
           "description" : "MCP Protocol",
-          "destinationId" : "71",
-          "id" : "81",
+          "destinationId" : "77",
+          "id" : "91",
           "sourceId" : "14",
           "tags" : "Relationship",
           "technology" : "HTTP/SSE Streamable"
         }, {
+          "description" : "reads user preferences",
+          "destinationId" : "81",
+          "id" : "92",
+          "sourceId" : "14",
+          "tags" : "Relationship",
+          "technology" : "SQLite"
+        }, {
+          "description" : "[NOT CONNECTED] reads agent definitions & memory",
+          "destinationId" : "82",
+          "id" : "93",
+          "sourceId" : "14",
+          "tags" : "Relationship",
+          "technology" : "SQL/API"
+        }, {
           "description" : "[NOT CONNECTED]",
-          "destinationId" : "77",
-          "id" : "82",
+          "destinationId" : "87",
+          "id" : "94",
           "sourceId" : "14",
           "tags" : "Relationship",
           "technology" : "OpenTelemetry OTLP"
         }, {
           "description" : "[NOT CONNECTED]",
-          "destinationId" : "78",
-          "id" : "83",
+          "destinationId" : "88",
+          "id" : "95",
           "sourceId" : "14",
           "tags" : "Relationship",
           "technology" : "Langfuse SDK"
         }, {
           "description" : "MCP",
-          "destinationId" : "72",
-          "id" : "109",
+          "destinationId" : "78",
+          "id" : "121",
           "sourceId" : "14",
           "tags" : "Relationship",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "73",
-          "id" : "110",
+          "destinationId" : "79",
+          "id" : "122",
           "sourceId" : "14",
           "tags" : "Relationship",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "74",
-          "id" : "111",
+          "destinationId" : "80",
+          "id" : "123",
           "sourceId" : "14",
           "tags" : "Relationship",
           "technology" : "HTTP POST /mcp"
@@ -257,19 +270,19 @@
           "id" : "16",
           "name" : "[Shared] FastAPI Server",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaifastapiserver"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiFastApiServer"
           },
           "relationships" : [ {
             "description" : "routes WebSocket",
             "destinationId" : "17",
-            "id" : "30",
+            "id" : "31",
             "sourceId" : "16",
             "tags" : "Relationship",
             "technology" : "WebSocket"
           }, {
             "description" : "routes HTTP",
             "destinationId" : "18",
-            "id" : "31",
+            "id" : "32",
             "sourceId" : "16",
             "tags" : "Relationship",
             "technology" : "HTTP/REST"
@@ -282,12 +295,12 @@
           "id" : "17",
           "name" : "[Shared] AG-UI Protocol Handler",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiaguihandler"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiAgUiHandler"
           },
           "relationships" : [ {
             "description" : "processes messages",
             "destinationId" : "19",
-            "id" : "32",
+            "id" : "33",
             "sourceId" : "17",
             "tags" : "Relationship"
           } ],
@@ -299,7 +312,7 @@
           "id" : "18",
           "name" : "[Shared] REST Endpoints",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oairestendpoints"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiRestEndpoints"
           },
           "tags" : "Element,Component,Shared"
         }, {
@@ -309,30 +322,30 @@
           "id" : "19",
           "name" : "[Shared] Orchestrator Pipeline",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiorchestratorpipeline"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiOrchestratorPipeline"
           },
           "relationships" : [ {
             "description" : "runs agents",
-            "destinationId" : "22",
-            "id" : "33",
+            "destinationId" : "23",
+            "id" : "34",
             "sourceId" : "19",
             "tags" : "Relationship"
           }, {
             "description" : "validates I/O",
             "destinationId" : "20",
-            "id" : "34",
-            "sourceId" : "19",
-            "tags" : "Relationship"
-          }, {
-            "description" : "checks approval",
-            "destinationId" : "24",
             "id" : "35",
             "sourceId" : "19",
             "tags" : "Relationship"
           }, {
+            "description" : "checks approval",
+            "destinationId" : "25",
+            "id" : "36",
+            "sourceId" : "19",
+            "tags" : "Relationship"
+          }, {
             "description" : "logs events",
-            "destinationId" : "27",
-            "id" : "40",
+            "destinationId" : "28",
+            "id" : "43",
             "sourceId" : "19",
             "tags" : "Relationship",
             "technology" : "OpenTelemetry"
@@ -345,23 +358,60 @@
           "id" : "20",
           "name" : "[Shared] Moderator",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaimoderator"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiModerator"
           },
           "tags" : "Element,Component,Shared"
         }, {
-          "description" : "SDK Agent instances with instructions and handoff configuration",
+          "description" : "[NOT IMPLEMENTED] Dynamically instantiates Agent objects from the Agent Registry at startup or runtime, resolving MCP tool mappings and handoff targets",
           "documentation" : { },
           "group" : "Core Layer [OpenAI]",
           "id" : "21",
+          "name" : "[Shared] Agent Loader",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiAgentLoader"
+          },
+          "relationships" : [ {
+            "description" : "creates agents",
+            "destinationId" : "22",
+            "id" : "37",
+            "sourceId" : "21",
+            "tags" : "Relationship"
+          }, {
+            "description" : "resolves MCP tool mappings",
+            "destinationId" : "27",
+            "id" : "38",
+            "sourceId" : "21",
+            "tags" : "Relationship"
+          }, {
+            "description" : "[NOT CONNECTED] reads agent configs",
+            "destinationId" : "83",
+            "id" : "124",
+            "sourceId" : "21",
+            "tags" : "Relationship",
+            "technology" : "SQL"
+          }, {
+            "description" : "[NOT CONNECTED] reads agent configs",
+            "destinationId" : "82",
+            "id" : "125",
+            "linkedRelationshipId" : "124",
+            "sourceId" : "21",
+            "technology" : "SQL"
+          } ],
+          "tags" : "Element,Component,NotImplemented,Shared"
+        }, {
+          "description" : "SDK Agent instances with instructions and handoff configuration (currently hardcoded in agent_definitions.py)",
+          "documentation" : { },
+          "group" : "Core Layer [OpenAI]",
+          "id" : "22",
           "name" : "[OpenAI] Agent Definitions",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiagentdefinitions"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiAgentDefinitions"
           },
           "relationships" : [ {
             "description" : "configures tools",
-            "destinationId" : "26",
-            "id" : "39",
-            "sourceId" : "21",
+            "destinationId" : "27",
+            "id" : "42",
+            "sourceId" : "22",
             "tags" : "Relationship",
             "technology" : "MCP config"
           } ],
@@ -370,28 +420,28 @@
           "description" : "Runner.run_streamed() for streaming responses with tool callbacks",
           "documentation" : { },
           "group" : "Core Layer [OpenAI]",
-          "id" : "22",
+          "id" : "23",
           "name" : "[OpenAI] Agent Executor",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiagentexecutor"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiAgentExecutor"
           },
           "relationships" : [ {
             "description" : "gets agents",
-            "destinationId" : "21",
-            "id" : "36",
-            "sourceId" : "22",
+            "destinationId" : "22",
+            "id" : "39",
+            "sourceId" : "23",
             "tags" : "Relationship"
           }, {
             "description" : "handles handoffs",
-            "destinationId" : "23",
-            "id" : "37",
-            "sourceId" : "22",
+            "destinationId" : "24",
+            "id" : "40",
+            "sourceId" : "23",
             "tags" : "Relationship"
           }, {
             "description" : "persists state",
-            "destinationId" : "25",
-            "id" : "38",
-            "sourceId" : "22",
+            "destinationId" : "26",
+            "id" : "41",
+            "sourceId" : "23",
             "tags" : "Relationship",
             "technology" : "SQLite"
           } ],
@@ -400,67 +450,67 @@
           "description" : "Built-in SDK handoffs via agent.handoffs list - automatic context transfer",
           "documentation" : { },
           "group" : "Core Layer [OpenAI]",
-          "id" : "23",
+          "id" : "24",
           "name" : "[OpenAI] Handoff Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaihandofflogic"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiHandoffLogic"
           },
           "tags" : "Element,Component,OpenAI"
         }, {
           "description" : "Human-in-loop rules for high-risk tools",
           "documentation" : { },
           "group" : "Core Layer [OpenAI]",
-          "id" : "24",
+          "id" : "25",
           "name" : "[Shared] Approval Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiapprovallogic"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiApprovalLogic"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "SDK SQLiteSession for conversation history (sessions.db)",
           "documentation" : { },
           "group" : "Core Layer [OpenAI]",
-          "id" : "25",
+          "id" : "26",
           "name" : "[OpenAI] Session Persistence",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaisessionpersistence"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiSessionPersistence"
           },
           "tags" : "Element,Component,OpenAI"
         }, {
           "description" : "Native OpenAI SDK MCP integration with per-agent tool scoping via AGENT_MCP_MAPPING",
           "documentation" : { },
           "group" : "Adapters Layer",
-          "id" : "26",
+          "id" : "27",
           "name" : "[OpenAI] MCP Adapter",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaimcpadapter"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiMcpAdapter"
           },
           "relationships" : [ {
             "description" : "MCP",
-            "destinationId" : "72",
-            "id" : "85",
-            "sourceId" : "26",
+            "destinationId" : "78",
+            "id" : "97",
+            "sourceId" : "27",
             "tags" : "Relationship",
             "technology" : "HTTP POST /mcp"
           }, {
             "description" : "MCP",
-            "destinationId" : "71",
-            "id" : "86",
-            "linkedRelationshipId" : "85",
-            "sourceId" : "26",
+            "destinationId" : "77",
+            "id" : "98",
+            "linkedRelationshipId" : "97",
+            "sourceId" : "27",
             "technology" : "HTTP POST /mcp"
           }, {
             "description" : "MCP",
-            "destinationId" : "73",
-            "id" : "89",
-            "sourceId" : "26",
+            "destinationId" : "79",
+            "id" : "101",
+            "sourceId" : "27",
             "tags" : "Relationship",
             "technology" : "HTTP POST /mcp"
           }, {
             "description" : "MCP",
-            "destinationId" : "74",
-            "id" : "91",
-            "sourceId" : "26",
+            "destinationId" : "80",
+            "id" : "103",
+            "sourceId" : "27",
             "tags" : "Relationship",
             "technology" : "HTTP POST /mcp"
           } ],
@@ -469,28 +519,28 @@
           "description" : "OpenTelemetry-based audit logging of messages and decisions",
           "documentation" : { },
           "group" : "Adapters Layer",
-          "id" : "27",
+          "id" : "28",
           "name" : "[Shared] Audit Logger",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaiauditlogger"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiAuditLogger"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "[NOT IMPLEMENTED] API rate limiting per user/IP",
           "documentation" : { },
-          "id" : "28",
+          "id" : "29",
           "name" : "[Shared] Rate Limiter",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oairatelimiter"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiRateLimiter"
           },
           "tags" : "Element,Component,NotImplemented,Shared"
         }, {
           "description" : "[NOT IMPLEMENTED] Circuit breaker pattern for MCP server calls",
           "documentation" : { },
-          "id" : "29",
+          "id" : "30",
           "name" : "[Shared] Circuit Breaker",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratoropenai.oaicircuitbreaker"
+            "structurizr.dsl.identifier" : "agora.orchestratorOpenAI.oaiCircuitBreaker"
           },
           "tags" : "Element,Component,NotImplemented,Shared"
         } ],
@@ -499,36 +549,50 @@
         "id" : "15",
         "name" : "Orchestrator [OpenAI]",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.orchestratoropenai"
+          "structurizr.dsl.identifier" : "agora.orchestratorOpenAI"
         },
         "relationships" : [ {
           "description" : "MCP",
-          "destinationId" : "72",
-          "id" : "87",
-          "linkedRelationshipId" : "85",
+          "destinationId" : "78",
+          "id" : "99",
+          "linkedRelationshipId" : "97",
           "sourceId" : "15",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "71",
-          "id" : "88",
-          "linkedRelationshipId" : "85",
+          "destinationId" : "77",
+          "id" : "100",
+          "linkedRelationshipId" : "97",
           "sourceId" : "15",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "73",
-          "id" : "90",
-          "linkedRelationshipId" : "89",
+          "destinationId" : "79",
+          "id" : "102",
+          "linkedRelationshipId" : "101",
           "sourceId" : "15",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "74",
-          "id" : "92",
-          "linkedRelationshipId" : "91",
+          "destinationId" : "80",
+          "id" : "104",
+          "linkedRelationshipId" : "103",
           "sourceId" : "15",
           "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "[NOT CONNECTED] reads agent configs",
+          "destinationId" : "83",
+          "id" : "126",
+          "linkedRelationshipId" : "124",
+          "sourceId" : "15",
+          "technology" : "SQL"
+        }, {
+          "description" : "[NOT CONNECTED] reads agent configs",
+          "destinationId" : "82",
+          "id" : "127",
+          "linkedRelationshipId" : "124",
+          "sourceId" : "15",
+          "technology" : "SQL"
         } ],
         "tags" : "Element,Container,Backend,OpenAI",
         "technology" : "Python"
@@ -537,23 +601,23 @@
           "description" : "HTTP server with WebSocket support at /ws endpoint",
           "documentation" : { },
           "group" : "API Layer [Shared]",
-          "id" : "42",
+          "id" : "45",
           "name" : "[Shared] FastAPI Server",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgfastapiserver"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgFastApiServer"
           },
           "relationships" : [ {
             "description" : "routes WebSocket",
-            "destinationId" : "43",
-            "id" : "58",
-            "sourceId" : "42",
+            "destinationId" : "46",
+            "id" : "62",
+            "sourceId" : "45",
             "tags" : "Relationship",
             "technology" : "WebSocket"
           }, {
             "description" : "routes HTTP",
-            "destinationId" : "44",
-            "id" : "59",
-            "sourceId" : "42",
+            "destinationId" : "47",
+            "id" : "63",
+            "sourceId" : "45",
             "tags" : "Relationship",
             "technology" : "HTTP/REST"
           } ],
@@ -562,16 +626,16 @@
           "description" : "Processes AG-UI Protocol events: RUN_STARTED/FINISHED, TEXT_MESSAGE_*, TOOL_CALL_*, STATE_SNAPSHOT, CUSTOM (approval)",
           "documentation" : { },
           "group" : "API Layer [Shared]",
-          "id" : "43",
+          "id" : "46",
           "name" : "[Shared] AG-UI Protocol Handler",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgaguihandler"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgAgUiHandler"
           },
           "relationships" : [ {
             "description" : "processes messages",
-            "destinationId" : "45",
-            "id" : "60",
-            "sourceId" : "43",
+            "destinationId" : "48",
+            "id" : "64",
+            "sourceId" : "46",
             "tags" : "Relationship"
           } ],
           "tags" : "Element,Component,Shared"
@@ -579,44 +643,44 @@
           "description" : "/health, /agents, /sessions/{id}/history endpoints",
           "documentation" : { },
           "group" : "API Layer [Shared]",
-          "id" : "44",
+          "id" : "47",
           "name" : "[Shared] REST Endpoints",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgrestendpoints"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgRestEndpoints"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "Main message processing with approval flow management using astream_events",
           "documentation" : { },
           "group" : "Pipelines Layer [Shared]",
-          "id" : "45",
+          "id" : "48",
           "name" : "[Shared] Orchestrator Pipeline",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgorchestratorpipeline"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgOrchestratorPipeline"
           },
           "relationships" : [ {
             "description" : "invokes graph",
-            "destinationId" : "48",
-            "id" : "61",
-            "sourceId" : "45",
+            "destinationId" : "52",
+            "id" : "65",
+            "sourceId" : "48",
             "tags" : "Relationship"
           }, {
             "description" : "validates I/O",
-            "destinationId" : "46",
-            "id" : "62",
-            "sourceId" : "45",
+            "destinationId" : "49",
+            "id" : "66",
+            "sourceId" : "48",
             "tags" : "Relationship"
           }, {
             "description" : "checks approval",
-            "destinationId" : "52",
-            "id" : "63",
-            "sourceId" : "45",
+            "destinationId" : "56",
+            "id" : "67",
+            "sourceId" : "48",
             "tags" : "Relationship"
           }, {
             "description" : "logs events",
-            "destinationId" : "55",
-            "id" : "70",
-            "sourceId" : "45",
+            "destinationId" : "59",
+            "id" : "76",
+            "sourceId" : "48",
             "tags" : "Relationship",
             "technology" : "OpenTelemetry"
           } ],
@@ -625,26 +689,63 @@
           "description" : "Input validation, output filtering, blocked patterns detection",
           "documentation" : { },
           "group" : "Pipelines Layer [Shared]",
-          "id" : "46",
+          "id" : "49",
           "name" : "[Shared] Moderator",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgmoderator"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgModerator"
           },
           "tags" : "Element,Component,Shared"
         }, {
-          "description" : "Async functions (general_agent, regulation_agent, etc.) invoking ChatOpenAI with bound tools",
+          "description" : "[NOT IMPLEMENTED] Programmatically creates StateGraph nodes from Agent Registry definitions at startup or runtime, resolving MCP tool mappings",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "47",
+          "id" : "50",
+          "name" : "[Shared] Agent Loader",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgAgentLoader"
+          },
+          "relationships" : [ {
+            "description" : "creates agent nodes",
+            "destinationId" : "51",
+            "id" : "68",
+            "sourceId" : "50",
+            "tags" : "Relationship"
+          }, {
+            "description" : "resolves MCP tool mappings",
+            "destinationId" : "58",
+            "id" : "69",
+            "sourceId" : "50",
+            "tags" : "Relationship"
+          }, {
+            "description" : "[NOT CONNECTED] reads agent configs",
+            "destinationId" : "83",
+            "id" : "128",
+            "sourceId" : "50",
+            "tags" : "Relationship",
+            "technology" : "SQL"
+          }, {
+            "description" : "[NOT CONNECTED] reads agent configs",
+            "destinationId" : "82",
+            "id" : "129",
+            "linkedRelationshipId" : "128",
+            "sourceId" : "50",
+            "technology" : "SQL"
+          } ],
+          "tags" : "Element,Component,NotImplemented,Shared"
+        }, {
+          "description" : "Async functions (general_agent, regulation_agent, etc.) invoking ChatOpenAI with bound tools (currently hardcoded in agent_definitions.py)",
+          "documentation" : { },
+          "group" : "Core Layer [OpenSource]",
+          "id" : "51",
           "name" : "[OpenSource] Agent Definitions",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgagentdefinitions"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgAgentDefinitions"
           },
           "relationships" : [ {
             "description" : "binds tools",
-            "destinationId" : "54",
-            "id" : "69",
-            "sourceId" : "47",
+            "destinationId" : "58",
+            "id" : "75",
+            "sourceId" : "51",
             "tags" : "Relationship"
           } ],
           "tags" : "Element,Component,OpenSource"
@@ -652,28 +753,28 @@
           "description" : "StateGraph with AgentState TypedDict, astream_events() for streaming",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "48",
+          "id" : "52",
           "name" : "[OpenSource] Agent Executor",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgagentexecutor"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgAgentExecutor"
           },
           "relationships" : [ {
             "description" : "executes tools",
-            "destinationId" : "49",
-            "id" : "64",
-            "sourceId" : "48",
+            "destinationId" : "53",
+            "id" : "70",
+            "sourceId" : "52",
             "tags" : "Relationship"
           }, {
             "description" : "determines next",
-            "destinationId" : "51",
-            "id" : "65",
-            "sourceId" : "48",
+            "destinationId" : "55",
+            "id" : "71",
+            "sourceId" : "52",
             "tags" : "Relationship"
           }, {
             "description" : "persists state",
-            "destinationId" : "53",
-            "id" : "68",
-            "sourceId" : "48",
+            "destinationId" : "57",
+            "id" : "74",
+            "sourceId" : "52",
             "tags" : "Relationship",
             "technology" : "SQLite"
           } ],
@@ -682,16 +783,16 @@
           "description" : "Prebuilt ToolNode handles all tool calls including handoffs",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "49",
+          "id" : "53",
           "name" : "[OpenSource] Tool Executor",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgtoolexecutor"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgToolExecutor"
           },
           "relationships" : [ {
             "description" : "executes handoffs",
-            "destinationId" : "50",
-            "id" : "66",
-            "sourceId" : "49",
+            "destinationId" : "54",
+            "id" : "72",
+            "sourceId" : "53",
             "tags" : "Relationship"
           } ],
           "tags" : "Element,Component,OpenSource"
@@ -699,26 +800,26 @@
           "description" : "Explicit transfer_to_* tools that must go through ToolNode first",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "50",
+          "id" : "54",
           "name" : "[OpenSource] Handoff Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lghandofflogic"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgHandoffLogic"
           },
           "tags" : "Element,Component,OpenSource"
         }, {
           "description" : "route_from_agent() → 'tools'|'end', route_after_tools() → detects handoff → target agent",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "51",
+          "id" : "55",
           "name" : "[OpenSource] Routing Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgroutinglogic"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgRoutingLogic"
           },
           "relationships" : [ {
             "description" : "routes to agent",
-            "destinationId" : "47",
-            "id" : "67",
-            "sourceId" : "51",
+            "destinationId" : "51",
+            "id" : "73",
+            "sourceId" : "55",
             "tags" : "Relationship"
           } ],
           "tags" : "Element,Component,OpenSource"
@@ -726,57 +827,57 @@
           "description" : "Human-in-loop rules for high-risk tools",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "52",
+          "id" : "56",
           "name" : "[Shared] Approval Logic",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgapprovallogic"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgApprovalLogic"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "LangGraph checkpointer for conversation state (sessions.db)",
           "documentation" : { },
           "group" : "Core Layer [OpenSource]",
-          "id" : "53",
+          "id" : "57",
           "name" : "[OpenSource] Session Persistence",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgsessionpersistence"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgSessionPersistence"
           },
           "tags" : "Element,Component,OpenSource"
         }, {
           "description" : "langchain-mcp-adapters for MCP server connections with per-agent tool scoping",
           "documentation" : { },
           "group" : "Adapters Layer",
-          "id" : "54",
+          "id" : "58",
           "name" : "[OpenSource] MCP Adapter",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgmcpadapter"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgMcpAdapter"
           },
           "relationships" : [ {
             "description" : "MCP",
-            "destinationId" : "72",
-            "id" : "93",
-            "sourceId" : "54",
+            "destinationId" : "78",
+            "id" : "105",
+            "sourceId" : "58",
             "tags" : "Relationship",
             "technology" : "HTTP POST /mcp"
           }, {
             "description" : "MCP",
-            "destinationId" : "71",
-            "id" : "94",
-            "linkedRelationshipId" : "93",
-            "sourceId" : "54",
+            "destinationId" : "77",
+            "id" : "106",
+            "linkedRelationshipId" : "105",
+            "sourceId" : "58",
             "technology" : "HTTP POST /mcp"
           }, {
             "description" : "MCP",
-            "destinationId" : "73",
-            "id" : "97",
-            "sourceId" : "54",
+            "destinationId" : "79",
+            "id" : "109",
+            "sourceId" : "58",
             "tags" : "Relationship",
             "technology" : "HTTP POST /mcp"
           }, {
             "description" : "MCP",
-            "destinationId" : "74",
-            "id" : "99",
-            "sourceId" : "54",
+            "destinationId" : "80",
+            "id" : "111",
+            "sourceId" : "58",
             "tags" : "Relationship",
             "technology" : "HTTP POST /mcp"
           } ],
@@ -785,66 +886,80 @@
           "description" : "OpenTelemetry-based audit logging of messages and decisions",
           "documentation" : { },
           "group" : "Adapters Layer",
-          "id" : "55",
+          "id" : "59",
           "name" : "[Shared] Audit Logger",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgauditlogger"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgAuditLogger"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "[NOT IMPLEMENTED] API rate limiting per user/IP",
           "documentation" : { },
-          "id" : "56",
+          "id" : "60",
           "name" : "[Shared] Rate Limiter",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgratelimiter"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgRateLimiter"
           },
           "tags" : "Element,Component,NotImplemented,Shared"
         }, {
           "description" : "[NOT IMPLEMENTED] Circuit breaker pattern for MCP server calls",
           "documentation" : { },
-          "id" : "57",
+          "id" : "61",
           "name" : "[Shared] Circuit Breaker",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.orchestratorlanggraph.lgcircuitbreaker"
+            "structurizr.dsl.identifier" : "agora.orchestratorLangGraph.lgCircuitBreaker"
           },
           "tags" : "Element,Component,NotImplemented,Shared"
         } ],
         "description" : "Central orchestration using LangGraph StateGraph (LLM provider-agnostic).",
         "documentation" : { },
-        "id" : "41",
+        "id" : "44",
         "name" : "Orchestrator [OpenSource]",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.orchestratorlanggraph"
+          "structurizr.dsl.identifier" : "agora.orchestratorLangGraph"
         },
         "relationships" : [ {
           "description" : "MCP",
-          "destinationId" : "72",
-          "id" : "95",
-          "linkedRelationshipId" : "93",
-          "sourceId" : "41",
+          "destinationId" : "78",
+          "id" : "107",
+          "linkedRelationshipId" : "105",
+          "sourceId" : "44",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "71",
-          "id" : "96",
-          "linkedRelationshipId" : "93",
-          "sourceId" : "41",
+          "destinationId" : "77",
+          "id" : "108",
+          "linkedRelationshipId" : "105",
+          "sourceId" : "44",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "73",
-          "id" : "98",
-          "linkedRelationshipId" : "97",
-          "sourceId" : "41",
+          "destinationId" : "79",
+          "id" : "110",
+          "linkedRelationshipId" : "109",
+          "sourceId" : "44",
           "technology" : "HTTP POST /mcp"
         }, {
           "description" : "MCP",
-          "destinationId" : "74",
-          "id" : "100",
-          "linkedRelationshipId" : "99",
-          "sourceId" : "41",
+          "destinationId" : "80",
+          "id" : "112",
+          "linkedRelationshipId" : "111",
+          "sourceId" : "44",
           "technology" : "HTTP POST /mcp"
+        }, {
+          "description" : "[NOT CONNECTED] reads agent configs",
+          "destinationId" : "83",
+          "id" : "130",
+          "linkedRelationshipId" : "128",
+          "sourceId" : "44",
+          "technology" : "SQL"
+        }, {
+          "description" : "[NOT CONNECTED] reads agent configs",
+          "destinationId" : "82",
+          "id" : "131",
+          "linkedRelationshipId" : "128",
+          "sourceId" : "44",
+          "technology" : "SQL"
         } ],
         "tags" : "Element,Container,Backend,OpenSource",
         "technology" : "Python"
@@ -852,64 +967,100 @@
         "components" : [ {
           "description" : "Tools: search_regulations, get_regulation_context, lookup_regulation_articles, analyze_document",
           "documentation" : { },
-          "id" : "72",
+          "id" : "78",
           "name" : "[Shared] Regulation Agent",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.mcpservers.regulationserver"
+            "structurizr.dsl.identifier" : "agora.mcpServers.regulationServer"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "Tools: start_inspection_report, extract_inspection_data, verify_inspection_data, generate_final_report",
           "documentation" : { },
-          "id" : "73",
+          "id" : "79",
           "name" : "[Shared] Reporting Agent",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.mcpservers.reportingserver"
+            "structurizr.dsl.identifier" : "agora.mcpServers.reportingServer"
           },
           "tags" : "Element,Component,Shared"
         }, {
           "description" : "Tools: check_company_exists, get_inspection_history, get_company_violations, check_repeat_violation",
           "documentation" : { },
-          "id" : "74",
+          "id" : "80",
           "name" : "[Shared] History Agent",
           "properties" : {
-            "structurizr.dsl.identifier" : "agora.mcpservers.historyserver"
+            "structurizr.dsl.identifier" : "agora.mcpServers.historyServer"
           },
           "tags" : "Element,Component,Shared"
         } ],
         "description" : "[Shared] Domain-specific agent capabilities exposed via MCP Protocol. Extensible by adding new MCP servers.",
         "documentation" : { },
-        "id" : "71",
+        "id" : "77",
         "name" : "MCP Agent Servers",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.mcpservers"
+          "structurizr.dsl.identifier" : "agora.mcpServers"
         },
         "tags" : "Element,Container,Backend,Extensible,Shared",
         "technology" : "Docker"
       }, {
-        "description" : "[Shared] [NOT IMPLEMENTED] User profiles, preferences, roles (RBAC)",
+        "description" : "[Shared] User profiles, preferences (spoken_text_type, email_reports, interaction_mode), session metadata. Stored in sessions.db.",
         "documentation" : { },
-        "id" : "75",
-        "name" : "User Profile",
+        "id" : "81",
+        "name" : "User Profiles & Preferences",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.userprofile"
+          "structurizr.dsl.identifier" : "agora.userProfile"
         },
-        "tags" : "Element,Container,Database,NotImplemented,Shared",
+        "tags" : "Element,Container,Database,Shared",
         "technology" : "Database"
       }, {
-        "description" : "[Shared] [NOT IMPLEMENTED] Long-term memory, cross-session context",
+        "components" : [ {
+          "description" : "Central register of agent definitions: name, system prompt, MCP server mappings, tool risk levels, LLM model, temperature, handoff targets",
+          "documentation" : { },
+          "id" : "83",
+          "name" : "Agent Registry",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.agentManagement.registry"
+          },
+          "tags" : "Element,Component,NotImplemented,Shared"
+        }, {
+          "description" : "Long-term agent memory, cross-session context, learned patterns and preferences per agent",
+          "documentation" : { },
+          "id" : "84",
+          "name" : "Agent Memory",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.agentManagement.memory"
+          },
+          "tags" : "Element,Component,NotImplemented,Shared"
+        }, {
+          "description" : "Admin application for managing agent configurations, activating/deactivating agents, and configuring MCP server mappings without code changes",
+          "documentation" : { },
+          "id" : "85",
+          "name" : "Beheersinterface",
+          "properties" : {
+            "structurizr.dsl.identifier" : "agora.agentManagement.adminInterface"
+          },
+          "relationships" : [ {
+            "description" : "manages agent configs",
+            "destinationId" : "83",
+            "id" : "86",
+            "sourceId" : "85",
+            "tags" : "Relationship",
+            "technology" : "REST API"
+          } ],
+          "tags" : "Element,Component,NotImplemented,Shared"
+        } ],
+        "description" : "[Shared] [NOT IMPLEMENTED] Agent lifecycle management: registry, memory, and administration interface",
         "documentation" : { },
-        "id" : "76",
-        "name" : "Memory Service",
+        "id" : "82",
+        "name" : "Agent Management",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.memory"
+          "structurizr.dsl.identifier" : "agora.agentManagement"
         },
-        "tags" : "Element,Container,Backend,NotImplemented,Shared",
+        "tags" : "Element,Container,NotImplemented,Shared",
         "technology" : "Service"
       }, {
         "description" : "[Shared] [NOT IMPLEMENTED] Monitoring, logging, tracing dashboards",
         "documentation" : { },
-        "id" : "77",
+        "id" : "87",
         "name" : "Visibility Stack",
         "properties" : {
           "structurizr.dsl.identifier" : "agora.visibility"
@@ -919,20 +1070,20 @@
       }, {
         "description" : "[Shared] [NOT IMPLEMENTED] LLM tracing, quality evaluations, cost tracking",
         "documentation" : { },
-        "id" : "78",
+        "id" : "88",
         "name" : "Evaluation Service",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.evalservice"
+          "structurizr.dsl.identifier" : "agora.evalService"
         },
         "tags" : "Element,Container,Observability,NotImplemented,Shared",
         "technology" : "Observability"
       }, {
         "description" : "[Shared] [NOT IMPLEMENTED] OAuth2/OIDC authentication, RBAC",
         "documentation" : { },
-        "id" : "79",
+        "id" : "89",
         "name" : "Auth Service",
         "properties" : {
-          "structurizr.dsl.identifier" : "agora.authservice"
+          "structurizr.dsl.identifier" : "agora.authService"
         },
         "tags" : "Element,Container,Security,NotImplemented,Shared",
         "technology" : "Security"
@@ -940,15 +1091,14 @@
       "description" : "Multi-agent compliance platform for NVWA inspectors",
       "documentation" : { },
       "id" : "2",
-      "location" : "Unspecified",
       "name" : "AGORA",
       "properties" : {
         "structurizr.dsl.identifier" : "agora"
       },
       "relationships" : [ {
         "description" : "orchestrates agents",
-        "destinationId" : "112",
-        "id" : "114",
+        "destinationId" : "132",
+        "id" : "134",
         "sourceId" : "2",
         "tags" : "Relationship",
         "technology" : "MCP Protocol"
@@ -957,23 +1107,26 @@
     }, {
       "description" : "[Shared] Extensible domain agents via Model Context Protocol. Add new capabilities by deploying MCP servers.",
       "documentation" : { },
-      "id" : "112",
-      "location" : "Unspecified",
+      "id" : "132",
       "name" : "MCP Agent Ecosystem",
       "properties" : {
-        "structurizr.dsl.identifier" : "mcpecosystem"
+        "structurizr.dsl.identifier" : "mcpEcosystem"
       },
       "tags" : "Element,Software System,Extensible"
     } ]
   },
   "name" : "AGORA v1.0 — Multi-Agent Platform for NVWA",
   "properties" : {
-    "structurizr.dsl" : "d29ya3NwYWNlICJBR09SQSB2MS4wIOKAlCBNdWx0aS1BZ2VudCBQbGF0Zm9ybSBmb3IgTlZXQSIgewogICFpZGVudGlmaWVycyBoaWVyYXJjaGljYWwKICAKICBtb2RlbCB7CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQUNUT1JTCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGluc3BlY3RvciA9IHBlcnNvbiAiTlZXQSBJbnNwZWN0ZXVyIiAiRm9vZCBzYWZldHkgaW5zcGVjdG9yIHVzaW5nIEFHT1JBIGZvciBkYWlseSBpbnNwZWN0aW9uIHdvcmsiCiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBBR09SQSBTWVNURU0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgYWdvcmEgPSBzb2Z0d2FyZVN5c3RlbSAiQUdPUkEiICJNdWx0aS1hZ2VudCBjb21wbGlhbmNlIHBsYXRmb3JtIGZvciBOVldBIGluc3BlY3RvcnMiIHsKICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBIQUkgRlJPTlRFTkQgW1NoYXJlZF0KICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBoYWkgPSBjb250YWluZXIgIkh1bWFuIEFnZW50IEludGVyZmFjZSAoSEFJKSIgIlJlYWN0ICsgVml0ZSArIFp1c3RhbmQgKyBUYWlsd2luZENTUyIgIlJlYWN0IFNQQSIgewogICAgICAgIGRlc2NyaXB0aW9uICJbU2hhcmVkXSBXZWItYmFzZWQgdXNlciBpbnRlcmZhY2UgZm9yIGluc3BlY3RvciBpbnRlcmFjdGlvbnMgdmlhIHRleHQiCiAgICAgICAgdGFncyAiRnJvbnRlbmQiICJTaGFyZWQiCiAgICAgICAgCiAgICAgICAgY2hhdENvbXBvbmVudHMgPSBjb21wb25lbnQgIltTaGFyZWRdIENoYXQgQ29tcG9uZW50cyIgIlJlYWN0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQ2hhdEludGVyZmFjZSwgQ2hhdE1lc3NhZ2VMaXN0LCBDaGF0SW5wdXQsIENoYXRNZXNzYWdlLCBUb29sQ2FsbENhcmQsIExvYWRpbmdJbmRpY2F0b3IiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIGFwcHJvdmFsRGlhbG9nID0gY29tcG9uZW50ICJbU2hhcmVkXSBBcHByb3ZhbCBEaWFsb2ciICJSZWFjdCIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkFwcHJvdmFsRGlhbG9nIGZvciBodW1hbi1pbi10aGUtbG9vcCB0b29sIGFwcHJvdmFsIHdvcmtmbG93IgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICBkZWJ1Z1BhbmVsID0gY29tcG9uZW50ICJbU2hhcmVkXSBEZWJ1ZyBQYW5lbCIgIlJlYWN0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiVG9vbCBjYWxsIHZpc3VhbGl6YXRpb24gYW5kIGRlYnVnZ2luZyBpbnRlcmZhY2UiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIHN0YXRlTWFuYWdlbWVudCA9IGNvbXBvbmVudCAiW1NoYXJlZF0gU3RhdGUgTWFuYWdlbWVudCIgIlp1c3RhbmQiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJDbGllbnQgc3RvcmVzOiB1c2VNZXNzYWdlU3RvcmUsIHVzZVNlc3Npb25TdG9yZSwgdXNlQ29ubmVjdGlvblN0b3JlLCB1c2VBcHByb3ZhbFN0b3JlLCB1c2VBZ2VudFN0b3JlLCB1c2VUb29sQ2FsbFN0b3JlIgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICB3ZWJzb2NrZXRDbGllbnQgPSBjb21wb25lbnQgIltTaGFyZWRdIFdlYlNvY2tldCBDbGllbnQiICJUeXBlU2NyaXB0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQUctVUkgUHJvdG9jb2wgV2ViU29ja2V0IGNsaWVudCBmb3IgcmVhbC10aW1lIGJpZGlyZWN0aW9uYWwgY29tbXVuaWNhdGlvbiIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgdm9pY2VJbnRlcmZhY2UgPSBjb21wb25lbnQgIltTaGFyZWRdIFZvaWNlIEludGVyZmFjZSIgIlJlYWN0ICsgV2hpc3BlciArIEVsZXZlbkxhYnMiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJbTk9UIElNUExFTUVOVEVEXSBTcGVlY2gtdG8tdGV4dCBhbmQgdGV4dC10by1zcGVlY2ggaW50ZXJmYWNlIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIGNoYXRDb21wb25lbnRzIC0+IHN0YXRlTWFuYWdlbWVudCAicmVhZHMvd3JpdGVzIiAiWnVzdGFuZCBzZWxlY3RvcnMiCiAgICAgICAgYXBwcm92YWxEaWFsb2cgLT4gc3RhdGVNYW5hZ2VtZW50ICJyZWFkcy93cml0ZXMiICJadXN0YW5kIHNlbGVjdG9ycyIKICAgICAgICBkZWJ1Z1BhbmVsIC0+IHN0YXRlTWFuYWdlbWVudCAicmVhZHMiICJadXN0YW5kIHNlbGVjdG9ycyIKICAgICAgICBzdGF0ZU1hbmFnZW1lbnQgLT4gd2Vic29ja2V0Q2xpZW50ICJkaXNwYXRjaGVzIG1lc3NhZ2VzIiAiVHlwZVNjcmlwdCIKICAgICAgfQogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIE9SQ0hFU1RSQVRPUiAtIFVuaWZpZWQgKGZvciBDMiBhbmQgZXh0ZXJuYWwgYXBwZWFyYW5jZXMpCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgb3JjaGVzdHJhdG9yID0gY29udGFpbmVyICJPcmNoZXN0cmF0b3IgW09wZW5BSS9PcGVuU291cmNlXSIgIkZhc3RBUEkgKyBTUUxpdGUgKyBPcGVuQUkgU0RLIG9yIExhbmdHcmFwaCIgIlB5dGhvbiIgewogICAgICAgIGRlc2NyaXB0aW9uICJDZW50cmFsIG9yY2hlc3RyYXRpb24gZm9yIG11bHRpLWFnZW50IGNvb3JkaW5hdGlvbi4gU2VlIEMzIGRpYWdyYW1zIGZvciBpbXBsZW1lbnRhdGlvbi1zcGVjaWZpYyBkZXRhaWxzLiIKICAgICAgICB0YWdzICJCYWNrZW5kIgogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgT1JDSEVTVFJBVE9SIC0gT3BlbkFJIEFnZW50cyBTREsgKGZvciBDMyBkZXRhaWwgdmlldykKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBvcmNoZXN0cmF0b3JPcGVuQUkgPSBjb250YWluZXIgIk9yY2hlc3RyYXRvciBbT3BlbkFJXSIgIkZhc3RBUEkgKyBTUUxpdGUgKyBPcGVuQUkgQWdlbnRzIFNESyIgIlB5dGhvbiIgewogICAgICAgIGRlc2NyaXB0aW9uICJDZW50cmFsIG9yY2hlc3RyYXRpb24gdXNpbmcgT3BlbkFJIEFnZW50cyBTREsgd2l0aCBuYXRpdmUgaGFuZG9mZnMgYW5kIE1DUCBzdXBwb3J0LiIKICAgICAgICB0YWdzICJCYWNrZW5kIiAiT3BlbkFJIgogICAgICAgIAogICAgICAgIGdyb3VwICJBUEkgTGF5ZXIgW1NoYXJlZF0iIHsKICAgICAgICAgIG9haUZhc3RBcGlTZXJ2ZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIEZhc3RBUEkgU2VydmVyIiAiRmFzdEFQSSArIFV2aWNvcm4iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkhUVFAgc2VydmVyIHdpdGggV2ViU29ja2V0IHN1cHBvcnQgYXQgL3dzIGVuZHBvaW50IgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlBZ1VpSGFuZGxlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQUctVUkgUHJvdG9jb2wgSGFuZGxlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJvY2Vzc2VzIEFHLVVJIFByb3RvY29sIGV2ZW50czogUlVOX1NUQVJURUQvRklOSVNIRUQsIFRFWFRfTUVTU0FHRV8qLCBUT09MX0NBTExfKiwgU1RBVEVfU05BUFNIT1QsIENVU1RPTSAoYXBwcm92YWwpIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlSZXN0RW5kcG9pbnRzID0gY29tcG9uZW50ICJbU2hhcmVkXSBSRVNUIEVuZHBvaW50cyIgIkZhc3RBUEkiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIi9oZWFsdGgsIC9hZ2VudHMsIC9zZXNzaW9ucy97aWR9L2hpc3RvcnkgZW5kcG9pbnRzIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGdyb3VwICJQaXBlbGluZXMgTGF5ZXIgW1NoYXJlZF0iIHsKICAgICAgICAgIG9haU9yY2hlc3RyYXRvclBpcGVsaW5lID0gY29tcG9uZW50ICJbU2hhcmVkXSBPcmNoZXN0cmF0b3IgUGlwZWxpbmUiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIk1haW4gbWVzc2FnZSBwcm9jZXNzaW5nIHdpdGggYXBwcm92YWwgZmxvdyBtYW5hZ2VtZW50IHVzaW5nIHN0cmVhbSBjYWxsYmFja3MiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIG9haU1vZGVyYXRvciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gTW9kZXJhdG9yIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJJbnB1dCB2YWxpZGF0aW9uLCBvdXRwdXQgZmlsdGVyaW5nLCBibG9ja2VkIHBhdHRlcm5zIGRldGVjdGlvbiIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBncm91cCAiQ29yZSBMYXllciBbT3BlbkFJXSIgewogICAgICAgICAgb2FpQWdlbnREZWZpbml0aW9ucyA9IGNvbXBvbmVudCAiW09wZW5BSV0gQWdlbnQgRGVmaW5pdGlvbnMiICJhZ2VudHMuQWdlbnQiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlNESyBBZ2VudCBpbnN0YW5jZXMgd2l0aCBpbnN0cnVjdGlvbnMgYW5kIGhhbmRvZmYgY29uZmlndXJhdGlvbiIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpQWdlbnRFeGVjdXRvciA9IGNvbXBvbmVudCAiW09wZW5BSV0gQWdlbnQgRXhlY3V0b3IiICJhZ2VudHMuUnVubmVyIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJSdW5uZXIucnVuX3N0cmVhbWVkKCkgZm9yIHN0cmVhbWluZyByZXNwb25zZXMgd2l0aCB0b29sIGNhbGxiYWNrcyIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpSGFuZG9mZkxvZ2ljID0gY29tcG9uZW50ICJbT3BlbkFJXSBIYW5kb2ZmIExvZ2ljIiAiU0RLIGJ1aWx0LWluIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJCdWlsdC1pbiBTREsgaGFuZG9mZnMgdmlhIGFnZW50LmhhbmRvZmZzIGxpc3QgLSBhdXRvbWF0aWMgY29udGV4dCB0cmFuc2ZlciIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpQXBwcm92YWxMb2dpYyA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQXBwcm92YWwgTG9naWMiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkh1bWFuLWluLWxvb3AgcnVsZXMgZm9yIGhpZ2gtcmlzayB0b29scyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgb2FpU2Vzc2lvblBlcnNpc3RlbmNlID0gY29tcG9uZW50ICJbT3BlbkFJXSBTZXNzaW9uIFBlcnNpc3RlbmNlIiAiYWdlbnRzLlNRTGl0ZVNlc3Npb24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlNESyBTUUxpdGVTZXNzaW9uIGZvciBjb252ZXJzYXRpb24gaGlzdG9yeSAoc2Vzc2lvbnMuZGIpIgogICAgICAgICAgICB0YWdzICJPcGVuQUkiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGdyb3VwICJBZGFwdGVycyBMYXllciIgewogICAgICAgICAgb2FpTWNwQWRhcHRlciA9IGNvbXBvbmVudCAiW09wZW5BSV0gTUNQIEFkYXB0ZXIiICJNQ1BTZXJ2ZXJTdHJlYW1hYmxlSHR0cCIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiTmF0aXZlIE9wZW5BSSBTREsgTUNQIGludGVncmF0aW9uIHdpdGggcGVyLWFnZW50IHRvb2wgc2NvcGluZyB2aWEgQUdFTlRfTUNQX01BUFBJTkciCiAgICAgICAgICAgIHRhZ3MgIk9wZW5BSSIKICAgICAgICAgIH0KICAgICAgICAgIG9haUF1ZGl0TG9nZ2VyID0gY29tcG9uZW50ICJbU2hhcmVkXSBBdWRpdCBMb2dnZXIiICJPcGVuVGVsZW1ldHJ5IiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJPcGVuVGVsZW1ldHJ5LWJhc2VkIGF1ZGl0IGxvZ2dpbmcgb2YgbWVzc2FnZXMgYW5kIGRlY2lzaW9ucyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBvYWlSYXRlTGltaXRlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmF0ZSBMaW1pdGVyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQVBJIHJhdGUgbGltaXRpbmcgcGVyIHVzZXIvSVAiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgb2FpQ2lyY3VpdEJyZWFrZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIENpcmN1aXQgQnJlYWtlciIgIlB5dGhvbiIgewogICAgICAgICAgZGVzY3JpcHRpb24gIltOT1QgSU1QTEVNRU5URURdIENpcmN1aXQgYnJlYWtlciBwYXR0ZXJuIGZvciBNQ1Agc2VydmVyIGNhbGxzIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIG9haUZhc3RBcGlTZXJ2ZXIgLT4gb2FpQWdVaUhhbmRsZXIgInJvdXRlcyBXZWJTb2NrZXQiICJXZWJTb2NrZXQiCiAgICAgICAgb2FpRmFzdEFwaVNlcnZlciAtPiBvYWlSZXN0RW5kcG9pbnRzICJyb3V0ZXMgSFRUUCIgIkhUVFAvUkVTVCIKICAgICAgICBvYWlBZ1VpSGFuZGxlciAtPiBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAicHJvY2Vzc2VzIG1lc3NhZ2VzIgogICAgICAgIG9haU9yY2hlc3RyYXRvclBpcGVsaW5lIC0+IG9haUFnZW50RXhlY3V0b3IgInJ1bnMgYWdlbnRzIgogICAgICAgIG9haU9yY2hlc3RyYXRvclBpcGVsaW5lIC0+IG9haU1vZGVyYXRvciAidmFsaWRhdGVzIEkvTyIKICAgICAgICBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBvYWlBcHByb3ZhbExvZ2ljICJjaGVja3MgYXBwcm92YWwiCiAgICAgICAgb2FpQWdlbnRFeGVjdXRvciAtPiBvYWlBZ2VudERlZmluaXRpb25zICJnZXRzIGFnZW50cyIKICAgICAgICBvYWlBZ2VudEV4ZWN1dG9yIC0+IG9haUhhbmRvZmZMb2dpYyAiaGFuZGxlcyBoYW5kb2ZmcyIKICAgICAgICBvYWlBZ2VudEV4ZWN1dG9yIC0+IG9haVNlc3Npb25QZXJzaXN0ZW5jZSAicGVyc2lzdHMgc3RhdGUiICJTUUxpdGUiCiAgICAgICAgb2FpQWdlbnREZWZpbml0aW9ucyAtPiBvYWlNY3BBZGFwdGVyICJjb25maWd1cmVzIHRvb2xzIiAiTUNQIGNvbmZpZyIKICAgICAgICBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBvYWlBdWRpdExvZ2dlciAibG9ncyBldmVudHMiICJPcGVuVGVsZW1ldHJ5IgogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgT1JDSEVTVFJBVE9SIC0gTGFuZ0dyYXBoIChPcGVuIFNvdXJjZSkgKGZvciBDMyBkZXRhaWwgdmlldykKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBvcmNoZXN0cmF0b3JMYW5nR3JhcGggPSBjb250YWluZXIgIk9yY2hlc3RyYXRvciBbT3BlblNvdXJjZV0iICJMYW5nR3JhcGggKyBGYXN0QVBJICsgU1FMaXRlIiAiUHl0aG9uIiB7CiAgICAgICAgZGVzY3JpcHRpb24gIkNlbnRyYWwgb3JjaGVzdHJhdGlvbiB1c2luZyBMYW5nR3JhcGggU3RhdGVHcmFwaCAoTExNIHByb3ZpZGVyLWFnbm9zdGljKS4iCiAgICAgICAgdGFncyAiQmFja2VuZCIgIk9wZW5Tb3VyY2UiCiAgICAgICAgCiAgICAgICAgZ3JvdXAgIkFQSSBMYXllciBbU2hhcmVkXSIgewogICAgICAgICAgbGdGYXN0QXBpU2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBGYXN0QVBJIFNlcnZlciIgIkZhc3RBUEkgKyBVdmljb3JuIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJIVFRQIHNlcnZlciB3aXRoIFdlYlNvY2tldCBzdXBwb3J0IGF0IC93cyBlbmRwb2ludCIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgbGdBZ1VpSGFuZGxlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQUctVUkgUHJvdG9jb2wgSGFuZGxlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJvY2Vzc2VzIEFHLVVJIFByb3RvY29sIGV2ZW50czogUlVOX1NUQVJURUQvRklOSVNIRUQsIFRFWFRfTUVTU0FHRV8qLCBUT09MX0NBTExfKiwgU1RBVEVfU05BUFNIT1QsIENVU1RPTSAoYXBwcm92YWwpIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBsZ1Jlc3RFbmRwb2ludHMgPSBjb21wb25lbnQgIltTaGFyZWRdIFJFU1QgRW5kcG9pbnRzIiAiRmFzdEFQSSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiL2hlYWx0aCwgL2FnZW50cywgL3Nlc3Npb25zL3tpZH0vaGlzdG9yeSBlbmRwb2ludHMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIlBpcGVsaW5lcyBMYXllciBbU2hhcmVkXSIgewogICAgICAgICAgbGdPcmNoZXN0cmF0b3JQaXBlbGluZSA9IGNvbXBvbmVudCAiW1NoYXJlZF0gT3JjaGVzdHJhdG9yIFBpcGVsaW5lIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJNYWluIG1lc3NhZ2UgcHJvY2Vzc2luZyB3aXRoIGFwcHJvdmFsIGZsb3cgbWFuYWdlbWVudCB1c2luZyBhc3RyZWFtX2V2ZW50cyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgbGdNb2RlcmF0b3IgPSBjb21wb25lbnQgIltTaGFyZWRdIE1vZGVyYXRvciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiSW5wdXQgdmFsaWRhdGlvbiwgb3V0cHV0IGZpbHRlcmluZywgYmxvY2tlZCBwYXR0ZXJucyBkZXRlY3Rpb24iCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIkNvcmUgTGF5ZXIgW09wZW5Tb3VyY2VdIiB7CiAgICAgICAgICBsZ0FnZW50RGVmaW5pdGlvbnMgPSBjb21wb25lbnQgIltPcGVuU291cmNlXSBBZ2VudCBEZWZpbml0aW9ucyIgIlB5dGhvbiBhc3luYyBmdW5jdGlvbnMiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkFzeW5jIGZ1bmN0aW9ucyAoZ2VuZXJhbF9hZ2VudCwgcmVndWxhdGlvbl9hZ2VudCwgZXRjLikgaW52b2tpbmcgQ2hhdE9wZW5BSSB3aXRoIGJvdW5kIHRvb2xzIgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgICAgbGdBZ2VudEV4ZWN1dG9yID0gY29tcG9uZW50ICJbT3BlblNvdXJjZV0gQWdlbnQgRXhlY3V0b3IiICJsYW5nZ3JhcGguU3RhdGVHcmFwaCIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiU3RhdGVHcmFwaCB3aXRoIEFnZW50U3RhdGUgVHlwZWREaWN0LCBhc3RyZWFtX2V2ZW50cygpIGZvciBzdHJlYW1pbmciCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ1Rvb2xFeGVjdXRvciA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIFRvb2wgRXhlY3V0b3IiICJsYW5nZ3JhcGgucHJlYnVpbHQuVG9vbE5vZGUiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlByZWJ1aWx0IFRvb2xOb2RlIGhhbmRsZXMgYWxsIHRvb2wgY2FsbHMgaW5jbHVkaW5nIGhhbmRvZmZzIgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgICAgbGdIYW5kb2ZmTG9naWMgPSBjb21wb25lbnQgIltPcGVuU291cmNlXSBIYW5kb2ZmIExvZ2ljIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJFeHBsaWNpdCB0cmFuc2Zlcl90b18qIHRvb2xzIHRoYXQgbXVzdCBnbyB0aHJvdWdoIFRvb2xOb2RlIGZpcnN0IgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgICAgbGdSb3V0aW5nTG9naWMgPSBjb21wb25lbnQgIltPcGVuU291cmNlXSBSb3V0aW5nIExvZ2ljIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJyb3V0ZV9mcm9tX2FnZW50KCkg4oaSICd0b29scyd8J2VuZCcsIHJvdXRlX2FmdGVyX3Rvb2xzKCkg4oaSIGRldGVjdHMgaGFuZG9mZiDihpIgdGFyZ2V0IGFnZW50IgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgICAgbGdBcHByb3ZhbExvZ2ljID0gY29tcG9uZW50ICJbU2hhcmVkXSBBcHByb3ZhbCBMb2dpYyIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiSHVtYW4taW4tbG9vcCBydWxlcyBmb3IgaGlnaC1yaXNrIHRvb2xzIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBsZ1Nlc3Npb25QZXJzaXN0ZW5jZSA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIFNlc3Npb24gUGVyc2lzdGVuY2UiICJBc3luY1NxbGl0ZVNhdmVyIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJMYW5nR3JhcGggY2hlY2twb2ludGVyIGZvciBjb252ZXJzYXRpb24gc3RhdGUgKHNlc3Npb25zLmRiKSIKICAgICAgICAgICAgdGFncyAiT3BlblNvdXJjZSIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIkFkYXB0ZXJzIExheWVyIiB7CiAgICAgICAgICBsZ01jcEFkYXB0ZXIgPSBjb21wb25lbnQgIltPcGVuU291cmNlXSBNQ1AgQWRhcHRlciIgIk11bHRpU2VydmVyTUNQQ2xpZW50IiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJsYW5nY2hhaW4tbWNwLWFkYXB0ZXJzIGZvciBNQ1Agc2VydmVyIGNvbm5lY3Rpb25zIHdpdGggcGVyLWFnZW50IHRvb2wgc2NvcGluZyIKICAgICAgICAgICAgdGFncyAiT3BlblNvdXJjZSIKICAgICAgICAgIH0KICAgICAgICAgIGxnQXVkaXRMb2dnZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIEF1ZGl0IExvZ2dlciIgIk9wZW5UZWxlbWV0cnkiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIk9wZW5UZWxlbWV0cnktYmFzZWQgYXVkaXQgbG9nZ2luZyBvZiBtZXNzYWdlcyBhbmQgZGVjaXNpb25zIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGxnUmF0ZUxpbWl0ZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIFJhdGUgTGltaXRlciIgIlB5dGhvbiIgewogICAgICAgICAgZGVzY3JpcHRpb24gIltOT1QgSU1QTEVNRU5URURdIEFQSSByYXRlIGxpbWl0aW5nIHBlciB1c2VyL0lQIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIGxnQ2lyY3VpdEJyZWFrZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIENpcmN1aXQgQnJlYWtlciIgIlB5dGhvbiIgewogICAgICAgICAgZGVzY3JpcHRpb24gIltOT1QgSU1QTEVNRU5URURdIENpcmN1aXQgYnJlYWtlciBwYXR0ZXJuIGZvciBNQ1Agc2VydmVyIGNhbGxzIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIGxnRmFzdEFwaVNlcnZlciAtPiBsZ0FnVWlIYW5kbGVyICJyb3V0ZXMgV2ViU29ja2V0IiAiV2ViU29ja2V0IgogICAgICAgIGxnRmFzdEFwaVNlcnZlciAtPiBsZ1Jlc3RFbmRwb2ludHMgInJvdXRlcyBIVFRQIiAiSFRUUC9SRVNUIgogICAgICAgIGxnQWdVaUhhbmRsZXIgLT4gbGdPcmNoZXN0cmF0b3JQaXBlbGluZSAicHJvY2Vzc2VzIG1lc3NhZ2VzIgogICAgICAgIGxnT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gbGdBZ2VudEV4ZWN1dG9yICJpbnZva2VzIGdyYXBoIgogICAgICAgIGxnT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gbGdNb2RlcmF0b3IgInZhbGlkYXRlcyBJL08iCiAgICAgICAgbGdPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBsZ0FwcHJvdmFsTG9naWMgImNoZWNrcyBhcHByb3ZhbCIKICAgICAgICBsZ0FnZW50RXhlY3V0b3IgLT4gbGdUb29sRXhlY3V0b3IgImV4ZWN1dGVzIHRvb2xzIgogICAgICAgIGxnQWdlbnRFeGVjdXRvciAtPiBsZ1JvdXRpbmdMb2dpYyAiZGV0ZXJtaW5lcyBuZXh0IgogICAgICAgIGxnVG9vbEV4ZWN1dG9yIC0+IGxnSGFuZG9mZkxvZ2ljICJleGVjdXRlcyBoYW5kb2ZmcyIKICAgICAgICBsZ1JvdXRpbmdMb2dpYyAtPiBsZ0FnZW50RGVmaW5pdGlvbnMgInJvdXRlcyB0byBhZ2VudCIKICAgICAgICBsZ0FnZW50RXhlY3V0b3IgLT4gbGdTZXNzaW9uUGVyc2lzdGVuY2UgInBlcnNpc3RzIHN0YXRlIiAiU1FMaXRlIgogICAgICAgIGxnQWdlbnREZWZpbml0aW9ucyAtPiBsZ01jcEFkYXB0ZXIgImJpbmRzIHRvb2xzIgogICAgICAgIGxnT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gbGdBdWRpdExvZ2dlciAibG9ncyBldmVudHMiICJPcGVuVGVsZW1ldHJ5IgogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgTUNQIEFHRU5UIFNFUlZFUlMgW1NoYXJlZF0KICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBtY3BTZXJ2ZXJzID0gY29udGFpbmVyICJNQ1AgQWdlbnQgU2VydmVycyIgIkZhc3RNQ1AgKyBQeXRob24iICJEb2NrZXIiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gRG9tYWluLXNwZWNpZmljIGFnZW50IGNhcGFiaWxpdGllcyBleHBvc2VkIHZpYSBNQ1AgUHJvdG9jb2wuIEV4dGVuc2libGUgYnkgYWRkaW5nIG5ldyBNQ1Agc2VydmVycy4iCiAgICAgICAgdGFncyAiQmFja2VuZCIgIkV4dGVuc2libGUiICJTaGFyZWQiCiAgICAgICAgCiAgICAgICAgcmVndWxhdGlvblNlcnZlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmVndWxhdGlvbiBBZ2VudCIgIkZhc3RNQ1AgOjUwMDIiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJUb29sczogc2VhcmNoX3JlZ3VsYXRpb25zLCBnZXRfcmVndWxhdGlvbl9jb250ZXh0LCBsb29rdXBfcmVndWxhdGlvbl9hcnRpY2xlcywgYW5hbHl6ZV9kb2N1bWVudCIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgcmVwb3J0aW5nU2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBSZXBvcnRpbmcgQWdlbnQiICJGYXN0TUNQIDo1MDAzIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiVG9vbHM6IHN0YXJ0X2luc3BlY3Rpb25fcmVwb3J0LCBleHRyYWN0X2luc3BlY3Rpb25fZGF0YSwgdmVyaWZ5X2luc3BlY3Rpb25fZGF0YSwgZ2VuZXJhdGVfZmluYWxfcmVwb3J0IgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICBoaXN0b3J5U2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBIaXN0b3J5IEFnZW50IiAiRmFzdE1DUCA6NTAwNSIgewogICAgICAgICAgZGVzY3JpcHRpb24gIlRvb2xzOiBjaGVja19jb21wYW55X2V4aXN0cywgZ2V0X2luc3BlY3Rpb25faGlzdG9yeSwgZ2V0X2NvbXBhbnlfdmlvbGF0aW9ucywgY2hlY2tfcmVwZWF0X3Zpb2xhdGlvbiIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgIH0KICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBNSVNTSU5HIENPTlRBSU5FUlMgW1NoYXJlZF0gLSBQcm9kdWN0aW9uIEdhcCBBbmFseXNpcwogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgIHVzZXJQcm9maWxlID0gY29udGFpbmVyICJVc2VyIFByb2ZpbGUiICJQb3N0Z3JlU1FMIiAiRGF0YWJhc2UiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gW05PVCBJTVBMRU1FTlRFRF0gVXNlciBwcm9maWxlcywgcHJlZmVyZW5jZXMsIHJvbGVzIChSQkFDKSIKICAgICAgICB0YWdzICJEYXRhYmFzZSIgIk5vdEltcGxlbWVudGVkIiAiU2hhcmVkIgogICAgICB9CiAgICAgIAogICAgICBtZW1vcnkgPSBjb250YWluZXIgIk1lbW9yeSBTZXJ2aWNlIiAiVmVjdG9yIERCICsgUG9zdGdyZVNRTCIgIlNlcnZpY2UiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gW05PVCBJTVBMRU1FTlRFRF0gTG9uZy10ZXJtIG1lbW9yeSwgY3Jvc3Mtc2Vzc2lvbiBjb250ZXh0IgogICAgICAgIHRhZ3MgIkJhY2tlbmQiICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgfQogICAgICAKICAgICAgdmlzaWJpbGl0eSA9IGNvbnRhaW5lciAiVmlzaWJpbGl0eSBTdGFjayIgIkdyYWZhbmEgKyBQcm9tZXRoZXVzICsgSmFlZ2VyIiAiT2JzZXJ2YWJpbGl0eSIgewogICAgICAgIGRlc2NyaXB0aW9uICJbU2hhcmVkXSBbTk9UIElNUExFTUVOVEVEXSBNb25pdG9yaW5nLCBsb2dnaW5nLCB0cmFjaW5nIGRhc2hib2FyZHMiCiAgICAgICAgdGFncyAiT2JzZXJ2YWJpbGl0eSIgIk5vdEltcGxlbWVudGVkIiAiU2hhcmVkIgogICAgICB9CiAgICAgIAogICAgICBldmFsU2VydmljZSA9IGNvbnRhaW5lciAiRXZhbHVhdGlvbiBTZXJ2aWNlIiAiTGFuZ2Z1c2UiICJPYnNlcnZhYmlsaXR5IiB7CiAgICAgICAgZGVzY3JpcHRpb24gIltTaGFyZWRdIFtOT1QgSU1QTEVNRU5URURdIExMTSB0cmFjaW5nLCBxdWFsaXR5IGV2YWx1YXRpb25zLCBjb3N0IHRyYWNraW5nIgogICAgICAgIHRhZ3MgIk9ic2VydmFiaWxpdHkiICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgfQogICAgICAKICAgICAgYXV0aFNlcnZpY2UgPSBjb250YWluZXIgIkF1dGggU2VydmljZSIgIkF1dGgwL0tleWNsb2FrIiAiU2VjdXJpdHkiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gW05PVCBJTVBMRU1FTlRFRF0gT0F1dGgyL09JREMgYXV0aGVudGljYXRpb24sIFJCQUMiCiAgICAgICAgdGFncyAiU2VjdXJpdHkiICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgfQogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIElOVEVSTkFMIENPTlRBSU5FUiBSRUxBVElPTlNISVBTIChVbmlmaWVkIG9yY2hlc3RyYXRvciBmb3IgQzIvZXh0ZXJuYWwpCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBIQUkgY29ubmVjdHMgdG8gdW5pZmllZCBvcmNoZXN0cmF0b3IKICAgICAgaGFpIC0+IG9yY2hlc3RyYXRvciAiQUctVUkgUHJvdG9jb2wiICJXZWJTb2NrZXQvSlNPTiA6ODAwMSIKICAgICAgCiAgICAgICMgVW5pZmllZCBvcmNoZXN0cmF0b3IgY29ubmVjdHMgdG8gc2hhcmVkIE1DUCBzZXJ2ZXJzCiAgICAgIG9yY2hlc3RyYXRvciAtPiBtY3BTZXJ2ZXJzICJNQ1AgUHJvdG9jb2wiICJIVFRQL1NTRSBTdHJlYW1hYmxlIgogICAgICAKICAgICAgIyBPYnNlcnZhYmlsaXR5IGNvbm5lY3Rpb25zIChub3QgaW1wbGVtZW50ZWQpCiAgICAgIG9yY2hlc3RyYXRvciAtPiB2aXNpYmlsaXR5ICJbTk9UIENPTk5FQ1RFRF0iICJPcGVuVGVsZW1ldHJ5IE9UTFAiCiAgICAgIG9yY2hlc3RyYXRvciAtPiBldmFsU2VydmljZSAiW05PVCBDT05ORUNURURdIiAiTGFuZ2Z1c2UgU0RLIgogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIENPTVBPTkVOVC1MRVZFTCBSRUxBVElPTlNISVBTIChmb3IgQzMgdmlld3MpCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBIQUkgdG8gdW5pZmllZCBvcmNoZXN0cmF0b3IgKGZvciBDMyBIQUkgdmlldykKICAgICAgYWdvcmEuaGFpLndlYnNvY2tldENsaWVudCAtPiBhZ29yYS5vcmNoZXN0cmF0b3IgIkFHLVVJIFByb3RvY29sIiAiV2ViU29ja2V0IgogICAgICAKICAgICAgIyBPcGVuQUkgT3JjaGVzdHJhdG9yIE1DUCBjb25uZWN0aW9ucyAoZm9yIEMzIE9wZW5BSSB2aWV3KQogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkub2FpTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlZ3VsYXRpb25TZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkub2FpTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlcG9ydGluZ1NlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvck9wZW5BSS5vYWlNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMuaGlzdG9yeVNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIAogICAgICAjIExhbmdHcmFwaCBPcmNoZXN0cmF0b3IgTUNQIGNvbm5lY3Rpb25zIChmb3IgQzMgT3BlblNvdXJjZSB2aWV3KQogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgubGdNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMucmVndWxhdGlvblNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvckxhbmdHcmFwaC5sZ01jcEFkYXB0ZXIgLT4gYWdvcmEubWNwU2VydmVycy5yZXBvcnRpbmdTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgubGdNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMuaGlzdG9yeVNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCiAgICAgIAogICAgICAjIEhBSSBXZWJTb2NrZXQgY29ubmVjdGlvbnMgKGZvciBDMyBvcmNoZXN0cmF0b3IgZGV0YWlsIHZpZXdzKQogICAgICBhZ29yYS5oYWkud2Vic29ja2V0Q2xpZW50IC0+IGFnb3JhLm9yY2hlc3RyYXRvck9wZW5BSS5vYWlGYXN0QXBpU2VydmVyICJBRy1VSSBQcm90b2NvbCIgIldlYlNvY2tldCIKICAgICAgYWdvcmEuaGFpLndlYnNvY2tldENsaWVudCAtPiBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgubGdGYXN0QXBpU2VydmVyICJBRy1VSSBQcm90b2NvbCIgIldlYlNvY2tldCIKICAgICAgCiAgICAgICMgVW5pZmllZCBPcmNoZXN0cmF0b3IgdG8gTUNQIEFnZW50IGNvbm5lY3Rpb25zIChmb3IgQzMgTUNQIHZpZXcpCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlZ3VsYXRpb25TZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3IgLT4gYWdvcmEubWNwU2VydmVycy5yZXBvcnRpbmdTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3IgLT4gYWdvcmEubWNwU2VydmVycy5oaXN0b3J5U2VydmVyICJNQ1AiICJIVFRQIFBPU1QgL21jcCIKICAgIH0KICAgIAogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAjIE1DUCBBR0VOVCBFQ09TWVNURU0gKEMxIExldmVsKQogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBtY3BFY29zeXN0ZW0gPSBzb2Z0d2FyZVN5c3RlbSAiTUNQIEFnZW50IEVjb3N5c3RlbSIgIltTaGFyZWRdIEV4dGVuc2libGUgZG9tYWluIGFnZW50cyB2aWEgTW9kZWwgQ29udGV4dCBQcm90b2NvbC4gQWRkIG5ldyBjYXBhYmlsaXRpZXMgYnkgZGVwbG95aW5nIE1DUCBzZXJ2ZXJzLiIgewogICAgICB0YWdzICJFeHRlbnNpYmxlIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzEgUkVMQVRJT05TSElQUwogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBpbnNwZWN0b3IgLT4gYWdvcmEgInVzZXMgZm9yIGluc3BlY3Rpb25zIiAiSFRUUFMvV2ViU29ja2V0IgogICAgYWdvcmEgLT4gbWNwRWNvc3lzdGVtICJvcmNoZXN0cmF0ZXMgYWdlbnRzIiAiTUNQIFByb3RvY29sIgogIH0KICAKICB2aWV3cyB7CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzE6IFNZU1RFTSBDT05URVhUCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIHN5c3RlbUNvbnRleHQgYWdvcmEgIkMxX1N5c3RlbUNvbnRleHQiIHsKICAgICAgaW5jbHVkZSBpbnNwZWN0b3IKICAgICAgaW5jbHVkZSBhZ29yYQogICAgICBpbmNsdWRlIG1jcEVjb3N5c3RlbQogICAgICBhdXRvbGF5b3V0IGxyIDQwMCAyMDAKICAgICAgZGVzY3JpcHRpb24gIlN5c3RlbSBDb250ZXh0IChDMSk6IEluc3BlY3RvciDihpIgQUdPUkEg4oaSIE1DUCBBZ2VudCBFY29zeXN0ZW0iCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMjogQ09OVEFJTkVSIERJQUdSQU0gKFVuaWZpZWQgb3JjaGVzdHJhdG9yKQogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBjb250YWluZXIgYWdvcmEgIkMyX0NvbnRhaW5lcnMiIHsKICAgICAgaW5jbHVkZSBhZ29yYS5oYWkKICAgICAgaW5jbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3IKICAgICAgaW5jbHVkZSBhZ29yYS5tY3BTZXJ2ZXJzCiAgICAgIGluY2x1ZGUgYWdvcmEudXNlclByb2ZpbGUKICAgICAgaW5jbHVkZSBhZ29yYS5tZW1vcnkKICAgICAgaW5jbHVkZSBhZ29yYS52aXNpYmlsaXR5CiAgICAgIGluY2x1ZGUgYWdvcmEuZXZhbFNlcnZpY2UKICAgICAgaW5jbHVkZSBhZ29yYS5hdXRoU2VydmljZQogICAgICBhdXRvbGF5b3V0IHRiIDM1MCAyMDAKICAgICAgZGVzY3JpcHRpb24gIkNvbnRhaW5lciBEaWFncmFtIChDMik6IEhBSSDihpIgT3JjaGVzdHJhdG9yIFtPcGVuQUkvT3BlblNvdXJjZV0g4oaSIE1DUCBBZ2VudCBTZXJ2ZXJzICgrIGZ1dHVyZSBzZXJ2aWNlcykiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMzogSEFJIENPTVBPTkVOVFMgW1NoYXJlZF0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgY29tcG9uZW50IGFnb3JhLmhhaSAiQzNfSEFJX0NvbXBvbmVudHMiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGluY2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yCiAgICAgIGV4Y2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJCiAgICAgIGV4Y2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yTGFuZ0dyYXBoCiAgICAgIGF1dG9sYXlvdXQgdGIgMzAwIDE1MAogICAgICBkZXNjcmlwdGlvbiAiQ29tcG9uZW50IERpYWdyYW0gKEMzKTogSEFJIEZyb250ZW5kIC0gYWxsIFtTaGFyZWRdIGJldHdlZW4gYmFja2VuZHMiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMzogT1JDSEVTVFJBVE9SIFtPcGVuQUldIC0gRGV0YWlsZWQgaW1wbGVtZW50YXRpb24gdmlldwogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBjb21wb25lbnQgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJICJDM19PcmNoZXN0cmF0b3JfT3BlbkFJIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLmhhaQogICAgICBpbmNsdWRlIGFnb3JhLm1jcFNlcnZlcnMKICAgICAgYXV0b2xheW91dCB0YiAyNTAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBPcmNoZXN0cmF0b3IgW09wZW5BSV0gLSBTREsgQWdlbnQvUnVubmVyL0hhbmRvZmZzIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzM6IE9SQ0hFU1RSQVRPUiBbT3BlblNvdXJjZV0gLSBEZXRhaWxlZCBpbXBsZW1lbnRhdGlvbiB2aWV3CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGNvbXBvbmVudCBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGggIkMzX09yY2hlc3RyYXRvcl9PcGVuU291cmNlIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLmhhaQogICAgICBpbmNsdWRlIGFnb3JhLm1jcFNlcnZlcnMKICAgICAgYXV0b2xheW91dCB0YiAyNTAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBPcmNoZXN0cmF0b3IgW09wZW5Tb3VyY2VdIC0gU3RhdGVHcmFwaC9Ub29sTm9kZS9Sb3V0aW5nIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzM6IE1DUCBBR0VOVCBTRVJWRVJTIFtTaGFyZWRdCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGNvbXBvbmVudCBhZ29yYS5tY3BTZXJ2ZXJzICJDM19NQ1BfQ29tcG9uZW50cyIgewogICAgICBpbmNsdWRlICoKICAgICAgaW5jbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3IKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgKICAgICAgYXV0b2xheW91dCBsciAzMDAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBNQ1AgQWdlbnQgU2VydmVycyAtIGFsbCBbU2hhcmVkXSBiZXR3ZWVuIGJhY2tlbmRzIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgU1RZTEVTCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIHN0eWxlcyB7CiAgICAgIGVsZW1lbnQgIlBlcnNvbiIgewogICAgICAgIHNoYXBlIHBlcnNvbgogICAgICAgIGJhY2tncm91bmQgIzA4NDI3YgogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJTb2Z0d2FyZSBTeXN0ZW0iIHsKICAgICAgICBiYWNrZ3JvdW5kICMxMTY4YmQKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRXh0ZXJuYWwiIHsKICAgICAgICBiYWNrZ3JvdW5kICM5OTk5OTkKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRXh0ZW5zaWJsZSIgewogICAgICAgIGJhY2tncm91bmQgIzExNjhiZAogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJDb250YWluZXIiIHsKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRnJvbnRlbmQiIHsKICAgICAgICBzaGFwZSBXZWJCcm93c2VyCiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkJhY2tlbmQiIHsKICAgICAgICBzaGFwZSBIZXhhZ29uCiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkRhdGFiYXNlIiB7CiAgICAgICAgc2hhcGUgQ3lsaW5kZXIKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiT2JzZXJ2YWJpbGl0eSIgewogICAgICAgIHNoYXBlIFJvdW5kZWRCb3gKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgYm9yZGVyIGRhc2hlZAogICAgICB9CiAgICAgIGVsZW1lbnQgIlNlY3VyaXR5IiB7CiAgICAgICAgc2hhcGUgUm91bmRlZEJveAogICAgICAgIGJhY2tncm91bmQgIzQzOGRkNQogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICBib3JkZXIgZGFzaGVkCiAgICAgIH0KICAgICAgZWxlbWVudCAiQ29tcG9uZW50IiB7CiAgICAgICAgYmFja2dyb3VuZCAjODViYmYwCiAgICAgICAgY29sb3IgIzAwMDAwMAogICAgICB9CiAgICAgIGVsZW1lbnQgIlNoYXJlZCIgewogICAgICAgIGJhY2tncm91bmQgIzg1YmJmMAogICAgICAgIGNvbG9yICMwMDAwMDAKICAgICAgfQogICAgICBlbGVtZW50ICJPcGVuQUkiIHsKICAgICAgICBiYWNrZ3JvdW5kICM3NGFhOWMKICAgICAgICBjb2xvciAjMDAwMDAwCiAgICAgIH0KICAgICAgZWxlbWVudCAiT3BlblNvdXJjZSIgewogICAgICAgIGJhY2tncm91bmQgI2ZmOTk2NgogICAgICAgIGNvbG9yICMwMDAwMDAKICAgICAgfQogICAgICBlbGVtZW50ICJOb3RJbXBsZW1lbnRlZCIgewogICAgICAgIGJhY2tncm91bmQgI2ZmY2NjYwogICAgICAgIGNvbG9yICM5OTAwMDAKICAgICAgICBib3JkZXIgZGFzaGVkCiAgICAgICAgb3BhY2l0eSA3MAogICAgICB9CiAgICAgIHJlbGF0aW9uc2hpcCAiUmVsYXRpb25zaGlwIiB7CiAgICAgICAgcm91dGluZyBEaXJlY3QKICAgICAgICB0aGlja25lc3MgMgogICAgICB9CiAgICB9CiAgICAKICAgIHRoZW1lIGRlZmF1bHQKICB9CiAgCiAgY29uZmlndXJhdGlvbiB7CiAgICBzY29wZSBzb2Z0d2FyZXN5c3RlbQogIH0KfQo="
+    "structurizr.inspection.info" : "0",
+    "structurizr.inspection.ignore" : "0",
+    "structurizr.inspection.error" : "30",
+    "structurizr.inspection.warning" : "0",
+    "structurizr.dsl" : "d29ya3NwYWNlICJBR09SQSB2MS4wIOKAlCBNdWx0aS1BZ2VudCBQbGF0Zm9ybSBmb3IgTlZXQSIgewogICFpZGVudGlmaWVycyBoaWVyYXJjaGljYWwKICAKICBtb2RlbCB7CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQUNUT1JTCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGluc3BlY3RvciA9IHBlcnNvbiAiTlZXQSBJbnNwZWN0ZXVyIiAiRm9vZCBzYWZldHkgaW5zcGVjdG9yIHVzaW5nIEFHT1JBIGZvciBkYWlseSBpbnNwZWN0aW9uIHdvcmsiCiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBBR09SQSBTWVNURU0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgYWdvcmEgPSBzb2Z0d2FyZVN5c3RlbSAiQUdPUkEiICJNdWx0aS1hZ2VudCBjb21wbGlhbmNlIHBsYXRmb3JtIGZvciBOVldBIGluc3BlY3RvcnMiIHsKICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBIQUkgRlJPTlRFTkQgW1NoYXJlZF0KICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBoYWkgPSBjb250YWluZXIgIkh1bWFuIEFnZW50IEludGVyZmFjZSAoSEFJKSIgIlJlYWN0ICsgVml0ZSArIFp1c3RhbmQgKyBUYWlsd2luZENTUyIgIlJlYWN0IFNQQSIgewogICAgICAgIGRlc2NyaXB0aW9uICJbU2hhcmVkXSBXZWItYmFzZWQgdXNlciBpbnRlcmZhY2UgZm9yIGluc3BlY3RvciBpbnRlcmFjdGlvbnMgdmlhIHRleHQiCiAgICAgICAgdGFncyAiRnJvbnRlbmQiICJTaGFyZWQiCiAgICAgICAgCiAgICAgICAgY2hhdENvbXBvbmVudHMgPSBjb21wb25lbnQgIltTaGFyZWRdIENoYXQgQ29tcG9uZW50cyIgIlJlYWN0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQ2hhdEludGVyZmFjZSwgQ2hhdE1lc3NhZ2VMaXN0LCBDaGF0SW5wdXQsIENoYXRNZXNzYWdlLCBUb29sQ2FsbENhcmQsIExvYWRpbmdJbmRpY2F0b3IiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIGFwcHJvdmFsRGlhbG9nID0gY29tcG9uZW50ICJbU2hhcmVkXSBBcHByb3ZhbCBEaWFsb2ciICJSZWFjdCIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkFwcHJvdmFsRGlhbG9nIGZvciBodW1hbi1pbi10aGUtbG9vcCB0b29sIGFwcHJvdmFsIHdvcmtmbG93IgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICBkZWJ1Z1BhbmVsID0gY29tcG9uZW50ICJbU2hhcmVkXSBEZWJ1ZyBQYW5lbCIgIlJlYWN0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiVG9vbCBjYWxsIHZpc3VhbGl6YXRpb24gYW5kIGRlYnVnZ2luZyBpbnRlcmZhY2UiCiAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIHN0YXRlTWFuYWdlbWVudCA9IGNvbXBvbmVudCAiW1NoYXJlZF0gU3RhdGUgTWFuYWdlbWVudCIgIlp1c3RhbmQiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJDbGllbnQgc3RvcmVzOiB1c2VNZXNzYWdlU3RvcmUsIHVzZVNlc3Npb25TdG9yZSwgdXNlQ29ubmVjdGlvblN0b3JlLCB1c2VBcHByb3ZhbFN0b3JlLCB1c2VBZ2VudFN0b3JlLCB1c2VUb29sQ2FsbFN0b3JlIgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICB3ZWJzb2NrZXRDbGllbnQgPSBjb21wb25lbnQgIltTaGFyZWRdIFdlYlNvY2tldCBDbGllbnQiICJUeXBlU2NyaXB0IiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQUctVUkgUHJvdG9jb2wgV2ViU29ja2V0IGNsaWVudCBmb3IgcmVhbC10aW1lIGJpZGlyZWN0aW9uYWwgY29tbXVuaWNhdGlvbiIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgdm9pY2VJbnRlcmZhY2UgPSBjb21wb25lbnQgIltTaGFyZWRdIFZvaWNlIEludGVyZmFjZSIgIlJlYWN0ICsgV2hpc3BlciArIEVsZXZlbkxhYnMiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJbTk9UIElNUExFTUVOVEVEXSBTcGVlY2gtdG8tdGV4dCBhbmQgdGV4dC10by1zcGVlY2ggaW50ZXJmYWNlIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIGNoYXRDb21wb25lbnRzIC0+IHN0YXRlTWFuYWdlbWVudCAicmVhZHMvd3JpdGVzIiAiWnVzdGFuZCBzZWxlY3RvcnMiCiAgICAgICAgYXBwcm92YWxEaWFsb2cgLT4gc3RhdGVNYW5hZ2VtZW50ICJyZWFkcy93cml0ZXMiICJadXN0YW5kIHNlbGVjdG9ycyIKICAgICAgICBkZWJ1Z1BhbmVsIC0+IHN0YXRlTWFuYWdlbWVudCAicmVhZHMiICJadXN0YW5kIHNlbGVjdG9ycyIKICAgICAgICBzdGF0ZU1hbmFnZW1lbnQgLT4gd2Vic29ja2V0Q2xpZW50ICJkaXNwYXRjaGVzIG1lc3NhZ2VzIiAiVHlwZVNjcmlwdCIKICAgICAgfQogICAgICAKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICAjIE9SQ0hFU1RSQVRPUiAtIFVuaWZpZWQgKGZvciBDMiBhbmQgZXh0ZXJuYWwgYXBwZWFyYW5jZXMpCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgb3JjaGVzdHJhdG9yID0gY29udGFpbmVyICJPcmNoZXN0cmF0b3IgW09wZW5BSS9PcGVuU291cmNlXSIgIkZhc3RBUEkgKyBTUUxpdGUgKyBPcGVuQUkgU0RLIG9yIExhbmdHcmFwaCIgIlB5dGhvbiIgewogICAgICAgIGRlc2NyaXB0aW9uICJDZW50cmFsIG9yY2hlc3RyYXRpb24gZm9yIG11bHRpLWFnZW50IGNvb3JkaW5hdGlvbi4gU2VlIEMzIGRpYWdyYW1zIGZvciBpbXBsZW1lbnRhdGlvbi1zcGVjaWZpYyBkZXRhaWxzLiIKICAgICAgICB0YWdzICJCYWNrZW5kIgogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgT1JDSEVTVFJBVE9SIC0gT3BlbkFJIEFnZW50cyBTREsgKGZvciBDMyBkZXRhaWwgdmlldykKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBvcmNoZXN0cmF0b3JPcGVuQUkgPSBjb250YWluZXIgIk9yY2hlc3RyYXRvciBbT3BlbkFJXSIgIkZhc3RBUEkgKyBTUUxpdGUgKyBPcGVuQUkgQWdlbnRzIFNESyIgIlB5dGhvbiIgewogICAgICAgIGRlc2NyaXB0aW9uICJDZW50cmFsIG9yY2hlc3RyYXRpb24gdXNpbmcgT3BlbkFJIEFnZW50cyBTREsgd2l0aCBuYXRpdmUgaGFuZG9mZnMgYW5kIE1DUCBzdXBwb3J0LiIKICAgICAgICB0YWdzICJCYWNrZW5kIiAiT3BlbkFJIgogICAgICAgIAogICAgICAgIGdyb3VwICJBUEkgTGF5ZXIgW1NoYXJlZF0iIHsKICAgICAgICAgIG9haUZhc3RBcGlTZXJ2ZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIEZhc3RBUEkgU2VydmVyIiAiRmFzdEFQSSArIFV2aWNvcm4iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkhUVFAgc2VydmVyIHdpdGggV2ViU29ja2V0IHN1cHBvcnQgYXQgL3dzIGVuZHBvaW50IgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlBZ1VpSGFuZGxlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQUctVUkgUHJvdG9jb2wgSGFuZGxlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJvY2Vzc2VzIEFHLVVJIFByb3RvY29sIGV2ZW50czogUlVOX1NUQVJURUQvRklOSVNIRUQsIFRFWFRfTUVTU0FHRV8qLCBUT09MX0NBTExfKiwgU1RBVEVfU05BUFNIT1QsIENVU1RPTSAoYXBwcm92YWwpIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlSZXN0RW5kcG9pbnRzID0gY29tcG9uZW50ICJbU2hhcmVkXSBSRVNUIEVuZHBvaW50cyIgIkZhc3RBUEkiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIi9oZWFsdGgsIC9hZ2VudHMsIC9zZXNzaW9ucy97aWR9L2hpc3RvcnkgZW5kcG9pbnRzIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGdyb3VwICJQaXBlbGluZXMgTGF5ZXIgW1NoYXJlZF0iIHsKICAgICAgICAgIG9haU9yY2hlc3RyYXRvclBpcGVsaW5lID0gY29tcG9uZW50ICJbU2hhcmVkXSBPcmNoZXN0cmF0b3IgUGlwZWxpbmUiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIk1haW4gbWVzc2FnZSBwcm9jZXNzaW5nIHdpdGggYXBwcm92YWwgZmxvdyBtYW5hZ2VtZW50IHVzaW5nIHN0cmVhbSBjYWxsYmFja3MiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIG9haU1vZGVyYXRvciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gTW9kZXJhdG9yIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJJbnB1dCB2YWxpZGF0aW9uLCBvdXRwdXQgZmlsdGVyaW5nLCBibG9ja2VkIHBhdHRlcm5zIGRldGVjdGlvbiIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBncm91cCAiQ29yZSBMYXllciBbT3BlbkFJXSIgewogICAgICAgICAgb2FpQWdlbnRMb2FkZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIEFnZW50IExvYWRlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gRHluYW1pY2FsbHkgaW5zdGFudGlhdGVzIEFnZW50IG9iamVjdHMgZnJvbSB0aGUgQWdlbnQgUmVnaXN0cnkgYXQgc3RhcnR1cCBvciBydW50aW1lLCByZXNvbHZpbmcgTUNQIHRvb2wgbWFwcGluZ3MgYW5kIGhhbmRvZmYgdGFyZ2V0cyIKICAgICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBvYWlBZ2VudERlZmluaXRpb25zID0gY29tcG9uZW50ICJbT3BlbkFJXSBBZ2VudCBEZWZpbml0aW9ucyIgImFnZW50cy5BZ2VudCIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiU0RLIEFnZW50IGluc3RhbmNlcyB3aXRoIGluc3RydWN0aW9ucyBhbmQgaGFuZG9mZiBjb25maWd1cmF0aW9uIChjdXJyZW50bHkgaGFyZGNvZGVkIGluIGFnZW50X2RlZmluaXRpb25zLnB5KSIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpQWdlbnRFeGVjdXRvciA9IGNvbXBvbmVudCAiW09wZW5BSV0gQWdlbnQgRXhlY3V0b3IiICJhZ2VudHMuUnVubmVyIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJSdW5uZXIucnVuX3N0cmVhbWVkKCkgZm9yIHN0cmVhbWluZyByZXNwb25zZXMgd2l0aCB0b29sIGNhbGxiYWNrcyIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpSGFuZG9mZkxvZ2ljID0gY29tcG9uZW50ICJbT3BlbkFJXSBIYW5kb2ZmIExvZ2ljIiAiU0RLIGJ1aWx0LWluIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJCdWlsdC1pbiBTREsgaGFuZG9mZnMgdmlhIGFnZW50LmhhbmRvZmZzIGxpc3QgLSBhdXRvbWF0aWMgY29udGV4dCB0cmFuc2ZlciIKICAgICAgICAgICAgdGFncyAiT3BlbkFJIgogICAgICAgICAgfQogICAgICAgICAgb2FpQXBwcm92YWxMb2dpYyA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQXBwcm92YWwgTG9naWMiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkh1bWFuLWluLWxvb3AgcnVsZXMgZm9yIGhpZ2gtcmlzayB0b29scyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgb2FpU2Vzc2lvblBlcnNpc3RlbmNlID0gY29tcG9uZW50ICJbT3BlbkFJXSBTZXNzaW9uIFBlcnNpc3RlbmNlIiAiYWdlbnRzLlNRTGl0ZVNlc3Npb24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIlNESyBTUUxpdGVTZXNzaW9uIGZvciBjb252ZXJzYXRpb24gaGlzdG9yeSAoc2Vzc2lvbnMuZGIpIgogICAgICAgICAgICB0YWdzICJPcGVuQUkiCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGdyb3VwICJBZGFwdGVycyBMYXllciIgewogICAgICAgICAgb2FpTWNwQWRhcHRlciA9IGNvbXBvbmVudCAiW09wZW5BSV0gTUNQIEFkYXB0ZXIiICJNQ1BTZXJ2ZXJTdHJlYW1hYmxlSHR0cCIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiTmF0aXZlIE9wZW5BSSBTREsgTUNQIGludGVncmF0aW9uIHdpdGggcGVyLWFnZW50IHRvb2wgc2NvcGluZyB2aWEgQUdFTlRfTUNQX01BUFBJTkciCiAgICAgICAgICAgIHRhZ3MgIk9wZW5BSSIKICAgICAgICAgIH0KICAgICAgICAgIG9haUF1ZGl0TG9nZ2VyID0gY29tcG9uZW50ICJbU2hhcmVkXSBBdWRpdCBMb2dnZXIiICJPcGVuVGVsZW1ldHJ5IiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJPcGVuVGVsZW1ldHJ5LWJhc2VkIGF1ZGl0IGxvZ2dpbmcgb2YgbWVzc2FnZXMgYW5kIGRlY2lzaW9ucyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBvYWlSYXRlTGltaXRlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmF0ZSBMaW1pdGVyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQVBJIHJhdGUgbGltaXRpbmcgcGVyIHVzZXIvSVAiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgb2FpQ2lyY3VpdEJyZWFrZXIgPSBjb21wb25lbnQgIltTaGFyZWRdIENpcmN1aXQgQnJlYWtlciIgIlB5dGhvbiIgewogICAgICAgICAgZGVzY3JpcHRpb24gIltOT1QgSU1QTEVNRU5URURdIENpcmN1aXQgYnJlYWtlciBwYXR0ZXJuIGZvciBNQ1Agc2VydmVyIGNhbGxzIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIAogICAgICAgIG9haUZhc3RBcGlTZXJ2ZXIgLT4gb2FpQWdVaUhhbmRsZXIgInJvdXRlcyBXZWJTb2NrZXQiICJXZWJTb2NrZXQiCiAgICAgICAgb2FpRmFzdEFwaVNlcnZlciAtPiBvYWlSZXN0RW5kcG9pbnRzICJyb3V0ZXMgSFRUUCIgIkhUVFAvUkVTVCIKICAgICAgICBvYWlBZ1VpSGFuZGxlciAtPiBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAicHJvY2Vzc2VzIG1lc3NhZ2VzIgogICAgICAgIG9haU9yY2hlc3RyYXRvclBpcGVsaW5lIC0+IG9haUFnZW50RXhlY3V0b3IgInJ1bnMgYWdlbnRzIgogICAgICAgIG9haU9yY2hlc3RyYXRvclBpcGVsaW5lIC0+IG9haU1vZGVyYXRvciAidmFsaWRhdGVzIEkvTyIKICAgICAgICBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBvYWlBcHByb3ZhbExvZ2ljICJjaGVja3MgYXBwcm92YWwiCiAgICAgICAgb2FpQWdlbnRMb2FkZXIgLT4gb2FpQWdlbnREZWZpbml0aW9ucyAiY3JlYXRlcyBhZ2VudHMiCiAgICAgICAgb2FpQWdlbnRMb2FkZXIgLT4gb2FpTWNwQWRhcHRlciAicmVzb2x2ZXMgTUNQIHRvb2wgbWFwcGluZ3MiCiAgICAgICAgb2FpQWdlbnRFeGVjdXRvciAtPiBvYWlBZ2VudERlZmluaXRpb25zICJnZXRzIGFnZW50cyIKICAgICAgICBvYWlBZ2VudEV4ZWN1dG9yIC0+IG9haUhhbmRvZmZMb2dpYyAiaGFuZGxlcyBoYW5kb2ZmcyIKICAgICAgICBvYWlBZ2VudEV4ZWN1dG9yIC0+IG9haVNlc3Npb25QZXJzaXN0ZW5jZSAicGVyc2lzdHMgc3RhdGUiICJTUUxpdGUiCiAgICAgICAgb2FpQWdlbnREZWZpbml0aW9ucyAtPiBvYWlNY3BBZGFwdGVyICJjb25maWd1cmVzIHRvb2xzIiAiTUNQIGNvbmZpZyIKICAgICAgICBvYWlPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBvYWlBdWRpdExvZ2dlciAibG9ncyBldmVudHMiICJPcGVuVGVsZW1ldHJ5IgogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgT1JDSEVTVFJBVE9SIC0gTGFuZ0dyYXBoIChPcGVuIFNvdXJjZSkgKGZvciBDMyBkZXRhaWwgdmlldykKICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBvcmNoZXN0cmF0b3JMYW5nR3JhcGggPSBjb250YWluZXIgIk9yY2hlc3RyYXRvciBbT3BlblNvdXJjZV0iICJMYW5nR3JhcGggKyBGYXN0QVBJICsgU1FMaXRlIiAiUHl0aG9uIiB7CiAgICAgICAgZGVzY3JpcHRpb24gIkNlbnRyYWwgb3JjaGVzdHJhdGlvbiB1c2luZyBMYW5nR3JhcGggU3RhdGVHcmFwaCAoTExNIHByb3ZpZGVyLWFnbm9zdGljKS4iCiAgICAgICAgdGFncyAiQmFja2VuZCIgIk9wZW5Tb3VyY2UiCiAgICAgICAgCiAgICAgICAgZ3JvdXAgIkFQSSBMYXllciBbU2hhcmVkXSIgewogICAgICAgICAgbGdGYXN0QXBpU2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBGYXN0QVBJIFNlcnZlciIgIkZhc3RBUEkgKyBVdmljb3JuIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJIVFRQIHNlcnZlciB3aXRoIFdlYlNvY2tldCBzdXBwb3J0IGF0IC93cyBlbmRwb2ludCIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgbGdBZ1VpSGFuZGxlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQUctVUkgUHJvdG9jb2wgSGFuZGxlciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJvY2Vzc2VzIEFHLVVJIFByb3RvY29sIGV2ZW50czogUlVOX1NUQVJURUQvRklOSVNIRUQsIFRFWFRfTUVTU0FHRV8qLCBUT09MX0NBTExfKiwgU1RBVEVfU05BUFNIT1QsIENVU1RPTSAoYXBwcm92YWwpIgogICAgICAgICAgICB0YWdzICJTaGFyZWQiCiAgICAgICAgICB9CiAgICAgICAgICBsZ1Jlc3RFbmRwb2ludHMgPSBjb21wb25lbnQgIltTaGFyZWRdIFJFU1QgRW5kcG9pbnRzIiAiRmFzdEFQSSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiL2hlYWx0aCwgL2FnZW50cywgL3Nlc3Npb25zL3tpZH0vaGlzdG9yeSBlbmRwb2ludHMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIlBpcGVsaW5lcyBMYXllciBbU2hhcmVkXSIgewogICAgICAgICAgbGdPcmNoZXN0cmF0b3JQaXBlbGluZSA9IGNvbXBvbmVudCAiW1NoYXJlZF0gT3JjaGVzdHJhdG9yIFBpcGVsaW5lIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJNYWluIG1lc3NhZ2UgcHJvY2Vzc2luZyB3aXRoIGFwcHJvdmFsIGZsb3cgbWFuYWdlbWVudCB1c2luZyBhc3RyZWFtX2V2ZW50cyIKICAgICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgbGdNb2RlcmF0b3IgPSBjb21wb25lbnQgIltTaGFyZWRdIE1vZGVyYXRvciIgIlB5dGhvbiIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiSW5wdXQgdmFsaWRhdGlvbiwgb3V0cHV0IGZpbHRlcmluZywgYmxvY2tlZCBwYXR0ZXJucyBkZXRlY3Rpb24iCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgZ3JvdXAgIkNvcmUgTGF5ZXIgW09wZW5Tb3VyY2VdIiB7CiAgICAgICAgICBsZ0FnZW50TG9hZGVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBBZ2VudCBMb2FkZXIiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIltOT1QgSU1QTEVNRU5URURdIFByb2dyYW1tYXRpY2FsbHkgY3JlYXRlcyBTdGF0ZUdyYXBoIG5vZGVzIGZyb20gQWdlbnQgUmVnaXN0cnkgZGVmaW5pdGlvbnMgYXQgc3RhcnR1cCBvciBydW50aW1lLCByZXNvbHZpbmcgTUNQIHRvb2wgbWFwcGluZ3MiCiAgICAgICAgICAgIHRhZ3MgIk5vdEltcGxlbWVudGVkIiAiU2hhcmVkIgogICAgICAgICAgfQogICAgICAgICAgbGdBZ2VudERlZmluaXRpb25zID0gY29tcG9uZW50ICJbT3BlblNvdXJjZV0gQWdlbnQgRGVmaW5pdGlvbnMiICJQeXRob24gYXN5bmMgZnVuY3Rpb25zIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJBc3luYyBmdW5jdGlvbnMgKGdlbmVyYWxfYWdlbnQsIHJlZ3VsYXRpb25fYWdlbnQsIGV0Yy4pIGludm9raW5nIENoYXRPcGVuQUkgd2l0aCBib3VuZCB0b29scyAoY3VycmVudGx5IGhhcmRjb2RlZCBpbiBhZ2VudF9kZWZpbml0aW9ucy5weSkiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ0FnZW50RXhlY3V0b3IgPSBjb21wb25lbnQgIltPcGVuU291cmNlXSBBZ2VudCBFeGVjdXRvciIgImxhbmdncmFwaC5TdGF0ZUdyYXBoIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJTdGF0ZUdyYXBoIHdpdGggQWdlbnRTdGF0ZSBUeXBlZERpY3QsIGFzdHJlYW1fZXZlbnRzKCkgZm9yIHN0cmVhbWluZyIKICAgICAgICAgICAgdGFncyAiT3BlblNvdXJjZSIKICAgICAgICAgIH0KICAgICAgICAgIGxnVG9vbEV4ZWN1dG9yID0gY29tcG9uZW50ICJbT3BlblNvdXJjZV0gVG9vbCBFeGVjdXRvciIgImxhbmdncmFwaC5wcmVidWlsdC5Ub29sTm9kZSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiUHJlYnVpbHQgVG9vbE5vZGUgaGFuZGxlcyBhbGwgdG9vbCBjYWxscyBpbmNsdWRpbmcgaGFuZG9mZnMiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ0hhbmRvZmZMb2dpYyA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIEhhbmRvZmYgTG9naWMiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkV4cGxpY2l0IHRyYW5zZmVyX3RvXyogdG9vbHMgdGhhdCBtdXN0IGdvIHRocm91Z2ggVG9vbE5vZGUgZmlyc3QiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ1JvdXRpbmdMb2dpYyA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIFJvdXRpbmcgTG9naWMiICJQeXRob24iIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gInJvdXRlX2Zyb21fYWdlbnQoKSDihpIgJ3Rvb2xzJ3wnZW5kJywgcm91dGVfYWZ0ZXJfdG9vbHMoKSDihpIgZGV0ZWN0cyBoYW5kb2ZmIOKGkiB0YXJnZXQgYWdlbnQiCiAgICAgICAgICAgIHRhZ3MgIk9wZW5Tb3VyY2UiCiAgICAgICAgICB9CiAgICAgICAgICBsZ0FwcHJvdmFsTG9naWMgPSBjb21wb25lbnQgIltTaGFyZWRdIEFwcHJvdmFsIExvZ2ljIiAiUHl0aG9uIiB7CiAgICAgICAgICAgIGRlc2NyaXB0aW9uICJIdW1hbi1pbi1sb29wIHJ1bGVzIGZvciBoaWdoLXJpc2sgdG9vbHMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICAgIGxnU2Vzc2lvblBlcnNpc3RlbmNlID0gY29tcG9uZW50ICJbT3BlblNvdXJjZV0gU2Vzc2lvbiBQZXJzaXN0ZW5jZSIgIkFzeW5jU3FsaXRlU2F2ZXIiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gIkxhbmdHcmFwaCBjaGVja3BvaW50ZXIgZm9yIGNvbnZlcnNhdGlvbiBzdGF0ZSAoc2Vzc2lvbnMuZGIpIgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICAKICAgICAgICBncm91cCAiQWRhcHRlcnMgTGF5ZXIiIHsKICAgICAgICAgIGxnTWNwQWRhcHRlciA9IGNvbXBvbmVudCAiW09wZW5Tb3VyY2VdIE1DUCBBZGFwdGVyIiAiTXVsdGlTZXJ2ZXJNQ1BDbGllbnQiIHsKICAgICAgICAgICAgZGVzY3JpcHRpb24gImxhbmdjaGFpbi1tY3AtYWRhcHRlcnMgZm9yIE1DUCBzZXJ2ZXIgY29ubmVjdGlvbnMgd2l0aCBwZXItYWdlbnQgdG9vbCBzY29waW5nIgogICAgICAgICAgICB0YWdzICJPcGVuU291cmNlIgogICAgICAgICAgfQogICAgICAgICAgbGdBdWRpdExvZ2dlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQXVkaXQgTG9nZ2VyIiAiT3BlblRlbGVtZXRyeSIgewogICAgICAgICAgICBkZXNjcmlwdGlvbiAiT3BlblRlbGVtZXRyeS1iYXNlZCBhdWRpdCBsb2dnaW5nIG9mIG1lc3NhZ2VzIGFuZCBkZWNpc2lvbnMiCiAgICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgCiAgICAgICAgbGdSYXRlTGltaXRlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmF0ZSBMaW1pdGVyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQVBJIHJhdGUgbGltaXRpbmcgcGVyIHVzZXIvSVAiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgbGdDaXJjdWl0QnJlYWtlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gQ2lyY3VpdCBCcmVha2VyIiAiUHl0aG9uIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiW05PVCBJTVBMRU1FTlRFRF0gQ2lyY3VpdCBicmVha2VyIHBhdHRlcm4gZm9yIE1DUCBzZXJ2ZXIgY2FsbHMiCiAgICAgICAgICB0YWdzICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgbGdGYXN0QXBpU2VydmVyIC0+IGxnQWdVaUhhbmRsZXIgInJvdXRlcyBXZWJTb2NrZXQiICJXZWJTb2NrZXQiCiAgICAgICAgbGdGYXN0QXBpU2VydmVyIC0+IGxnUmVzdEVuZHBvaW50cyAicm91dGVzIEhUVFAiICJIVFRQL1JFU1QiCiAgICAgICAgbGdBZ1VpSGFuZGxlciAtPiBsZ09yY2hlc3RyYXRvclBpcGVsaW5lICJwcm9jZXNzZXMgbWVzc2FnZXMiCiAgICAgICAgbGdPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBsZ0FnZW50RXhlY3V0b3IgImludm9rZXMgZ3JhcGgiCiAgICAgICAgbGdPcmNoZXN0cmF0b3JQaXBlbGluZSAtPiBsZ01vZGVyYXRvciAidmFsaWRhdGVzIEkvTyIKICAgICAgICBsZ09yY2hlc3RyYXRvclBpcGVsaW5lIC0+IGxnQXBwcm92YWxMb2dpYyAiY2hlY2tzIGFwcHJvdmFsIgogICAgICAgIGxnQWdlbnRMb2FkZXIgLT4gbGdBZ2VudERlZmluaXRpb25zICJjcmVhdGVzIGFnZW50IG5vZGVzIgogICAgICAgIGxnQWdlbnRMb2FkZXIgLT4gbGdNY3BBZGFwdGVyICJyZXNvbHZlcyBNQ1AgdG9vbCBtYXBwaW5ncyIKICAgICAgICBsZ0FnZW50RXhlY3V0b3IgLT4gbGdUb29sRXhlY3V0b3IgImV4ZWN1dGVzIHRvb2xzIgogICAgICAgIGxnQWdlbnRFeGVjdXRvciAtPiBsZ1JvdXRpbmdMb2dpYyAiZGV0ZXJtaW5lcyBuZXh0IgogICAgICAgIGxnVG9vbEV4ZWN1dG9yIC0+IGxnSGFuZG9mZkxvZ2ljICJleGVjdXRlcyBoYW5kb2ZmcyIKICAgICAgICBsZ1JvdXRpbmdMb2dpYyAtPiBsZ0FnZW50RGVmaW5pdGlvbnMgInJvdXRlcyB0byBhZ2VudCIKICAgICAgICBsZ0FnZW50RXhlY3V0b3IgLT4gbGdTZXNzaW9uUGVyc2lzdGVuY2UgInBlcnNpc3RzIHN0YXRlIiAiU1FMaXRlIgogICAgICAgIGxnQWdlbnREZWZpbml0aW9ucyAtPiBsZ01jcEFkYXB0ZXIgImJpbmRzIHRvb2xzIgogICAgICAgIGxnT3JjaGVzdHJhdG9yUGlwZWxpbmUgLT4gbGdBdWRpdExvZ2dlciAibG9ncyBldmVudHMiICJPcGVuVGVsZW1ldHJ5IgogICAgICB9CiAgICAgIAogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgTUNQIEFHRU5UIFNFUlZFUlMgW1NoYXJlZF0KICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICBtY3BTZXJ2ZXJzID0gY29udGFpbmVyICJNQ1AgQWdlbnQgU2VydmVycyIgIkZhc3RNQ1AgKyBQeXRob24iICJEb2NrZXIiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gRG9tYWluLXNwZWNpZmljIGFnZW50IGNhcGFiaWxpdGllcyBleHBvc2VkIHZpYSBNQ1AgUHJvdG9jb2wuIEV4dGVuc2libGUgYnkgYWRkaW5nIG5ldyBNQ1Agc2VydmVycy4iCiAgICAgICAgdGFncyAiQmFja2VuZCIgIkV4dGVuc2libGUiICJTaGFyZWQiCiAgICAgICAgCiAgICAgICAgcmVndWxhdGlvblNlcnZlciA9IGNvbXBvbmVudCAiW1NoYXJlZF0gUmVndWxhdGlvbiBBZ2VudCIgIkZhc3RNQ1AgOjUwMDIiIHsKICAgICAgICAgIGRlc2NyaXB0aW9uICJUb29sczogc2VhcmNoX3JlZ3VsYXRpb25zLCBnZXRfcmVndWxhdGlvbl9jb250ZXh0LCBsb29rdXBfcmVndWxhdGlvbl9hcnRpY2xlcywgYW5hbHl6ZV9kb2N1bWVudCIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgICAgcmVwb3J0aW5nU2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBSZXBvcnRpbmcgQWdlbnQiICJGYXN0TUNQIDo1MDAzIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiVG9vbHM6IHN0YXJ0X2luc3BlY3Rpb25fcmVwb3J0LCBleHRyYWN0X2luc3BlY3Rpb25fZGF0YSwgdmVyaWZ5X2luc3BlY3Rpb25fZGF0YSwgZ2VuZXJhdGVfZmluYWxfcmVwb3J0IgogICAgICAgICAgdGFncyAiU2hhcmVkIgogICAgICAgIH0KICAgICAgICBoaXN0b3J5U2VydmVyID0gY29tcG9uZW50ICJbU2hhcmVkXSBIaXN0b3J5IEFnZW50IiAiRmFzdE1DUCA6NTAwNSIgewogICAgICAgICAgZGVzY3JpcHRpb24gIlRvb2xzOiBjaGVja19jb21wYW55X2V4aXN0cywgZ2V0X2luc3BlY3Rpb25faGlzdG9yeSwgZ2V0X2NvbXBhbnlfdmlvbGF0aW9ucywgY2hlY2tfcmVwZWF0X3Zpb2xhdGlvbiIKICAgICAgICAgIHRhZ3MgIlNoYXJlZCIKICAgICAgICB9CiAgICAgIH0KICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBTVVBQT1JUSU5HIENPTlRBSU5FUlMgW1NoYXJlZF0KICAgICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgICB1c2VyUHJvZmlsZSA9IGNvbnRhaW5lciAiVXNlciBQcm9maWxlcyAmIFByZWZlcmVuY2VzIiAiU1FMaXRlIiAiRGF0YWJhc2UiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gVXNlciBwcm9maWxlcywgcHJlZmVyZW5jZXMgKHNwb2tlbl90ZXh0X3R5cGUsIGVtYWlsX3JlcG9ydHMsIGludGVyYWN0aW9uX21vZGUpLCBzZXNzaW9uIG1ldGFkYXRhLiBTdG9yZWQgaW4gc2Vzc2lvbnMuZGIuIgogICAgICAgIHRhZ3MgIkRhdGFiYXNlIiAiU2hhcmVkIgogICAgICB9CgogICAgICBhZ2VudE1hbmFnZW1lbnQgPSBjb250YWluZXIgIkFnZW50IE1hbmFnZW1lbnQiICJSZWFjdCBTUEEgKyBTUUxpdGUvUG9zdGdyZVNRTCArIFZlY3RvciBEQiIgIlNlcnZpY2UiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gW05PVCBJTVBMRU1FTlRFRF0gQWdlbnQgbGlmZWN5Y2xlIG1hbmFnZW1lbnQ6IHJlZ2lzdHJ5LCBtZW1vcnksIGFuZCBhZG1pbmlzdHJhdGlvbiBpbnRlcmZhY2UiCiAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCgogICAgICAgIHJlZ2lzdHJ5ID0gY29tcG9uZW50ICJBZ2VudCBSZWdpc3RyeSIgIlNRTGl0ZS9Qb3N0Z3JlU1FMIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQ2VudHJhbCByZWdpc3RlciBvZiBhZ2VudCBkZWZpbml0aW9uczogbmFtZSwgc3lzdGVtIHByb21wdCwgTUNQIHNlcnZlciBtYXBwaW5ncywgdG9vbCByaXNrIGxldmVscywgTExNIG1vZGVsLCB0ZW1wZXJhdHVyZSwgaGFuZG9mZiB0YXJnZXRzIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIG1lbW9yeSA9IGNvbXBvbmVudCAiQWdlbnQgTWVtb3J5IiAiVmVjdG9yIERCICsgUG9zdGdyZVNRTCIgewogICAgICAgICAgZGVzY3JpcHRpb24gIkxvbmctdGVybSBhZ2VudCBtZW1vcnksIGNyb3NzLXNlc3Npb24gY29udGV4dCwgbGVhcm5lZCBwYXR0ZXJucyBhbmQgcHJlZmVyZW5jZXMgcGVyIGFnZW50IgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQogICAgICAgIGFkbWluSW50ZXJmYWNlID0gY29tcG9uZW50ICJCZWhlZXJzaW50ZXJmYWNlIiAiUmVhY3QgU1BBIiB7CiAgICAgICAgICBkZXNjcmlwdGlvbiAiQWRtaW4gYXBwbGljYXRpb24gZm9yIG1hbmFnaW5nIGFnZW50IGNvbmZpZ3VyYXRpb25zLCBhY3RpdmF0aW5nL2RlYWN0aXZhdGluZyBhZ2VudHMsIGFuZCBjb25maWd1cmluZyBNQ1Agc2VydmVyIG1hcHBpbmdzIHdpdGhvdXQgY29kZSBjaGFuZ2VzIgogICAgICAgICAgdGFncyAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgICAgfQoKICAgICAgICBhZG1pbkludGVyZmFjZSAtPiByZWdpc3RyeSAibWFuYWdlcyBhZ2VudCBjb25maWdzIiAiUkVTVCBBUEkiCiAgICAgIH0KCiAgICAgIHZpc2liaWxpdHkgPSBjb250YWluZXIgIlZpc2liaWxpdHkgU3RhY2siICJHcmFmYW5hICsgUHJvbWV0aGV1cyArIEphZWdlciIgIk9ic2VydmFiaWxpdHkiIHsKICAgICAgICBkZXNjcmlwdGlvbiAiW1NoYXJlZF0gW05PVCBJTVBMRU1FTlRFRF0gTW9uaXRvcmluZywgbG9nZ2luZywgdHJhY2luZyBkYXNoYm9hcmRzIgogICAgICAgIHRhZ3MgIk9ic2VydmFiaWxpdHkiICJOb3RJbXBsZW1lbnRlZCIgIlNoYXJlZCIKICAgICAgfQoKICAgICAgZXZhbFNlcnZpY2UgPSBjb250YWluZXIgIkV2YWx1YXRpb24gU2VydmljZSIgIkxhbmdmdXNlIiAiT2JzZXJ2YWJpbGl0eSIgewogICAgICAgIGRlc2NyaXB0aW9uICJbU2hhcmVkXSBbTk9UIElNUExFTUVOVEVEXSBMTE0gdHJhY2luZywgcXVhbGl0eSBldmFsdWF0aW9ucywgY29zdCB0cmFja2luZyIKICAgICAgICB0YWdzICJPYnNlcnZhYmlsaXR5IiAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgIH0KCiAgICAgIGF1dGhTZXJ2aWNlID0gY29udGFpbmVyICJBdXRoIFNlcnZpY2UiICJBdXRoMC9LZXljbG9hayIgIlNlY3VyaXR5IiB7CiAgICAgICAgZGVzY3JpcHRpb24gIltTaGFyZWRdIFtOT1QgSU1QTEVNRU5URURdIE9BdXRoMi9PSURDIGF1dGhlbnRpY2F0aW9uLCBSQkFDIgogICAgICAgIHRhZ3MgIlNlY3VyaXR5IiAiTm90SW1wbGVtZW50ZWQiICJTaGFyZWQiCiAgICAgIH0KICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBJTlRFUk5BTCBDT05UQUlORVIgUkVMQVRJT05TSElQUyAoVW5pZmllZCBvcmNoZXN0cmF0b3IgZm9yIEMyL2V4dGVybmFsKQogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgSEFJIGNvbm5lY3RzIHRvIHVuaWZpZWQgb3JjaGVzdHJhdG9yCiAgICAgIGhhaSAtPiBvcmNoZXN0cmF0b3IgIkFHLVVJIFByb3RvY29sIiAiV2ViU29ja2V0L0pTT04gOjgwMDEiCiAgICAgIAogICAgICAjIFVuaWZpZWQgb3JjaGVzdHJhdG9yIGNvbm5lY3RzIHRvIHNoYXJlZCBNQ1Agc2VydmVycwogICAgICBvcmNoZXN0cmF0b3IgLT4gbWNwU2VydmVycyAiTUNQIFByb3RvY29sIiAiSFRUUC9TU0UgU3RyZWFtYWJsZSIKICAgICAgCiAgICAgICMgT3JjaGVzdHJhdG9yIHJlYWRzIHVzZXIgcHJvZmlsZXMgJiBwcmVmZXJlbmNlcwogICAgICBvcmNoZXN0cmF0b3IgLT4gdXNlclByb2ZpbGUgInJlYWRzIHVzZXIgcHJlZmVyZW5jZXMiICJTUUxpdGUiCgogICAgICAjIEFnZW50IG1hbmFnZW1lbnQgY29ubmVjdGlvbnMgKG5vdCBpbXBsZW1lbnRlZCkKICAgICAgb3JjaGVzdHJhdG9yIC0+IGFnZW50TWFuYWdlbWVudCAiW05PVCBDT05ORUNURURdIHJlYWRzIGFnZW50IGRlZmluaXRpb25zICYgbWVtb3J5IiAiU1FML0FQSSIKCiAgICAgICMgT2JzZXJ2YWJpbGl0eSBjb25uZWN0aW9ucyAobm90IGltcGxlbWVudGVkKQogICAgICBvcmNoZXN0cmF0b3IgLT4gdmlzaWJpbGl0eSAiW05PVCBDT05ORUNURURdIiAiT3BlblRlbGVtZXRyeSBPVExQIgogICAgICBvcmNoZXN0cmF0b3IgLT4gZXZhbFNlcnZpY2UgIltOT1QgQ09OTkVDVEVEXSIgIkxhbmdmdXNlIFNESyIKICAgICAgCiAgICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICAgIyBDT01QT05FTlQtTEVWRUwgUkVMQVRJT05TSElQUyAoZm9yIEMzIHZpZXdzKQogICAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAgICMgSEFJIHRvIHVuaWZpZWQgb3JjaGVzdHJhdG9yIChmb3IgQzMgSEFJIHZpZXcpCiAgICAgIGFnb3JhLmhhaS53ZWJzb2NrZXRDbGllbnQgLT4gYWdvcmEub3JjaGVzdHJhdG9yICJBRy1VSSBQcm90b2NvbCIgIldlYlNvY2tldCIKICAgICAgCiAgICAgICMgT3BlbkFJIE9yY2hlc3RyYXRvciBNQ1AgY29ubmVjdGlvbnMgKGZvciBDMyBPcGVuQUkgdmlldykKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJLm9haU1jcEFkYXB0ZXIgLT4gYWdvcmEubWNwU2VydmVycy5yZWd1bGF0aW9uU2VydmVyICJNQ1AiICJIVFRQIFBPU1QgL21jcCIKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJLm9haU1jcEFkYXB0ZXIgLT4gYWdvcmEubWNwU2VydmVycy5yZXBvcnRpbmdTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkub2FpTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLmhpc3RvcnlTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICAKICAgICAgIyBMYW5nR3JhcGggT3JjaGVzdHJhdG9yIE1DUCBjb25uZWN0aW9ucyAoZm9yIEMzIE9wZW5Tb3VyY2UgdmlldykKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yTGFuZ0dyYXBoLmxnTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLnJlZ3VsYXRpb25TZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgubGdNY3BBZGFwdGVyIC0+IGFnb3JhLm1jcFNlcnZlcnMucmVwb3J0aW5nU2VydmVyICJNQ1AiICJIVFRQIFBPU1QgL21jcCIKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yTGFuZ0dyYXBoLmxnTWNwQWRhcHRlciAtPiBhZ29yYS5tY3BTZXJ2ZXJzLmhpc3RvcnlTZXJ2ZXIgIk1DUCIgIkhUVFAgUE9TVCAvbWNwIgogICAgICAKICAgICAgIyBIQUkgV2ViU29ja2V0IGNvbm5lY3Rpb25zIChmb3IgQzMgb3JjaGVzdHJhdG9yIGRldGFpbCB2aWV3cykKICAgICAgYWdvcmEuaGFpLndlYnNvY2tldENsaWVudCAtPiBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkub2FpRmFzdEFwaVNlcnZlciAiQUctVUkgUHJvdG9jb2wiICJXZWJTb2NrZXQiCiAgICAgIGFnb3JhLmhhaS53ZWJzb2NrZXRDbGllbnQgLT4gYWdvcmEub3JjaGVzdHJhdG9yTGFuZ0dyYXBoLmxnRmFzdEFwaVNlcnZlciAiQUctVUkgUHJvdG9jb2wiICJXZWJTb2NrZXQiCiAgICAgIAogICAgICAjIFVuaWZpZWQgT3JjaGVzdHJhdG9yIHRvIE1DUCBBZ2VudCBjb25uZWN0aW9ucyAoZm9yIEMzIE1DUCB2aWV3KQogICAgICBhZ29yYS5vcmNoZXN0cmF0b3IgLT4gYWdvcmEubWNwU2VydmVycy5yZWd1bGF0aW9uU2VydmVyICJNQ1AiICJIVFRQIFBPU1QgL21jcCIKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yIC0+IGFnb3JhLm1jcFNlcnZlcnMucmVwb3J0aW5nU2VydmVyICJNQ1AiICJIVFRQIFBPU1QgL21jcCIKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yIC0+IGFnb3JhLm1jcFNlcnZlcnMuaGlzdG9yeVNlcnZlciAiTUNQIiAiSFRUUCBQT1NUIC9tY3AiCgogICAgICAjIEFnZW50IExvYWRlciB0byBBZ2VudCBSZWdpc3RyeSBjb25uZWN0aW9ucyAoZm9yIEMzIG9yY2hlc3RyYXRvciB2aWV3cykKICAgICAgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJLm9haUFnZW50TG9hZGVyIC0+IGFnb3JhLmFnZW50TWFuYWdlbWVudC5yZWdpc3RyeSAiW05PVCBDT05ORUNURURdIHJlYWRzIGFnZW50IGNvbmZpZ3MiICJTUUwiCiAgICAgIGFnb3JhLm9yY2hlc3RyYXRvckxhbmdHcmFwaC5sZ0FnZW50TG9hZGVyIC0+IGFnb3JhLmFnZW50TWFuYWdlbWVudC5yZWdpc3RyeSAiW05PVCBDT05ORUNURURdIHJlYWRzIGFnZW50IGNvbmZpZ3MiICJTUUwiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBNQ1AgQUdFTlQgRUNPU1lTVEVNIChDMSBMZXZlbCkKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgbWNwRWNvc3lzdGVtID0gc29mdHdhcmVTeXN0ZW0gIk1DUCBBZ2VudCBFY29zeXN0ZW0iICJbU2hhcmVkXSBFeHRlbnNpYmxlIGRvbWFpbiBhZ2VudHMgdmlhIE1vZGVsIENvbnRleHQgUHJvdG9jb2wuIEFkZCBuZXcgY2FwYWJpbGl0aWVzIGJ5IGRlcGxveWluZyBNQ1Agc2VydmVycy4iIHsKICAgICAgdGFncyAiRXh0ZW5zaWJsZSIKICAgIH0KICAgIAogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAjIEMxIFJFTEFUSU9OU0hJUFMKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgaW5zcGVjdG9yIC0+IGFnb3JhICJ1c2VzIGZvciBpbnNwZWN0aW9ucyIgIkhUVFBTL1dlYlNvY2tldCIKICAgIGFnb3JhIC0+IG1jcEVjb3N5c3RlbSAib3JjaGVzdHJhdGVzIGFnZW50cyIgIk1DUCBQcm90b2NvbCIKICB9CiAgCiAgdmlld3MgewogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICAjIEMxOiBTWVNURU0gQ09OVEVYVAogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBzeXN0ZW1Db250ZXh0IGFnb3JhICJDMV9TeXN0ZW1Db250ZXh0IiB7CiAgICAgIGluY2x1ZGUgaW5zcGVjdG9yCiAgICAgIGluY2x1ZGUgYWdvcmEKICAgICAgaW5jbHVkZSBtY3BFY29zeXN0ZW0KICAgICAgYXV0b2xheW91dCBsciA0MDAgMjAwCiAgICAgIGRlc2NyaXB0aW9uICJTeXN0ZW0gQ29udGV4dCAoQzEpOiBJbnNwZWN0b3Ig4oaSIEFHT1JBIOKGkiBNQ1AgQWdlbnQgRWNvc3lzdGVtIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzI6IENPTlRBSU5FUiBESUFHUkFNIChVbmlmaWVkIG9yY2hlc3RyYXRvcikKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgY29udGFpbmVyIGFnb3JhICJDMl9Db250YWluZXJzIiB7CiAgICAgIGluY2x1ZGUgYWdvcmEuaGFpCiAgICAgIGluY2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yCiAgICAgIGluY2x1ZGUgYWdvcmEubWNwU2VydmVycwogICAgICBpbmNsdWRlIGFnb3JhLnVzZXJQcm9maWxlCiAgICAgIGluY2x1ZGUgYWdvcmEuYWdlbnRNYW5hZ2VtZW50CiAgICAgIGluY2x1ZGUgYWdvcmEudmlzaWJpbGl0eQogICAgICBpbmNsdWRlIGFnb3JhLmV2YWxTZXJ2aWNlCiAgICAgIGluY2x1ZGUgYWdvcmEuYXV0aFNlcnZpY2UKICAgICAgYXV0b2xheW91dCB0YiAzNTAgMjAwCiAgICAgIGRlc2NyaXB0aW9uICJDb250YWluZXIgRGlhZ3JhbSAoQzIpOiBIQUkg4oaSIE9yY2hlc3RyYXRvciBbT3BlbkFJL09wZW5Tb3VyY2VdIOKGkiBNQ1AgQWdlbnQgU2VydmVycyAoKyBhZ2VudCBtYW5hZ2VtZW50ICYgc3VwcG9ydGluZyBzZXJ2aWNlcykiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMzogSEFJIENPTVBPTkVOVFMgW1NoYXJlZF0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgY29tcG9uZW50IGFnb3JhLmhhaSAiQzNfSEFJX0NvbXBvbmVudHMiIHsKICAgICAgaW5jbHVkZSAqCiAgICAgIGluY2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yCiAgICAgIGV4Y2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJCiAgICAgIGV4Y2x1ZGUgYWdvcmEub3JjaGVzdHJhdG9yTGFuZ0dyYXBoCiAgICAgIGF1dG9sYXlvdXQgdGIgMzAwIDE1MAogICAgICBkZXNjcmlwdGlvbiAiQ29tcG9uZW50IERpYWdyYW0gKEMzKTogSEFJIEZyb250ZW5kIC0gYWxsIFtTaGFyZWRdIGJldHdlZW4gYmFja2VuZHMiCiAgICB9CiAgICAKICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgIyBDMzogT1JDSEVTVFJBVE9SIFtPcGVuQUldIC0gRGV0YWlsZWQgaW1wbGVtZW50YXRpb24gdmlldwogICAgIyA9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09CiAgICBjb21wb25lbnQgYWdvcmEub3JjaGVzdHJhdG9yT3BlbkFJICJDM19PcmNoZXN0cmF0b3JfT3BlbkFJIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLmhhaQogICAgICBpbmNsdWRlIGFnb3JhLm1jcFNlcnZlcnMKICAgICAgaW5jbHVkZSBhZ29yYS5hZ2VudE1hbmFnZW1lbnQKICAgICAgYXV0b2xheW91dCB0YiAyNTAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBPcmNoZXN0cmF0b3IgW09wZW5BSV0gLSBTREsgQWdlbnQvUnVubmVyL0hhbmRvZmZzICsgQWdlbnQgTG9hZGVyIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzM6IE9SQ0hFU1RSQVRPUiBbT3BlblNvdXJjZV0gLSBEZXRhaWxlZCBpbXBsZW1lbnRhdGlvbiB2aWV3CiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGNvbXBvbmVudCBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGggIkMzX09yY2hlc3RyYXRvcl9PcGVuU291cmNlIiB7CiAgICAgIGluY2x1ZGUgKgogICAgICBpbmNsdWRlIGFnb3JhLmhhaQogICAgICBpbmNsdWRlIGFnb3JhLm1jcFNlcnZlcnMKICAgICAgaW5jbHVkZSBhZ29yYS5hZ2VudE1hbmFnZW1lbnQKICAgICAgYXV0b2xheW91dCB0YiAyNTAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBPcmNoZXN0cmF0b3IgW09wZW5Tb3VyY2VdIC0gU3RhdGVHcmFwaC9Ub29sTm9kZS9Sb3V0aW5nICsgQWdlbnQgTG9hZGVyIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzM6IEFHRU5UIE1BTkFHRU1FTlQgW1NoYXJlZF0KICAgICMgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQogICAgY29tcG9uZW50IGFnb3JhLmFnZW50TWFuYWdlbWVudCAiQzNfQWdlbnRfTWFuYWdlbWVudCIgewogICAgICBpbmNsdWRlICoKICAgICAgaW5jbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3IKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgKICAgICAgYXV0b2xheW91dCBsciAzMDAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBBZ2VudCBNYW5hZ2VtZW50IC0gUmVnaXN0cnksIE1lbW9yeSwgQmVoZWVyc2ludGVyZmFjZSIKICAgIH0KCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgQzM6IE1DUCBBR0VOVCBTRVJWRVJTIFtTaGFyZWRdCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIGNvbXBvbmVudCBhZ29yYS5tY3BTZXJ2ZXJzICJDM19NQ1BfQ29tcG9uZW50cyIgewogICAgICBpbmNsdWRlICoKICAgICAgaW5jbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3IKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JPcGVuQUkKICAgICAgZXhjbHVkZSBhZ29yYS5vcmNoZXN0cmF0b3JMYW5nR3JhcGgKICAgICAgYXV0b2xheW91dCBsciAzMDAgMTUwCiAgICAgIGRlc2NyaXB0aW9uICJDb21wb25lbnQgRGlhZ3JhbSAoQzMpOiBNQ1AgQWdlbnQgU2VydmVycyAtIGFsbCBbU2hhcmVkXSBiZXR3ZWVuIGJhY2tlbmRzIgogICAgfQogICAgCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgICMgU1RZTEVTCiAgICAjID09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KICAgIHN0eWxlcyB7CiAgICAgIGVsZW1lbnQgIlBlcnNvbiIgewogICAgICAgIHNoYXBlIHBlcnNvbgogICAgICAgIGJhY2tncm91bmQgIzA4NDI3YgogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJTb2Z0d2FyZSBTeXN0ZW0iIHsKICAgICAgICBiYWNrZ3JvdW5kICMxMTY4YmQKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRXh0ZXJuYWwiIHsKICAgICAgICBiYWNrZ3JvdW5kICM5OTk5OTkKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRXh0ZW5zaWJsZSIgewogICAgICAgIGJhY2tncm91bmQgIzExNjhiZAogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgfQogICAgICBlbGVtZW50ICJDb250YWluZXIiIHsKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiRnJvbnRlbmQiIHsKICAgICAgICBzaGFwZSBXZWJCcm93c2VyCiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkJhY2tlbmQiIHsKICAgICAgICBzaGFwZSBIZXhhZ29uCiAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICB9CiAgICAgIGVsZW1lbnQgIkRhdGFiYXNlIiB7CiAgICAgICAgc2hhcGUgQ3lsaW5kZXIKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgIH0KICAgICAgZWxlbWVudCAiT2JzZXJ2YWJpbGl0eSIgewogICAgICAgIHNoYXBlIFJvdW5kZWRCb3gKICAgICAgICBiYWNrZ3JvdW5kICM0MzhkZDUKICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgYm9yZGVyIGRhc2hlZAogICAgICB9CiAgICAgIGVsZW1lbnQgIlNlY3VyaXR5IiB7CiAgICAgICAgc2hhcGUgUm91bmRlZEJveAogICAgICAgIGJhY2tncm91bmQgIzQzOGRkNQogICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICBib3JkZXIgZGFzaGVkCiAgICAgIH0KICAgICAgZWxlbWVudCAiQ29tcG9uZW50IiB7CiAgICAgICAgYmFja2dyb3VuZCAjODViYmYwCiAgICAgICAgY29sb3IgIzAwMDAwMAogICAgICB9CiAgICAgIGVsZW1lbnQgIlNoYXJlZCIgewogICAgICAgIGJhY2tncm91bmQgIzg1YmJmMAogICAgICAgIGNvbG9yICMwMDAwMDAKICAgICAgfQogICAgICBlbGVtZW50ICJPcGVuQUkiIHsKICAgICAgICBiYWNrZ3JvdW5kICM3NGFhOWMKICAgICAgICBjb2xvciAjMDAwMDAwCiAgICAgIH0KICAgICAgZWxlbWVudCAiT3BlblNvdXJjZSIgewogICAgICAgIGJhY2tncm91bmQgI2ZmOTk2NgogICAgICAgIGNvbG9yICMwMDAwMDAKICAgICAgfQogICAgICBlbGVtZW50ICJOb3RJbXBsZW1lbnRlZCIgewogICAgICAgIGJhY2tncm91bmQgI2ZmY2NjYwogICAgICAgIGNvbG9yICM5OTAwMDAKICAgICAgICBib3JkZXIgZGFzaGVkCiAgICAgICAgb3BhY2l0eSA3MAogICAgICB9CiAgICAgIHJlbGF0aW9uc2hpcCAiUmVsYXRpb25zaGlwIiB7CiAgICAgICAgcm91dGluZyBEaXJlY3QKICAgICAgICB0aGlja25lc3MgMgogICAgICB9CiAgICB9CiAgICAKICAgIHRoZW1lIGRlZmF1bHQKICB9CiAgCiAgY29uZmlndXJhdGlvbiB7CiAgICBzY29wZSBzb2Z0d2FyZXN5c3RlbQogIH0KfQo="
   },
   "views" : {
     "componentViews" : [ {
       "automaticLayout" : {
-        "applied" : false,
+        "applied" : true,
         "edgeSeparation" : 0,
         "implementation" : "Graphviz",
         "nodeSeparation" : 150,
@@ -983,37 +1136,42 @@
       },
       "containerId" : "3",
       "description" : "Component Diagram (C3): HAI Frontend - all [Shared] between backends",
+      "dimensions" : {
+        "height" : 2728,
+        "width" : 2730
+      },
       "elements" : [ {
         "id" : "4",
-        "x" : 0,
-        "y" : 0
+        "x" : 2039,
+        "y" : 182
       }, {
         "id" : "5",
-        "x" : 0,
-        "y" : 0
+        "x" : 1439,
+        "y" : 182
       }, {
         "id" : "6",
-        "x" : 0,
-        "y" : 0
+        "x" : 839,
+        "y" : 182
       }, {
         "id" : "7",
-        "x" : 0,
-        "y" : 0
+        "x" : 1439,
+        "y" : 782
       }, {
         "id" : "8",
-        "x" : 0,
-        "y" : 0
+        "x" : 1439,
+        "y" : 1382
       }, {
         "id" : "9",
-        "x" : 0,
-        "y" : 0
+        "x" : 239,
+        "y" : 182
       }, {
         "id" : "14",
-        "x" : 0,
-        "y" : 0
+        "x" : 1439,
+        "y" : 1982
       } ],
       "externalContainerBoundariesVisible" : false,
       "key" : "C3_HAI_Components",
+      "name" : "Component View: AGORA - Human Agent Interface (HAI)",
       "order" : 3,
       "relationships" : [ {
         "id" : "10"
@@ -1024,114 +1182,7 @@
       }, {
         "id" : "13"
       }, {
-        "id" : "84"
-      } ]
-    }, {
-      "automaticLayout" : {
-        "applied" : false,
-        "edgeSeparation" : 0,
-        "implementation" : "Graphviz",
-        "nodeSeparation" : 150,
-        "rankDirection" : "TopBottom",
-        "rankSeparation" : 250,
-        "vertices" : false
-      },
-      "containerId" : "15",
-      "description" : "Component Diagram (C3): Orchestrator [OpenAI] - SDK Agent/Runner/Handoffs",
-      "elements" : [ {
-        "id" : "3",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "16",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "17",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "18",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "19",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "20",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "21",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "22",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "23",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "24",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "25",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "26",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "27",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "28",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "29",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "71",
-        "x" : 0,
-        "y" : 0
-      } ],
-      "externalContainerBoundariesVisible" : false,
-      "key" : "C3_Orchestrator_OpenAI",
-      "order" : 4,
-      "relationships" : [ {
-        "id" : "103"
-      }, {
-        "id" : "30"
-      }, {
-        "id" : "31"
-      }, {
-        "id" : "32"
-      }, {
-        "id" : "33"
-      }, {
-        "id" : "34"
-      }, {
-        "id" : "35"
-      }, {
-        "id" : "36"
-      }, {
-        "id" : "37"
-      }, {
-        "id" : "38"
-      }, {
-        "id" : "39"
-      }, {
-        "id" : "40"
-      }, {
-        "id" : "86"
+        "id" : "96"
       } ]
     }, {
       "automaticLayout" : {
@@ -1143,102 +1194,264 @@
         "rankSeparation" : 250,
         "vertices" : false
       },
-      "containerId" : "41",
-      "description" : "Component Diagram (C3): Orchestrator [OpenSource] - StateGraph/ToolNode/Routing",
+      "containerId" : "15",
+      "description" : "Component Diagram (C3): Orchestrator [OpenAI] - SDK Agent/Runner/Handoffs + Agent Loader",
       "dimensions" : {
-        "height" : 5189,
-        "width" : 3031
+        "height" : 4758,
+        "width" : 3793
       },
       "elements" : [ {
         "id" : "3",
-        "x" : 1777,
-        "y" : 151
+        "x" : 1797,
+        "y" : 163
+      }, {
+        "id" : "16",
+        "x" : 1797,
+        "y" : 713
+      }, {
+        "id" : "17",
+        "x" : 1497,
+        "y" : 1263
+      }, {
+        "id" : "18",
+        "x" : 2097,
+        "y" : 1263
+      }, {
+        "id" : "19",
+        "x" : 343,
+        "y" : 1813
+      }, {
+        "id" : "20",
+        "x" : 343,
+        "y" : 2363
+      }, {
+        "id" : "21",
+        "x" : 2360,
+        "y" : 2363
+      }, {
+        "id" : "22",
+        "x" : 2360,
+        "y" : 2913
+      }, {
+        "id" : "23",
+        "x" : 1160,
+        "y" : 2363
+      }, {
+        "id" : "24",
+        "x" : 1160,
+        "y" : 2913
+      }, {
+        "id" : "25",
+        "x" : 1760,
+        "y" : 2363
+      }, {
+        "id" : "26",
+        "x" : 1760,
+        "y" : 2913
+      }, {
+        "id" : "27",
+        "x" : 1222,
+        "y" : 3463
+      }, {
+        "id" : "28",
+        "x" : 622,
+        "y" : 3463
+      }, {
+        "id" : "29",
+        "x" : 839,
+        "y" : 713
+      }, {
+        "id" : "30",
+        "x" : 239,
+        "y" : 713
+      }, {
+        "id" : "77",
+        "x" : 1222,
+        "y" : 4013
+      }, {
+        "id" : "82",
+        "x" : 3122,
+        "y" : 2913
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "C3_Orchestrator_OpenAI",
+      "name" : "Component View: AGORA - Orchestrator [OpenAI]",
+      "order" : 4,
+      "relationships" : [ {
+        "id" : "115"
+      }, {
+        "id" : "125"
+      }, {
+        "id" : "31"
+      }, {
+        "id" : "32"
+      }, {
+        "id" : "33"
+      }, {
+        "id" : "34"
+      }, {
+        "id" : "35"
+      }, {
+        "id" : "36",
+        "vertices" : [ {
+          "x" : 1685,
+          "y" : 2259
+        } ]
+      }, {
+        "id" : "37"
+      }, {
+        "id" : "38",
+        "vertices" : [ {
+          "x" : 2285,
+          "y" : 2767
+        }, {
+          "x" : 1085,
+          "y" : 2913
+        }, {
+          "x" : 1085,
+          "y" : 3317
+        }, {
+          "x" : 1147,
+          "y" : 3359
+        } ]
+      }, {
+        "id" : "39",
+        "vertices" : [ {
+          "x" : 1685,
+          "y" : 2767
+        }, {
+          "x" : 2285,
+          "y" : 2913
+        } ]
+      }, {
+        "id" : "40"
+      }, {
+        "id" : "41"
       }, {
         "id" : "42",
-        "x" : 1777,
-        "y" : 701
+        "vertices" : [ {
+          "x" : 2285,
+          "y" : 3317
+        } ]
       }, {
         "id" : "43",
-        "x" : 1477,
-        "y" : 1251
+        "vertices" : [ {
+          "x" : 868,
+          "y" : 2259
+        }, {
+          "x" : 868,
+          "y" : 2767
+        } ]
       }, {
-        "id" : "44",
-        "x" : 2077,
-        "y" : 1251
+        "id" : "98"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 150,
+        "rankDirection" : "TopBottom",
+        "rankSeparation" : 250,
+        "vertices" : false
+      },
+      "containerId" : "44",
+      "description" : "Component Diagram (C3): Orchestrator [OpenSource] - StateGraph/ToolNode/Routing + Agent Loader",
+      "dimensions" : {
+        "height" : 5308,
+        "width" : 4393
+      },
+      "elements" : [ {
+        "id" : "3",
+        "x" : 1797,
+        "y" : 163
       }, {
         "id" : "45",
-        "x" : 323,
-        "y" : 1801
+        "x" : 1797,
+        "y" : 713
       }, {
         "id" : "46",
-        "x" : 323,
-        "y" : 2351
+        "x" : 1497,
+        "y" : 1263
       }, {
         "id" : "47",
-        "x" : 1740,
-        "y" : 3451
+        "x" : 2097,
+        "y" : 1263
       }, {
         "id" : "48",
-        "x" : 1740,
-        "y" : 2351
+        "x" : 343,
+        "y" : 1813
       }, {
         "id" : "49",
-        "x" : 1140,
-        "y" : 2901
+        "x" : 343,
+        "y" : 2363
       }, {
         "id" : "50",
-        "x" : 1140,
-        "y" : 3451
+        "x" : 2960,
+        "y" : 2913
       }, {
         "id" : "51",
-        "x" : 1740,
-        "y" : 2901
+        "x" : 2360,
+        "y" : 3463
       }, {
         "id" : "52",
-        "x" : 1140,
-        "y" : 2351
+        "x" : 1760,
+        "y" : 2363
       }, {
         "id" : "53",
-        "x" : 2340,
-        "y" : 2901
+        "x" : 1760,
+        "y" : 2913
       }, {
         "id" : "54",
-        "x" : 1519,
-        "y" : 4001
+        "x" : 1760,
+        "y" : 3463
       }, {
         "id" : "55",
-        "x" : 919,
-        "y" : 4001
+        "x" : 2360,
+        "y" : 2913
       }, {
         "id" : "56",
-        "x" : 819,
-        "y" : 701
+        "x" : 1160,
+        "y" : 2363
       }, {
         "id" : "57",
-        "x" : 219,
-        "y" : 701
+        "x" : 1160,
+        "y" : 2913
       }, {
-        "id" : "71",
-        "x" : 1519,
-        "y" : 4551
+        "id" : "58",
+        "x" : 1381,
+        "y" : 4013
+      }, {
+        "id" : "59",
+        "x" : 781,
+        "y" : 4013
+      }, {
+        "id" : "60",
+        "x" : 839,
+        "y" : 713
+      }, {
+        "id" : "61",
+        "x" : 239,
+        "y" : 713
+      }, {
+        "id" : "77",
+        "x" : 1381,
+        "y" : 4563
+      }, {
+        "id" : "82",
+        "x" : 3722,
+        "y" : 3463
       } ],
       "externalContainerBoundariesVisible" : false,
       "key" : "C3_Orchestrator_OpenSource",
+      "name" : "Component View: AGORA - Orchestrator [OpenSource]",
       "order" : 5,
       "relationships" : [ {
-        "id" : "107"
+        "id" : "106"
       }, {
-        "id" : "58"
+        "id" : "119"
       }, {
-        "id" : "59"
-      }, {
-        "id" : "60"
-      }, {
-        "id" : "61",
-        "vertices" : [ {
-          "x" : 1665,
-          "y" : 2247
-        } ]
+        "id" : "129"
       }, {
         "id" : "62"
       }, {
@@ -1246,7 +1459,11 @@
       }, {
         "id" : "64"
       }, {
-        "id" : "65"
+        "id" : "65",
+        "vertices" : [ {
+          "x" : 1685,
+          "y" : 2259
+        } ]
       }, {
         "id" : "66"
       }, {
@@ -1254,22 +1471,40 @@
       }, {
         "id" : "68"
       }, {
-        "id" : "69"
-      }, {
-        "id" : "70",
+        "id" : "69",
         "vertices" : [ {
-          "x" : 848,
-          "y" : 2247
+          "x" : 2885,
+          "y" : 3213
         }, {
-          "x" : 998,
-          "y" : 3855
+          "x" : 1685,
+          "y" : 3463
         } ]
       }, {
-        "id" : "94"
+        "id" : "70"
+      }, {
+        "id" : "71"
+      }, {
+        "id" : "72"
+      }, {
+        "id" : "73"
+      }, {
+        "id" : "74"
+      }, {
+        "id" : "75",
+        "vertices" : [ {
+          "x" : 2285,
+          "y" : 3867
+        } ]
+      }, {
+        "id" : "76",
+        "vertices" : [ {
+          "x" : 868,
+          "y" : 2259
+        } ]
       } ]
     }, {
       "automaticLayout" : {
-        "applied" : false,
+        "applied" : true,
         "edgeSeparation" : 0,
         "implementation" : "Graphviz",
         "nodeSeparation" : 150,
@@ -1277,34 +1512,79 @@
         "rankSeparation" : 300,
         "vertices" : false
       },
-      "containerId" : "71",
-      "description" : "Component Diagram (C3): MCP Agent Servers - all [Shared] between backends",
+      "containerId" : "82",
+      "description" : "Component Diagram (C3): Agent Management - Registry, Memory, Beheersinterface",
+      "dimensions" : {
+        "height" : 1886,
+        "width" : 1680
+      },
       "elements" : [ {
         "id" : "14",
-        "x" : 0,
-        "y" : 0
+        "x" : 240,
+        "y" : 1140
       }, {
-        "id" : "72",
-        "x" : 0,
-        "y" : 0
+        "id" : "83",
+        "x" : 990,
+        "y" : 632
       }, {
-        "id" : "73",
-        "x" : 0,
-        "y" : 0
+        "id" : "84",
+        "x" : 240,
+        "y" : 182
       }, {
-        "id" : "74",
-        "x" : 0,
-        "y" : 0
+        "id" : "85",
+        "x" : 240,
+        "y" : 632
+      } ],
+      "externalContainerBoundariesVisible" : false,
+      "key" : "C3_Agent_Management",
+      "name" : "Component View: AGORA - Agent Management",
+      "order" : 6,
+      "relationships" : [ {
+        "id" : "86"
+      } ]
+    }, {
+      "automaticLayout" : {
+        "applied" : true,
+        "edgeSeparation" : 0,
+        "implementation" : "Graphviz",
+        "nodeSeparation" : 150,
+        "rankDirection" : "LeftRight",
+        "rankSeparation" : 300,
+        "vertices" : false
+      },
+      "containerId" : "77",
+      "description" : "Component Diagram (C3): MCP Agent Servers - all [Shared] between backends",
+      "dimensions" : {
+        "height" : 1838,
+        "width" : 1660
+      },
+      "elements" : [ {
+        "id" : "14",
+        "x" : 220,
+        "y" : 632
+      }, {
+        "id" : "78",
+        "x" : 970,
+        "y" : 182
+      }, {
+        "id" : "79",
+        "x" : 970,
+        "y" : 632
+      }, {
+        "id" : "80",
+        "x" : 970,
+        "y" : 1082
       } ],
       "externalContainerBoundariesVisible" : false,
       "key" : "C3_MCP_Components",
-      "order" : 6,
+      "name" : "Component View: AGORA - MCP Agent Servers",
+      "order" : 7,
       "relationships" : [ {
-        "id" : "109"
+        "id" : "121"
       }, {
-        "id" : "110"
+        "id" : "122"
       }, {
-        "id" : "111"
+        "id" : "123"
       } ]
     } ],
     "configuration" : {
@@ -1313,22 +1593,14 @@
       "metadataSymbols" : "SquareBrackets",
       "styles" : {
         "elements" : [ {
-          "background" : "#08427b",
+          "background" : "#438dd5",
           "color" : "#ffffff",
-          "shape" : "Person",
-          "tag" : "Person"
+          "shape" : "Hexagon",
+          "tag" : "Backend"
         }, {
-          "background" : "#1168bd",
-          "color" : "#ffffff",
-          "tag" : "Software System"
-        }, {
-          "background" : "#999999",
-          "color" : "#ffffff",
-          "tag" : "External"
-        }, {
-          "background" : "#1168bd",
-          "color" : "#ffffff",
-          "tag" : "Extensible"
+          "background" : "#85bbf0",
+          "color" : "#000000",
+          "tag" : "Component"
         }, {
           "background" : "#438dd5",
           "color" : "#ffffff",
@@ -1336,38 +1608,33 @@
         }, {
           "background" : "#438dd5",
           "color" : "#ffffff",
+          "shape" : "Cylinder",
+          "tag" : "Database"
+        }, {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "Extensible"
+        }, {
+          "background" : "#999999",
+          "color" : "#ffffff",
+          "tag" : "External"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
           "shape" : "WebBrowser",
           "tag" : "Frontend"
         }, {
-          "background" : "#438dd5",
-          "color" : "#ffffff",
-          "shape" : "Hexagon",
-          "tag" : "Backend"
-        }, {
-          "background" : "#438dd5",
-          "color" : "#ffffff",
-          "shape" : "Cylinder",
-          "tag" : "Database"
+          "background" : "#ffcccc",
+          "border" : "Dashed",
+          "color" : "#990000",
+          "opacity" : 70,
+          "tag" : "NotImplemented"
         }, {
           "background" : "#438dd5",
           "border" : "Dashed",
           "color" : "#ffffff",
           "shape" : "RoundedBox",
           "tag" : "Observability"
-        }, {
-          "background" : "#438dd5",
-          "border" : "Dashed",
-          "color" : "#ffffff",
-          "shape" : "RoundedBox",
-          "tag" : "Security"
-        }, {
-          "background" : "#85bbf0",
-          "color" : "#000000",
-          "tag" : "Component"
-        }, {
-          "background" : "#85bbf0",
-          "color" : "#000000",
-          "tag" : "Shared"
         }, {
           "background" : "#74aa9c",
           "color" : "#000000",
@@ -1377,11 +1644,24 @@
           "color" : "#000000",
           "tag" : "OpenSource"
         }, {
-          "background" : "#ffcccc",
+          "background" : "#08427b",
+          "color" : "#ffffff",
+          "shape" : "Person",
+          "tag" : "Person"
+        }, {
+          "background" : "#438dd5",
           "border" : "Dashed",
-          "color" : "#990000",
-          "opacity" : 70,
-          "tag" : "NotImplemented"
+          "color" : "#ffffff",
+          "shape" : "RoundedBox",
+          "tag" : "Security"
+        }, {
+          "background" : "#85bbf0",
+          "color" : "#000000",
+          "tag" : "Shared"
+        }, {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "Software System"
         } ],
         "relationships" : [ {
           "routing" : "Direct",
@@ -1394,7 +1674,7 @@
     },
     "containerViews" : [ {
       "automaticLayout" : {
-        "applied" : false,
+        "applied" : true,
         "edgeSeparation" : 0,
         "implementation" : "Graphviz",
         "nodeSeparation" : 200,
@@ -1402,57 +1682,66 @@
         "rankSeparation" : 350,
         "vertices" : false
       },
-      "description" : "Container Diagram (C2): HAI → Orchestrator [OpenAI/OpenSource] → MCP Agent Servers (+ future services)",
+      "description" : "Container Diagram (C2): HAI → Orchestrator [OpenAI/OpenSource] → MCP Agent Servers (+ agent management & supporting services)",
+      "dimensions" : {
+        "height" : 2208,
+        "width" : 3490
+      },
       "elements" : [ {
         "id" : "3",
-        "x" : 0,
-        "y" : 0
+        "x" : 1519,
+        "y" : 163
       }, {
         "id" : "14",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "71",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "75",
-        "x" : 0,
-        "y" : 0
-      }, {
-        "id" : "76",
-        "x" : 0,
-        "y" : 0
+        "x" : 1519,
+        "y" : 813
       }, {
         "id" : "77",
-        "x" : 0,
-        "y" : 0
+        "x" : 219,
+        "y" : 1463
       }, {
-        "id" : "78",
-        "x" : 0,
-        "y" : 0
+        "id" : "81",
+        "x" : 869,
+        "y" : 1463
       }, {
-        "id" : "79",
-        "x" : 0,
-        "y" : 0
+        "id" : "82",
+        "x" : 1519,
+        "y" : 1463
+      }, {
+        "id" : "87",
+        "x" : 2169,
+        "y" : 1463
+      }, {
+        "id" : "88",
+        "x" : 2819,
+        "y" : 1463
+      }, {
+        "id" : "89",
+        "x" : 544,
+        "y" : 163
       } ],
       "externalSoftwareSystemBoundariesVisible" : false,
       "key" : "C2_Containers",
+      "name" : "Container View: AGORA",
       "order" : 2,
       "relationships" : [ {
-        "id" : "80"
+        "id" : "90"
       }, {
-        "id" : "81"
+        "id" : "91"
       }, {
-        "id" : "82"
+        "id" : "92"
       }, {
-        "id" : "83"
+        "id" : "93"
+      }, {
+        "id" : "94"
+      }, {
+        "id" : "95"
       } ],
       "softwareSystemId" : "2"
     } ],
     "systemContextViews" : [ {
       "automaticLayout" : {
-        "applied" : false,
+        "applied" : true,
         "edgeSeparation" : 0,
         "implementation" : "Graphviz",
         "nodeSeparation" : 200,
@@ -1461,26 +1750,31 @@
         "vertices" : false
       },
       "description" : "System Context (C1): Inspector → AGORA → MCP Agent Ecosystem",
+      "dimensions" : {
+        "height" : 800,
+        "width" : 2500
+      },
       "elements" : [ {
         "id" : "1",
-        "x" : 0,
-        "y" : 0
+        "x" : 199,
+        "y" : 143
       }, {
         "id" : "2",
-        "x" : 0,
-        "y" : 0
+        "x" : 999,
+        "y" : 193
       }, {
-        "id" : "112",
-        "x" : 0,
-        "y" : 0
+        "id" : "132",
+        "x" : 1849,
+        "y" : 193
       } ],
       "enterpriseBoundaryVisible" : true,
       "key" : "C1_SystemContext",
+      "name" : "System Context View: AGORA",
       "order" : 1,
       "relationships" : [ {
-        "id" : "113"
+        "id" : "133"
       }, {
-        "id" : "114"
+        "id" : "134"
       } ],
       "softwareSystemId" : "2"
     } ]
