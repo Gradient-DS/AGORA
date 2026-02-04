@@ -130,19 +130,24 @@ async def extract_inspection_data(
         if company_address and not extracted_data.get("company_address"):
             extracted_data["company_address"] = company_address
 
+        # Step 2: Extract verification questions from the extraction result
+        questions = extracted_data.pop("verification_questions", [])
+
         session_manager.update_extracted_data(session_id, extracted_data)
 
         completeness = verifier.check_completeness(extracted_data) if verifier else {}
 
-        # Step 2: Generate verification questions
-        questions = []
-        if verifier:
-            logger.info(f"Generating verification questions for session {session_id}")
-            questions = await verifier.generate_verification_questions(
-                extracted_data=extracted_data,
-                max_questions=max_questions
-            )
-            session_manager.add_verification_questions(session_id, [q["question"] for q in questions])
+        # Fallback: if extraction didn't produce questions, generate them programmatically
+        if not questions and verifier:
+            missing = verifier._identify_missing_critical_fields(extracted_data)
+            questions = verifier._generate_fallback_questions(missing)
+
+        questions = questions[:max_questions]
+        session_manager.add_verification_questions(
+            session_id,
+            [q.get("question", "") for q in questions],
+            question_data=questions,
+        )
 
         session_manager.update_session_status(session_id, "data_extracted", "verification")
 
@@ -181,16 +186,9 @@ async def submit_verification_answers(
     Returns:
         Updated extraction data with verification answers incorporated
     """
-    if not response_parser:
-        return {
-            "success": False,
-            "error": "OpenAI API key not configured",
-            "message": "Kan antwoorden niet verwerken zonder OpenAI API sleutel."
-        }
-    
     try:
         logger.info(f"Processing verification answers for session {session_id}")
-        
+
         draft = storage.load_draft(session_id)
         if not draft or "extracted_data" not in draft:
             return {
@@ -198,15 +196,27 @@ async def submit_verification_answers(
                 "error": "No extracted data found",
                 "message": "Geen geëxtraheerde gegevens gevonden."
             }
-        
+
         extracted_data = draft["extracted_data"]
+        question_data = draft.get("verification_question_data", [])
         questions = draft.get("verification_questions", [])
-        
-        updated_data = await response_parser.parse_verification_responses(
-            questions=[{"question": q} for q in questions],
-            responses=answers,
-            existing_data=extracted_data
-        )
+
+        # Build field:value map from answers programmatically (no LLM)
+        if isinstance(answers, dict):
+            answer_map = answers
+        else:
+            answer_map = {}
+            parser = response_parser or ResponseParser.__new__(ResponseParser)
+            for i, q_data in enumerate(question_data):
+                field = q_data.get("field", "")
+                if field:
+                    answer_map[field] = parser.parse_simple_response(q_data, str(answers))
+
+        if response_parser:
+            updated_data = response_parser.merge_verification_data(extracted_data, answer_map)
+        else:
+            # Minimal inline merge when no response_parser is available
+            updated_data = {**extracted_data, **answer_map}
         
         session_manager.update_extracted_data(session_id, updated_data)
         session_manager.add_verification_answers(session_id, answers)
