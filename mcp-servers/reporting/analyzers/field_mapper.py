@@ -78,7 +78,7 @@ class FieldMapper:
             raise
     
     def _create_metadata(self, data: Dict[str, Any], session_id: str, report_id: str) -> InspectionMetadata:
-        inspection_type_str = data.get("inspection_type", "Reguliere inspectie")
+        inspection_type_str = data.get("inspection_type") or "Reguliere inspectie"
         inspection_type = InspectionType.REGULAR
         
         type_mapping = {
@@ -210,7 +210,7 @@ class FieldMapper:
     
     def _map_violation(self, data: Dict[str, Any]) -> Violation:
         violation_type = ViolationType.OTHER
-        type_str = data.get("type", "")
+        type_str = data.get("type") or ""
         
         for vt in ViolationType:
             if type_str.lower() in vt.value.lower() or vt.value.lower() in type_str.lower():
