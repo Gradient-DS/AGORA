@@ -123,9 +123,22 @@ Return the complete updated data structure."""
         current = data
 
         for key in keys[:-1]:
+            if not isinstance(current, dict):
+                logger.warning(
+                    f"Cannot traverse into non-dict at '{key}' in path '{path}' "
+                    f"(got {type(current).__name__}) — skipping merge"
+                )
+                return
             if key not in current:
                 current[key] = {}
             current = current[key]
+
+        if not isinstance(current, dict):
+            logger.warning(
+                f"Cannot set '{keys[-1]}' on non-dict in path '{path}' "
+                f"(got {type(current).__name__}) — skipping merge"
+            )
+            return
 
         target_key = keys[-1]
         existing = current.get(target_key)
