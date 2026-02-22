@@ -260,13 +260,12 @@ _SPOKEN_TTS_NUMBER_RULES = (
     "  * '2511' → 'vijfentwintighonderdelf'\n"
     "  * '1234AB' → 'twaalfhonderdvierendertig A B'\n"
     "  * Jaartallen altijd als woorden: '2022' → 'tweeduizendtweeëntwintig', '2024' → 'tweeduizendvierentwintig'\n"
-    "- Langere nummers (KVK, telefoonnummers) cijfer voor cijfer uitspreken:\n"
+    "- Langere nummers (telefoonnummers, referentiecodes) cijfer voor cijfer uitspreken:\n"
     "  * '12345678' → 'één twee drie vier vijf zes zeven acht'\n"
     "  * '06-12345678' → 'nul zes, één twee drie vier vijf zes zeven acht'\n"
     "- Noem GEEN complexe codes, rapport-IDs, referentienummers, e-mailadressen of URLs\n"
     "- Verwijs hiervoor naar de chat:\n"
     "  * In plaats van 'Rapport HAP-2842A-2 is aangemaakt' → 'Het rapport is aangemaakt, de details staan in de chat'\n"
-    "  * In plaats van 'KVK nummer 12345678' → 'Het Kamer van Koophandel nummer is één twee drie vier vijf zes zeven acht'\n"
     "  * In plaats van 'verzonden naar jan@bedrijf.nl' → 'het rapport is verzonden, het e-mailadres staat in de chat'\n\n"
 )
 

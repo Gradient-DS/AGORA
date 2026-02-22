@@ -40,7 +40,6 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "transfer_to_triage": "Overdracht naar triage",
     "transfer_to_agent": "Overdracht naar specialist",
     # Mock server tools
-    "get_company_info": "Ophalen bedrijfsgegevens",
     "generate_inspection_report": "Genereren inspectierapport",
 }
 

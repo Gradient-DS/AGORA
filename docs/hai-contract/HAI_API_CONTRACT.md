@@ -766,6 +766,7 @@ Emitted when a tool call begins.
 |-------|------|----------|-------------|
 | `toolCallId` | string | Yes | Unique identifier for this tool call |
 | `toolCallName` | string | Yes | Technical name of the tool |
+| `toolDisplayName` | string | No | Human-readable display name for UI rendering. Falls back to `toolCallName` if not provided |
 | `toolDescription` | string | No | Human-readable spoken description for TTS |
 | `parentMessageId` | string | No | ID of the parent message |
 

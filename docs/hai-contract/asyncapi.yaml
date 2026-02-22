@@ -403,6 +403,16 @@ components:
             value:
               messageId: "msg-abc123"
             timestamp: "2025-01-15T10:30:04Z"
+        - name: SpokenTextError
+          summary: Error during spoken text generation
+          payload:
+            type: "CUSTOM"
+            name: "agora:spoken_text_error"
+            value:
+              messageId: "msg-abc123"
+              errorCode: "generation_failed"
+              message: "Spoken text generation timed out"
+            timestamp: "2025-01-15T10:30:04Z"
 
   schemas:
     RunAgentInput:

@@ -103,7 +103,7 @@ DEMO_REGULATIONS = [
 
 # Tool display names for UI (Dutch)
 TOOL_DISPLAY_NAMES: dict[str, str] = {
-    "get_company_info": "Ophalen bedrijfsgegevens",
+    "check_company_exists": "Controleren bedrijfsgegevens",
     "get_inspection_history": "Ophalen inspectiehistorie",
     "search_regulations": "Zoeken in regelgeving",
     "check_repeat_violation": "Controleren herhaalde overtredingen",
@@ -196,7 +196,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 {
                     "role": "tool_call",
                     "tool_call_id": "call-001",
-                    "tool_name": "get_company_info",
+                    "tool_name": "check_company_exists",
                     "content": '{"postal_code": "2511 AA", "house_number": "123"}',
                     "agent_id": Agents.HISTORY,
                 },
@@ -1068,10 +1068,8 @@ async def handle_inspection_start(
     response = [
         f"Inspectie gestart voor **{DEMO_COMPANY['name']}**.\n\n",
         f"**Bedrijfsgegevens:**\n",
-        f"- Adres: {DEMO_COMPANY['street']}, {DEMO_COMPANY['postal_code']} {DEMO_COMPANY['city']}\n",
-        f"- Rechtsvorm: {DEMO_COMPANY['legal_form']}\n",
-        f"- Status: {DEMO_COMPANY['status']}\n",
-        f"- Sector: {DEMO_COMPANY['sbi_codes'][0]}\n\n",
+        f"- Adres: {DEMO_COMPANY['street']} {DEMO_COMPANY['house_number']}, {DEMO_COMPANY['postal_code']} {DEMO_COMPANY['city']}\n",
+        f"- Status: {DEMO_COMPANY['status']}\n\n",
         f"**Inspectiehistorie:**\n",
         f"⚠️ Er is **1 openstaande overtreding** uit {DEMO_VIOLATION['date']}:\n",
         f"- {DEMO_VIOLATION['type']}\n",
