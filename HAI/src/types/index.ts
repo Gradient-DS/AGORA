@@ -16,6 +16,12 @@ export interface ChatMessage {
   spokenContent?: string;
   /** Whether spoken content is still streaming */
   isSpokenStreaming?: boolean;
+  /** Optional image attachment (base64 data URL) */
+  imageAttachment?: {
+    data: string;       // base64 data URL (e.g., "data:image/jpeg;base64,...")
+    mimeType: string;   // e.g., "image/jpeg", "image/png"
+    filename?: string;  // original filename if available
+  };
 }
 
 // Tool call UI representation

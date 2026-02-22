@@ -71,7 +71,7 @@ DISTRACTOR_TEMPLATES: list[dict[str, str]] = [
         "name": "search_company_database",
         "description": (
             "Search the comprehensive company registration database including "
-            "KVK extracts, SBI codes, and establishment details."
+            "company registrations, SBI codes, and establishment details."
         ),
     },
     {

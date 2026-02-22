@@ -10,6 +10,12 @@ interface BufferedMessage {
   timestamp: number;
   threadId: string;
   userId: string;
+  /** Optional image attachment for multimodal messages */
+  imageAttachment?: {
+    data: string;       // base64 data URL
+    mimeType: string;
+    filename?: string;
+  };
 }
 
 const DB_NAME = 'agora-offline-buffer';

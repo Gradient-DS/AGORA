@@ -159,7 +159,7 @@ class AgentRunner:
 
     async def run_agent(
         self,
-        message: str,
+        message: str | list[dict[str, Any]],
         session_id: str,
         stream_callback: Callable[[str, str | None], Awaitable[None]] | None = None,
         tool_callback: (
@@ -172,7 +172,7 @@ class AgentRunner:
         """Run agent with message and return (response, active_agent_id).
 
         Args:
-            message: User message
+            message: User message (str for text-only, list for multimodal input)
             session_id: Session identifier for conversation history
             stream_callback: Optional callback(chunk, agent_id) for streaming response chunks
             tool_callback: Optional callback(tool_call_id, tool_name, parameters, status, agent_id, result) for tool execution notifications
@@ -191,19 +191,24 @@ class AgentRunner:
             return await self._run_blocking_session(session, entry_agent, message)
 
     async def _run_blocking_session(
-        self, session: SQLiteSession, entry_agent: Agent, message: str
+        self, session: SQLiteSession, entry_agent: Agent, message: str | list[dict[str, Any]]
     ) -> tuple[str, str]:
         """Run agent in blocking mode."""
         log.info("Running agent without streaming")
-        result = await Runner.run(
-            entry_agent,
-            input=message,
-            session=session,
-        )
+        run_kwargs: dict[str, Any] = {
+            "starting_agent": entry_agent,
+            "input": message,
+            "session": session,
+        }
+        if isinstance(message, list):
+            from agents import RunConfig
+            run_kwargs["run_config"] = RunConfig(
+                session_input_callback=lambda history, new: history + new,
+            )
+        result = await Runner.run(**run_kwargs)
         final_output = result.final_output or ""
         log.info(f"Agent run completed. Output: {len(final_output)} characters")
 
-        # Try to determine which agent was active at the end
         active_agent_id = self._get_agent_id_from_agent(entry_agent)
         log.info(f"Agent run completed. Active agent: {active_agent_id}")
         return final_output, active_agent_id
@@ -212,17 +217,23 @@ class AgentRunner:
         self,
         session: SQLiteSession,
         entry_agent: Agent,
-        message: str,
+        message: str | list[dict[str, Any]],
         stream_callback: Callable[[str, str | None], Awaitable[None]],
         tool_callback: Callable | None,
     ) -> tuple[str, str]:
         """Run agent in streaming mode."""
         log.info("Running agent with streaming enabled")
-        result = Runner.run_streamed(
-            entry_agent,
-            input=message,
-            session=session,
-        )
+        run_kwargs: dict[str, Any] = {
+            "starting_agent": entry_agent,
+            "input": message,
+            "session": session,
+        }
+        if isinstance(message, list):
+            from agents import RunConfig
+            run_kwargs["run_config"] = RunConfig(
+                session_input_callback=lambda history, new: history + new,
+            )
+        result = Runner.run_streamed(**run_kwargs)
 
         state = StreamState(current_agent_id=self._get_agent_id_from_agent(entry_agent))
 

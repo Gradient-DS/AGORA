@@ -21,7 +21,7 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-mcp = FastMCP("Regulation Analysis Server", stateless_http=True)
+mcp = FastMCP("Regulation Analysis Server")
 
 weaviate_client = None
 embedder = None
@@ -436,4 +436,4 @@ Remember: Proper citation is not just good practice - it's legally required for 
 
 if __name__ == "__main__":
     logger.info("Starting Regulation Analysis MCP server on http://0.0.0.0:8000")
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, path="/mcp")
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, path="/mcp", stateless_http=True)

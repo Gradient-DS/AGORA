@@ -30,7 +30,7 @@ async def transfer_to_history() -> str:
     """Transfer the conversation to the Company and Inspection History Specialist.
 
     Use this when the user asks about:
-    - Company information or KVK numbers
+    - Company information, addresses, or postal codes
     - Inspection history
     - Past violations
     - Company verification

@@ -137,9 +137,9 @@ The mock server supports the full demo scenario with realistic Dutch responses a
 
 **Step 1 - Start inspection:**
 ```
-Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854
+Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123
 ```
-→ Triggers `get_company_info` and `get_inspection_history` tool calls
+→ Triggers `check_company_exists` and `get_inspection_history` tool calls
 
 **Step 2 - Document findings:**
 ```

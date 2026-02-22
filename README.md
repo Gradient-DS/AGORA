@@ -13,7 +13,7 @@ Voor vragen of meer informatie, neem contact op met:
 
 AGORA biedt inspecteurs:
 - Real-time tekst- en spraakinterface voor inspecties
-- Geautomatiseerde bedrijfsverificatie (KVK) en inspectiegeschiedenis
+- Geautomatiseerde bedrijfsverificatie op basis van postcode en inspectiegeschiedenis
 - Analyse van regelgeving met semantische zoekfunctionaliteit
 - Generatie van HAP-inspectierapporten (JSON + PDF)
 - Human-in-the-loop goedkeuringsworkflow voor risicovolle acties
@@ -74,7 +74,7 @@ pnpm run dev
 ```
 
 Open http://localhost:3000 en volg het demo scenario:
-1. `Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854`
+1. `Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123`
 2. `Ik zie een geopende ton met rauwe vis op kamertemperatuur naast een afvoerputje vol schoonmaakmiddelresten, welke regels worden hiermee overtreden?`
 3. `Genereer rapport`
 
@@ -163,7 +163,7 @@ AGORA/
 │   │   ├── pipelines/        # Orchestratie met astream_events
 │   │   └── api/              # FastAPI + WebSocket (zelfde API)
 ├── mcp-servers/              # FastMCP tool servers
-│   ├── inspection-history/   # KVK + inspectiedata
+│   ├── inspection-history/   # Bedrijfsverificatie + inspectiedata
 │   ├── regulation-analysis/  # Semantische regelgeving zoeken
 │   └── reporting/            # HAP rapportgeneratie
 ├── docs/hai-contract/        # AG-UI Protocol specificatie

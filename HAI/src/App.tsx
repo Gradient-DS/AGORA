@@ -109,8 +109,8 @@ export default function App() {
     }
   }, [currentUser, fetchSessions]);
 
-  const handleSendMessage = (message: string) => {
-    sendMessage(message);
+  const handleSendMessage = (message: string, imageAttachment?: { data: string; mimeType: string; filename?: string }) => {
+    sendMessage(message, imageAttachment);
   };
 
   const handleApprove = (approvalId: string, feedback?: string) => {

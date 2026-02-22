@@ -66,11 +66,11 @@ class Agents:
 
 # Demo data for Restaurant Bella Rosa
 DEMO_COMPANY = {
-    "kvk_number": "92251854",
+    "postal_code": "2511 AA",
+    "house_number": "123",
+    "street": "Haagweg",
+    "city": "Den Haag",
     "name": "Restaurant Bella Rosa",
-    "legal_form": "Besloten Vennootschap",
-    "registration_date": "2019-03-15",
-    "sbi_codes": ["5610 - Restaurants en mobiele eetgelegenheden"],
     "status": "Actief",
     "address": "Haagweg 123, 2511 AA Den Haag",
 }
@@ -103,7 +103,7 @@ DEMO_REGULATIONS = [
 
 # Tool display names for UI (Dutch)
 TOOL_DISPLAY_NAMES: dict[str, str] = {
-    "get_company_info": "Ophalen bedrijfsgegevens",
+    "check_company_exists": "Controleren bedrijfsgegevens",
     "get_inspection_history": "Ophalen inspectiehistorie",
     "search_regulations": "Zoeken in regelgeving",
     "check_repeat_violation": "Controleren herhaalde overtredingen",
@@ -126,7 +126,7 @@ def get_mock_sessions() -> dict:
             "sessionId": "session-koen-bella-rosa",
             "userId": "koen",
             "title": "Inspectie bij Restaurant Bella Rosa",
-            "firstMessagePreview": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+            "firstMessagePreview": "Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123",
             "messageCount": 8,
             "createdAt": (now - timedelta(hours=2)).isoformat() + "Z",
             "lastActivity": (now - timedelta(minutes=30)).isoformat() + "Z",
@@ -135,7 +135,7 @@ def get_mock_sessions() -> dict:
             "sessionId": "session-koen-hotel-sunset",
             "userId": "koen",
             "title": "Inspectie Hotel Sunset",
-            "firstMessagePreview": "Start inspectie bij Hotel Sunset, kvk: 12345678",
+            "firstMessagePreview": "Start inspectie bij Hotel Sunset, postcode 1012 AB nummer 67",
             "messageCount": 15,
             "createdAt": (now - timedelta(days=2)).isoformat() + "Z",
             "lastActivity": (now - timedelta(days=2, hours=-1)).isoformat() + "Z",
@@ -169,13 +169,13 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
         history = [
             {
                 "role": "user",
-                "content": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+                "content": "Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123",
             },
             {
                 "role": "assistant",
-                "content": "Inspectie gestart voor **Restaurant Bella Rosa**.\n\n**Bedrijfsgegevens:**\n- KVK: 92251854\n- Rechtsvorm: Besloten Vennootschap\n- Status: Actief\n\n**Inspectiehistorie:**\n⚠️ Er is 1 openstaande overtreding uit 15 mei 2022.",
+                "content": "Inspectie gestart voor **Restaurant Bella Rosa**.\n\n**Bedrijfsgegevens:**\n- Adres: Haagweg 123, 2511 AA Den Haag\n- Status: Actief\n\n**Inspectiehistorie:**\n⚠️ Er is 1 openstaande overtreding uit 15 mei 2022.",
                 "agent_id": Agents.HISTORY,
-                "spoken_text": "Inspectie gestart voor Restaurant Bella Rosa. Bedrijfsgegevens: Kamer van Koophandel nummer 92251854, Rechtsvorm Besloten Vennootschap, Status Actief. Inspectiehistorie: Let op, er is 1 openstaande overtreding uit 15 mei 2022.",
+                "spoken_text": "Inspectie gestart voor Restaurant Bella Rosa. Adres: Haagweg 123, Den Haag. Status Actief. Inspectiehistorie: Let op, er is 1 openstaande overtreding uit 15 mei 2022.",
             },
             {
                 "role": "user",
@@ -196,21 +196,21 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
                 {
                     "role": "tool_call",
                     "tool_call_id": "call-001",
-                    "tool_name": "get_company_info",
-                    "content": '{"kvk_number": "92251854"}',
+                    "tool_name": "check_company_exists",
+                    "content": '{"postal_code": "2511 AA", "house_number": "123"}',
                     "agent_id": Agents.HISTORY,
                 },
                 {
                     "role": "tool",
                     "tool_call_id": "call-001",
-                    "tool_name": "get_company_info",
+                    "tool_name": "check_company_exists",
                     "content": json.dumps(DEMO_COMPANY, ensure_ascii=False),
                 },
                 {
                     "role": "tool_call",
                     "tool_call_id": "call-002",
                     "tool_name": "get_inspection_history",
-                    "content": '{"kvk_number": "92251854"}',
+                    "content": '{"postal_code": "2511 AA", "house_number": "123"}',
                     "agent_id": Agents.HISTORY,
                 },
                 {
@@ -247,7 +247,7 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
         return [
             {
                 "role": "user",
-                "content": "Start inspectie bij Hotel Sunset, kvk: 12345678",
+                "content": "Start inspectie bij Hotel Sunset, postcode 1012 AB nummer 67",
             },
             {
                 "role": "assistant",
@@ -275,9 +275,9 @@ def get_mock_history(session_id: str, include_tools: bool = False) -> list:
             },
             {
                 "role": "assistant",
-                "content": "Prima, ik help u graag met de inspectie. Heeft u het KVK-nummer?",
+                "content": "Prima, ik help u graag met de inspectie. Wat is de postcode en het huisnummer?",
                 "agent_id": Agents.GENERAL,
-                "spoken_text": "Prima, ik help u graag met de inspectie. Heeft u het Kamer van Koophandel nummer?",
+                "spoken_text": "Prima, ik help u graag met de inspectie. Wat is de postcode en het huisnummer?",
             },
             {"role": "user", "content": "Ja, het is 87654321"},
             {
@@ -489,7 +489,7 @@ async def list_agents():
         "success": True,
         "agents": [
             {"id": Agents.GENERAL, "name": "Algemene Assistent", "description": "Algemene vraag- en routeringagent"},
-            {"id": Agents.HISTORY, "name": "Bedrijfsinformatie Specialist", "description": "KVK-gegevens en inspectiehistorie"},
+            {"id": Agents.HISTORY, "name": "Bedrijfsinformatie Specialist", "description": "Bedrijfsinformatie en inspectiehistorie"},
             {"id": Agents.REGULATION, "name": "Regelgeving Specialist", "description": "Wet- en regelgevingsanalyse"},
             {"id": Agents.REPORTING, "name": "Rapportage Specialist", "description": "Inspectierapport genereren"},
         ],
@@ -769,7 +769,6 @@ def to_spoken_text(text: str) -> str:
     text = text.replace("✅", "")
 
     # Dutch abbreviation expansions
-    text = text.replace("KVK", "Kamer van Koophandel")
     text = text.replace("NVWA", "Nederlandse Voedsel- en Warenautoriteit")
     text = text.replace("°C", " graden Celsius")
     text = text.replace("EU", "Europese Unie")
@@ -847,10 +846,25 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
     user_id = data.get("userId") or data.get("user_id")
     messages = data.get("messages", [])
 
+    # Extract last user message content (supports multimodal)
     user_content = ""
+    has_image = False
     for msg in messages:
         if msg.get("role") == "user":
-            user_content = msg.get("content", "")
+            raw_content = msg.get("content", "")
+            if isinstance(raw_content, list):
+                text_parts = [
+                    part["text"]
+                    for part in raw_content
+                    if isinstance(part, dict) and part.get("type") == "text"
+                ]
+                has_image = any(
+                    isinstance(part, dict) and part.get("type") == "binary"
+                    for part in raw_content
+                )
+                user_content = " ".join(text_parts)
+            else:
+                user_content = raw_content
             break
 
     # Always start with algemene-assistent for routing
@@ -860,7 +874,9 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
     # Determine which agent should handle this
     content_lower = user_content.lower()
 
-    if is_inspection_start(content_lower):
+    if has_image:
+        target_agent = Agents.GENERAL
+    elif is_inspection_start(content_lower):
         target_agent = Agents.HISTORY
     elif is_violation_query(content_lower):
         target_agent = Agents.REGULATION
@@ -885,7 +901,9 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
         state.current_agent = target_agent
 
     # Route to appropriate handler (they no longer do routing step themselves)
-    if is_inspection_start(content_lower):
+    if has_image:
+        await handle_image_message(websocket, thread_id, run_id, state, user_content)
+    elif is_inspection_start(content_lower):
         await handle_inspection_start(websocket, thread_id, run_id, state, user_content)
     elif is_violation_query(content_lower):
         await handle_finding_input(websocket, thread_id, run_id, state, user_content)
@@ -897,7 +915,7 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
 
 def is_inspection_start(content: str) -> bool:
     """Check if message starts an inspection."""
-    triggers = ["start inspectie", "inspectie bij", "bella rosa", "92251854"]
+    triggers = ["start inspectie", "inspectie bij", "bella rosa", "2511 aa"]
     return any(t in content for t in triggers)
 
 
@@ -973,7 +991,7 @@ async def send_handoff_tool_call(
     tool_call_id = f"call-{uuid.uuid4()}"
 
     agent_descriptions = {
-        Agents.HISTORY: "Specialist voor bedrijfsinformatie en KVK-gegevens",
+        Agents.HISTORY: "Specialist voor bedrijfsinformatie en inspectiehistorie",
         Agents.REGULATION: "Specialist voor regelgeving en wetanalyse",
         Agents.REPORTING: "Specialist voor het genereren van inspectierapporten",
     }
@@ -1009,20 +1027,20 @@ async def send_handoff_tool_call(
 async def handle_inspection_start(
     websocket, thread_id: str, run_id: str, state: ConversationState, user_content: str
 ) -> None:
-    """Handle inspection start with KVK lookup tool call."""
+    """Handle inspection start with company lookup tool call."""
     state.inspection_started = True
     state.company_loaded = True
 
     # Tool execution step (routing already done by algemene-assistent)
     await send_step(websocket, "executing_tools", start=True)
 
-    # KVK Lookup tool call
+    # Company lookup tool call
     tool_call_id = f"call-{uuid.uuid4()}"
     await send_tool_call(
         websocket,
         tool_call_id,
-        "get_company_info",
-        {"kvk_number": DEMO_COMPANY["kvk_number"]},
+        "check_company_exists",
+        {"postal_code": DEMO_COMPANY["postal_code"], "house_number": DEMO_COMPANY["house_number"]},
         json.dumps(DEMO_COMPANY, ensure_ascii=False),
     )
 
@@ -1038,7 +1056,7 @@ async def handle_inspection_start(
         websocket,
         tool_call_id2,
         "get_inspection_history",
-        {"kvk_number": DEMO_COMPANY["kvk_number"]},
+        {"postal_code": DEMO_COMPANY["postal_code"], "house_number": DEMO_COMPANY["house_number"]},
         json.dumps(history_result, ensure_ascii=False),
     )
 
@@ -1050,10 +1068,8 @@ async def handle_inspection_start(
     response = [
         f"Inspectie gestart voor **{DEMO_COMPANY['name']}**.\n\n",
         f"**Bedrijfsgegevens:**\n",
-        f"- KVK: {DEMO_COMPANY['kvk_number']}\n",
-        f"- Rechtsvorm: {DEMO_COMPANY['legal_form']}\n",
-        f"- Status: {DEMO_COMPANY['status']}\n",
-        f"- Sector: {DEMO_COMPANY['sbi_codes'][0]}\n\n",
+        f"- Adres: {DEMO_COMPANY['street']} {DEMO_COMPANY['house_number']}, {DEMO_COMPANY['postal_code']} {DEMO_COMPANY['city']}\n",
+        f"- Status: {DEMO_COMPANY['status']}\n\n",
         f"**Inspectiehistorie:**\n",
         f"⚠️ Er is **1 openstaande overtreding** uit {DEMO_VIOLATION['date']}:\n",
         f"- {DEMO_VIOLATION['type']}\n",
@@ -1098,7 +1114,8 @@ async def handle_finding_input(
         tool_call_id2,
         "check_repeat_violation",
         {
-            "kvk_number": DEMO_COMPANY["kvk_number"],
+            "postal_code": DEMO_COMPANY["postal_code"],
+            "house_number": DEMO_COMPANY["house_number"],
             "violation_category": "hygiene_measures",
         },
         json.dumps(repeat_result, ensure_ascii=False),
@@ -1160,7 +1177,8 @@ async def handle_report_request(
                 "toolDescription": "Genereert een officieel inspectierapport (PDF) dat permanent wordt opgeslagen en naar het bedrijf wordt verzonden",
                 "parameters": {
                     "company_name": DEMO_COMPANY["name"],
-                    "kvk_number": DEMO_COMPANY["kvk_number"],
+                    "postal_code": DEMO_COMPANY["postal_code"],
+                    "house_number": DEMO_COMPANY["house_number"],
                     "inspector_name": "Koen van der Berg",
                     "include_escalation": True,
                     "violations": [
@@ -1176,6 +1194,39 @@ async def handle_report_request(
         },
         "tool_approval_request",
     )
+
+
+async def handle_image_message(
+    websocket, thread_id: str, run_id: str, state: ConversationState, user_text: str
+) -> None:
+    """Handle messages that include an image attachment."""
+    await send_step(websocket, "thinking", start=True)
+
+    response = [
+        "Ik heb uw afbeelding ontvangen. ",
+    ]
+
+    if state.inspection_started:
+        response += [
+            "Op basis van de foto en de huidige inspectie kan ik het volgende opmerken:\n\n",
+            "**Observatie**: De afbeelding toont een situatie die relevant kan zijn voor de inspectie. ",
+            "Ik zal dit meenemen in mijn analyse.\n\n",
+        ]
+        if user_text:
+            response.append(f"Uw opmerking: *\"{user_text}\"* is genoteerd bij deze observatie.\n\n")
+        response.append(
+            "Wilt u dat ik:\n"
+            "- De relevante **regelgeving** opzoek?\n"
+            "- Dit als **bevinding** vastleg in het rapport?\n"
+            "- Verder ga met de inspectie?"
+        )
+    else:
+        response += [
+            "Om de afbeelding goed te kunnen beoordelen, is het handig als u eerst een inspectie start. ",
+            "Probeer bijvoorbeeld: **\"Start inspectie bij Bella Rosa, Den Haag\"**",
+        ]
+
+    await stream_response(websocket, thread_id, run_id, response, Agents.GENERAL)
 
 
 async def handle_generic_response(
@@ -1196,7 +1247,7 @@ async def handle_generic_response(
         response = [
             "Welkom bij AGORA. ",
             "Start een inspectie door te zeggen:\n\n",
-            "**'Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854'**\n\n",
+            "**'Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123'**\n\n",
             "Ik help u vervolgens met:\n",
             "- Bedrijfsgegevens opzoeken\n",
             "- Inspectiehistorie bekijken\n",
@@ -1238,7 +1289,8 @@ async def execute_report_generation(
         "generate_inspection_report",
         {
             "company_name": DEMO_COMPANY["name"],
-            "kvk_number": DEMO_COMPANY["kvk_number"],
+            "postal_code": DEMO_COMPANY["postal_code"],
+            "house_number": DEMO_COMPANY["house_number"],
             "inspector_name": "Koen van der Berg",
         },
         json.dumps(

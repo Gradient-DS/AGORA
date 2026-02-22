@@ -83,7 +83,7 @@ List available agents in the system.
   "success": true,
   "agents": [
     {"id": "general-agent", "name": "Algemene Assistent", "description": "Algemene vraag- en routeringagent"},
-    {"id": "history-agent", "name": "Bedrijfsinformatie Specialist", "description": "KVK-gegevens en inspectiehistorie"},
+    {"id": "history-agent", "name": "Bedrijfsinformatie Specialist", "description": "Bedrijfsinformatie en inspectiehistorie"},
     {"id": "regulation-agent", "name": "Regelgeving Specialist", "description": "Wet- en regelgevingsanalyse"},
     {"id": "reporting-agent", "name": "Rapportage Specialist", "description": "Inspectierapport genereren"}
   ]
@@ -155,8 +155,8 @@ Retrieve the full conversation history for a session, including messages and opt
   "history": [
     {"role": "user", "content": "Start inspectie bij Restaurant Bella Rosa"},
     {"role": "assistant", "content": "Inspectie gestart...", "agent_id": "history-agent"},
-    {"role": "tool_call", "tool_call_id": "tc-1", "tool_name": "get_company_info", "content": "{\"kvk_number\": \"92251854\"}", "agent_id": "history-agent"},
-    {"role": "tool", "tool_call_id": "tc-1", "tool_name": "get_company_info", "content": "{\"name\": \"Restaurant Bella Rosa\", ...}"}
+    {"role": "tool_call", "tool_call_id": "tc-1", "tool_name": "check_company_exists", "content": "{\"postal_code\": \"2511 AA\", \"house_number\": 123}", "agent_id": "history-agent"},
+    {"role": "tool", "tool_call_id": "tc-1", "tool_name": "check_company_exists", "content": "{\"name\": \"Restaurant Bella Rosa\", ...}"}
   ],
   "messageCount": 4
 }
@@ -766,6 +766,7 @@ Emitted when a tool call begins.
 |-------|------|----------|-------------|
 | `toolCallId` | string | Yes | Unique identifier for this tool call |
 | `toolCallName` | string | Yes | Technical name of the tool |
+| `toolDisplayName` | string | No | Human-readable display name for UI rendering. Falls back to `toolCallName` if not provided |
 | `toolDescription` | string | No | Human-readable spoken description for TTS |
 | `parentMessageId` | string | No | ID of the parent message |
 
@@ -1182,6 +1183,39 @@ To start a new run, send a `RunAgentInput`:
 | `messages` | array | Yes | Input messages with role and content |
 | `context` | object | No | Additional context for the agent |
 
+### Multimodal Message Content
+
+The `content` field in a `Message` accepts either a plain string or an array of content parts for multimodal messages (e.g., text + image). This is fully backward-compatible: existing text-only messages continue to work identically.
+
+**String content (text-only):**
+```json
+{ "role": "user", "content": "Start inspectie bij Bella Rosa" }
+```
+
+**Multimodal content (text + image):**
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Ik zie dit in de keuken" },
+    { "type": "binary", "mimeType": "image/jpeg", "data": "data:image/jpeg;base64,/9j/4AAQ...", "filename": "keuken-foto.jpg" }
+  ]
+}
+```
+
+**Content Part Types:**
+
+| Type | Required Fields | Optional Fields | Description |
+|------|----------------|-----------------|-------------|
+| `text` | `type`, `text` | - | Text content |
+| `binary` | `type`, `mimeType`, `data` | `filename` | Binary data (e.g., image) |
+
+**Constraints:**
+- Maximum recommended image size: 2MB (enforced client-side before base64 encoding)
+- Supported MIME types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- Binary `data` field contains a base64-encoded data URL (e.g., `data:image/jpeg;base64,...`)
+- Image-only messages (no text part) are supported
+
 ### TypeScript Client Setup
 
 ```typescript
@@ -1314,6 +1348,7 @@ from ag_ui.core import (
 AGORA extends the official AG-UI types with:
 
 - `RunAgentInput.userId` - Required field to associate sessions with users (not in standard AG-UI)
+- `Message.content` multimodal support - Content accepts `string | ContentPart[]` for text+image messages
 - `ToolApprovalRequestPayload` - HITL approval request
 - `ToolApprovalResponsePayload` - HITL approval response
 - `ErrorPayload` - AGORA-specific error details
@@ -1325,6 +1360,11 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ---
 
 ## Changelog
+
+### v2.6.0 (February 2026)
+- **Added** Multimodal message content support (`content` accepts `string | ContentPart[]`)
+- **Added** `text` and `binary` content part types for text+image messages
+- **Updated** AsyncAPI spec, JSON Schema, and contract documentation
 
 ### v2.5.1 (January 2026)
 - **Added** `PUT /sessions/{session_id}` endpoint for updating session metadata (rename conversations)
