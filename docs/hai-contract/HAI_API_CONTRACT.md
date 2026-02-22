@@ -83,7 +83,7 @@ List available agents in the system.
   "success": true,
   "agents": [
     {"id": "general-agent", "name": "Algemene Assistent", "description": "Algemene vraag- en routeringagent"},
-    {"id": "history-agent", "name": "Bedrijfsinformatie Specialist", "description": "KVK-gegevens en inspectiehistorie"},
+    {"id": "history-agent", "name": "Bedrijfsinformatie Specialist", "description": "Bedrijfsinformatie en inspectiehistorie"},
     {"id": "regulation-agent", "name": "Regelgeving Specialist", "description": "Wet- en regelgevingsanalyse"},
     {"id": "reporting-agent", "name": "Rapportage Specialist", "description": "Inspectierapport genereren"}
   ]
@@ -155,8 +155,8 @@ Retrieve the full conversation history for a session, including messages and opt
   "history": [
     {"role": "user", "content": "Start inspectie bij Restaurant Bella Rosa"},
     {"role": "assistant", "content": "Inspectie gestart...", "agent_id": "history-agent"},
-    {"role": "tool_call", "tool_call_id": "tc-1", "tool_name": "get_company_info", "content": "{\"kvk_number\": \"92251854\"}", "agent_id": "history-agent"},
-    {"role": "tool", "tool_call_id": "tc-1", "tool_name": "get_company_info", "content": "{\"name\": \"Restaurant Bella Rosa\", ...}"}
+    {"role": "tool_call", "tool_call_id": "tc-1", "tool_name": "check_company_exists", "content": "{\"postal_code\": \"2511 AA\", \"house_number\": 123}", "agent_id": "history-agent"},
+    {"role": "tool", "tool_call_id": "tc-1", "tool_name": "check_company_exists", "content": "{\"name\": \"Restaurant Bella Rosa\", ...}"}
   ],
   "messageCount": 4
 }

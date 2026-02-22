@@ -132,7 +132,7 @@ server-langgraph/             # LangGraph orchestrator (open-source alternative)
 mcp-servers/                  # FastMCP tool servers
 ├── regulation-analysis/      # Semantic search, compliance
 ├── reporting/                # HAP report generation
-└── inspection-history/       # KVK verification, violations
+└── inspection-history/       # Company verification, violations
 
 docs/hai-contract/            # AG-UI Protocol specification
 ├── AG_UI_PROTOCOL.md         # Human-readable spec

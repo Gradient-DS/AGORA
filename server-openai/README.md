@@ -79,7 +79,7 @@ Gebruikersbericht → general-agent (triage)
    - Handoffs naar: history, regulation, reporting
 
 2. **history-agent**
-   - Bedrijfsverificatie (KVK opzoeken)
+   - Bedrijfsverificatie (adres opzoeken)
    - Inspectiegeschiedenis
    - Overtredingspatronen
    - Handoffs naar: regulation, reporting, general
@@ -134,7 +134,7 @@ async def chat():
         message = {
             "threadId": "test-session-123",
             "messages": [
-                {"role": "user", "content": "Start inspectie bij KVK 12345678"}
+                {"role": "user", "content": "Start inspectie bij postcode 2511 AA nummer 123"}
             ]
         }
         await websocket.send(json.dumps(message))

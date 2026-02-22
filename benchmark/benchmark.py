@@ -149,7 +149,7 @@ SCENARIOS: list[dict] = [
     # },
     {
         "id": "inspection_start",
-        "prompt": "Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854",
+        "prompt": "Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123",
         "expected_agent": "history-agent",
         "expected_tools": ["check_company_exists", "get_inspection_history"],
         "description": (

@@ -16,7 +16,7 @@ from services import is_email_configured, send_report_email
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-mcp = FastMCP("Reporting Server", stateless_http=True)
+mcp = FastMCP("Reporting Server")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("MCP_OPENAI_API_KEY", "")
 
@@ -489,4 +489,4 @@ if __name__ == "__main__":
         logger.warning("OPENAI_API_KEY not set. Some features will be disabled.")
     
     logger.info("Starting HAP Reporting MCP server on http://0.0.0.0:8000")
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, path="/mcp")
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, path="/mcp", stateless_http=True)

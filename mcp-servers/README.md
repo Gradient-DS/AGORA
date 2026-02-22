@@ -8,7 +8,7 @@ Drie gespecialiseerde MCP servers die tools bieden voor compliance operaties:
 
 1. **Regelgevingsanalyse** (poort 5002) - Regelgeving opzoeken en documentanalyse
 2. **Rapportage** (poort 5003) - Generatie van HAP-inspectierapporten
-3. **Bedrijfsinformatie & Inspectiegeschiedenis** (poort 5005) - KVK opzoeken en historische inspectiedata
+3. **Bedrijfsinformatie & Inspectiegeschiedenis** (poort 5005) - Bedrijfsverificatie en historische inspectiedata
 
 ## Snel aan de slag
 
@@ -177,13 +177,13 @@ mcp-servers/
 ### Bedrijfsinformatie & Inspectiegeschiedenis
 
 **Bedrijfsverificatie:**
-- `check_company_exists(kvk_number)` - Controleer of bedrijf bestaat in KVK register
+- `check_company_exists(postal_code, house_number)` - Controleer of bedrijf bestaat op het opgegeven adres
 
 **Inspectiegeschiedenis (inclusief volledige bedrijfsdetails):**
-- `get_inspection_history(kvk_number, limit)` - Haal eerdere inspecties op voor een bedrijf
-- `get_company_violations(kvk_number, limit, severity)` - Haal alle overtredingen op over inspecties heen
-- `check_repeat_violation(kvk_number, violation_category)` - Controleer of overtreding een herhaling is
-- `get_follow_up_status(kvk_number, inspection_id)` - Haal status van vervolgactie op
+- `get_inspection_history(postal_code, house_number, limit)` - Haal eerdere inspecties op voor een bedrijf
+- `get_company_violations(postal_code, house_number, limit, severity)` - Haal alle overtredingen op over inspecties heen
+- `check_repeat_violation(postal_code, house_number, violation_category)` - Controleer of overtreding een herhaling is
+- `get_follow_up_status(postal_code, house_number, inspection_id)` - Haal status van vervolgactie op
 - `search_inspections_by_inspector(inspector_name, limit)` - Zoek inspecties op inspecteur
 
 ## Probleemoplossing

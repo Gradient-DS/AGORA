@@ -9,7 +9,7 @@ Complete walkthrough of the three inspector scenarios using AGORA's MCP servers 
 ### Scenario 1: Inspecteur Koen – Restaurant Bella Rosa
 
 ```
-Start inspectie bij Restaurant Bella Rosa, kvk nummer: 92251854
+Start inspectie bij Restaurant Bella Rosa, postcode 2511 AA nummer 123
 ```
 
 ```
@@ -29,7 +29,7 @@ Genereer rapport
 ### Scenario 2: Inspecteur Fatima – SpeelgoedPlaza
 
 ```
-Haal informatie op over SpeelgoedPlaza, kvk nummer 92262856, waar ik zo een inspectie heb
+Haal informatie op over SpeelgoedPlaza, postcode 2521 DJ nummer 45, waar ik zo een inspectie heb
 ```
 
 ```
@@ -61,7 +61,7 @@ Start inspectie bij Slagerij de Boer
 ```
 
 ```
-34084173
+postcode 9711 NX nummer 8
 ```
 
 ```
@@ -90,7 +90,6 @@ Verify health:
 ```bash
 curl http://localhost:5002/health  # Regulation Analysis
 curl http://localhost:5003/health  # Reporting
-curl http://localhost:5004/health  # KVK Lookup
 curl http://localhost:5005/health  # Inspection History
 ```
 
@@ -105,30 +104,27 @@ curl http://localhost:5005/health  # Inspection History
 
 **System workflow:**
 1. Agent recognizes inspection start trigger
-2. May prompt for KVK number if not in system
+2. May prompt for address if not in system
 
 ### Step 2: Get Company Information
-**Inspector says:** "Wat zijn de bedrijfsgegevens?" or provides KVK: "59581883"
+**Inspector says:** "Wat zijn de bedrijfsgegevens?"
 
 **MCP Calls:**
 ```bash
-# 1. KVK Lookup - Get company info
-curl -X POST http://localhost:5004/mcp/tools/call \
+# 1. Check company exists
+curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "get_company_info",
-    "arguments": {"kvk_number": "59581883"}
+    "name": "check_company_exists",
+    "arguments": {"postal_code": "2511 AA", "house_number": "123"}
   }'
 ```
 
 **Response:**
-- Company name, legal form, registration date
-- SBI codes (e.g., 5610 - Restaurants)
-- Active status
-- Postal region
+- Company name, address, active status
 
 **Agent response:**
-"Restaurant is geregistreerd als BV sinds 2019. Het bedrijf is actief en valt onder SBI code 5610 (Restaurants). De Hygiënecode voor de Horeca en Warenwetregeling zijn van toepassing."
+"Restaurant Bella Rosa is gevonden op Haagweg 123, 2511 AA Den Haag. Het bedrijf is actief. De Hygiënecode voor de Horeca en Warenwetregeling zijn van toepassing."
 
 ### Step 3: Check Inspection History
 **Inspector says:** "Zijn er eerdere overtredingen bekend?"
@@ -140,7 +136,7 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get_inspection_history",
-    "arguments": {"kvk_number": "59581883"}
+    "arguments": {"postal_code": "2511 AA", "house_number": "123"}
   }'
 
 # 3. Get violations specifically
@@ -148,7 +144,7 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get_company_violations",
-    "arguments": {"kvk_number": "59581883"}
+    "arguments": {"postal_code": "2511 AA", "house_number": "123"}
   }'
 ```
 
@@ -177,7 +173,8 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -d '{
     "name": "check_repeat_violation",
     "arguments": {
-      "kvk_number": "59581883",
+      "postal_code": "2511 AA",
+      "house_number": "123",
       "violation_category": "hygiene_measures"
     }
   }'
@@ -248,7 +245,7 @@ curl -X POST http://localhost:5003/mcp/tools/call \
 ```
 
 **Report includes:**
-- Company info (from KVK)
+- Company info (from address lookup)
 - Inspection history context (from Inspection History)
 - Current findings
 - Applicable regulations (from Regulation Analysis)
@@ -265,24 +262,16 @@ curl -X POST http://localhost:5003/mcp/tools/call \
 **Inspector says:** "Start inspectie bij SpeelgoedPlaza"
 
 ### Step 2: Company Lookup
-**Inspector provides:** KVK number "12345678"
+**Inspector provides:** Postcode 2521 DJ, nummer 45
 
 **MCP Calls:**
 ```bash
-# KVK Lookup
-curl -X POST http://localhost:5004/mcp/tools/call \
+# Check company exists
+curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "get_company_info",
-    "arguments": {"kvk_number": "12345678"}
-  }'
-
-# Get activities to determine product categories
-curl -X POST http://localhost:5004/mcp/tools/call \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "get_company_activities",
-    "arguments": {"kvk_number": "12345678"}
+    "name": "check_company_exists",
+    "arguments": {"postal_code": "2521 DJ", "house_number": "45"}
   }'
 ```
 
@@ -296,7 +285,7 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get_inspection_history",
-    "arguments": {"kvk_number": "12345678"}
+    "arguments": {"postal_code": "2521 DJ", "house_number": "45"}
   }'
 ```
 
@@ -342,18 +331,18 @@ Report includes product photos, CE marking status, and references to resolved pr
 
 ### Step 1: Start Inspection
 **Inspector says:** "Start inspectie bij Slagerij de Boer"
-**System:** "Wat is het KVK nummer?"
-**Inspector:** "87654321"
+**System:** "Wat is de postcode en het huisnummer?"
+**Inspector:** "Postcode 9711 NX nummer 8"
 
 ### Step 2: Company Info
 **MCP Calls:**
 ```bash
-# KVK Lookup
-curl -X POST http://localhost:5004/mcp/tools/call \
+# Check company exists
+curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "get_company_info",
-    "arguments": {"kvk_number": "87654321"}
+    "name": "check_company_exists",
+    "arguments": {"postal_code": "9711 NX", "house_number": "8"}
   }'
 ```
 
@@ -370,7 +359,7 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get_inspection_history",
-    "arguments": {"kvk_number": "87654321"}
+    "arguments": {"postal_code": "9711 NX", "house_number": "8"}
   }'
 
 # Check follow-ups
@@ -378,7 +367,7 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -H "Content-Type: application/json" \
   -d '{
     "name": "get_follow_up_status",
-    "arguments": {"kvk_number": "87654321"}
+    "arguments": {"postal_code": "9711 NX", "house_number": "8"}
   }'
 ```
 
@@ -410,7 +399,8 @@ curl -X POST http://localhost:5005/mcp/tools/call \
   -d '{
     "name": "check_repeat_violation",
     "arguments": {
-      "kvk_number": "87654321",
+      "postal_code": "9711 NX",
+      "house_number": "8",
       "violation_category": "food_labeling"
     }
   }'
@@ -435,16 +425,15 @@ Report automatically includes:
 
 ---
 
-## Integration Flow: KVK + Inspection History
+## Integration Flow: Address Lookup + Inspection History
 
 ### Typical Workflow
 
 ```
 1. Inspector starts inspection
    ↓
-2. KVK Lookup provides:
-   - Company legal info
-   - SBI codes (→ applicable regulations)
+2. Address Lookup provides:
+   - Company info at given address
    - Active status
    ↓
 3. Inspection History provides:
@@ -453,7 +442,7 @@ Report automatically includes:
    - Follow-up status
    ↓
 4. Regulation Analysis provides:
-   - Regulations based on SBI codes
+   - Applicable regulations
    - Specific articles for violations
    ↓
 5. Inspector documents findings
@@ -465,27 +454,24 @@ Report automatically includes:
 
 ### Example Combined Query
 
-**Inspector says:** "Geef me het complete dossier van bedrijf 59581883"
+**Inspector says:** "Geef me het complete dossier van Restaurant Bella Rosa, postcode 2511 AA nummer 123"
 
 **System executes in parallel:**
 ```javascript
 await Promise.all([
-  kvkLookup.get_company_info("59581883"),
-  kvkLookup.get_company_activities("59581883"),
-  inspectionHistory.get_inspection_history("59581883"),
-  inspectionHistory.get_company_violations("59581883"),
-  inspectionHistory.get_follow_up_status("59581883")
+  inspectionHistory.check_company_exists("2511 AA", "123"),
+  inspectionHistory.get_inspection_history("2511 AA", "123"),
+  inspectionHistory.get_company_violations("2511 AA", "123"),
+  inspectionHistory.get_follow_up_status("2511 AA", "123")
 ])
 ```
 
 **Agent synthesizes response:**
-"# Bedrijfsdossier Restaurant Bella Rosa (KVK: 59581883)
+"# Bedrijfsdossier Restaurant Bella Rosa (Haagweg 123, 2511 AA Den Haag)
 
 ## Bedrijfsgegevens
-- **Rechtsvorm:** BV
-- **Registratie:** 2019
+- **Adres:** Haagweg 123, 2511 AA Den Haag
 - **Status:** Actief
-- **Sector:** Horeca (SBI 5610 - Restaurants)
 
 ## Inspectiehistorie
 - **Totaal inspecties:** 2 (2020, 2022)
@@ -498,7 +484,6 @@ await Promise.all([
 - Follow-up nog niet uitgevoerd
 
 ## Toepasselijke regelgeving
-Op basis van SBI code 5610:
 - Hygiënecode voor de Horeca
 - Warenwetregeling Hygiëne van Levensmiddelen
 - EU Verordening 852/2004
@@ -514,37 +499,37 @@ Op basis van SBI code 5610:
 
 ```bash
 # Test Scenario 1 - Koen
-curl -X POST http://localhost:5004/mcp/tools/call -H "Content-Type: application/json" \
-  -d '{"name": "get_company_info", "arguments": {"kvk_number": "59581883"}}'
 curl -X POST http://localhost:5005/mcp/tools/call -H "Content-Type: application/json" \
-  -d '{"name": "get_inspection_history", "arguments": {"kvk_number": "59581883"}}'
+  -d '{"name": "check_company_exists", "arguments": {"postal_code": "2511 AA", "house_number": "123"}}'
+curl -X POST http://localhost:5005/mcp/tools/call -H "Content-Type: application/json" \
+  -d '{"name": "get_inspection_history", "arguments": {"postal_code": "2511 AA", "house_number": "123"}}'
 
 # Test Scenario 2 - Fatima
-curl -X POST http://localhost:5004/mcp/tools/call -H "Content-Type: application/json" \
-  -d '{"name": "get_company_info", "arguments": {"kvk_number": "12345678"}}'
 curl -X POST http://localhost:5005/mcp/tools/call -H "Content-Type: application/json" \
-  -d '{"name": "get_inspection_history", "arguments": {"kvk_number": "12345678"}}'
+  -d '{"name": "check_company_exists", "arguments": {"postal_code": "2521 DJ", "house_number": "45"}}'
+curl -X POST http://localhost:5005/mcp/tools/call -H "Content-Type: application/json" \
+  -d '{"name": "get_inspection_history", "arguments": {"postal_code": "2521 DJ", "house_number": "45"}}'
 
 # Test Scenario 3 - Jan
-curl -X POST http://localhost:5004/mcp/tools/call -H "Content-Type: application/json" \
-  -d '{"name": "get_company_info", "arguments": {"kvk_number": "87654321"}}'
 curl -X POST http://localhost:5005/mcp/tools/call -H "Content-Type: application/json" \
-  -d '{"name": "check_repeat_violation", "arguments": {"kvk_number": "87654321", "violation_category": "food_labeling"}}'
+  -d '{"name": "check_company_exists", "arguments": {"postal_code": "9711 NX", "house_number": "8"}}'
+curl -X POST http://localhost:5005/mcp/tools/call -H "Content-Type: application/json" \
+  -d '{"name": "check_repeat_violation", "arguments": {"postal_code": "9711 NX", "house_number": "8", "violation_category": "food_labeling"}}'
 ```
 
 ### Verify Integration
 
-All demo KVK numbers should work:
-- `59581883` - Restaurant Bella Rosa (repeat offender)
-- `12345678` - SpeelgoedPlaza (resolved violations)
-- `87654321` - Slagerij de Boer (overdue follow-up)
-- `11223344` - Café Het Bruine Paard (clean record)
+All demo addresses should work:
+- `2511 AA 123` - Restaurant Bella Rosa (repeat offender)
+- `2521 DJ 45` - SpeelgoedPlaza (resolved violations)
+- `9711 NX 8` - Slagerij de Boer (overdue follow-up)
+- `1012 AB 67` - Café Het Bruine Paard (clean record)
 
 ---
 
 ## Key Takeaways
 
-1. **KVK Lookup** provides the business context and determines applicable regulations via SBI codes
+1. **Address Lookup** provides the business context at the given address
 2. **Inspection History** provides the compliance track record and identifies repeat violations
 3. **Together** they enable intelligent enforcement decisions based on complete company profiles
 4. **Regulation Analysis** provides the legal framework for violations

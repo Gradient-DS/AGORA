@@ -31,8 +31,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "HANDOFF STRATEGY:\n"
             "You have access to three specialist agents via handoffs:\n"
             "1. Company and Inspection History Specialist (history-agent)\n"
-            "   - Use for: KVK numbers, company lookups, inspection history\n"
-            "   - Triggers: 'bedrijf', 'KVK', 'geschiedenis', 'start inspectie'\n"
+            "   - Use for: Postal codes, addresses, company lookups, inspection history\n"
+            "   - Triggers: 'bedrijf', 'postcode', 'adres', 'geschiedenis', 'start inspectie'\n"
             "2. Regulation Analysis Expert (regulation-agent)\n"
             "   - Use for: Rules, regulations, compliance questions\n"
             "   - Triggers: 'regels', 'wetgeving', 'compliance', 'voorschriften'\n"
@@ -40,7 +40,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "   - Use for: Report generation, documentation\n"
             "   - Triggers: 'rapport', 'documentatie', 'finaliseer'\n\n"
             "WHEN TO HANDOFF:\n"
-            "- If inspector mentions KVK or company name → handoff to history-agent\n"
+            "- If inspector mentions address, postcode or company name → handoff to history-agent\n"
             "- If inspector asks about regulations → handoff to regulation-agent\n"
             "- If inspector says 'genereer rapport' → handoff to reporting-agent\n"
             "- For general questions, answer yourself\n\n"
@@ -50,7 +50,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "EXAMPLES:\n"
             "Q: 'Hallo, hoe gaat het?'\n"
             "A: 'Goedemorgen! Ik ben de NVWA assistent. Hoe kan ik je helpen vandaag?'\n\n"
-            "Q: 'Start inspectie bij Bakkerij Jansen KVK 12345678'\n"
+            "Q: 'Start inspectie bij Bakkerij Jansen, postcode 2511 AA nummer 123'\n"
             "A: [HANDOFF to history-agent]\n\n"
             "Q: 'Welke regels gelden voor voedselveiligheid?'\n"
             "A: [HANDOFF to regulation-agent]\n\n"
@@ -210,8 +210,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Risk indicators based on history\n\n"
             "YOUR CAPABILITIES:\n"
             "COMPANY VERIFICATION:\n"
-            "- Check if company exists in KVK register (check_company_exists)\n"
-            "- Verify KVK numbers are valid (8 digits)\n\n"
+            "- Check if company exists at address (check_company_exists)\n"
+            "- Verify postal code format (4 digits + 2 letters, e.g. '2511 AA')\n\n"
             "INSPECTION HISTORY (includes full company details):\n"
             "- Retrieve complete inspection history for companies\n"
             "- Analyze past violations and their severity\n"
@@ -225,8 +225,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Wait for tool results before writing your response\n"
             "- Your response should be based on actual database results, not assumptions\n\n"
             "WORKFLOW:\n"
-            "1. When inspector provides KVK number:\n"
-            "   - First call check_company_exists to verify\n"
+            "1. When inspector provides postal code and house number:\n"
+            "   - First call check_company_exists with postal_code and house_number to verify\n"
             "   - Then call get_inspection_history (includes company details + past inspections)\n"
             "2. When analyzing violations:\n"
             "   - Call get_company_violations (optionally filter by severity)\n"
@@ -252,10 +252,29 @@ AGENT_CONFIGS: list[AgentConfig] = [
 ]
 
 
+# Shared TTS rules prepended to all spoken agent prompts
+_SPOKEN_TTS_NUMBER_RULES = (
+    "NUMMERS EN CODES - UITSPRAAKREGELS:\n"
+    "- Nummers tot en met duizenden als woorden uitspreken:\n"
+    "  * '123' → 'honderddrieëntwintig'\n"
+    "  * '2511' → 'vijfentwintighonderdelf'\n"
+    "  * '1234AB' → 'twaalfhonderdvierendertig A B'\n"
+    "  * Jaartallen altijd als woorden: '2022' → 'tweeduizendtweeëntwintig', '2024' → 'tweeduizendvierentwintig'\n"
+    "- Langere nummers (KVK, telefoonnummers) cijfer voor cijfer uitspreken:\n"
+    "  * '12345678' → 'één twee drie vier vijf zes zeven acht'\n"
+    "  * '06-12345678' → 'nul zes, één twee drie vier vijf zes zeven acht'\n"
+    "- Noem GEEN complexe codes, rapport-IDs, referentienummers, e-mailadressen of URLs\n"
+    "- Verwijs hiervoor naar de chat:\n"
+    "  * In plaats van 'Rapport HAP-2842A-2 is aangemaakt' → 'Het rapport is aangemaakt, de details staan in de chat'\n"
+    "  * In plaats van 'KVK nummer 12345678' → 'Het Kamer van Koophandel nummer is één twee drie vier vijf zes zeven acht'\n"
+    "  * In plaats van 'verzonden naar jan@bedrijf.nl' → 'het rapport is verzonden, het e-mailadres staat in de chat'\n\n"
+)
+
 # Spoken text prompts for TTS - independent summary-style responses
 # These run in PARALLEL with written prompts, receiving the same conversation context
 SPOKEN_AGENT_PROMPTS: dict[str, str] = {
     "general-agent": (
+        _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een NVWA inspectie-assistent die KORTE gesproken antwoorden "
         "geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
@@ -264,17 +283,16 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "- Geen opsommingstekens, nummering of markdown\n"
         "- Spreek natuurlijk en conversationeel\n"
         "- Vermijd afkortingen - schrijf ze voluit:\n"
-        "  * 'KVK' → 'Kamer van Koophandel'\n"
         "  * 'NVWA' → 'Nederlandse Voedsel- en Warenautoriteit'\n"
         "  * '°C' → 'graden Celsius'\n\n"
         "Je geeft dezelfde informatie als de geschreven versie, maar korter "
         "en spreekbaarder.\n\n"
         "VOORBEELD:\n"
-        "Vraag: 'Start inspectie bij Bakkerij Jansen KVK 12345678'\n"
-        "Antwoord: 'Prima, ik zoek de bedrijfsgegevens voor Bakkerij Jansen "
-        "bij de Kamer van Koophandel op.'"
+        "Vraag: 'Start inspectie bij Bakkerij Jansen, postcode 2511 AA nummer 123'\n"
+        "Antwoord: 'Prima, ik zoek de bedrijfsgegevens voor Bakkerij Jansen op.'"
     ),
     "regulation-agent": (
+        _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een regelgeving-expert die KORTE gesproken antwoorden geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
         "- Vat de belangrijkste regel samen in 1-2 zinnen\n"
@@ -293,6 +311,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Celsius volgens de levensmiddelenhygiëne voorschriften.'"
     ),
     "reporting-agent": (
+        _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een rapportage-specialist die KORTE gesproken statusupdates "
         "geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
@@ -307,6 +326,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Ik heb nog een paar vragen om het compleet te maken.'"
     ),
     "history-agent": (
+        _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een bedrijfshistorie-specialist die KORTE gesproken "
         "samenvattingen geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
@@ -315,7 +335,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "- Geen tabellen, lijsten of gedetailleerde historiek\n"
         "- Spreek waarschuwingen duidelijk en direct uit\n"
         "- Schrijf afkortingen voluit:\n"
-        "  * 'KVK' → 'Kamer van Koophandel'\n\n"
+        "\n"
         "Je geeft de essentie van de bedrijfsinformatie, de geschreven versie "
         "bevat de details.\n\n"
         "VOORBEELD:\n"

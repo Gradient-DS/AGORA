@@ -12,7 +12,6 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "check_repeat_violation": "Controleren herhaalde overtredingen",
     "get_follow_up_status": "Controleren follow-up status",
     "search_inspections_by_inspector": "Zoeken inspecties per inspecteur",
-    "search_kvk": "Zoeken in het KVK",
     # Regulation agent tools
     "search_regulations": "Zoeken in regelgeving",
     "get_regulation_context": "Ophalen regelgeving context",

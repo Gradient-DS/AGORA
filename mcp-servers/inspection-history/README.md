@@ -4,7 +4,7 @@ Mock inspectiegeschiedenis database voor AGORA demo. Biedt toegang tot historisc
 
 ## Overzicht
 
-Deze MCP server biedt een gesimuleerde inspectiegeschiedenis database met realistische testdata voor het testen van AGORA v1.0 scenario's. Het integreert met de KVK Lookup server om volledige bedrijfsprofielen te bieden.
+Deze MCP server biedt een gesimuleerde inspectiegeschiedenis database met realistische testdata voor het testen van AGORA v1.0 scenario's. Bedrijven worden opgezocht op basis van postcode en huisnummer.
 
 **Poort**: 5005 (gemapt van container poort 8000)
 
@@ -45,25 +45,25 @@ Zoek inspecties uitgevoerd door een specifieke inspecteur.
 
 De server bevat realistische demodata voor 4 bedrijven die overeenkomen met de AGORA v1.0 scenario's:
 
-### 1. Restaurant Bella Rosa (KVK: 59581883)
+### 1. Restaurant Bella Rosa (Postcode: 2511 AA, Nr: 123)
 **Scenario:** Koen's horeca-inspectie
 - **Geschiedenis:** 2 inspecties (2020, 2022)
 - **Overtredingen:** Waarschuwing hygiënemaatregelen in 2022 (onopgelost)
 - **Kernkenmerk:** Herhaalde overtreding klaar voor escalatie
 
-### 2. SpeelgoedPlaza Den Haag (KVK: 12345678)
+### 2. SpeelgoedPlaza Den Haag (Postcode: 2521 DJ, Nr: 45)
 **Scenario:** Fatima's productveiligheidsinspectie
 - **Geschiedenis:** 1 inspectie (2023)
 - **Overtredingen:** Waarschuwing productetikettering (opgelost)
 - **Kernkenmerk:** Toont goede naleving na waarschuwing
 
-### 3. Slagerij de Boer (KVK: 87654321)
+### 3. Slagerij de Boer (Postcode: 9711 NX, Nr: 8)
 **Scenario:** Jan's slagerij-inspectie
 - **Geschiedenis:** 2 inspecties (2019, 2021)
 - **Overtredingen:** Waarschuwing voedseletikettering in 2021 (onopgelost, vervolgactie te laat)
 - **Kernkenmerk:** Recidivist met achterstallige vervolgactie
 
-### 4. Café Het Bruine Paard (KVK: 11223344)
+### 4. Café Het Bruine Paard (Postcode: 1012 AB, Nr: 67)
 **Extra demodata**
 - **Geschiedenis:** 1 inspectie (2024)
 - **Overtredingen:** Geen
@@ -121,7 +121,7 @@ docker-compose logs -f inspection-history
 
 ## Beveiliging
 
-- **Input validatie:** KVK-nummers gevalideerd als 8-cijferige strings
+- **Input validatie:** Postcodes gevalideerd als Nederlands formaat (4 cijfers + 2 letters)
 - **Non-root gebruiker:** Container draait als gebruiker ID 1000
 - **Read-only data:** Demodata is onveranderlijk
 - **Geen externe aanroepen:** Alle data in-memory
