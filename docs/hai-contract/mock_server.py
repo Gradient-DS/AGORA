@@ -846,10 +846,25 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
     user_id = data.get("userId") or data.get("user_id")
     messages = data.get("messages", [])
 
+    # Extract last user message content (supports multimodal)
     user_content = ""
+    has_image = False
     for msg in messages:
         if msg.get("role") == "user":
-            user_content = msg.get("content", "")
+            raw_content = msg.get("content", "")
+            if isinstance(raw_content, list):
+                text_parts = [
+                    part["text"]
+                    for part in raw_content
+                    if isinstance(part, dict) and part.get("type") == "text"
+                ]
+                has_image = any(
+                    isinstance(part, dict) and part.get("type") == "binary"
+                    for part in raw_content
+                )
+                user_content = " ".join(text_parts)
+            else:
+                user_content = raw_content
             break
 
     # Always start with algemene-assistent for routing
@@ -859,7 +874,9 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
     # Determine which agent should handle this
     content_lower = user_content.lower()
 
-    if is_inspection_start(content_lower):
+    if has_image:
+        target_agent = Agents.GENERAL
+    elif is_inspection_start(content_lower):
         target_agent = Agents.HISTORY
     elif is_violation_query(content_lower):
         target_agent = Agents.REGULATION
@@ -884,7 +901,9 @@ async def handle_run_input(websocket, data: dict, state: ConversationState) -> N
         state.current_agent = target_agent
 
     # Route to appropriate handler (they no longer do routing step themselves)
-    if is_inspection_start(content_lower):
+    if has_image:
+        await handle_image_message(websocket, thread_id, run_id, state, user_content)
+    elif is_inspection_start(content_lower):
         await handle_inspection_start(websocket, thread_id, run_id, state, user_content)
     elif is_violation_query(content_lower):
         await handle_finding_input(websocket, thread_id, run_id, state, user_content)
@@ -1177,6 +1196,39 @@ async def handle_report_request(
         },
         "tool_approval_request",
     )
+
+
+async def handle_image_message(
+    websocket, thread_id: str, run_id: str, state: ConversationState, user_text: str
+) -> None:
+    """Handle messages that include an image attachment."""
+    await send_step(websocket, "thinking", start=True)
+
+    response = [
+        "Ik heb uw afbeelding ontvangen. ",
+    ]
+
+    if state.inspection_started:
+        response += [
+            "Op basis van de foto en de huidige inspectie kan ik het volgende opmerken:\n\n",
+            "**Observatie**: De afbeelding toont een situatie die relevant kan zijn voor de inspectie. ",
+            "Ik zal dit meenemen in mijn analyse.\n\n",
+        ]
+        if user_text:
+            response.append(f"Uw opmerking: *\"{user_text}\"* is genoteerd bij deze observatie.\n\n")
+        response.append(
+            "Wilt u dat ik:\n"
+            "- De relevante **regelgeving** opzoek?\n"
+            "- Dit als **bevinding** vastleg in het rapport?\n"
+            "- Verder ga met de inspectie?"
+        )
+    else:
+        response += [
+            "Om de afbeelding goed te kunnen beoordelen, is het handig als u eerst een inspectie start. ",
+            "Probeer bijvoorbeeld: **\"Start inspectie bij Bella Rosa, Den Haag\"**",
+        ]
+
+    await stream_response(websocket, thread_id, run_id, response, Agents.GENERAL)
 
 
 async def handle_generic_response(

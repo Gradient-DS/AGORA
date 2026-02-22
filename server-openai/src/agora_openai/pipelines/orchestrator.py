@@ -120,11 +120,45 @@ class Orchestrator:
         thread_id = agent_input.thread_id
         run_id = agent_input.run_id or str(uuid.uuid4())
 
-        # Extract user message from input
+        # Extract user message, keeping both text-only (for logging/moderation)
+        # and multimodal content (for the LLM) when images are present
         user_content = ""
+        user_llm_input: str | list[dict[str, Any]] = ""
         for msg in agent_input.messages:
             if msg.get("role") == "user":
-                user_content = msg.get("content", "")
+                raw_content = msg.get("content", "")
+                if isinstance(raw_content, list):
+                    # Multimodal content array — extract text and image parts
+                    text_parts = [
+                        part["text"]
+                        for part in raw_content
+                        if isinstance(part, dict) and part.get("type") == "text"
+                    ]
+                    image_parts = [
+                        part
+                        for part in raw_content
+                        if isinstance(part, dict) and part.get("type") == "binary"
+                    ]
+                    user_content = "\n".join(text_parts)
+
+                    if image_parts:
+                        # Build OpenAI Responses API multimodal input
+                        content_parts: list[dict[str, Any]] = []
+                        for tp in text_parts:
+                            content_parts.append({"type": "input_text", "text": tp})
+                        for img in image_parts:
+                            data_url = img.get("data", "")
+                            content_parts.append({
+                                "type": "input_image",
+                                "image_url": data_url,
+                                "detail": "auto",
+                            })
+                        user_llm_input = [{"role": "user", "content": content_parts}]
+                    else:
+                        user_llm_input = user_content
+                else:
+                    user_content = raw_content
+                    user_llm_input = raw_content
                 break
 
         # Get user_id from top-level field
@@ -239,11 +273,21 @@ class Orchestrator:
                             api_key=settings.openai_api_key.get_secret_value()
                         )
 
-                        # Use same conversation context as written stream
-                        conversation = [
-                            {"role": m.get("role"), "content": m.get("content")}
-                            for m in agent_input.messages
-                        ]
+                        # Use same conversation context but text-only
+                        # (spoken model is small/text-only, cannot handle images)
+                        conversation = []
+                        for m in agent_input.messages:
+                            raw = m.get("content", "")
+                            if isinstance(raw, list):
+                                # Extract only text parts for spoken model
+                                text_only = " ".join(
+                                    part["text"]
+                                    for part in raw
+                                    if isinstance(part, dict) and part.get("type") == "text"
+                                )
+                                conversation.append({"role": m.get("role"), "content": text_only})
+                            else:
+                                conversation.append({"role": m.get("role"), "content": raw})
                         spoken_messages = [
                             {"role": "system", "content": spoken_prompt}
                         ] + conversation
@@ -466,12 +510,20 @@ class Orchestrator:
                             current_step = "thinking"
 
                 # Include user_id context for settings tool
-                # This allows the general-agent to use update_user_settings
-                message_with_context = user_content
-                if user_id:
-                    message_with_context = (
-                        f"[SYSTEM CONTEXT: user_id={user_id}]\n\n{user_content}"
+                if isinstance(user_llm_input, list) and user_id:
+                    # Multimodal list input — prepend system context as text part
+                    context_msg = {"role": "user", "content": [
+                        {"type": "input_text", "text": f"[SYSTEM CONTEXT: user_id={user_id}]"},
+                    ]}
+                    message_with_context: str | list[dict[str, Any]] = (
+                        [context_msg] + user_llm_input
                     )
+                elif isinstance(user_llm_input, str) and user_id:
+                    message_with_context = (
+                        f"[SYSTEM CONTEXT: user_id={user_id}]\n\n{user_llm_input}"
+                    )
+                else:
+                    message_with_context = user_llm_input
 
                 response_content, active_agent_id = await self.agent_runner.run_agent(
                     message=message_with_context,
@@ -528,7 +580,7 @@ class Orchestrator:
                         await protocol_handler.send_step_finished(current_step)
             else:
                 response_content, active_agent_id = await self.agent_runner.run_agent(
-                    message=user_content,
+                    message=user_llm_input if user_llm_input else user_content,
                     session_id=thread_id,
                 )
 

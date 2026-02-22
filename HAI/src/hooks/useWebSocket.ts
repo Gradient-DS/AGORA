@@ -375,7 +375,7 @@ export function useWebSocket() {
     setAuthError,
   ]);
 
-  const sendMessage = (content: string) => {
+  const sendMessage = (content: string, imageAttachment?: { data: string; mimeType: string; filename?: string }) => {
     const userId = useUserStore.getState().currentUser?.id;
     if (!userId) {
       return;
@@ -385,8 +385,9 @@ export function useWebSocket() {
         id: `msg-${Date.now()}-${Math.random()}`,
         role: 'user',
         content,
+        imageAttachment,
       });
-      clientRef.current.sendRunInput(session.id, userId, content);
+      clientRef.current.sendRunInput(session.id, userId, content, imageAttachment);
       updateActivity();
     }
   };

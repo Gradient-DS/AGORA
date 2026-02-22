@@ -204,26 +204,37 @@ export const AGUIEventSchema = z.discriminatedUnion('type', [
   RawEventSchema,
 ]);
 
+// Content part types for multimodal messages
+export const TextContentPartSchema = z.object({
+  type: z.literal('text'),
+  text: z.string(),
+});
+
+export const BinaryContentPartSchema = z.object({
+  type: z.literal('binary'),
+  mimeType: z.string(),
+  data: z.string(),  // base64-encoded
+  filename: z.string().optional(),
+});
+
+export const ContentPartSchema = z.discriminatedUnion('type', [
+  TextContentPartSchema,
+  BinaryContentPartSchema,
+]);
+
 // Input types (client → server)
+export const MessageSchema = z.object({
+  role: z.enum(['user', 'assistant', 'system', 'tool', 'developer']),
+  content: z.union([z.string(), z.array(ContentPartSchema)]),
+  id: z.string().optional(),
+  toolCallId: z.string().optional(),
+});
+
 export const RunAgentInputSchema = z.object({
   threadId: z.string(),
   runId: z.string().optional(),
   userId: z.string().uuid(),
-  messages: z.array(
-    z.object({
-      role: z.enum(['user', 'assistant', 'system', 'tool', 'developer']),
-      content: z.string(),
-      id: z.string().optional(),
-      toolCallId: z.string().optional(),
-    })
-  ),
-});
-
-export const MessageSchema = z.object({
-  role: z.enum(['user', 'assistant', 'system', 'tool', 'developer']),
-  content: z.string(),
-  id: z.string().optional(),
-  toolCallId: z.string().optional(),
+  messages: z.array(MessageSchema),
 });
 
 // Type exports
@@ -252,6 +263,9 @@ export type ErrorPayload = z.infer<typeof ErrorPayloadSchema>;
 
 export type RunAgentInput = z.infer<typeof RunAgentInputSchema>;
 export type Message = z.infer<typeof MessageSchema>;
+export type TextContentPart = z.infer<typeof TextContentPartSchema>;
+export type BinaryContentPart = z.infer<typeof BinaryContentPartSchema>;
+export type ContentPart = z.infer<typeof ContentPartSchema>;
 
 // Utility types
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';

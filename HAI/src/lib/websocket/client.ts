@@ -8,6 +8,7 @@ import {
   AGUIEventSchema,
   type AGUIEvent,
   type RunAgentInput,
+  type ContentPart,
   type CustomEvent,
   EventType,
   AGORA_TOOL_APPROVAL_RESPONSE,
@@ -108,13 +109,30 @@ export class AGUIWebSocketClient {
    * Send a run input to start a new agent run.
    * If offline, buffers the message in IndexedDB for later replay.
    */
-  sendRunInput(threadId: string, userId: string, content: string): string {
+  sendRunInput(
+    threadId: string,
+    userId: string,
+    content: string,
+    imageAttachment?: { data: string; mimeType: string; filename?: string }
+  ): string {
     const runId = generateUUID();
+
+    // Build message content: multimodal array if image attached, plain string otherwise
+    let messageContent: string | ContentPart[] = content;
+    if (imageAttachment) {
+      const parts: ContentPart[] = [];
+      if (content) {
+        parts.push({ type: 'text', text: content });
+      }
+      parts.push({ type: 'binary', mimeType: imageAttachment.mimeType, data: imageAttachment.data, filename: imageAttachment.filename });
+      messageContent = parts;
+    }
+
     const input: RunAgentInput = {
       threadId,
       runId,
       userId,
-      messages: [{ role: 'user', content }],
+      messages: [{ role: 'user', content: messageContent }],
     };
 
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -127,6 +145,7 @@ export class AGUIWebSocketClient {
         timestamp: Date.now(),
         threadId,
         userId,
+        imageAttachment,
       }).then(() => {
         console.log('Message buffered offline');
       }).catch((error) => {
@@ -225,7 +244,18 @@ export class AGUIWebSocketClient {
             threadId: firstMessage.threadId,
             runId: generateUUID(),
             userId: firstMessage.userId,
-            messages: buffered.map(m => ({ role: 'user' as const, content: m.content })),
+            messages: buffered.map(m => {
+              let msgContent: string | ContentPart[] = m.content;
+              if (m.imageAttachment) {
+                const parts: ContentPart[] = [];
+                if (m.content) {
+                  parts.push({ type: 'text', text: m.content });
+                }
+                parts.push({ type: 'binary', mimeType: m.imageAttachment.mimeType, data: m.imageAttachment.data, filename: m.imageAttachment.filename });
+                msgContent = parts;
+              }
+              return { role: 'user' as const, content: msgContent };
+            }),
           };
 
           this.ws.send(JSON.stringify(batchInput));

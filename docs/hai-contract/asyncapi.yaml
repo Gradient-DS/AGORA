@@ -436,7 +436,36 @@ components:
           type: string
           enum: [user, assistant, system, tool]
         content:
-          type: string
+          oneOf:
+            - type: string
+              description: Plain text content
+            - type: array
+              description: Multimodal content parts
+              items:
+                oneOf:
+                  - type: object
+                    required: [type, text]
+                    properties:
+                      type:
+                        type: string
+                        const: text
+                      text:
+                        type: string
+                  - type: object
+                    required: [type, mimeType, data]
+                    properties:
+                      type:
+                        type: string
+                        const: binary
+                      mimeType:
+                        type: string
+                        description: "MIME type (e.g., image/jpeg, image/png)"
+                      data:
+                        type: string
+                        description: "Base64-encoded data URL"
+                      filename:
+                        type: string
+                        description: "Original filename (optional)"
         id:
           type: string
         toolCallId:

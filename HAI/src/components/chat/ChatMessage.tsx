@@ -72,6 +72,15 @@ export function ChatMessage({ message }: ChatMessageProps) {
             isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
           )}
         >
+          {isUser && message.imageAttachment && (
+            <div className="mb-2">
+              <img
+                src={message.imageAttachment.data}
+                alt={message.imageAttachment.filename || 'Bijlage'}
+                className="max-w-full max-h-48 rounded-md object-contain"
+              />
+            </div>
+          )}
           {showSpokenComparison && !isUser && message.spokenContent !== undefined ? (
             <div className="space-y-3">
               <div>

@@ -141,13 +141,47 @@ class Orchestrator:
         thread_id = agent_input.thread_id
         run_id = agent_input.run_id or str(uuid.uuid4())
 
-        # Extract and join all user messages from input
-        user_contents = [
-            msg.get("content", "")
-            for msg in agent_input.messages
-            if msg.get("role") == "user"
-        ]
-        user_content = "\n".join(user_contents)
+        # Extract user messages, keeping both text-only (for logging/moderation)
+        # and multimodal content (for the LLM) when images are present
+        user_text_parts: list[str] = []
+        user_llm_content: str | list[str | dict[Any, Any]] = ""
+        for msg in agent_input.messages:
+            if msg.get("role") == "user":
+                raw_content = msg.get("content", "")
+                if isinstance(raw_content, list):
+                    # Multimodal content array — extract text and image parts
+                    text_parts = [
+                        part["text"]
+                        for part in raw_content
+                        if isinstance(part, dict) and part.get("type") == "text"
+                    ]
+                    image_parts = [
+                        part
+                        for part in raw_content
+                        if isinstance(part, dict) and part.get("type") == "binary"
+                    ]
+                    user_text_parts.append("\n".join(text_parts))
+
+                    if image_parts:
+                        # Build LangChain multimodal content list
+                        llm_parts: list[dict[str, Any]] = []
+                        for tp in text_parts:
+                            llm_parts.append({"type": "text", "text": tp})
+                        for img in image_parts:
+                            data_url = img.get("data", "")
+                            llm_parts.append({
+                                "type": "image_url",
+                                "image_url": {"url": data_url},
+                            })
+                        user_llm_content = llm_parts
+                    else:
+                        user_llm_content = "\n".join(text_parts)
+                else:
+                    user_text_parts.append(raw_content)
+                    user_llm_content = raw_content
+
+        # Text-only content for moderation, logging, and session metadata
+        user_content = "\n".join(user_text_parts)
 
         # Get user_id from top-level field
         user_id = agent_input.user_id
@@ -260,13 +294,13 @@ class Orchestrator:
                 # Existing thread - only send new message
                 # interaction_mode is persisted in checkpointed state
                 graph_input = {
-                    "messages": [HumanMessage(content=user_content)],
+                    "messages": [HumanMessage(content=user_llm_content)],
                     "metadata": metadata,
                 }
             else:
                 # NEW session - always start in feedback mode
                 graph_input = {
-                    "messages": [HumanMessage(content=user_content)],
+                    "messages": [HumanMessage(content=user_llm_content)],
                     "session_id": thread_id,
                     "current_agent": "general-agent",
                     "pending_approval": None,

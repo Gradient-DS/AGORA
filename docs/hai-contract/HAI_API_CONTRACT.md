@@ -1182,6 +1182,39 @@ To start a new run, send a `RunAgentInput`:
 | `messages` | array | Yes | Input messages with role and content |
 | `context` | object | No | Additional context for the agent |
 
+### Multimodal Message Content
+
+The `content` field in a `Message` accepts either a plain string or an array of content parts for multimodal messages (e.g., text + image). This is fully backward-compatible: existing text-only messages continue to work identically.
+
+**String content (text-only):**
+```json
+{ "role": "user", "content": "Start inspectie bij Bella Rosa" }
+```
+
+**Multimodal content (text + image):**
+```json
+{
+  "role": "user",
+  "content": [
+    { "type": "text", "text": "Ik zie dit in de keuken" },
+    { "type": "binary", "mimeType": "image/jpeg", "data": "data:image/jpeg;base64,/9j/4AAQ...", "filename": "keuken-foto.jpg" }
+  ]
+}
+```
+
+**Content Part Types:**
+
+| Type | Required Fields | Optional Fields | Description |
+|------|----------------|-----------------|-------------|
+| `text` | `type`, `text` | - | Text content |
+| `binary` | `type`, `mimeType`, `data` | `filename` | Binary data (e.g., image) |
+
+**Constraints:**
+- Maximum recommended image size: 2MB (enforced client-side before base64 encoding)
+- Supported MIME types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- Binary `data` field contains a base64-encoded data URL (e.g., `data:image/jpeg;base64,...`)
+- Image-only messages (no text part) are supported
+
 ### TypeScript Client Setup
 
 ```typescript
@@ -1314,6 +1347,7 @@ from ag_ui.core import (
 AGORA extends the official AG-UI types with:
 
 - `RunAgentInput.userId` - Required field to associate sessions with users (not in standard AG-UI)
+- `Message.content` multimodal support - Content accepts `string | ContentPart[]` for text+image messages
 - `ToolApprovalRequestPayload` - HITL approval request
 - `ToolApprovalResponsePayload` - HITL approval response
 - `ErrorPayload` - AGORA-specific error details
@@ -1325,6 +1359,11 @@ These are defined in `agora_langgraph.common.ag_ui_types`.
 ---
 
 ## Changelog
+
+### v2.6.0 (February 2026)
+- **Added** Multimodal message content support (`content` accepts `string | ContentPart[]`)
+- **Added** `text` and `binary` content part types for text+image messages
+- **Updated** AsyncAPI spec, JSON Schema, and contract documentation
 
 ### v2.5.1 (January 2026)
 - **Added** `PUT /sessions/{session_id}` endpoint for updating session metadata (rename conversations)

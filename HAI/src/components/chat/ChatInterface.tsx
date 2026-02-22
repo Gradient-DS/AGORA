@@ -9,7 +9,7 @@ import { useMessageStore, useUserStore } from '@/stores';
 import { useTTS } from '@/hooks/useTTS';
 
 interface ChatInterfaceProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, imageAttachment?: { data: string; mimeType: string; filename?: string }) => void;
   disabled?: boolean;
   onToggleVoice?: () => void;
   isVoiceActive?: boolean;

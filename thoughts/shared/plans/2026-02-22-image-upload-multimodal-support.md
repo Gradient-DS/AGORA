@@ -184,9 +184,9 @@ interface BufferedMessage {
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] TypeScript type checking passes: `cd HAI && pnpm run type-check`
-- [ ] All existing tests pass: `cd HAI && pnpm run test`
-- [ ] Linting passes: `cd HAI && pnpm run lint`
+- [x] TypeScript type checking passes: `cd HAI && pnpm run type-check`
+- [x] All existing tests pass: `cd HAI && pnpm run test`
+- [x] Linting passes: `cd HAI && pnpm run lint`
 
 #### Manual Verification:
 - [ ] No regressions — existing text-only messages still render correctly
@@ -340,9 +340,9 @@ Inside the message bubble div (after line 74, before the conditional rendering o
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] TypeScript type checking passes: `cd HAI && pnpm run type-check`
-- [ ] All existing tests pass: `cd HAI && pnpm run test`
-- [ ] Linting passes: `cd HAI && pnpm run lint`
+- [x] TypeScript type checking passes: `cd HAI && pnpm run type-check`
+- [x] All existing tests pass: `cd HAI && pnpm run test`
+- [x] Linting passes: `cd HAI && pnpm run lint`
 
 #### Manual Verification:
 - [ ] Attachment button (paperclip) appears next to the input
@@ -489,9 +489,9 @@ const batchInput: RunAgentInput = {
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] TypeScript type checking passes: `cd HAI && pnpm run type-check`
-- [ ] All existing tests pass: `cd HAI && pnpm run test`
-- [ ] Linting passes: `cd HAI && pnpm run lint`
+- [x] TypeScript type checking passes: `cd HAI && pnpm run type-check`
+- [x] All existing tests pass: `cd HAI && pnpm run test`
+- [x] Linting passes: `cd HAI && pnpm run lint`
 
 #### Manual Verification:
 - [ ] Sending a text-only message works exactly as before (no regressions)
@@ -575,9 +575,9 @@ Replace lines 145-150:
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] server-openai tests pass: `cd server-openai && pytest`
-- [ ] server-langgraph tests pass: `cd server-langgraph && pytest`
-- [ ] Type checking passes: `cd server-openai && mypy src/` and `cd server-langgraph && mypy src/`
+- [x] server-openai tests pass: `cd server-openai && pytest`
+- [x] server-langgraph tests pass: `cd server-langgraph && pytest`
+- [x] Type checking passes: `cd server-openai && mypy src/` and `cd server-langgraph && mypy src/`
 
 #### Manual Verification:
 - [ ] Text-only messages are processed identically (no regressions)
@@ -674,7 +674,7 @@ async def handle_image_message(
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Mock server starts without errors: `cd docs/hai-contract && python mock_server.py` (verify it binds to port 8000)
+- [x] Mock server starts without errors: `cd docs/hai-contract && python mock_server.py` (verify it binds to port 8000)
 
 #### Manual Verification:
 - [ ] Text-only messages to mock server work as before
@@ -808,8 +808,8 @@ Also add multimodal support to the AGORA Extensions section (around line 1312) a
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] AsyncAPI YAML is valid: `cd docs/hai-contract && python -c "import yaml; yaml.safe_load(open('asyncapi.yaml'))"`
-- [ ] JSON Schema is valid: `cd docs/hai-contract && python -c "import json; json.load(open('schemas/messages.json'))"`
+- [x] AsyncAPI YAML is valid: `cd docs/hai-contract && python -c "import yaml; yaml.safe_load(open('asyncapi.yaml'))"`
+- [x] JSON Schema is valid: `cd docs/hai-contract && python -c "import json; json.load(open('schemas/messages.json'))"`
 
 #### Manual Verification:
 - [ ] AsyncAPI spec accurately describes the multimodal content format
