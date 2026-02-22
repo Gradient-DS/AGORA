@@ -2,6 +2,28 @@
 
 Complete walkthrough of the three inspector scenarios using AGORA's MCP servers and agents.
 
+> **Let op:** Bedrijven worden opgezocht via **postcode + huisnummer** (niet meer via KVK-nummer).
+
+---
+
+## 🏢 Beschikbare Bedrijven
+
+| Bedrijf | Postcode | Nummer | Straat | Stad | Risicoprofiel |
+|---|---|---|---|---|---|
+| Restaurant Bella Rosa | 2511 AA | 123 | Haagweg | Den Haag | 🟡 Onopgeloste overtreding |
+| SpeelgoedPlaza Den Haag | 2521 DJ | 45 | Zuiderparklaan | Den Haag | 🟢 Opgelost |
+| Slagerij de Boer | 9711 NX | 8 | Brugstraat | Groningen | 🔴 Overdue follow-up |
+| Café Het Bruine Paard | 1012 AB | 67 | Damstraat | Amsterdam | 🟢 Schoon dossier |
+
+### Inspectiehistorie per Bedrijf
+
+| Bedrijf | Laatste inspectie | Type | Score | Openstaande overtredingen | Follow-up status |
+|---|---|---|---|---|---|
+| Restaurant Bella Rosa | 15-05-2022 | Hygiëne routine | Voldoende met opmerkingen | 1 (hygiënemaatregelen) | Niet uitgevoerd |
+| SpeelgoedPlaza Den Haag | 22-08-2023 | Productveiligheid | Voldoende met opmerkingen | 0 (opgelost 15-09-2023) | N.v.t. |
+| Slagerij de Boer | 10-11-2021 | Voedselveiligheid / etikettering | Onvoldoende | 1 (etikettering) | Overdue (>2 jaar) |
+| Café Het Bruine Paard | 20-01-2024 | Hygiëne routine | Goed | 0 | N.v.t. |
+
 ---
 
 ## 📋 Quick Copy-Paste Inputs for Demo

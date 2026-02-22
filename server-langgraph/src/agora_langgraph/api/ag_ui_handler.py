@@ -287,6 +287,7 @@ class AGUIProtocolHandler:
         tool_call_id: str,
         tool_call_name: str,
         tool_display_name: str | None = None,
+        tool_description: str | None = None,
         parent_message_id: str | None = None,
     ) -> None:
         """Emit TOOL_CALL_START event."""
@@ -299,6 +300,8 @@ class AGUIProtocolHandler:
         }
         if tool_display_name:
             kwargs["toolDisplayName"] = tool_display_name
+        if tool_description:
+            kwargs["toolDescription"] = tool_description
         event = ToolCallStartEvent(**kwargs)
         log.info(f"[DEBUG] TOOL_CALL_START JSON: {event.model_dump_json(by_alias=True, exclude_none=True)}")
         await self._send_event(event)

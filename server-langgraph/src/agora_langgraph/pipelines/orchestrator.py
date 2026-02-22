@@ -23,7 +23,10 @@ from agora_langgraph.common.ag_ui_types import (
 from agora_langgraph.common.schemas import ToolCall
 from agora_langgraph.config import get_settings
 from agora_langgraph.core.approval_logic import requires_human_approval
-from agora_langgraph.core.tool_display_names import get_tool_display_name
+from agora_langgraph.core.tool_display_names import (
+    get_tool_display_name,
+    get_tool_spoken_description,
+)
 from agora_langgraph.pipelines.moderator import ModerationPipeline
 
 log = logging.getLogger(__name__)
@@ -554,6 +557,7 @@ class Orchestrator:
                         tool_call_id=tool_run_id,
                         tool_call_name=tool_name,
                         tool_display_name=get_tool_display_name(tool_name),
+                        tool_description=get_tool_spoken_description(tool_name),
                         parent_message_id=message_id,
                     )
                     # Send tool arguments

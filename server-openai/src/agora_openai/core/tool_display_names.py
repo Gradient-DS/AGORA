@@ -48,3 +48,18 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
 def get_tool_display_name(tool_name: str) -> str | None:
     """Get display name for a tool, or None to use default formatting."""
     return TOOL_DISPLAY_NAMES.get(tool_name)
+
+
+TOOL_SPOKEN_DESCRIPTIONS: dict[str, str] = {
+    "transfer_to_reporting": "Ik geef het door aan de rapportage agent.",
+    "transfer_to_regulation": "Ik geef het door aan de regelgeving agent.",
+    "transfer_to_history": "Ik geef het door aan de inspectiehistorie agent.",
+    "transfer_to_general": "Ik geef het door aan de algemene agent.",
+    "transfer_to_triage": "Ik geef het door aan de triage agent.",
+    "transfer_to_agent": "Ik geef het door aan de specialist.",
+}
+
+
+def get_tool_spoken_description(tool_name: str) -> str | None:
+    """Get spoken TTS description for a tool, or None for no announcement."""
+    return TOOL_SPOKEN_DESCRIPTIONS.get(tool_name)
