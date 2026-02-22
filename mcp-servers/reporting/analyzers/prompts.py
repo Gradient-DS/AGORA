@@ -95,7 +95,16 @@ Return a JSON object with the following structure:
   },
   
   "overall_confidence": 0.0-1.0,
-  "fields_needing_verification": ["field names with confidence < 0.7"]
+  "fields_needing_verification": ["field names with confidence < 0.7"],
+
+  "verification_questions": [
+    {
+      "question": "Clear question in Dutch",
+      "field": "technical.field.path",
+      "importance": "critical|high|medium",
+      "options": ["Option 1", "Option 2"] // or null for open-ended
+    }
+  ]
 }
 
 ## Guidelines:
@@ -109,6 +118,17 @@ Return a JSON object with the following structure:
 7. Capture inspector's observations and notes
 8. Identify the business type to suggest appropriate hygiene code
 9. Flag fields that need verification (confidence < 0.7)
+10. Generate 1-3 verification questions in Dutch for missing critical fields and low-confidence fields. Focus on:
+    - Critical compliance fields that are missing (company name, hygiene status, violations)
+    - Fields with confidence < 0.7
+    - Required metadata not found in the conversation
+    Provide options when applicable (e.g., "Ja"/"Nee" for compliance questions). Use the "field" key to indicate the technical field path the question resolves.
+    Example questions:
+    - "Was de hygiëne over het algemeen in orde?" (field: "hygiene_general.compliant", options: ["Ja", "Nee", "Niet beoordeeld"])
+    - "Welke specifieke hygiëneproblemen zijn geconstateerd?" (field: "hygiene_general.violations", options: null)
+    - "Hoe ernstig schat u deze overtreding in?" (field: "violations.severity", options: ["Ernstig", "Gemiddeld", "Gering"])
+    - "Zijn er tekenen van ongedierte waargenomen?" (field: "pest_control.pest_present", options: ["Ja", "Nee"])
+    - "Naam van het geïnspecteerde bedrijf?" (field: "company_name", options: null)
 
 ## Severity Guidelines:
 

@@ -78,7 +78,7 @@ Return the complete updated data structure."""
         
         if options:
             for option in options:
-                if option.lower() in response_lower:
+                if option and option.lower() in response_lower:
                     return option
         
         yes_words = ["ja", "yes", "correct", "klopt", "inderdaad"]

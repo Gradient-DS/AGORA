@@ -29,15 +29,11 @@ Genereer rapport
 ### Scenario 2: Inspecteur Fatima – SpeelgoedPlaza
 
 ```
-Start inspectie bij SpeelgoedPlaza
+Haal informatie op over SpeelgoedPlaza, kvk nummer 92262856, waar ik zo een inspectie heb
 ```
 
 ```
-92262856
-```
-
-```
-Zijn er eerder onveilige producten aangetroffen?
+Luister modus
 ```
 
 ```
@@ -45,7 +41,11 @@ Geen CE-markering zichtbaar op product, geen conformiteitsverklaring aanwezig
 ```
 
 ```
-Welke regelgeving is van toepassing voor CE-markering?
+Niet alle etiketten zijn in het Nederlands
+```
+
+```
+Agora, welke regelgeving wordt hier overtreden?
 ```
 
 ```

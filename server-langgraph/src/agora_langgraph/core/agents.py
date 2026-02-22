@@ -169,7 +169,10 @@ async def _run_agent_node(
         user_name = metadata.get("user_name")
         email_reports = metadata.get("email_reports", True)
 
+        session_id = state.get("session_id", "")
+
         context_parts = ["CURRENT USER CONTEXT:"]
+        context_parts.append(f"- session_id: {session_id}")
         if user_name:
             context_parts.append(f"- inspector_name: {user_name}")
         if user_email:

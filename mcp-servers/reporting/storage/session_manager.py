@@ -96,12 +96,19 @@ class SessionManager:
         draft["last_updated"] = datetime.now().isoformat()
         self.storage.save_draft(session_id, draft)
     
-    def add_verification_questions(self, session_id: str, questions: List[str]) -> None:
+    def add_verification_questions(
+        self,
+        session_id: str,
+        questions: List[str],
+        question_data: List[Dict[str, Any]] | None = None,
+    ) -> None:
         draft = self.storage.load_draft(session_id)
         if not draft:
             return
-        
+
         draft["verification_questions"] = questions
+        if question_data is not None:
+            draft["verification_question_data"] = question_data
         draft["last_updated"] = datetime.now().isoformat()
         self.storage.save_draft(session_id, draft)
     
