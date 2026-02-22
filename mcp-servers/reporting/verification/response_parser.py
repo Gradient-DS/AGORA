@@ -121,13 +121,28 @@ Return the complete updated data structure."""
     def _set_nested_value(self, data: Dict[str, Any], path: str, value: Any) -> None:
         keys = path.split(".")
         current = data
-        
+
         for key in keys[:-1]:
             if key not in current:
                 current[key] = {}
             current = current[key]
-        
-        current[keys[-1]] = value
+
+        target_key = keys[-1]
+        existing = current.get(target_key)
+
+        # Guard: don't overwrite a list with a scalar (e.g. violations list with "Nee")
+        if isinstance(existing, list) and not isinstance(value, list):
+            no_words = {"nee", "no", "niet", "geen", "n.v.t.", "nvt", "none"}
+            if isinstance(value, str) and value.lower().strip() in no_words:
+                current[target_key] = []
+            else:
+                logger.warning(
+                    f"Skipping merge of scalar '{value}' into list field '{path}' "
+                    f"— existing list preserved"
+                )
+            return
+
+        current[target_key] = value
     
     def _count_fields(self, data: Dict[str, Any], prefix: str = "") -> int:
         count = 0

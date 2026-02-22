@@ -209,6 +209,11 @@ class FieldMapper:
         )
     
     def _map_violation(self, data: Dict[str, Any]) -> Violation:
+        # Guard: if data is a string (e.g. from corrupted merge), wrap it
+        if isinstance(data, str):
+            logger.warning(f"Violation entry is a string instead of dict: '{data}'")
+            data = {"type": "other", "description": data}
+
         violation_type = ViolationType.OTHER
         type_str = data.get("type") or ""
         
