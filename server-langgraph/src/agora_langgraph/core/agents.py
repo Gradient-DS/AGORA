@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import Any
 
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
+from langchain_core.runnables import Runnable
 from langchain_openai import ChatOpenAI
 
-from agora_langgraph.config import get_settings
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None  # type: ignore[assignment,misc]
+
+from agora_langgraph.config import ProviderConfig, get_settings
 from agora_langgraph.core.agent_definitions import get_agent_by_id
 from agora_langgraph.core.state import AgentState
 from agora_langgraph.core.tools import AGENT_MCP_MAPPING
@@ -22,8 +30,37 @@ AGENT_FRIENDLY_NAMES = {
     "history-agent": "de Bedrijfshistorie Specialist",
 }
 
+# Exceptions that should trigger fallback to the next provider.
+# In a cross-provider chain (different base URLs, models, and keys), any HTTP
+# error from one provider may succeed on the next (e.g. Gemini-specific 400,
+# model-not-found 404, rate limits 429, server errors 500+).
+FALLBACK_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    ConnectionError,
+    TimeoutError,
+)
+
+try:
+    from openai import APIConnectionError, APIStatusError, APITimeoutError
+
+    FALLBACK_EXCEPTIONS = (
+        *FALLBACK_EXCEPTIONS,
+        APIStatusError,  # All HTTP errors (400, 401, 403, 404, 429, 500, etc.)
+        APIConnectionError,
+        APITimeoutError,
+    )
+except ImportError:
+    pass
+
+try:
+    from google.api_core.exceptions import GoogleAPIError
+
+    FALLBACK_EXCEPTIONS = (*FALLBACK_EXCEPTIONS, GoogleAPIError)
+except ImportError:
+    pass
+
 _agent_tools: dict[str, list[Any]] = {}
-_llm_cache: dict[str, ChatOpenAI] = {}
+_agent_llms_cache: dict[str, list[BaseChatModel]] = {}
+_spoken_llms: list[BaseChatModel] | None = None
 
 
 def set_agent_tools(agent_id: str, tools: list[Any]) -> None:
@@ -36,64 +73,131 @@ def get_agent_tools(agent_id: str) -> list[Any]:
     return _agent_tools.get(agent_id, [])
 
 
-def get_llm_for_agent(agent_id: str) -> ChatOpenAI:
-    """Get or create LLM instance for an agent."""
-    if agent_id not in _llm_cache:
-        settings = get_settings()
-        config = get_agent_by_id(agent_id)
+def _is_google_provider(base_url: str) -> bool:
+    """Check if a base URL points to a Google API endpoint."""
+    return "googleapis.com" in base_url
 
-        if config:
-            # Use model from config if specified, otherwise fall back to settings
-            model = config.get("model") or settings.openai_model
-            temperature = config.get("temperature", 0.7)
-        else:
-            model = settings.openai_model
-            temperature = 0.7
 
-        _llm_cache[agent_id] = ChatOpenAI(
-            model=model,
+def _make_llm(provider: ProviderConfig, temperature: float) -> BaseChatModel:
+    """Create an LLM instance from a provider config.
+
+    Auto-detects Google providers from base_url and returns the appropriate
+    ChatGoogleGenerativeAI or ChatOpenAI instance.
+    """
+    if _is_google_provider(provider.base_url):
+        if ChatGoogleGenerativeAI is None:
+            raise ImportError(
+                "langchain-google-genai is required for Google providers. "
+                "Install it with: pip install langchain-google-genai>=4.0.0"
+            )
+        return ChatGoogleGenerativeAI(
+            model=provider.model,
             temperature=temperature,
             streaming=True,
-            api_key=settings.openai_api_key.get_secret_value(),  # type: ignore[arg-type]
-            base_url=settings.openai_base_url,
+            google_api_key=provider.api_key,
+            max_retries=0,
         )
+    return ChatOpenAI(
+        model=provider.model,
+        temperature=temperature,
+        streaming=True,
+        api_key=provider.api_key,  # type: ignore[arg-type]
+        base_url=provider.base_url,
+        max_retries=0,  # Disable built-in retries; fallback chain handles recovery
+    )
 
-    return _llm_cache[agent_id]
 
+def get_llms_for_agent(agent_id: str) -> list[BaseChatModel]:
+    """Get LLM instances for an agent (primary + fallbacks).
 
-_spoken_llm: ChatOpenAI | None = None
-
-
-def get_llm_for_spoken() -> ChatOpenAI:
-    """Get LLM instance for spoken text generation.
-
-    Uses separate config if LANGGRAPH_SPOKEN_* env vars are set,
-    otherwise falls back to the default OpenAI config.
+    Returns a list where index 0 is the primary and the rest are fallbacks.
+    Use build_fallback_chain() to wrap them after binding tools.
     """
-    global _spoken_llm
-    if _spoken_llm is None:
+    if agent_id not in _agent_llms_cache:
         settings = get_settings()
+        config = get_agent_by_id(agent_id)
+        temperature = config.get("temperature", 0.7) if config else 0.7
+        providers = settings.agent_provider_chain
 
-        # Use spoken-specific config if available, otherwise fall back to defaults
-        model = settings.spoken_model or settings.openai_model
-        base_url = settings.spoken_base_url or settings.openai_base_url
-        api_key = (
-            settings.spoken_api_key.get_secret_value()
-            if settings.spoken_api_key
-            else settings.openai_api_key.get_secret_value()
+        _agent_llms_cache[agent_id] = [_make_llm(p, temperature) for p in providers]
+
+        if len(providers) > 1:
+            log.info(
+                f"Agent {agent_id}: configured {len(providers)} providers "
+                f"({', '.join(p.model for p in providers)})"
+            )
+
+    return _agent_llms_cache[agent_id]
+
+
+def get_llms_for_spoken() -> list[BaseChatModel]:
+    """Get LLM instances for spoken text generation (primary + fallbacks)."""
+    global _spoken_llms
+    if _spoken_llms is None:
+        settings = get_settings()
+        providers = settings.spoken_provider_chain
+
+        _spoken_llms = [_make_llm(p, temperature=0.7) for p in providers]
+
+        log.info(
+            f"Spoken LLMs: {len(providers)} providers "
+            f"({', '.join(p.model for p in providers)})"
         )
 
-        _spoken_llm = ChatOpenAI(
-            model=model,
-            temperature=0.7,
-            streaming=True,
-            api_key=api_key,  # type: ignore[arg-type]
-            base_url=base_url,
+    return _spoken_llms
+
+
+def build_fallback_chain(llms: Sequence[Runnable]) -> Runnable:  # type: ignore[type-arg]
+    """Wrap a list of LLMs/runnables in a fallback chain.
+
+    Args:
+        llms: Sequence where index 0 is primary, rest are fallbacks.
+              Can be raw ChatOpenAI or tool-bound versions.
+
+    Returns:
+        Single Runnable (with fallbacks if len > 1).
+    """
+    if len(llms) > 1:
+        return llms[0].with_fallbacks(
+            list(llms[1:]),
+            exceptions_to_handle=FALLBACK_EXCEPTIONS,
         )
+    return llms[0]
 
-        log.info(f"Initialized spoken LLM: model={model}, base_url={base_url}")
 
-    return _spoken_llm
+def get_llm_for_agent(agent_id: str) -> Runnable:  # type: ignore[type-arg]
+    """Get LLM with fallback chain for agent (no tools bound)."""
+    return build_fallback_chain(get_llms_for_agent(agent_id))
+
+
+def get_llm_for_spoken() -> Runnable:  # type: ignore[type-arg]
+    """Get LLM with fallback chain for spoken text."""
+    return build_fallback_chain(get_llms_for_spoken())
+
+
+def _filter_extra_tool_args(tool_calls: list[dict[str, Any]], tools: list[Any]) -> None:
+    """Strip extra arguments from tool calls that aren't in the tool schema.
+
+    Google Gemini doesn't support ``additionalProperties: false`` in JSON
+    schemas, so it may add parameters the tool doesn't accept.  This mutates
+    the tool_calls list in place, removing any unexpected arguments.
+    """
+    tool_schemas: dict[str, set[str]] = {}
+    for tool in tools:
+        schema = getattr(tool, "args_schema", None)
+        if schema and hasattr(schema, "model_fields"):
+            tool_schemas[tool.name] = set(schema.model_fields.keys())
+
+    for tc in tool_calls:
+        name = tc.get("name", "")
+        args = tc.get("args")
+        allowed = tool_schemas.get(name)
+        if allowed and isinstance(args, dict):
+            extra_keys = set(args.keys()) - allowed
+            if extra_keys:
+                log.warning(f"Stripping extra args from {name}: {extra_keys}")
+                for key in extra_keys:
+                    del args[key]
 
 
 async def _run_agent_node(
@@ -117,7 +221,7 @@ async def _run_agent_node(
             "current_agent": agent_id,
         }
 
-    llm = get_llm_for_agent(agent_id)
+    llms = get_llms_for_agent(agent_id)
     tools = get_agent_tools(agent_id)
 
     # Check if specialist agent is missing its required MCP tools (server down)
@@ -139,9 +243,10 @@ async def _run_agent_node(
         }
 
     if tools:
-        llm_with_tools = llm.bind_tools(tools)
+        bound: list[Runnable] = [llm.bind_tools(tools) for llm in llms]  # type: ignore[type-arg]
+        llm_with_tools = build_fallback_chain(bound)
     else:
-        llm_with_tools = llm
+        llm_with_tools = build_fallback_chain(llms)
 
     # Build system message with optional user context
     instructions = config["instructions"]
@@ -193,6 +298,12 @@ async def _run_agent_node(
 
     try:
         response = await llm_with_tools.ainvoke(messages_with_system)
+
+        # Filter extra tool call arguments that aren't in the tool schema.
+        # Google Gemini doesn't support additionalProperties: false, so it
+        # may add parameters that the tool doesn't accept.
+        if hasattr(response, "tool_calls") and response.tool_calls and tools:
+            _filter_extra_tool_args(response.tool_calls, tools)
 
         # Add agent_id to additional_kwargs for history tracking
         if hasattr(response, "additional_kwargs"):

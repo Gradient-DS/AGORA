@@ -6,7 +6,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
+from reportlab.platypus import Image as RLImage
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from models.hap_schema import HAPReport
@@ -46,7 +47,7 @@ class PDFGenerator:
             leftIndent=20,
         ))
     
-    def generate(self, report: HAPReport) -> bytes:
+    def generate(self, report: HAPReport, evidence_images: list[dict] | None = None) -> bytes:
         logger.info(f"Generating PDF report {report.metadata.report_id}")
         
         buffer = BytesIO()
@@ -86,7 +87,12 @@ class PDFGenerator:
         story.append(Spacer(1, 0.5*cm))
         
         story.extend(self._create_footer(report))
-        
+
+        # Evidence appendix (after all other sections)
+        if evidence_images:
+            story.append(PageBreak())
+            story.extend(self._create_evidence_appendix(evidence_images))
+
         doc.build(story)
         
         pdf_content = buffer.getvalue()
@@ -367,6 +373,48 @@ class PDFGenerator:
         """
         
         elements.append(Paragraph(footer_text, self.styles['Normal']))
-        
+
+        return elements
+
+    def _create_evidence_appendix(self, images: list[dict]) -> list:
+        """Create evidence photos appendix."""
+        elements = []
+
+        elements.append(Paragraph("Bijlage: Bewijsmateriaal", self.styles['CustomTitle']))
+        elements.append(Spacer(1, 0.3*cm))
+        elements.append(Paragraph(
+            f"Tijdens de inspectie zijn {len(images)} foto('s) vastgelegd.",
+            self.styles['Normal']
+        ))
+        elements.append(Spacer(1, 0.5*cm))
+
+        for i, img_info in enumerate(images, 1):
+            img_path = img_info.get("path", "")
+            caption = img_info.get("caption", "Bewijsfoto")
+
+            try:
+                rl_image = RLImage(img_path, width=14*cm, height=10*cm, kind='proportional')
+            except Exception as e:
+                logger.warning(f"Failed to load evidence image {img_path}: {e}")
+                elements.append(Paragraph(
+                    f"<i>Foto {i}: kon niet worden geladen</i>",
+                    self.styles['Normal']
+                ))
+                elements.append(Spacer(1, 0.3*cm))
+                continue
+
+            caption_text = Paragraph(
+                f"<b>Foto {i}:</b> {caption}",
+                self.styles['Normal']
+            )
+
+            # Keep image + caption together across page breaks
+            elements.append(KeepTogether([
+                rl_image,
+                Spacer(1, 0.2*cm),
+                caption_text,
+            ]))
+            elements.append(Spacer(1, 0.5*cm))
+
         return elements
 

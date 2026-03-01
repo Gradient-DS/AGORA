@@ -14,6 +14,7 @@ Deze MCP server analyseert inspectiegesprekken, haalt gestructureerde HAP-formul
 - **Dubbel Formaat Rapporten**: Genereert zowel JSON (voor systemen) als PDF (voor mensen)
 - **Bestandsopslag**: Tijdelijk sessiebeheer met georganiseerde bestandsstructuur
 - **Betrouwbaarheidsscore**: Houdt betrouwbaarheidsniveaus bij voor alle geëxtraheerde velden
+- **Bewijsmateriaal Bijlagen**: Automatische opname van inspecteur-foto's in PDF rapport als bijlage (max 5 per sessie)
 
 ## MCP Tools
 
@@ -78,7 +79,11 @@ storage/
 │   └── {session_id}/
 │       ├── draft_data.json
 │       ├── final_report.json
-│       └── final_report.pdf
+│       ├── final_report.pdf
+│       └── images/
+│           ├── manifest.json
+│           ├── img_0.jpg
+│           └── img_1.jpg
 └── conversation_history/
     └── {session_id}.json
 ```
@@ -126,7 +131,6 @@ De rapportage-agent gebruikt deze tools automatisch wanneer inspecteurs rapportg
 ## Toekomstige Verbeteringen
 
 - Database opslag (PostgreSQL/Supabase)
-- Afhandeling van foto/bewijsmateriaal bijlagen
 - Digitale handtekening integratie
 - Meertalige ondersteuning (Nederlands/Engels)
 - Offline modus ondersteuning

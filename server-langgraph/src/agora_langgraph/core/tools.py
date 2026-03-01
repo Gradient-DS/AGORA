@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING, Any
 from langchain_core.tools import BaseTool, StructuredTool, tool
 from langgraph.types import interrupt
 
+from agora_langgraph.common.schemas import ToolCall as ToolCallSchema
+from agora_langgraph.core.approval_logic import requires_human_approval
+
 if TYPE_CHECKING:
     from agora_langgraph.adapters.user_manager import UserManager
 
@@ -105,6 +108,73 @@ def request_clarification(questions: list[dict[str, Any]]) -> str:
     })
 
     return user_response
+
+
+def wrap_tool_with_approval(tool: BaseTool) -> BaseTool:
+    """Wrap a tool with interrupt-based approval gating.
+
+    When the wrapped tool is called by the ToolNode:
+    1. Checks requires_human_approval with actual parameters
+    2. If approval needed: calls interrupt() to pause the graph
+    3. On resume: checks the approval decision
+    4. If approved: executes the original tool
+    5. If rejected: returns a rejection message without executing
+    """
+    original_func = tool.func
+    original_coroutine = tool.coroutine
+
+    def _check_and_interrupt(kwargs: dict) -> bool | None:
+        """Check approval and interrupt if needed.
+
+        Returns None if no approval needed, True if approved, False if rejected.
+        """
+        tc = ToolCallSchema(tool_name=tool.name, parameters=kwargs)
+        needs, reason, risk = requires_human_approval([tc], {})
+
+        if not needs:
+            return None
+
+        response = interrupt({
+            "type": "tool_approval_request",
+            "tool_name": tool.name,
+            "parameters": kwargs,
+            "reason": reason,
+            "risk_level": risk,
+        })
+
+        if isinstance(response, dict) and response.get("approved"):
+            return True
+        return False
+
+    if original_coroutine:
+        async def gated_coroutine(**kwargs):  # type: ignore[no-untyped-def]
+            result = _check_and_interrupt(kwargs)
+            if result is False:
+                return "Actie geannuleerd door gebruiker."
+            return await original_coroutine(**kwargs)
+
+        return StructuredTool(
+            name=tool.name,
+            description=tool.description,
+            args_schema=tool.args_schema,
+            coroutine=gated_coroutine,
+        )
+    elif original_func:
+        def gated_func(**kwargs):  # type: ignore[no-untyped-def]
+            result = _check_and_interrupt(kwargs)
+            if result is False:
+                return "Actie geannuleerd door gebruiker."
+            return original_func(**kwargs)
+
+        return StructuredTool(
+            name=tool.name,
+            description=tool.description,
+            args_schema=tool.args_schema,
+            func=gated_func,
+        )
+    else:
+        log.warning(f"Cannot wrap tool {tool.name}: no func or coroutine")
+        return tool
 
 
 async def _update_user_settings_impl(
@@ -245,8 +315,10 @@ def get_tools_for_agent(
     for server_name in mcp_server_names:
         if server_name in mcp_tools_by_server:
             mcp_tools = mcp_tools_by_server[server_name]
-            tools.extend(mcp_tools)
-            tool_names = [getattr(t, "name", str(t)) for t in mcp_tools]
+            # Wrap MCP tools with interrupt-based approval gating
+            wrapped_tools = [wrap_tool_with_approval(t) for t in mcp_tools]
+            tools.extend(wrapped_tools)
+            tool_names = [getattr(t, "name", str(t)) for t in wrapped_tools]
             log.info(f"{agent_id} gets MCP tools from {server_name}: {tool_names}")
 
     log.info(f"{agent_id} total tools: {len(tools)}")

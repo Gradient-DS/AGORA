@@ -65,6 +65,81 @@ class FileStorage:
         logger.info(f"Saved PDF report for session {session_id}")
         return str(pdf_path)
     
+    def save_image(self, session_id: str, image_bytes: bytes, filename: str, caption: str, mime_type: str = "image/jpeg") -> dict | None:
+        """Save an evidence image for a session. Returns image metadata or None if limit reached."""
+        session_dir = self._get_session_dir(session_id)
+        images_dir = session_dir / "images"
+        images_dir.mkdir(parents=True, exist_ok=True)
+
+        # Load or create manifest
+        manifest_path = images_dir / "manifest.json"
+        manifest: list[dict] = []
+        if manifest_path.exists():
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+
+        # Enforce max 5 images
+        if len(manifest) >= 5:
+            logger.warning(f"Image limit reached for session {session_id} (max 5)")
+            return None
+
+        # Write image file
+        index = len(manifest)
+        ext = "jpg" if "jpeg" in mime_type else mime_type.split("/")[-1]
+        img_filename = f"img_{index}.{ext}"
+        img_path = images_dir / img_filename
+
+        with open(img_path, "wb") as f:
+            f.write(image_bytes)
+
+        # Update manifest
+        entry = {
+            "index": index,
+            "filename": img_filename,
+            "caption": caption,
+            "mime_type": mime_type,
+            "size_bytes": len(image_bytes),
+            "uploaded_at": datetime.now().isoformat(),
+        }
+        manifest.append(entry)
+
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(manifest, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"Saved evidence image {img_filename} for session {session_id} ({len(image_bytes)} bytes)")
+        return entry
+
+    def load_images(self, session_id: str) -> list[dict]:
+        """Load all evidence images for a session. Returns list of {metadata + 'path': str}."""
+        session_dir = self._get_session_dir(session_id)
+        manifest_path = session_dir / "images" / "manifest.json"
+
+        if not manifest_path.exists():
+            return []
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        # Add full file paths
+        images_dir = session_dir / "images"
+        for entry in manifest:
+            entry["path"] = str(images_dir / entry["filename"])
+
+        return manifest
+
+    def get_image_count(self, session_id: str) -> int:
+        """Get the number of evidence images for a session."""
+        session_dir = self.reports_path / session_id
+        manifest_path = session_dir / "images" / "manifest.json"
+
+        if not manifest_path.exists():
+            return 0
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        return len(manifest)
+
     def save_conversation_history(self, session_id: str, history: list) -> str:
         conv_path = self.conversation_path / f"{session_id}.json"
         

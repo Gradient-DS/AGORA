@@ -10,8 +10,11 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import uvicorn
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from agora_langgraph.adapters.audit_logger import AuditLogger
@@ -49,6 +52,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     mcp_servers = parse_mcp_servers(settings.mcp_servers)
     log.info("MCP Servers configured: %s", list(mcp_servers.keys()))
 
+    reporting_url = mcp_servers.get("reporting")
+
     async with create_mcp_client_manager(mcp_servers) as mcp_manager:
         mcp_tools_by_server = mcp_manager.get_tools_by_server()
         log.info("Loaded MCP tools from %d servers", len(mcp_tools_by_server))
@@ -77,6 +82,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 audit_logger=audit_logger,
                 session_metadata=session_metadata,
                 user_manager=user_manager,
+                reporting_url=reporting_url,
             )
 
             app.state.orchestrator = orchestrator
@@ -238,6 +244,33 @@ async def delete_session(session_id: str) -> dict[str, Any]:
         "success": True,
         "message": "Session deleted",
     }
+
+
+SESSION_IMAGES_DIR = Path("session_images")
+
+
+@app.get("/sessions/{session_id}/images/{filename}")
+async def get_session_image(session_id: str, filename: str) -> FileResponse:
+    """Serve a saved session image file."""
+    # Sanitize filename to prevent path traversal
+    safe_filename = Path(filename).name
+    file_path = SESSION_IMAGES_DIR / session_id / safe_filename
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Derive content type from extension
+    ext = file_path.suffix.lower()
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".gif": "image/gif",
+    }
+    content_type = content_types.get(ext, "application/octet-stream")
+
+    return FileResponse(file_path, media_type=content_type)
 
 
 class UpdateSessionRequest(BaseModel):
@@ -561,7 +594,31 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     active_task = asyncio.create_task(process_wrapper(message))
 
                 elif isinstance(message, ToolApprovalResponsePayload):
-                    orchestrator.handle_approval_response(message)
+                    # Resume the interrupted graph with the approval decision
+                    if active_task and not active_task.done():
+                        active_task.cancel()
+                        try:
+                            await active_task
+                        except asyncio.CancelledError:
+                            pass
+
+                    async def approval_wrapper(
+                        approval_msg: ToolApprovalResponsePayload,
+                    ) -> None:
+                        try:
+                            await orchestrator.resume_with_approval(
+                                approval_msg, handler
+                            )
+                        except asyncio.CancelledError:
+                            pass
+                        except Exception as e:
+                            log.error(
+                                "Error resuming after approval: %s", e, exc_info=True
+                            )
+                            if handler.is_connected:
+                                await handler.send_error("processing_error", str(e))
+
+                    active_task = asyncio.create_task(approval_wrapper(message))
 
             except WebSocketDisconnect:
                 if active_task and not active_task.done():

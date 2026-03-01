@@ -9,6 +9,8 @@ import time
 import uuid
 from typing import Any
 
+import httpx
+
 from ag_ui.core import AssistantMessage
 from ag_ui.core import Message as AGUIMessage
 
@@ -41,6 +43,7 @@ class Orchestrator:
         audit_logger: AuditLogger,
         session_metadata: SessionMetadataManager | None = None,
         user_manager: UserManager | None = None,
+        reporting_url: str | None = None,
     ):
         """Initialize orchestrator with dependencies."""
         self.agent_runner = agent_runner
@@ -49,6 +52,7 @@ class Orchestrator:
         self.session_metadata = session_metadata
         self.user_manager = user_manager
         self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
+        self.reporting_url = reporting_url
 
     async def _handle_tool_approval_flow(
         self,
@@ -124,6 +128,7 @@ class Orchestrator:
         # and multimodal content (for the LLM) when images are present
         user_content = ""
         user_llm_input: str | list[dict[str, Any]] = ""
+        image_parts: list[dict[str, Any]] = []
         for msg in agent_input.messages:
             if msg.get("role") == "user":
                 raw_content = msg.get("content", "")
@@ -160,6 +165,16 @@ class Orchestrator:
                     user_content = raw_content
                     user_llm_input = raw_content
                 break
+
+        # Auto-forward images to reporting MCP server for PDF evidence
+        if image_parts and self.reporting_url:
+            asyncio.create_task(
+                self._forward_images_to_reporting(
+                    session_id=thread_id,
+                    image_parts=image_parts,
+                    caption=user_content,
+                )
+            )
 
         # Get user_id from top-level field
         user_id = agent_input.user_id
@@ -670,6 +685,34 @@ class Orchestrator:
             include_tool_calls=include_tool_calls,
             stored_tool_calls=stored_tool_calls,
         )
+
+    async def _forward_images_to_reporting(
+        self,
+        session_id: str,
+        image_parts: list[dict[str, Any]],
+        caption: str,
+    ) -> None:
+        """Forward uploaded images to the reporting MCP server for PDF evidence."""
+        url = f"{self.reporting_url}/reports/{session_id}/images"
+        caption = caption.strip() if caption else "Bewijsfoto"
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for img in image_parts:
+                try:
+                    resp = await client.post(url, json={
+                        "image_data": img.get("data", ""),
+                        "caption": caption,
+                        "mime_type": img.get("mimeType", "image/jpeg"),
+                    })
+                    if resp.status_code == 201:
+                        log.info(f"Forwarded evidence image to reporting server for session {session_id}")
+                    elif resp.status_code == 409:
+                        log.info(f"Image limit reached for session {session_id}, skipping remaining")
+                        break
+                    else:
+                        log.warning(f"Failed to forward image: {resp.status_code} {resp.text}")
+                except Exception as e:
+                    log.warning(f"Failed to forward evidence image: {e}")
 
     def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
         """Create an AG-UI AssistantMessage response."""

@@ -46,6 +46,8 @@ async def lifespan(app: FastAPI):
     mcp_servers = parse_mcp_servers(settings.mcp_servers)
     log.info("MCP Servers configured: %s", mcp_servers)
 
+    reporting_url = mcp_servers.get("reporting")
+
     mcp_tool_registry = MCPToolRegistry(mcp_servers)
 
     await mcp_tool_registry.discover_and_register_tools()
@@ -84,6 +86,7 @@ async def lifespan(app: FastAPI):
         audit_logger=audit_logger,
         session_metadata=session_metadata,
         user_manager=user_manager,
+        reporting_url=reporting_url,
     )
 
     app.state.orchestrator = orchestrator

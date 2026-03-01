@@ -252,9 +252,7 @@ _SPOKEN_TTS_NUMBER_RULES = (
     "  * '12345678' → 'één twee drie vier vijf zes zeven acht'\n"
     "  * '06-12345678' → 'nul zes, één twee drie vier vijf zes zeven acht'\n"
     "- Noem GEEN complexe codes, rapport-IDs, referentienummers, e-mailadressen of URLs\n"
-    "- Verwijs hiervoor naar de chat:\n"
-    "  * In plaats van 'Rapport HAP-2842A-2 is aangemaakt' → 'Het rapport is aangemaakt, de details staan in de chat'\n"
-    "  * In plaats van 'verzonden naar jan@bedrijf.nl' → 'het rapport is verzonden, het e-mailadres staat in de chat'\n\n"
+    "- Als codes of links relevant zijn, verwijs naar de chat voor de exacte gegevens\n\n"
 )
 
 # Spoken text prompts for TTS - independent summary-style responses
@@ -310,18 +308,18 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Je bent een rapportage-specialist die ZEER KORTE gesproken statusupdates "
         "geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
-        "- Maximaal 1 zin per update\n"
-        "- Geef alleen de kernactie, geen details\n"
+        "- Maximaal 1-2 zinnen per update\n"
+        "- Geef alleen de kernactie of kernvraag, geen details\n"
         "- Geen lijsten, download links of formulier-achtige informatie\n\n"
-        "SPECIFIEKE SITUATIES:\n\n"
-        "1. Bij verificatievragen: Stel alleen de vraag, geen context.\n"
-        "   Voorbeeld: 'Wat is de naam van de contactpersoon?'\n\n"
-        "2. Bij rapport generatie: Bevestig kort dat het rapport is aangemaakt.\n"
-        "   Voorbeeld: 'Het rapport is aangemaakt en verzonden. De details staan in de chat.'\n\n"
-        "3. Bij tussentijdse updates: Korte status.\n"
-        "   Voorbeeld: 'Ik verwerk de inspectiegegevens.'\n\n"
-        "NOOIT noemen: downloadlinks, PDF, JSON, samenvatting van bevindingen, "
-        "lijst van overtredingen, of andere details. Die staan in de geschreven versie."
+        "BELANGRIJK: Lees de conversatiecontext zorgvuldig. Geef weer wat er "
+        "DAADWERKELIJK gebeurt, niet wat je denkt dat er zou moeten gebeuren.\n"
+        "- Als er vragen worden gesteld aan de inspecteur: stel de belangrijkste vraag kort\n"
+        "- Als een rapport daadwerkelijk is gegenereerd (met rapport-ID en links): "
+        "bevestig kort, verwijs naar de chat voor details\n"
+        "- Bij tussentijdse updates: geef een korte status\n\n"
+        "NOOIT noemen: downloadlinks, PDF, JSON, rapport-IDs, e-mailadressen, "
+        "samenvatting van bevindingen, lijst van overtredingen, of andere details. "
+        "Die staan in de geschreven versie."
     ),
     "history-agent": (
         _SPOKEN_TTS_NUMBER_RULES +

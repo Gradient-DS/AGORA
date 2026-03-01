@@ -101,6 +101,9 @@ services:
       - LANGGRAPH_SPOKEN_MODEL=${LANGGRAPH_SPOKEN_MODEL:-}
       - LANGGRAPH_SPOKEN_BASE_URL=${LANGGRAPH_SPOKEN_BASE_URL:-}
       - LANGGRAPH_SPOKEN_API_KEY=${LANGGRAPH_SPOKEN_API_KEY:-}
+      # Optional: Provider fallback chains
+      - LANGGRAPH_LLM_PROVIDERS=${LANGGRAPH_LLM_PROVIDERS:-}
+      - LANGGRAPH_SPOKEN_PROVIDERS=${LANGGRAPH_SPOKEN_PROVIDERS:-}
     volumes:
       - langgraph_sessions:/app/sessions
     depends_on:

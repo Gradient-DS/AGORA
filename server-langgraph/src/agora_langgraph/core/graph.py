@@ -18,6 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.types import Overwrite, Send
 
+from agora_langgraph.common.message_utils import extract_text
 from agora_langgraph.core.agent_definitions import get_agent_by_id, get_spoken_prompt
 from agora_langgraph.core.agents import (
     general_agent,
@@ -143,7 +144,7 @@ def wake_word_handler_node(state: AgentState) -> dict[str, Any]:
 
     # Remove "AGORA" from message (case-insensitive) and get remaining content
     remaining_content = re.sub(
-        r'\bagora\b', '', str(latest.content), flags=re.IGNORECASE
+        r'\bagora\b', '', extract_text(latest.content), flags=re.IGNORECASE
     ).strip()
 
     result: dict[str, Any] = {
@@ -197,7 +198,7 @@ def route_from_start(state: AgentState) -> str:
     if mode == "listen":
         if messages:
             latest = messages[-1]
-            if isinstance(latest, HumanMessage) and detect_wake_word(str(latest.content)):
+            if isinstance(latest, HumanMessage) and detect_wake_word(extract_text(latest.content)):
                 log.info(
                     "route_from_start: Wake word 'AGORA' detected, "
                     "routing to wake_word_handler"
@@ -362,7 +363,7 @@ def _create_parallel_sends(state: AgentState) -> list[Send]:
                 args_str = ", ".join(f"{k}={v!r}" for k, v in args.items()) if args else ""
                 tool_context_parts.append(f"[Tool aanroep: {name}({args_str})]")
         elif isinstance(m, ToolMessage):
-            content = str(m.content)
+            content = extract_text(m.content)
             # Skip handoff tool results
             if "Transferring to" in content:
                 continue
@@ -489,15 +490,28 @@ async def _generate_stream(
     # which the orchestrator can use to stream to frontend
     full_content: list[str] = []
     first_chunk_time: float | None = None
+    chunk_count = 0
     async for chunk in llm.astream(full_messages):
+        chunk_count += 1
         if hasattr(chunk, "content") and chunk.content:
+            content = extract_text(chunk.content)
+            if not content:
+                log.info(
+                    f"_generate_stream: {stream_type} chunk {chunk_count} had content "
+                    f"type={type(chunk.content).__name__} but extract_text returned empty. "
+                    f"repr={repr(chunk.content)[:200]}"
+                )
+                continue
             if first_chunk_time is None:
                 first_chunk_time = time.time()
-            content = str(chunk.content)
             full_content.append(content)
 
     end_time = time.time()
     total_content = "".join(full_content)
+    if chunk_count > 0 and not total_content:
+        log.warning(
+            f"_generate_stream: {stream_type} received {chunk_count} chunks but 0 chars extracted"
+        )
     time_to_first = (first_chunk_time - start_time) if first_chunk_time else 0
     total_duration = end_time - start_time
 
@@ -632,7 +646,7 @@ def build_agent_graph(
 
     # Tool node
     if unique_tools:
-        tool_node = ToolNode(unique_tools)
+        tool_node = ToolNode(unique_tools, handle_tool_errors=True)
         graph.add_node("tools", tool_node)
 
     # Parallel generation nodes (fork happens via Send in route_from_agent)
@@ -705,7 +719,7 @@ def build_agent_graph(
         if messages:
             latest = messages[-1]
             # Check if there's content after stripping AGORA
-            if hasattr(latest, 'content') and str(latest.content).strip():
+            if hasattr(latest, 'content') and extract_text(latest.content).strip():
                 return "general-agent"
         return END
 
