@@ -48,6 +48,9 @@ htmlcov/
 # Logs
 *.log
 
+# Session data
+session_images/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -283,8 +284,13 @@ async def generate_final_report(
             report_id=report_id
         )
         
+        # Load evidence images for this session
+        evidence_images = storage.load_images(session_id)
+        if evidence_images:
+            logger.info(f"Including {len(evidence_images)} evidence images in PDF report")
+
         json_data = json_generator.generate(hap_report)
-        pdf_content = pdf_generator.generate(hap_report)
+        pdf_content = pdf_generator.generate(hap_report, evidence_images=evidence_images if evidence_images else None)
         
         paths = session_manager.finalize_report(session_id, json_data, pdf_content)
 
@@ -340,6 +346,7 @@ async def generate_final_report(
             "paths": paths,
             "download_urls": download_urls,
             "summary": summary,
+            "evidence_images_count": len(evidence_images) if evidence_images else 0,
             "email_sent": email_sent,
             "email_error": email_error,
             "message": message
@@ -452,6 +459,76 @@ async def download_pdf_report(request: Request) -> JSONResponse:
     )
 
 
+MAX_EVIDENCE_IMAGES = 5
+
+
+@mcp.custom_route("/reports/{session_id}/images", methods=["POST"])
+async def upload_evidence_image(request: Request) -> JSONResponse:
+    """Upload an evidence image for an inspection report."""
+    session_id = request.path_params.get("session_id")
+    if not session_id:
+        return JSONResponse({"error": "Session ID required"}, status_code=400)
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+    image_data = body.get("image_data", "")
+    caption = body.get("caption", "Bewijsfoto")
+    mime_type = body.get("mime_type", "image/jpeg")
+
+    if not image_data:
+        return JSONResponse({"error": "image_data is required"}, status_code=400)
+
+    # Decode base64 data URL
+    try:
+        if "," in image_data:
+            _, b64_data = image_data.split(",", 1)
+        else:
+            b64_data = image_data
+        image_bytes = base64.b64decode(b64_data)
+    except Exception:
+        return JSONResponse({"error": "Invalid base64 image data"}, status_code=400)
+
+    # Save image
+    result = storage.save_image(session_id, image_bytes, "", caption, mime_type)
+
+    if result is None:
+        return JSONResponse({
+            "error": "Image limit reached",
+            "message": f"Maximaal {MAX_EVIDENCE_IMAGES} foto's per sessie.",
+            "current_count": storage.get_image_count(session_id),
+        }, status_code=409)
+
+    return JSONResponse({
+        "success": True,
+        "image": result,
+        "current_count": storage.get_image_count(session_id),
+        "max_images": MAX_EVIDENCE_IMAGES,
+    }, status_code=201)
+
+
+@mcp.custom_route("/reports/{session_id}/images", methods=["GET"])
+async def list_evidence_images(request: Request) -> JSONResponse:
+    """List evidence images for a session."""
+    session_id = request.path_params.get("session_id")
+    if not session_id:
+        return JSONResponse({"error": "Session ID required"}, status_code=400)
+
+    images = storage.load_images(session_id)
+    return JSONResponse({
+        "success": True,
+        "session_id": session_id,
+        "images": [
+            {k: v for k, v in img.items() if k != "path"}
+            for img in images
+        ],
+        "count": len(images),
+        "max_images": MAX_EVIDENCE_IMAGES,
+    })
+
+
 @mcp.resource("server://info")
 def server_info() -> str:
     """Get server information and capabilities."""
@@ -472,6 +549,7 @@ def server_info() -> str:
                 "Structured data extraction",
                 "Integrated verification workflow (3 tool calls)",
                 "Dual-format report generation (JSON + PDF)",
+                "Evidence image attachments in PDF reports (max 5 per session)",
                 "File-based session management"
             ],
             "workflow": [

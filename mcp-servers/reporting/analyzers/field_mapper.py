@@ -37,6 +37,45 @@ class FieldMapper:
             "nvt": ComplianceStatus.NOT_APPLICABLE,
             "not applicable": ComplianceStatus.NOT_APPLICABLE,
         }
+        self._truthy = {"ja", "yes", "true", "1"}
+        self._falsy = {"nee", "no", "false", "0"}
+
+    def _to_bool(self, value: Any, default: bool = False) -> bool:
+        """Convert a value to bool, handling Dutch strings like 'Ja'/'Nee'."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if v in self._truthy:
+                return True
+            if v in self._falsy:
+                return False
+        return default
+
+    def _to_float(self, value: Any, default=0.0):
+        """Convert a value to float, returning default on failure."""
+        if value is None:
+            return default
+        if isinstance(value, float):
+            return value
+        if isinstance(value, int):
+            return float(value)
+        if isinstance(value, str):
+            try:
+                return float(value.strip().replace(",", "."))
+            except ValueError:
+                pass
+        return default
+
+    def _to_list(self, value: Any) -> list:
+        """Ensure a value is a list."""
+        if isinstance(value, list):
+            return value
+        if value is None:
+            return []
+        return [value]
     
     def map_to_hap_report(
         self,
@@ -46,13 +85,13 @@ class FieldMapper:
     ) -> HAPReport:
         try:
             metadata = self._create_metadata(extracted_data, session_id, report_id)
-            
-            hygiene = self._map_hygiene_general(extracted_data.get("hygiene_general", {}))
-            pest = self._map_pest_control(extracted_data.get("pest_control", {}))
-            food_safety = self._map_food_safety(extracted_data.get("food_safety", {}))
-            allergen = self._map_allergen_info(extracted_data.get("allergen_info", {}))
-            additional = self._map_additional_info(extracted_data.get("additional_info", {}))
-            
+
+            hygiene = self._safe_map("hygiene_general", self._map_hygiene_general, extracted_data, HygieneGeneral)
+            pest = self._safe_map("pest_control", self._map_pest_control, extracted_data, PestControl)
+            food_safety = self._safe_map("food_safety", self._map_food_safety, extracted_data, FoodSafetyInspection)
+            allergen = self._safe_map("allergen_info", self._map_allergen_info, extracted_data, AllergenInformation)
+            additional = self._safe_map("additional_info", self._map_additional_info, extracted_data, AdditionalInformation)
+
             report = HAPReport(
                 metadata=metadata,
                 hygiene_general=hygiene,
@@ -62,20 +101,28 @@ class FieldMapper:
                 additional_info=additional,
                 conversation_history=extracted_data.get("conversation_history", []),
             )
-            
+
             report.aggregate_violations()
-            
+
             completion = report.calculate_completion()
             report.metadata.completion_percentage = completion
-            report.metadata.overall_confidence = extracted_data.get("overall_confidence", 0.0)
-            
+            report.metadata.overall_confidence = self._to_float(extracted_data.get("overall_confidence"), 0.0)
+
             logger.info(f"Mapped report with {len(report.all_violations)} violations, {completion:.1f}% complete")
-            
+
             return report
-            
+
         except Exception as e:
             logger.error(f"Error mapping to HAP report: {e}", exc_info=True)
             raise
+
+    def _safe_map(self, section_key: str, mapper, extracted_data: Dict[str, Any], fallback_cls):
+        """Call a section mapper, returning an empty model on failure."""
+        try:
+            return mapper(extracted_data.get(section_key) or {})
+        except Exception as e:
+            logger.warning(f"Failed to map {section_key}, using empty defaults: {e}")
+            return fallback_cls()
     
     def _create_metadata(self, data: Dict[str, Any], session_id: str, report_id: str) -> InspectionMetadata:
         inspection_type_str = data.get("inspection_type") or "Reguliere inspectie"
@@ -105,13 +152,9 @@ class FieldMapper:
         )
     
     def _map_hygiene_general(self, data: Dict[str, Any]) -> HygieneGeneral:
-        violations = []
-        for v in data.get("violations", []):
-            violations.append(self._map_violation(v))
-        
         return HygieneGeneral(
             compliant=self._map_compliance(data.get("compliant")),
-            violations=violations,
+            violations=self._map_violations(data.get("violations")),
             observations=data.get("observations"),
             washing_facilities=self._map_compliance(data.get("washing_facilities")),
             ventilation=self._map_compliance(data.get("ventilation")),
@@ -127,10 +170,6 @@ class FieldMapper:
         )
     
     def _map_pest_control(self, data: Dict[str, Any]) -> PestControl:
-        violations = []
-        for v in data.get("violations", []):
-            violations.append(self._map_violation(v))
-        
         pest_types = []
         for pt in data.get("pest_types", []):
             try:
@@ -149,8 +188,8 @@ class FieldMapper:
         return PestControl(
             pest_prevention_compliant=self._map_compliance(data.get("pest_prevention_compliant")),
             pest_control_compliant=self._map_compliance(data.get("pest_control_compliant")),
-            violations=violations,
-            pest_present=data.get("pest_present", False),
+            violations=self._map_violations(data.get("violations")),
+            pest_present=self._to_bool(data.get("pest_present"), False),
             pest_types=pest_types,
             pest_severity=pest_severity,
             pest_other_description=data.get("pest_other_description"),
@@ -158,29 +197,21 @@ class FieldMapper:
         )
     
     def _map_food_safety(self, data: Dict[str, Any]) -> FoodSafetyInspection:
-        violations = []
-        for v in data.get("violations", []):
-            violations.append(self._map_violation(v))
-        
         return FoodSafetyInspection(
             storage_compliant=self._map_compliance(data.get("storage_compliant")),
             preparation_cooling_compliant=self._map_compliance(data.get("preparation_cooling_compliant")),
             presentation_compliant=self._map_compliance(data.get("presentation_compliant")),
-            violations=violations,
-            temperature_violations=data.get("temperature_violations", []),
-            unsafe_products=data.get("unsafe_products", []),
+            violations=self._map_violations(data.get("violations")),
+            temperature_violations=self._to_list(data.get("temperature_violations")),
+            unsafe_products=self._to_list(data.get("unsafe_products")),
             observations=data.get("observations"),
         )
     
     def _map_allergen_info(self, data: Dict[str, Any]) -> AllergenInformation:
-        violations = []
-        for v in data.get("violations", []):
-            violations.append(self._map_violation(v))
-        
         return AllergenInformation(
             compliant=self._map_compliance(data.get("compliant")),
             information_method=data.get("information_method"),
-            violations=violations,
+            violations=self._map_violations(data.get("violations")),
             written_info_available=self._map_compliance(data.get("written_info_available")),
             oral_info_adequate=self._map_compliance(data.get("oral_info_adequate")),
             signage_present=self._map_compliance(data.get("signage_present")),
@@ -199,15 +230,25 @@ class FieldMapper:
         return AdditionalInformation(
             inspection_location_description=data.get("inspection_location_description"),
             hygiene_code_used=hygiene_code,
-            mobile_temporary_location=data.get("mobile_temporary_location", False),
+            mobile_temporary_location=self._to_bool(data.get("mobile_temporary_location"), False),
             location_type=data.get("location_type"),
-            outdoor_temperature=data.get("outdoor_temperature"),
-            repeat_violation=data.get("repeat_violation", False),
+            outdoor_temperature=self._to_float(data.get("outdoor_temperature"), None),
+            repeat_violation=self._to_bool(data.get("repeat_violation"), False),
             repeat_violation_details=data.get("repeat_violation_details"),
             action_required=data.get("action_required"),
             inspector_notes=data.get("inspector_notes"),
         )
     
+    def _map_violations(self, raw: Any) -> list:
+        """Safely map a violations list, skipping entries that fail."""
+        result = []
+        for v in self._to_list(raw):
+            try:
+                result.append(self._map_violation(v))
+            except Exception as e:
+                logger.warning(f"Skipping invalid violation entry: {e}")
+        return result
+
     def _map_violation(self, data: Dict[str, Any]) -> Violation:
         # Guard: if data is a string (e.g. from corrupted merge), wrap it
         if isinstance(data, str):
@@ -237,7 +278,7 @@ class FieldMapper:
             location=data.get("location"),
             evidence=data.get("evidence"),
             control_element_id=data.get("control_element_id"),
-            confidence=data.get("confidence", 0.8),
+            confidence=self._to_float(data.get("confidence"), 0.8),
         )
     
     def _map_compliance(self, value: Any) -> Optional[ComplianceStatus]:

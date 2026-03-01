@@ -7,6 +7,7 @@ for delivering generated inspection reports to inspectors.
 import base64
 import logging
 import os
+import time
 from typing import Any, Dict, Optional
 
 import requests
@@ -133,16 +134,41 @@ def _send_email_via_graph(
 
     graph_send_url = f"https://graph.microsoft.com/v1.0/users/{SENDER_ADDRESS}/sendMail"
 
-    try:
-        resp = requests.post(graph_send_url, json=payload, headers=headers, timeout=30)
-        if resp.status_code not in (202, 200):
+    max_retries = 3
+    retry_delays = [2, 5, 10]  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            resp = requests.post(graph_send_url, json=payload, headers=headers, timeout=30)
+            if resp.status_code in (200, 202):
+                logger.info(f"Email sent via Graph API to {to_email}")
+                return
+            # Retry on transient server errors (429, 503, 504)
+            if resp.status_code in (429, 503, 504) and attempt < max_retries - 1:
+                delay = retry_delays[attempt]
+                logger.warning(
+                    f"Graph sendMail returned {resp.status_code}, "
+                    f"retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
+                )
+                time.sleep(delay)
+                # Re-acquire token in case it was the issue
+                access_token = _get_graph_token()
+                headers["Authorization"] = f"Bearer {access_token}"
+                continue
             raise RuntimeError(
                 f"Graph sendMail failed ({resp.status_code}): {resp.text}"
             )
-        logger.info(f"Email sent via Graph API to {to_email}")
-    except requests.RequestException as e:
-        logger.error(f"Failed to send email via Graph API to {to_email}: {e}")
-        raise RuntimeError(f"Failed to send email via Graph API: {e}")
+        except requests.RequestException as e:
+            if attempt < max_retries - 1:
+                delay = retry_delays[attempt]
+                logger.warning(
+                    f"Graph sendMail connection error, "
+                    f"retrying in {delay}s (attempt {attempt + 1}/{max_retries}): {e}"
+                )
+                time.sleep(delay)
+                continue
+            logger.error(f"Failed to send email via Graph API to {to_email}: {e}")
+            raise RuntimeError(f"Failed to send email via Graph API: {e}")
 
 
 def send_report_email(

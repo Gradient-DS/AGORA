@@ -3,7 +3,7 @@
  */
 
 import type { SessionMetadata, ChatMessage, ToolCallInfo } from '@/types';
-import { env } from '@/lib/env';
+import { env, getApiBaseUrl } from '@/lib/env';
 import { apiFetch } from './client';
 
 /**
@@ -31,6 +31,10 @@ interface HistoryMessage {
   tool_call_id?: string;
   agent_id?: string;
   spoken_text?: string;
+  image_attachment?: {
+    url: string;
+    mimeType: string;
+  };
 }
 
 interface HistoryResponse {
@@ -125,8 +129,7 @@ export async function fetchSessionHistory(
   let messageIndex = 0;
   for (const msg of data.history) {
     if (msg.role === 'user' || msg.role === 'assistant') {
-      // Regular text messages
-      messages.push({
+      const chatMessage: ChatMessage = {
         id: `history-${sessionId}-${messageIndex}`,
         role: msg.role,
         content: msg.content,
@@ -134,7 +137,17 @@ export async function fetchSessionHistory(
         spokenContent: msg.spoken_text,
         timestamp: new Date(),
         isStreaming: false,
-      });
+      };
+
+      // Reconstruct image attachment from history
+      if (msg.image_attachment) {
+        chatMessage.imageAttachment = {
+          data: `${getApiBaseUrl()}${msg.image_attachment.url}`,
+          mimeType: msg.image_attachment.mimeType,
+        };
+      }
+
+      messages.push(chatMessage);
       messageIndex++;
     } else if (msg.role === 'tool_call') {
       // Tool call invocation - create both a chat message (for pill) and ToolCallInfo (for debug panel)

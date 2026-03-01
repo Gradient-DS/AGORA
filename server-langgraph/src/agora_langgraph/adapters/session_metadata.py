@@ -11,6 +11,8 @@ from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 
+from agora_langgraph.common.message_utils import extract_text
+
 log = logging.getLogger(__name__)
 
 TITLE_GENERATION_PROMPT = (
@@ -395,9 +397,9 @@ class SessionMetadataManager:
             prompt = TITLE_GENERATION_PROMPT.format(message=first_message[:500])
             response = await llm.ainvoke([HumanMessage(content=prompt)])
 
-            title = response.content
+            title = extract_text(response.content)
             if title:
-                title = str(title).strip().strip("\"'")[:100]
+                title = title.strip().strip("\"'")[:100]
                 if title:
                     return title
 

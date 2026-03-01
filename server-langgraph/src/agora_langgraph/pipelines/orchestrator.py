@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
 import json
 import logging
 import uuid
+from pathlib import Path
 from typing import Any
 
+import httpx
 from ag_ui.core import Message as AGUIMessage
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph.state import CompiledStateGraph
@@ -20,9 +24,8 @@ from agora_langgraph.common.ag_ui_types import (
     RunAgentInput,
     ToolApprovalResponsePayload,
 )
-from agora_langgraph.common.schemas import ToolCall
+from agora_langgraph.common.message_utils import extract_text
 from agora_langgraph.config import get_settings
-from agora_langgraph.core.approval_logic import requires_human_approval
 from agora_langgraph.core.tool_display_names import (
     get_tool_display_name,
     get_tool_spoken_description,
@@ -51,6 +54,8 @@ def _sanitize_params(params: dict[str, Any]) -> dict[str, Any]:
 class Orchestrator:
     """Orchestration using LangGraph with AG-UI Protocol streaming and approval flow."""
 
+    SESSION_IMAGES_DIR = Path("session_images")
+
     def __init__(
         self,
         graph: CompiledStateGraph[Any],
@@ -58,6 +63,7 @@ class Orchestrator:
         audit_logger: AuditLogger,
         session_metadata: SessionMetadataManager | None = None,
         user_manager: UserManager | None = None,
+        reporting_url: str | None = None,
     ):
         """Initialize orchestrator."""
         self.graph = graph
@@ -65,64 +71,49 @@ class Orchestrator:
         self.audit = audit_logger
         self.session_metadata = session_metadata
         self.user_manager = user_manager
-        self.pending_approvals: dict[str, asyncio.Future[bool]] = {}
+        self.reporting_url = reporting_url
+        # Context for resuming after interrupt-based approval
+        self._pending_approval_context: dict[str, Any] | None = None
+        # Agent ID being resumed (set before calling _stream_response with Command)
+        self._resuming_agent_id: str | None = None
 
-    async def _handle_tool_approval_flow(
+    def _save_session_images(
         self,
-        tool_name: str,
-        parameters: dict[str, Any],
-        thread_id: str,
-        protocol_handler: Any,
-    ) -> None:
-        """Handle tool approval flow for high-risk operations."""
-        tool_call_obj = ToolCall(tool_name=tool_name, parameters=parameters)
-        requires_approval, reason, risk_level = requires_human_approval(
-            [tool_call_obj], {}
-        )
+        session_id: str,
+        image_parts: list[dict[str, Any]],
+    ) -> list[dict[str, str]]:
+        """Save uploaded images to disk. Returns list of {filename, mime_type}."""
+        images_dir = self.SESSION_IMAGES_DIR / session_id
+        images_dir.mkdir(parents=True, exist_ok=True)
 
-        if requires_approval:
-            approval_id = str(uuid.uuid4())
-            future: asyncio.Future[bool] = asyncio.Future()
-            self.pending_approvals[approval_id] = future
+        saved: list[dict[str, str]] = []
+        for img in image_parts:
+            data_url = img.get("data", "")
+            mime_type = img.get("mimeType", "image/jpeg")
 
-            log.info(f"Requesting approval for {tool_name} (id: {approval_id})")
-            await self.audit.log_approval_request(
-                thread_id, tool_name, risk_level, approval_id
-            )
-
-            await protocol_handler.send_tool_approval_request(
-                tool_name=tool_name,
-                tool_description=f"Tool call: {tool_name}",
-                parameters=parameters,
-                reasoning=reason or "Operation requires human approval",
-                risk_level=risk_level,
-                approval_id=approval_id,
-                tool_display_name=get_tool_display_name(tool_name),
-            )
+            if "," not in data_url:
+                continue
+            _, b64_data = data_url.split(",", 1)
 
             try:
-                approved = await future
-                await self.audit.log_approval_response(thread_id, approval_id, approved)
-                if not approved:
-                    log.info(f"Tool {tool_name} rejected by user")
-                    raise Exception("Tool execution rejected by user")
-                log.info(f"Tool {tool_name} approved by user")
-            finally:
-                self.pending_approvals.pop(approval_id, None)
+                image_bytes = base64.b64decode(b64_data)
+            except Exception:
+                log.warning("Failed to decode image base64 data")
+                continue
 
-    def handle_approval_response(self, response: ToolApprovalResponsePayload) -> bool:
-        """Process an approval response from the client.
+            # Deterministic filename from content hash
+            content_hash = hashlib.md5(image_bytes).hexdigest()[:12]
+            ext = "jpg" if "jpeg" in mime_type else mime_type.split("/")[-1]
+            filename = f"{content_hash}.{ext}"
+            file_path = images_dir / filename
 
-        Returns True if the approval was handled, False if no matching pending approval.
-        """
-        approval_id = response.approval_id
-        if approval_id in self.pending_approvals:
-            future = self.pending_approvals[approval_id]
-            if not future.done():
-                future.set_result(response.approved)
-            return True
-        log.warning(f"Received approval for unknown ID: {approval_id}")
-        return False
+            if not file_path.exists():
+                file_path.write_bytes(image_bytes)
+                log.info(f"Saved session image {filename} for session {session_id} ({len(image_bytes)} bytes)")
+
+            saved.append({"filename": filename, "mime_type": mime_type})
+
+        return saved
 
     async def process_message(
         self,
@@ -145,6 +136,7 @@ class Orchestrator:
         # and multimodal content (for the LLM) when images are present
         user_text_parts: list[str] = []
         user_llm_content: str | list[str | dict[Any, Any]] = ""
+        image_parts: list[dict[str, Any]] = []
         for msg in agent_input.messages:
             if msg.get("role") == "user":
                 raw_content = msg.get("content", "")
@@ -182,6 +174,20 @@ class Orchestrator:
 
         # Text-only content for moderation, logging, and session metadata
         user_content = "\n".join(user_text_parts)
+
+        # Auto-forward images to reporting MCP server for PDF evidence
+        if image_parts and self.reporting_url:
+            asyncio.create_task(
+                self._forward_images_to_reporting(
+                    session_id=thread_id,
+                    image_parts=image_parts,
+                    caption=user_content,
+                )
+            )
+
+        # Save images to disk for chat history persistence
+        if image_parts:
+            self._save_session_images(thread_id, image_parts)
 
         # Get user_id from top-level field
         user_id = agent_input.user_id
@@ -287,8 +293,13 @@ class Orchestrator:
 
             # Determine input for graph invocation
             if is_interrupted:
-                # Resume interrupted graph with user's response
+                # Resume interrupted graph with user's response (clarification flow)
                 graph_input: dict[str, Any] | Command = Command(resume=user_content)
+                self._resuming_agent_id = (
+                    existing_state.values.get("current_agent", "general-agent")
+                    if existing_state and existing_state.values
+                    else "general-agent"
+                )
                 log.info(f"[DEBUG] RESUMING interrupted graph with: {user_content[:100]}...")
             elif is_existing_thread:
                 # Existing thread - only send new message
@@ -313,9 +324,8 @@ class Orchestrator:
 
             # Send initial state snapshot with correct current_agent
             if protocol_handler:
-                # For normal invocations, always start at general-agent
-                # For interrupted flows, we're resuming at reporting-agent
-                initial_agent = "reporting-agent" if is_interrupted else "general-agent"
+                # For interrupted flows, use the agent from persisted state
+                initial_agent = self._resuming_agent_id if is_interrupted else "general-agent"
                 await protocol_handler.send_state_snapshot(
                     {
                         "thread_id": thread_id,
@@ -340,6 +350,8 @@ class Orchestrator:
                 response_content, active_agent_id = await self._run_blocking(
                     graph_input, config
                 )
+
+            self._resuming_agent_id = None
 
             # Validate output
             is_valid, error = await self.moderator.validate_output(response_content)
@@ -377,14 +389,6 @@ class Orchestrator:
             return self._create_response_message(response_content, message_id)
 
         except Exception as e:
-            if str(e) == "Tool execution rejected by user":
-                log.info("Action cancelled by user")
-                if protocol_handler and protocol_handler.is_connected:
-                    await protocol_handler.send_run_finished(thread_id, run_id)
-                return self._create_response_message(
-                    "I have cancelled the action as requested.", str(uuid.uuid4())
-                )
-
             log.error("Error processing message: %s", e, exc_info=True)
             if protocol_handler and protocol_handler.is_connected:
                 # Use official RUN_ERROR event for errors
@@ -397,6 +401,129 @@ class Orchestrator:
                 "I apologize, but I encountered an error processing your request.",
                 str(uuid.uuid4()),
             )
+
+    async def resume_with_approval(
+        self,
+        response: ToolApprovalResponsePayload,
+        protocol_handler: Any,
+    ) -> AGUIMessage | None:
+        """Resume an interrupted graph with an approval decision.
+
+        Called when a ToolApprovalResponsePayload arrives via WebSocket.
+        Resumes the graph with Command(resume={"approved": ..., "feedback": ...}).
+        """
+        ctx = self._pending_approval_context
+        if not ctx or ctx["approval_id"] != response.approval_id:
+            log.warning(f"No matching pending approval for ID: {response.approval_id}")
+            return None
+
+        self._pending_approval_context = None
+
+        thread_id = ctx["thread_id"]
+        run_id = ctx["run_id"]
+        message_id = ctx["message_id"]
+        user_id = ctx["user_id"]
+        interaction_mode = ctx["interaction_mode"]
+        config = {"configurable": {"thread_id": thread_id}}
+
+        await self.audit.log_approval_response(
+            thread_id, response.approval_id, response.approved
+        )
+
+        if not response.approved:
+            log.info(f"Tool rejected by user (approval_id: {response.approval_id})")
+        else:
+            log.info(f"Tool approved by user (approval_id: {response.approval_id})")
+
+        # Determine the agent we're resuming into from persisted state
+        try:
+            existing_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+            self._resuming_agent_id = (
+                existing_state.values.get("current_agent", "general-agent")
+                if existing_state and existing_state.values
+                else "general-agent"
+            )
+        except Exception:
+            self._resuming_agent_id = "general-agent"
+
+        graph_input: Command = Command(resume={
+            "approved": response.approved,
+            "feedback": response.feedback,
+        })
+
+        try:
+            if protocol_handler:
+                await protocol_handler.send_run_started(thread_id, run_id)
+                await protocol_handler.send_step_started("routing")
+                await protocol_handler.send_state_snapshot({
+                    "thread_id": thread_id,
+                    "run_id": run_id,
+                    "current_agent": self._resuming_agent_id,
+                    "status": "processing",
+                })
+
+                response_content, active_agent_id = await self._stream_response(
+                    graph_input,
+                    config,
+                    thread_id,
+                    run_id,
+                    message_id,
+                    user_id,
+                    protocol_handler,
+                    interaction_mode,
+                )
+
+                if protocol_handler.is_connected:
+                    await protocol_handler.send_state_snapshot({
+                        "thread_id": thread_id,
+                        "run_id": run_id,
+                        "current_agent": active_agent_id,
+                        "status": "completed",
+                    })
+                    await protocol_handler.send_run_finished(thread_id, run_id)
+
+                self._resuming_agent_id = None
+                return self._create_response_message(response_content, message_id)
+
+        except Exception as e:
+            self._resuming_agent_id = None
+            log.error("Error resuming after approval: %s", e, exc_info=True)
+            if protocol_handler and protocol_handler.is_connected:
+                await protocol_handler.send_run_error(
+                    message=f"Error resuming after approval: {str(e)}",
+                    code="processing_error",
+                )
+                await protocol_handler.send_run_finished(thread_id, run_id)
+
+        return None
+
+    async def _forward_images_to_reporting(
+        self,
+        session_id: str,
+        image_parts: list[dict[str, Any]],
+        caption: str,
+    ) -> None:
+        """Forward uploaded images to the reporting MCP server for PDF evidence."""
+        url = f"{self.reporting_url}/reports/{session_id}/images"
+        caption = caption.strip() if caption else "Bewijsfoto"
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for img in image_parts:
+                try:
+                    resp = await client.post(url, json={
+                        "image_data": img.get("data", ""),
+                        "caption": caption,
+                        "mime_type": img.get("mimeType", "image/jpeg"),
+                    })
+                    if resp.status_code == 201:
+                        log.info(f"Forwarded evidence image to reporting server for session {session_id}")
+                    elif resp.status_code == 409:
+                        log.info(f"Image limit reached for session {session_id}, skipping remaining")
+                        break
+                    else:
+                        log.warning(f"Failed to forward image: {resp.status_code} {resp.text}")
+                except Exception as e:
+                    log.warning(f"Failed to forward evidence image: {e}")
 
     def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
         """Create an AG-UI AssistantMessage response."""
@@ -420,7 +547,7 @@ class Orchestrator:
         response_content = ""
         for msg in reversed(messages):
             if isinstance(msg, AIMessage) and msg.content:
-                response_content = str(msg.content)
+                response_content = extract_text(msg.content)
                 break
 
         agent_id = result.get("current_agent", "general-agent")
@@ -452,7 +579,7 @@ class Orchestrator:
         is_resuming_from_interrupt = isinstance(graph_input, Command)
         resumed_tool_handled = False  # Track if we've skipped the resumed tool's start event
         if is_resuming_from_interrupt:
-            current_agent_id = "reporting-agent"  # Resuming interrupted reporting flow
+            current_agent_id = self._resuming_agent_id or "general-agent"
         else:
             current_agent_id = graph_input.get("current_agent", "general-agent")
         current_step: str | None = "routing"
@@ -496,7 +623,9 @@ class Orchestrator:
             if kind == "on_chat_model_stream":
                 chunk = event.get("data", {}).get("chunk")
                 if chunk and hasattr(chunk, "content") and chunk.content:
-                    content = str(chunk.content)
+                    content = extract_text(chunk.content)
+                    if not content:
+                        continue
 
                     # Only stream from generator nodes, not agent nodes
                     # Agent nodes run during ReAct loop - their output is regenerated
@@ -560,18 +689,20 @@ class Orchestrator:
                     _sanitize_params(raw_input) if isinstance(raw_input, dict) else {}
                 )
 
-                # When resuming from interrupt, skip TOOL_CALL_START for the resumed tool
-                # (we already sent events for it during interrupt handling in the previous stream)
-                if is_resuming_from_interrupt and not resumed_tool_handled and tool_name == "request_clarification":
-                    log.info(f"[DEBUG] Skipping TOOL_CALL_START for resumed tool: {tool_name} ({tool_run_id})")
+                # When resuming from interrupt, skip TOOL_CALL_START for the first tool
+                # (events were already sent during interrupt handling in the previous stream)
+                if is_resuming_from_interrupt and not resumed_tool_handled:
+                    log.info(
+                        f"Skipping TOOL_CALL_START for resumed tool: "
+                        f"{tool_name} ({tool_run_id})"
+                    )
                     resumed_tool_handled = True
                     # Still track it so we can skip TOOL_CALL_END/RESULT too
                     active_tool_calls[tool_run_id] = f"_resumed_{tool_name}"
                     continue
 
                 active_tool_calls[tool_run_id] = tool_name
-                log.info(f"[DEBUG] on_tool_start: {tool_name} (run_id: {tool_run_id})")
-                log.info(f"[DEBUG] active_tool_calls after start: {list(active_tool_calls.keys())}")
+                log.info(f"on_tool_start: {tool_name} (run_id: {tool_run_id})")
 
                 # Finish current step before starting tool execution
                 if current_step and current_step != "executing_tools":
@@ -579,11 +710,6 @@ class Orchestrator:
 
                 await protocol_handler.send_step_started("executing_tools")
                 current_step = "executing_tools"
-
-                # Handle approval flow
-                await self._handle_tool_approval_flow(
-                    tool_name, tool_input, thread_id, protocol_handler
-                )
 
                 if protocol_handler.is_connected:
                     log.info(f"[DEBUG] Sending TOOL_CALL_START: {tool_name} ({tool_run_id})")
@@ -715,17 +841,17 @@ class Orchestrator:
                             )
 
         # After streaming completes, check if graph was interrupted
-        # Get the final state to check for interrupts
-        log.info(f"[DEBUG] Stream completed, checking for interrupt. active_tool_calls: {list(active_tool_calls.keys())}")
+        log.info(
+            f"Stream completed, checking for interrupt. "
+            f"active_tool_calls: {list(active_tool_calls.keys())}"
+        )
         try:
             final_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
-            log.info(f"[DEBUG] final_state.next: {final_state.next if final_state else 'None'}")
+            log.info(f"final_state.next: {final_state.next if final_state else 'None'}")
 
             # Check if update_user_settings was called with interaction_mode in THIS turn
-            # Only check the most recent AIMessage to avoid re-applying old tool calls
             if final_state and final_state.values:
                 messages = final_state.values.get("messages", [])
-                # Find the most recent AIMessage with tool_calls (from this turn)
                 for msg in reversed(messages):
                     if hasattr(msg, "tool_calls") and msg.tool_calls:
                         for tool_call in msg.tool_calls:
@@ -741,90 +867,127 @@ class Orchestrator:
                                         config,
                                         {"interaction_mode": new_mode},
                                     )
-                        break  # Only check the most recent AIMessage with tool calls
+                        break
+
             if final_state and final_state.next:
-                # Graph was interrupted - there are pending tasks
+                # Graph was interrupted - extract payload to determine type
                 log.info(
-                    f"[DEBUG] Graph interrupted at node(s): {final_state.next}, "
+                    f"Graph interrupted at node(s): {final_state.next}, "
                     f"thread: {thread_id}"
                 )
 
-                # Extract interrupt payload first (needed for tool result)
                 interrupt_value = None
                 if final_state.tasks:
                     for task in final_state.tasks:
                         if hasattr(task, "interrupts") and task.interrupts:
                             interrupt_value = task.interrupts[0].value
-                            log.info(f"[DEBUG] Interrupt payload: {interrupt_value}")
+                            log.info(f"Interrupt payload: {interrupt_value}")
                             break
 
+                interrupt_type = (
+                    interrupt_value.get("type")
+                    if isinstance(interrupt_value, dict)
+                    else None
+                )
+
                 # Close any active tool calls that were interrupted
-                # (they never got TOOL_CALL_END because interrupt() paused execution)
-                log.info(f"[DEBUG] About to close interrupted tool calls. active_tool_calls: {list(active_tool_calls.items())}, is_connected: {protocol_handler.is_connected}")
                 if active_tool_calls and protocol_handler.is_connected:
                     for tool_run_id, tool_name in list(active_tool_calls.items()):
-                        log.info(f"[DEBUG] Closing interrupted tool call: {tool_name} ({tool_run_id})")
+                        log.info(f"Closing interrupted tool call: {tool_name} ({tool_run_id})")
                         await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
-                        # Send TOOL_CALL_RESULT so frontend marks tool as completed
-                        result_content = ""
-                        if interrupt_value and isinstance(interrupt_value, dict):
-                            result_content = interrupt_value.get("display_text", "")
-                        log.info(f"[DEBUG] Sending TOOL_CALL_RESULT for interrupted tool {tool_run_id}")
+                        if interrupt_type == "clarification_request":
+                            result_content = (
+                                interrupt_value.get("display_text", "")
+                                if isinstance(interrupt_value, dict)
+                                else ""
+                            ) or "Clarification requested"
+                        elif interrupt_type == "tool_approval_request":
+                            result_content = "Wachten op goedkeuring..."
+                        else:
+                            result_content = "Wachten op invoer..."
                         await protocol_handler.send_tool_call_result(
                             message_id=f"tool-result-{tool_run_id}",
                             tool_call_id=tool_run_id,
-                            content=result_content or "Clarification requested",
+                            content=result_content,
                         )
                     active_tool_calls.clear()
-                else:
-                    log.info(f"[DEBUG] NOT closing tool calls: active_tool_calls={bool(active_tool_calls)}, is_connected={protocol_handler.is_connected}")
 
-                # Send clarification questions to user as text message
-                if final_state.tasks:
-                    for task in final_state.tasks:
-                        if hasattr(task, "interrupts") and task.interrupts:
-                            interrupt_value = task.interrupts[0].value
-                            log.info(f"Interrupt payload: {interrupt_value}")
+                if interrupt_type == "tool_approval_request":
+                    # Send approval request to frontend and store context for resumption
+                    approval_id = str(uuid.uuid4())
+                    i_tool_name = interrupt_value.get("tool_name", "unknown")
+                    i_risk_level = interrupt_value.get("risk_level", "high")
 
-                            # Send clarification questions as text message
-                            if isinstance(interrupt_value, dict):
-                                display_text = interrupt_value.get("display_text", "")
-                                if display_text and protocol_handler.is_connected:
-                                    # Format the questions nicely
-                                    clarification_message = (
-                                        "Om het rapport te kunnen voltooien heb ik nog "
-                                        "enkele gegevens nodig:\n\n" + display_text
-                                    )
+                    self._pending_approval_context = {
+                        "approval_id": approval_id,
+                        "thread_id": thread_id,
+                        "run_id": run_id,
+                        "message_id": message_id,
+                        "user_id": user_id,
+                        "interaction_mode": interaction_mode,
+                    }
 
-                                    # Start message if not started
-                                    if not message_started:
-                                        await protocol_handler.send_text_message_start(
-                                            message_id, "assistant"
-                                        )
-                                        await protocol_handler.send_spoken_text_start(
-                                            message_id, "assistant"
-                                        )
-                                        message_started = True
-                                        spoken_message_started = True
+                    await self.audit.log_approval_request(
+                        thread_id, i_tool_name, i_risk_level, approval_id
+                    )
 
-                                    # Send the questions
-                                    await protocol_handler.send_text_message_content(
-                                        message_id, clarification_message
-                                    )
-                                    await protocol_handler.send_spoken_text_content(
-                                        message_id, clarification_message
-                                    )
-                                    full_response.append(clarification_message)
-                                    log.info(
-                                        f"Sent clarification questions to user: "
-                                        f"{len(clarification_message)} chars"
-                                    )
+                    if protocol_handler.is_connected:
+                        await protocol_handler.send_tool_approval_request(
+                            tool_name=i_tool_name,
+                            tool_description=f"Tool call: {i_tool_name}",
+                            parameters=interrupt_value.get("parameters", {}),
+                            reasoning=interrupt_value.get("reason")
+                            or "Operation requires human approval",
+                            risk_level=i_risk_level,
+                            approval_id=approval_id,
+                            tool_display_name=get_tool_display_name(i_tool_name),
+                        )
+                    log.info(
+                        f"Sent approval request for {i_tool_name} "
+                        f"(approval_id: {approval_id})"
+                    )
+
+                elif interrupt_type == "clarification_request":
+                    # Send clarification questions as text message
+                    if isinstance(interrupt_value, dict):
+                        display_text = interrupt_value.get("display_text", "")
+                        if display_text and protocol_handler.is_connected:
+                            clarification_message = (
+                                "Om het rapport te kunnen voltooien heb ik nog "
+                                "enkele gegevens nodig:\n\n" + display_text
+                            )
+
+                            if not message_started:
+                                await protocol_handler.send_text_message_start(
+                                    message_id, "assistant"
+                                )
+                                await protocol_handler.send_spoken_text_start(
+                                    message_id, "assistant"
+                                )
+                                message_started = True
+                                spoken_message_started = True
+
+                            await protocol_handler.send_text_message_content(
+                                message_id, clarification_message
+                            )
+                            await protocol_handler.send_spoken_text_content(
+                                message_id, clarification_message
+                            )
+                            full_response.append(clarification_message)
+                            log.info(
+                                f"Sent clarification questions to user: "
+                                f"{len(clarification_message)} chars"
+                            )
+
         except Exception as e:
-            log.error(f"[DEBUG] Failed to check interrupt state: {e}", exc_info=True)
+            log.error(f"Failed to check interrupt state: {e}", exc_info=True)
 
         # Handle listen mode responses (final_written set but no streaming happened)
+        # Skip when graph is interrupted — final_written may contain stale data
+        # from a previous turn
+        graph_was_interrupted = final_state and final_state.next
         try:
-            if final_state and final_state.values:
+            if final_state and final_state.values and not graph_was_interrupted:
                 final_written = final_state.values.get("final_written", "")
                 final_spoken = final_state.values.get("final_spoken", "")
                 final_interaction_mode = final_state.values.get("interaction_mode")
@@ -906,12 +1069,56 @@ class Orchestrator:
                 if hasattr(msg, "type"):
                     if msg.type == "human":
                         prev_was_ai_without_tools = False
-                        history.append(
-                            {
-                                "role": "user",
-                                "content": str(msg.content),
-                            }
-                        )
+
+                        if isinstance(msg.content, list):
+                            # Multimodal message — extract text and image info
+                            text_parts = [
+                                part.get("text", "")
+                                for part in msg.content
+                                if isinstance(part, dict) and part.get("type") == "text"
+                            ]
+                            content_text = "\n".join(text_parts)
+
+                            # Find saved image file for this message
+                            image_attachment = None
+                            for part in msg.content:
+                                if isinstance(part, dict) and part.get("type") == "image_url":
+                                    data_url = part.get("image_url", {}).get("url", "")
+                                    mime_type = "image/jpeg"
+                                    if data_url.startswith("data:"):
+                                        mime_header = data_url.split(",")[0]
+                                        if "image/" in mime_header:
+                                            mime_type = mime_header.split(":", 1)[1].split(";")[0]
+
+                                    # Derive filename from content hash (same as save logic)
+                                    if "," in data_url:
+                                        _, b64_data = data_url.split(",", 1)
+                                        try:
+                                            image_bytes = base64.b64decode(b64_data)
+                                            content_hash = hashlib.md5(image_bytes).hexdigest()[:12]
+                                            ext = "jpg" if "jpeg" in mime_type else mime_type.split("/")[-1]
+                                            filename = f"{content_hash}.{ext}"
+                                            file_path = self.SESSION_IMAGES_DIR / thread_id / filename
+                                            if file_path.exists():
+                                                image_attachment = {
+                                                    "url": f"/sessions/{thread_id}/images/{filename}",
+                                                    "mimeType": mime_type,
+                                                }
+                                        except Exception:
+                                            pass
+                                    break  # Only first image per message
+
+                            entry: dict[str, Any] = {"role": "user", "content": content_text}
+                            if image_attachment:
+                                entry["image_attachment"] = image_attachment
+                            history.append(entry)
+                        else:
+                            history.append(
+                                {
+                                    "role": "user",
+                                    "content": extract_text(msg.content),
+                                }
+                            )
                     elif msg.type == "ai":
                         # Extract agent_id and spoken_text from additional_kwargs if present
                         agent_id = None
@@ -929,7 +1136,7 @@ class Orchestrator:
                                 history.append(
                                     {
                                         "role": "assistant",
-                                        "content": str(msg.content),
+                                        "content": extract_text(msg.content),
                                         "agent_id": agent_id or "",
                                         "spoken_text": spoken_text,
                                     }
@@ -953,7 +1160,7 @@ class Orchestrator:
                                     # agent's "wasted" response before regeneration)
                                     history[-1] = {
                                         "role": "assistant",
-                                        "content": str(msg.content),
+                                        "content": extract_text(msg.content),
                                         "agent_id": agent_id or "",
                                         "spoken_text": spoken_text,
                                     }
@@ -961,7 +1168,7 @@ class Orchestrator:
                                     history.append(
                                         {
                                             "role": "assistant",
-                                            "content": str(msg.content),
+                                            "content": extract_text(msg.content),
                                             "agent_id": agent_id or "",
                                             "spoken_text": spoken_text,
                                         }
@@ -975,7 +1182,7 @@ class Orchestrator:
                                 "role": "tool",
                                 "tool_call_id": getattr(msg, "tool_call_id", ""),
                                 "tool_name": getattr(msg, "name", "unknown"),
-                                "content": str(msg.content),
+                                "content": extract_text(msg.content),
                             }
                         )
 

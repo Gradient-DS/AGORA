@@ -11,6 +11,8 @@ from typing import Literal
 from langchain_core.messages import BaseMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
+from agora_langgraph.common.message_utils import extract_text
+
 log = logging.getLogger(__name__)
 
 
@@ -80,7 +82,7 @@ async def generate_parallel_streams(
         try:
             async for chunk in llm.astream(written_messages):
                 if hasattr(chunk, "content") and chunk.content:
-                    await written_queue.put(str(chunk.content))
+                    await written_queue.put(extract_text(chunk.content))
         except Exception as e:
             log.error(f"Error in written stream: {e}")
             # Written errors are critical - re-raise
@@ -93,7 +95,7 @@ async def generate_parallel_streams(
         try:
             async for chunk in llm.astream(spoken_messages):
                 if hasattr(chunk, "content") and chunk.content:
-                    await spoken_queue.put(str(chunk.content))
+                    await spoken_queue.put(extract_text(chunk.content))
         except Exception as e:
             error_msg = str(e)
             log.error(f"Error in spoken stream: {error_msg}")
