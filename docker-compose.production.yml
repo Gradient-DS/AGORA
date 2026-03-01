@@ -104,6 +104,12 @@ services:
       # Optional: Provider fallback chains
       - LANGGRAPH_LLM_PROVIDERS=${LANGGRAPH_LLM_PROVIDERS:-}
       - LANGGRAPH_SPOKEN_PROVIDERS=${LANGGRAPH_SPOKEN_PROVIDERS:-}
+      - GOOGLE_TOKEN=${GOOGLE_TOKEN:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - OPENAI_TOKEN=${OPENAI_TOKEN:-}
+      - NEBUL_TOKEN=${NEBUL_TOKEN:-}
+      - CEREBRAS_TOKEN=${CEREBRAS_TOKEN:-}
+
     volumes:
       - langgraph_sessions:/app/sessions
     depends_on:
