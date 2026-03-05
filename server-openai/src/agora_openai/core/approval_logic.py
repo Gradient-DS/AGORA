@@ -47,7 +47,7 @@ def requires_human_approval(
         if any(tool_name_lower.endswith(t) for t in ALWAYS_APPROVE_TOOLS):
             return (
                 True,
-                f"Critical operation requires approval: {tool_call.tool_name}",
+                "Het genereren van het eindrapport vereist uw goedkeuring.",
                 "critical",
             )
 

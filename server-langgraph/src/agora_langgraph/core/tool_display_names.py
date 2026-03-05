@@ -4,6 +4,8 @@ Provides Dutch display names for tools shown in the HAI frontend.
 These names are sent via the toolDisplayName field in TOOL_CALL_START events.
 """
 
+import random
+
 TOOL_DISPLAY_NAMES: dict[str, str] = {
     # History agent tools
     "check_company_exists": "Controleren bedrijfsgegevens",
@@ -49,16 +51,38 @@ def get_tool_display_name(tool_name: str) -> str | None:
     return TOOL_DISPLAY_NAMES.get(tool_name)
 
 
-TOOL_SPOKEN_DESCRIPTIONS: dict[str, str] = {
-    "transfer_to_reporting": "Ik geef het door aan de rapportage agent.",
-    "transfer_to_regulation": "Ik geef het door aan de regelgeving agent.",
-    "transfer_to_history": "Ik geef het door aan de inspectiehistorie agent.",
-    "transfer_to_general": "Ik geef het door aan de algemene agent.",
-    "transfer_to_triage": "Ik geef het door aan de triage agent.",
-    "transfer_to_agent": "Ik geef het door aan de specialist.",
+TOOL_SPOKEN_DESCRIPTIONS: dict[str, list[str]] = {
+    # Handoff tools - natural, action-oriented descriptions
+    "transfer_to_reporting": [
+        "Ik ga het rapport voor je voorbereiden.",
+        "Momentje, ik begin met de rapportage.",
+        "Ik ga de inspectiegegevens verwerken voor het rapport.",
+    ],
+    "transfer_to_regulation": [
+        "Ik ga de regelgeving erbij pakken.",
+        "Even de regels checken, momentje.",
+        "Ik zoek de relevante wetgeving voor je op.",
+    ],
+    "transfer_to_history": [
+        "Ik ga de bedrijfsgegevens opzoeken.",
+        "Momentje, ik zoek de inspectiehistorie op.",
+        "Ik ga kijken wat we over dit bedrijf weten.",
+    ],
+    # Report generation - shown in approval dialog
+    "generate_final_report": [
+        "Ik ga het eindrapport voor je opstellen.",
+        "Momentje, ik genereer het inspectierapport.",
+        "Ik ga de bevindingen verwerken in het rapport.",
+    ],
 }
 
 
 def get_tool_spoken_description(tool_name: str) -> str | None:
-    """Get spoken TTS description for a tool, or None for no announcement."""
-    return TOOL_SPOKEN_DESCRIPTIONS.get(tool_name)
+    """Get spoken TTS description for a tool, or None for no announcement.
+
+    Randomly selects from multiple natural-sounding options for variety.
+    """
+    options = TOOL_SPOKEN_DESCRIPTIONS.get(tool_name)
+    if options is None:
+        return None
+    return random.choice(options)

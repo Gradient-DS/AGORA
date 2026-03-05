@@ -934,7 +934,7 @@ class Orchestrator:
                     if protocol_handler.is_connected:
                         await protocol_handler.send_tool_approval_request(
                             tool_name=i_tool_name,
-                            tool_description=f"Tool call: {i_tool_name}",
+                            tool_description=get_tool_spoken_description(i_tool_name) or f"Tool call: {i_tool_name}",
                             parameters=interrupt_value.get("parameters", {}),
                             reasoning=interrupt_value.get("reason")
                             or "Operation requires human approval",

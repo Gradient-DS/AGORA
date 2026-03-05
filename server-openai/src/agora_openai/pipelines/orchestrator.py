@@ -76,7 +76,7 @@ class Orchestrator:
 
             await protocol_handler.send_tool_approval_request(
                 tool_name=tool_name,
-                tool_description=f"Tool call: {tool_name}",
+                tool_description=get_tool_spoken_description(tool_name) or f"Tool call: {tool_name}",
                 parameters=parameters,
                 reasoning=reason or "Operation requires human approval",
                 risk_level=risk_level,
