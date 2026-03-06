@@ -132,16 +132,14 @@ class Orchestrator:
         thread_id = agent_input.thread_id
         run_id = agent_input.run_id or str(uuid.uuid4())
 
-        # Extract user messages, keeping both text-only (for logging/moderation)
-        # and multimodal content (for the LLM) when images are present
+        # Extract user messages — always text-only for the LLM
         user_text_parts: list[str] = []
-        user_llm_content: str | list[str | dict[Any, Any]] = ""
         image_parts: list[dict[str, Any]] = []
         for msg in agent_input.messages:
             if msg.get("role") == "user":
                 raw_content = msg.get("content", "")
                 if isinstance(raw_content, list):
-                    # Multimodal content array — extract text and image parts
+                    # Multimodal content array — extract text and image parts separately
                     text_parts = [
                         part["text"]
                         for part in raw_content
@@ -153,26 +151,10 @@ class Orchestrator:
                         if isinstance(part, dict) and part.get("type") == "binary"
                     ]
                     user_text_parts.append("\n".join(text_parts))
-
-                    if image_parts:
-                        # Build LangChain multimodal content list
-                        llm_parts: list[dict[str, Any]] = []
-                        for tp in text_parts:
-                            llm_parts.append({"type": "text", "text": tp})
-                        for img in image_parts:
-                            data_url = img.get("data", "")
-                            llm_parts.append({
-                                "type": "image_url",
-                                "image_url": {"url": data_url},
-                            })
-                        user_llm_content = llm_parts
-                    else:
-                        user_llm_content = "\n".join(text_parts)
                 else:
                     user_text_parts.append(raw_content)
-                    user_llm_content = raw_content
 
-        # Text-only content for moderation, logging, and session metadata
+        # Text-only content for both LLM and logging
         user_content = "\n".join(user_text_parts)
 
         # Auto-forward images to reporting MCP server for PDF evidence
@@ -186,8 +168,18 @@ class Orchestrator:
             )
 
         # Save images to disk for chat history persistence
+        saved_images: list[dict[str, str]] = []
         if image_parts:
-            self._save_session_images(thread_id, image_parts)
+            saved_images = self._save_session_images(thread_id, image_parts)
+
+        # Generate AI descriptions for images in the background
+        if image_parts and self.reporting_url:
+            asyncio.create_task(
+                self._describe_and_update_images(
+                    session_id=thread_id,
+                    image_parts=image_parts,
+                )
+            )
 
         # Get user_id from top-level field
         user_id = agent_input.user_id
@@ -304,14 +296,20 @@ class Orchestrator:
             elif is_existing_thread:
                 # Existing thread - only send new message
                 # interaction_mode is persisted in checkpointed state
+                human_msg = HumanMessage(content=user_content)
+                if saved_images:
+                    human_msg.additional_kwargs["image_refs"] = saved_images
                 graph_input = {
-                    "messages": [HumanMessage(content=user_llm_content)],
+                    "messages": [human_msg],
                     "metadata": metadata,
                 }
             else:
                 # NEW session - always start in feedback mode
+                human_msg = HumanMessage(content=user_content)
+                if saved_images:
+                    human_msg.additional_kwargs["image_refs"] = saved_images
                 graph_input = {
-                    "messages": [HumanMessage(content=user_llm_content)],
+                    "messages": [human_msg],
                     "session_id": thread_id,
                     "current_agent": "general-agent",
                     "pending_approval": None,
@@ -524,6 +522,55 @@ class Orchestrator:
                         log.warning(f"Failed to forward image: {resp.status_code} {resp.text}")
                 except Exception as e:
                     log.warning(f"Failed to forward evidence image: {e}")
+
+    async def _describe_and_update_images(
+        self,
+        session_id: str,
+        image_parts: list[dict[str, Any]],
+    ) -> None:
+        """Generate AI descriptions for images and update reporting server."""
+        from langchain_openai import ChatOpenAI
+
+        settings = get_settings()
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            api_key=settings.openai_api_key,
+            max_completion_tokens=300,
+        )
+
+        for i, img in enumerate(image_parts):
+            data_url = img.get("data", "")
+            if not data_url:
+                continue
+
+            try:
+                response = await llm.ainvoke([
+                    HumanMessage(content=[
+                        {"type": "text", "text": (
+                            "Beschrijf deze foto kort in het Nederlands (max 2 zinnen). "
+                            "Dit is een inspectie-foto gemaakt door een NVWA-inspecteur. "
+                            "Focus op wat zichtbaar is dat relevant kan zijn voor "
+                            "voedselveiligheid of compliance."
+                        )},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ])
+                ])
+                description = (
+                    response.content if isinstance(response.content, str)
+                    else str(response.content)
+                )
+
+                # Update the reporting MCP server with the description
+                if self.reporting_url:
+                    url = f"{self.reporting_url}/reports/{session_id}/images/{i}/description"
+                    async with httpx.AsyncClient(timeout=15.0) as client:
+                        resp = await client.patch(url, json={"description": description})
+                        if resp.status_code == 200:
+                            log.info(f"Updated image {i} description for session {session_id}")
+                        else:
+                            log.warning(f"Failed to update image description: {resp.status_code}")
+            except Exception as e:
+                log.warning(f"Failed to describe image {i}: {e}")
 
     def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
         """Create an AG-UI AssistantMessage response."""
@@ -1069,18 +1116,28 @@ class Orchestrator:
                 if hasattr(msg, "type"):
                     if msg.type == "human":
                         prev_was_ai_without_tools = False
+                        content_text = extract_text(msg.content)
 
-                        if isinstance(msg.content, list):
-                            # Multimodal message — extract text and image info
-                            text_parts = [
-                                part.get("text", "")
-                                for part in msg.content
-                                if isinstance(part, dict) and part.get("type") == "text"
-                            ]
-                            content_text = "\n".join(text_parts)
+                        # Check for image refs in metadata (new approach)
+                        image_attachment = None
+                        image_refs = (
+                            msg.additional_kwargs.get("image_refs", [])
+                            if hasattr(msg, "additional_kwargs")
+                            else []
+                        )
+                        if image_refs:
+                            ref = image_refs[0]
+                            filename = ref.get("filename", "")
+                            mime_type = ref.get("mime_type", "image/jpeg")
+                            file_path = self.SESSION_IMAGES_DIR / thread_id / filename
+                            if file_path.exists():
+                                image_attachment = {
+                                    "url": f"/sessions/{thread_id}/images/{filename}",
+                                    "mimeType": mime_type,
+                                }
 
-                            # Find saved image file for this message
-                            image_attachment = None
+                        # Fallback: legacy multimodal messages (backward compat)
+                        if not image_attachment and isinstance(msg.content, list):
                             for part in msg.content:
                                 if isinstance(part, dict) and part.get("type") == "image_url":
                                     data_url = part.get("image_url", {}).get("url", "")
@@ -1089,8 +1146,6 @@ class Orchestrator:
                                         mime_header = data_url.split(",")[0]
                                         if "image/" in mime_header:
                                             mime_type = mime_header.split(":", 1)[1].split(";")[0]
-
-                                    # Derive filename from content hash (same as save logic)
                                     if "," in data_url:
                                         _, b64_data = data_url.split(",", 1)
                                         try:
@@ -1106,19 +1161,12 @@ class Orchestrator:
                                                 }
                                         except Exception:
                                             pass
-                                    break  # Only first image per message
+                                    break
 
-                            entry: dict[str, Any] = {"role": "user", "content": content_text}
-                            if image_attachment:
-                                entry["image_attachment"] = image_attachment
-                            history.append(entry)
-                        else:
-                            history.append(
-                                {
-                                    "role": "user",
-                                    "content": extract_text(msg.content),
-                                }
-                            )
+                        entry: dict[str, Any] = {"role": "user", "content": content_text}
+                        if image_attachment:
+                            entry["image_attachment"] = image_attachment
+                        history.append(entry)
                     elif msg.type == "ai":
                         # Extract agent_id and spoken_text from additional_kwargs if present
                         agent_id = None

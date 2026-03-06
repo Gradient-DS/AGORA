@@ -408,28 +408,7 @@ def _create_parallel_sends(state: AgentState) -> list[Send]:
     session_id = state.get("session_id", "")
     metadata = state.get("metadata", {})
 
-    # Build text-only messages for spoken model (cannot handle images)
-    spoken_messages: list[BaseMessage] = []
-    for m in messages:
-        if isinstance(m, HumanMessage) and isinstance(m.content, list):
-            # Strip image parts, keep only text
-            text_parts = [
-                part["text"]
-                for part in m.content
-                if isinstance(part, dict) and part.get("type") == "text"
-            ]
-            has_image = any(
-                isinstance(part, dict) and part.get("type") == "image_url"
-                for part in m.content
-            )
-            text = "\n".join(text_parts)
-            if has_image:
-                text += "\n\n[De gebruiker heeft een afbeelding bijgevoegd.]"
-            spoken_messages.append(HumanMessage(content=text))
-        else:
-            spoken_messages.append(m)
-
-    # Dispatch to separate nodes for easy identification in astream_events
+    # Both models receive identical text-only messages (images are decoupled)
     return [
         Send(
             "generate_written",
@@ -445,7 +424,7 @@ def _create_parallel_sends(state: AgentState) -> list[Send]:
         Send(
             "generate_spoken",
             GeneratorState(
-                messages=spoken_messages,
+                messages=messages,
                 system_prompt=spoken_prompt,
                 stream_type="spoken",
                 agent_id=agent_id,

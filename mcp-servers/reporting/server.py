@@ -477,6 +477,7 @@ async def upload_evidence_image(request: Request) -> JSONResponse:
     image_data = body.get("image_data", "")
     caption = body.get("caption", "Bewijsfoto")
     mime_type = body.get("mime_type", "image/jpeg")
+    description = body.get("description", "")
 
     if not image_data:
         return JSONResponse({"error": "image_data is required"}, status_code=400)
@@ -492,7 +493,7 @@ async def upload_evidence_image(request: Request) -> JSONResponse:
         return JSONResponse({"error": "Invalid base64 image data"}, status_code=400)
 
     # Save image
-    result = storage.save_image(session_id, image_bytes, "", caption, mime_type)
+    result = storage.save_image(session_id, image_bytes, "", caption, mime_type, description=description)
 
     if result is None:
         return JSONResponse({
@@ -507,6 +508,28 @@ async def upload_evidence_image(request: Request) -> JSONResponse:
         "current_count": storage.get_image_count(session_id),
         "max_images": MAX_EVIDENCE_IMAGES,
     }, status_code=201)
+
+
+@mcp.custom_route("/reports/{session_id}/images/{image_index}/description", methods=["PATCH"])
+async def update_image_description(request: Request) -> JSONResponse:
+    """Update the AI-generated description for an evidence image."""
+    session_id = request.path_params.get("session_id")
+    image_index = int(request.path_params.get("image_index", "0"))
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+    description = body.get("description", "")
+    if not description:
+        return JSONResponse({"error": "description is required"}, status_code=400)
+
+    success = storage.update_image_description(session_id, image_index, description)
+    if not success:
+        return JSONResponse({"error": "Image not found"}, status_code=404)
+
+    return JSONResponse({"success": True}, status_code=200)
 
 
 @mcp.custom_route("/reports/{session_id}/images", methods=["GET"])

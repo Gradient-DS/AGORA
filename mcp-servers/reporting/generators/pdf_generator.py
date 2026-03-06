@@ -408,12 +408,17 @@ class PDFGenerator:
                 self.styles['Normal']
             )
 
-            # Keep image + caption together across page breaks
-            elements.append(KeepTogether([
-                rl_image,
-                Spacer(1, 0.2*cm),
-                caption_text,
-            ]))
+            description = img_info.get("description", "")
+
+            # Keep image + caption + description together across page breaks
+            keep_elements = [rl_image, Spacer(1, 0.2*cm), caption_text]
+            if description:
+                keep_elements.append(Spacer(1, 0.1*cm))
+                keep_elements.append(Paragraph(
+                    f"<i>{description}</i>",
+                    self.styles['Normal']
+                ))
+            elements.append(KeepTogether(keep_elements))
             elements.append(Spacer(1, 0.5*cm))
 
         return elements

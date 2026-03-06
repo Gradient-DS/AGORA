@@ -124,16 +124,14 @@ class Orchestrator:
         thread_id = agent_input.thread_id
         run_id = agent_input.run_id or str(uuid.uuid4())
 
-        # Extract user message, keeping both text-only (for logging/moderation)
-        # and multimodal content (for the LLM) when images are present
+        # Extract user messages — always text-only for the LLM
         user_content = ""
-        user_llm_input: str | list[dict[str, Any]] = ""
         image_parts: list[dict[str, Any]] = []
         for msg in agent_input.messages:
             if msg.get("role") == "user":
                 raw_content = msg.get("content", "")
                 if isinstance(raw_content, list):
-                    # Multimodal content array — extract text and image parts
+                    # Multimodal content array — extract text and image parts separately
                     text_parts = [
                         part["text"]
                         for part in raw_content
@@ -145,25 +143,8 @@ class Orchestrator:
                         if isinstance(part, dict) and part.get("type") == "binary"
                     ]
                     user_content = "\n".join(text_parts)
-
-                    if image_parts:
-                        # Build OpenAI Responses API multimodal input
-                        content_parts: list[dict[str, Any]] = []
-                        for tp in text_parts:
-                            content_parts.append({"type": "input_text", "text": tp})
-                        for img in image_parts:
-                            data_url = img.get("data", "")
-                            content_parts.append({
-                                "type": "input_image",
-                                "image_url": data_url,
-                                "detail": "auto",
-                            })
-                        user_llm_input = [{"role": "user", "content": content_parts}]
-                    else:
-                        user_llm_input = user_content
                 else:
                     user_content = raw_content
-                    user_llm_input = raw_content
                 break
 
         # Auto-forward images to reporting MCP server for PDF evidence
@@ -173,6 +154,15 @@ class Orchestrator:
                     session_id=thread_id,
                     image_parts=image_parts,
                     caption=user_content,
+                )
+            )
+
+        # Generate AI descriptions for images in the background
+        if image_parts and self.reporting_url:
+            asyncio.create_task(
+                self._describe_and_update_images(
+                    session_id=thread_id,
+                    image_parts=image_parts,
                 )
             )
 
@@ -525,20 +515,12 @@ class Orchestrator:
                             current_step = "thinking"
 
                 # Include user_id context for settings tool
-                if isinstance(user_llm_input, list) and user_id:
-                    # Multimodal list input — prepend system context as text part
-                    context_msg = {"role": "user", "content": [
-                        {"type": "input_text", "text": f"[SYSTEM CONTEXT: user_id={user_id}]"},
-                    ]}
-                    message_with_context: str | list[dict[str, Any]] = (
-                        [context_msg] + user_llm_input
-                    )
-                elif isinstance(user_llm_input, str) and user_id:
+                if user_id:
                     message_with_context = (
-                        f"[SYSTEM CONTEXT: user_id={user_id}]\n\n{user_llm_input}"
+                        f"[SYSTEM CONTEXT: user_id={user_id}]\n\n{user_content}"
                     )
                 else:
-                    message_with_context = user_llm_input
+                    message_with_context = user_content
 
                 response_content, active_agent_id = await self.agent_runner.run_agent(
                     message=message_with_context,
@@ -595,7 +577,7 @@ class Orchestrator:
                         await protocol_handler.send_step_finished(current_step)
             else:
                 response_content, active_agent_id = await self.agent_runner.run_agent(
-                    message=user_llm_input if user_llm_input else user_content,
+                    message=user_content,
                     session_id=thread_id,
                 )
 
@@ -713,6 +695,55 @@ class Orchestrator:
                         log.warning(f"Failed to forward image: {resp.status_code} {resp.text}")
                 except Exception as e:
                     log.warning(f"Failed to forward evidence image: {e}")
+
+    async def _describe_and_update_images(
+        self,
+        session_id: str,
+        image_parts: list[dict[str, Any]],
+    ) -> None:
+        """Generate AI descriptions for images and update reporting server."""
+        from openai import AsyncOpenAI
+
+        settings = get_settings()
+        client = AsyncOpenAI(api_key=settings.openai_api_key.get_secret_value())
+
+        for i, img in enumerate(image_parts):
+            data_url = img.get("data", "")
+            if not data_url:
+                continue
+
+            try:
+                response = await client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    max_tokens=300,
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": (
+                                "Beschrijf deze foto kort in het Nederlands "
+                                "(max 2 zinnen). "
+                                "Dit is een inspectie-foto gemaakt door een "
+                                "NVWA-inspecteur. "
+                                "Focus op wat zichtbaar is dat relevant kan "
+                                "zijn voor voedselveiligheid of compliance."
+                            )},
+                            {"type": "image_url", "image_url": {"url": data_url}},
+                        ],
+                    }],
+                )
+                description = response.choices[0].message.content or ""
+
+                if self.reporting_url:
+                    url = (
+                        f"{self.reporting_url}/reports/{session_id}"
+                        f"/images/{i}/description"
+                    )
+                    async with httpx.AsyncClient(timeout=15.0) as http_client:
+                        await http_client.patch(
+                            url, json={"description": description}
+                        )
+            except Exception as e:
+                log.warning(f"Failed to describe image {i}: {e}")
 
     def _create_response_message(self, content: str, message_id: str) -> AGUIMessage:
         """Create an AG-UI AssistantMessage response."""
