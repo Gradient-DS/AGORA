@@ -29,7 +29,6 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "submit_verification_answers": "Verwerken antwoorden",
     "request_clarification": "Opvragen aanvullende informatie",
     "generate_final_report": "Genereren eindrapport",
-    "get_report_status": "Ophalen rapport status",
     "generate_report": "Genereren rapportage",
     # General tools
     "search_documents": "Zoeken in documenten",

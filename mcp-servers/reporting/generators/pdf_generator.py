@@ -94,6 +94,7 @@ class PDFGenerator:
                 height=25*mm,
                 preserveAspectRatio=True,
                 anchor='nw',
+                mask='auto',
             )
 
         # Document number top-left

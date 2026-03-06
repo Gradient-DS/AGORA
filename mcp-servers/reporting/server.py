@@ -361,43 +361,6 @@ async def generate_final_report(
         }
 
 
-@mcp.tool
-async def get_report_status(
-    session_id: str,
-) -> dict:
-    """Get the current status and completion percentage of an inspection report.
-    
-    Args:
-        session_id: Session identifier
-    
-    Returns:
-        Report status, completion percentage, and file paths
-    """
-    try:
-        status_info = session_manager.get_report_status(session_id)
-        
-        if not status_info["exists"]:
-            return {
-                "success": False,
-                "error": "Session not found",
-                "message": f"Geen rapport gevonden voor sessie {session_id}."
-            }
-        
-        return {
-            "success": True,
-            **status_info,
-            "message": f"Rapport {status_info.get('report_id', 'N/A')} is {status_info['completion_percentage']:.1f}% compleet."
-        }
-        
-    except Exception as e:
-        logger.error(f"Error getting report status: {e}", exc_info=True)
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Fout bij het ophalen van rapportstatus."
-        }
-
-
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> JSONResponse:
     """Health check endpoint for Docker and load balancers."""
@@ -563,8 +526,7 @@ def server_info() -> str:
             "tools": [
                 "extract_inspection_data",
                 "submit_verification_answers",
-                "generate_final_report",
-                "get_report_status"
+                "generate_final_report"
             ],
             "resources": ["server://info"],
             "features": [
