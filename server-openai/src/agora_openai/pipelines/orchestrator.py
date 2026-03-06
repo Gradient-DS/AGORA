@@ -166,6 +166,15 @@ class Orchestrator:
                 )
             )
 
+        # Image-only message — no LLM invocation needed
+        if not user_content.strip() and image_parts:
+            log.info(f"Image-only message for session {thread_id}, skipping LLM")
+            if protocol_handler:
+                run_id = agent_input.run_id or str(uuid.uuid4())
+                await protocol_handler.send_run_started(thread_id, run_id)
+                await protocol_handler.send_run_finished(thread_id, run_id)
+            return self._create_response_message("", str(uuid.uuid4()))
+
         # Get user_id from top-level field
         user_id = agent_input.user_id
 
