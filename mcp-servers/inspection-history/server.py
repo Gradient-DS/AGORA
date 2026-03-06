@@ -19,6 +19,7 @@ DUTCH_MESSAGES = {
     "escalation_advised": "ESCALATIE_GEADVISEERD",
     "immediate_action": "DIRECTE_ACTIE_VEREIST",
     "no_history": "Geen geschiedenis gevonden. Dit lijkt een eerste inspectie te zijn.",
+    "no_meldingen": "Geen meldingen gevonden voor dit bedrijf.",
 }
 
 
@@ -50,6 +51,15 @@ DEMO_INSPECTIONS = {
         "house_number": "123",
         "street": "Haagweg",
         "city": "Den Haag",
+        "opening_hours": {
+            "maandag": "Gesloten",
+            "dinsdag": "11:00-22:00",
+            "woensdag": "11:00-22:00",
+            "donderdag": "11:00-22:00",
+            "vrijdag": "11:00-23:00",
+            "zaterdag": "12:00-23:00",
+            "zondag": "12:00-21:00",
+        },
         "inspections": [
             {
                 "inspection_id": "INS-2022-001234",
@@ -93,6 +103,15 @@ DEMO_INSPECTIONS = {
         "house_number": "45",
         "street": "Zuiderparklaan",
         "city": "Den Haag",
+        "opening_hours": {
+            "maandag": "10:00-18:00",
+            "dinsdag": "10:00-18:00",
+            "woensdag": "10:00-18:00",
+            "donderdag": "10:00-21:00",
+            "vrijdag": "10:00-18:00",
+            "zaterdag": "10:00-17:00",
+            "zondag": "12:00-17:00",
+        },
         "inspections": [
             {
                 "inspection_id": "INS-2023-005678",
@@ -130,6 +149,15 @@ DEMO_INSPECTIONS = {
         "house_number": "8",
         "street": "Brugstraat",
         "city": "Groningen",
+        "opening_hours": {
+            "maandag": "08:00-18:00",
+            "dinsdag": "08:00-18:00",
+            "woensdag": "08:00-13:00",
+            "donderdag": "08:00-18:00",
+            "vrijdag": "08:00-18:00",
+            "zaterdag": "08:00-16:00",
+            "zondag": "Gesloten",
+        },
         "inspections": [
             {
                 "inspection_id": "INS-2021-009876",
@@ -174,6 +202,15 @@ DEMO_INSPECTIONS = {
         "house_number": "67",
         "street": "Damstraat",
         "city": "Amsterdam",
+        "opening_hours": {
+            "maandag": "16:00-01:00",
+            "dinsdag": "16:00-01:00",
+            "woensdag": "16:00-01:00",
+            "donderdag": "16:00-01:00",
+            "vrijdag": "16:00-03:00",
+            "zaterdag": "14:00-03:00",
+            "zondag": "14:00-01:00",
+        },
         "inspections": [
             {
                 "inspection_id": "INS-2024-001111",
@@ -187,6 +224,77 @@ DEMO_INSPECTIONS = {
             }
         ]
     }
+}
+
+
+DEMO_MELDINGEN = {
+    "2511AA-123": [  # Restaurant Bella Rosa - 2 meldingen
+        {
+            "melding_id": "MLD-2025-001234",
+            "datum": "2025-11-15",
+            "categorie": "onhygienische_bereiding",
+            "subcategorie": "vuile_bereidingsruimte",
+            "omschrijving": "Klacht over vieze keuken en ongedierte gezien bij het restaurant.",
+            "product_omschrijving": None,
+            "status": "in_behandeling",
+            "bron": "consumentenklacht",
+        },
+        {
+            "melding_id": "MLD-2025-001890",
+            "datum": "2025-08-03",
+            "categorie": "misleidende_informatie",
+            "subcategorie": "geen_allergeninformatie",
+            "omschrijving": "Geen allergeninformatie beschikbaar op de menukaart ondanks herhaaldelijk vragen.",
+            "product_omschrijving": None,
+            "status": "afgehandeld",
+            "bron": "consumentenklacht",
+        },
+    ],
+    "2521DJ-45": [  # SpeelgoedPlaza - 1 melding
+        {
+            "melding_id": "MLD-2025-002456",
+            "datum": "2025-09-22",
+            "categorie": "onjuiste_etikettering",
+            "subcategorie": "ontbrekende_ingredienten",
+            "omschrijving": "Speelgoedverf zonder ingrediëntenvermelding op de verpakking, potentieel giftige stoffen.",
+            "product_omschrijving": "KinderVerf Set 12 kleuren",
+            "status": "doorgestuurd",
+            "bron": "consumentenklacht",
+        },
+    ],
+    "9711NX-8": [  # Slagerij de Boer - 3 meldingen
+        {
+            "melding_id": "MLD-2025-003789",
+            "datum": "2025-12-01",
+            "categorie": "productproblemen",
+            "subcategorie": "vreemde_geur_smaak",
+            "omschrijving": "Rookworst had vreemde geur en smaak, vermoeden van bederf.",
+            "product_omschrijving": "Rookworst huisgemaakt",
+            "status": "in_behandeling",
+            "bron": "consumentenklacht",
+        },
+        {
+            "melding_id": "MLD-2025-003012",
+            "datum": "2025-10-18",
+            "categorie": "verlopen_producten",
+            "subcategorie": "over_datum",
+            "omschrijving": "Gehaktballen met verlopen houdbaarheidsdatum aangetroffen in de vitrine.",
+            "product_omschrijving": "Gehaktballen huisgemaakt",
+            "status": "afgehandeld",
+            "bron": "consumentenklacht",
+        },
+        {
+            "melding_id": "MLD-2025-002567",
+            "datum": "2025-07-14",
+            "categorie": "onhygienische_bereiding",
+            "subcategorie": "ongedierte",
+            "omschrijving": "Vliegen gespot in de vitrine bij de vleesproducten.",
+            "product_omschrijving": None,
+            "status": "afgehandeld",
+            "bron": "consumentenklacht",
+        },
+    ],
+    # 1012AB-67 (Cafe Het Bruine Paard) - no meldingen (clean record)
 }
 
 
@@ -231,6 +339,7 @@ async def check_company_exists(postal_code: str, house_number: str) -> dict:
             "street": company["street"],
             "city": company["city"],
             "company_name": company["company_name"],
+            "opening_hours": company["opening_hours"],
             "active": True,
         }
 
@@ -239,7 +348,78 @@ async def check_company_exists(postal_code: str, house_number: str) -> dict:
         "exists": True,
         "postal_code": postal_code,
         "house_number": house_number,
+        "opening_hours": None,
         "active": True,
+    }
+
+
+@mcp.tool()
+async def get_company_meldingen(
+    postal_code: str,
+    house_number: str,
+    categorie: str | None = None,
+    limit: int = 10,
+) -> dict:
+    """Haal meldingen op uit het meldingensysteem voor een bedrijf.
+
+    Controleer of er consumentenklachten of meldingen zijn binnengekomen
+    over dit bedrijf op basis van postcode en huisnummer.
+
+    Categorieën: productproblemen, onjuiste_etikettering, verlopen_producten,
+    onhygienische_bereiding, misleidende_informatie
+
+    Parameters:
+        postal_code: Nederlandse postcode (bijv. '2511 AA')
+        house_number: Huisnummer (bijv. '123')
+        categorie: Optioneel filter op categorie
+        limit: Maximum aantal meldingen om te retourneren (standaard 10)
+
+    Retourneert:
+        dict met meldingen en bedrijfsgegevens
+    """
+    logger.info(f"Fetching meldingen for address: {postal_code} {house_number}")
+
+    error = validate_address(postal_code, house_number)
+    if error:
+        return {
+            "status": "error",
+            "error": error,
+            "postal_code": postal_code,
+            "house_number": house_number,
+        }
+
+    key = make_lookup_key(postal_code, house_number)
+    meldingen = DEMO_MELDINGEN.get(key, [])
+
+    # Get company name from DEMO_INSPECTIONS if available
+    company_data = DEMO_INSPECTIONS.get(key)
+    company_name = company_data["company_name"] if company_data else None
+
+    if not meldingen:
+        return {
+            "status": "success",
+            "postal_code": postal_code,
+            "house_number": house_number,
+            "company_name": company_name,
+            "message": DUTCH_MESSAGES["no_meldingen"],
+            "total_meldingen": 0,
+            "meldingen": [],
+        }
+
+    # Filter by category if provided
+    if categorie:
+        meldingen = [m for m in meldingen if m["categorie"] == categorie]
+
+    # Sort by date (newest first) and limit
+    meldingen = sorted(meldingen, key=lambda m: m["datum"], reverse=True)[:limit]
+
+    return {
+        "status": "success",
+        "postal_code": postal_code,
+        "house_number": house_number,
+        "company_name": company_name,
+        "total_meldingen": len(meldingen),
+        "meldingen": meldingen,
     }
 
 

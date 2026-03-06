@@ -120,10 +120,10 @@ For unknown addresses (line 237-243), add:
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] MCP server starts without errors: `cd mcp-servers && docker-compose up --build inspection-history`
-- [ ] Health check passes: `curl http://localhost:5005/health`
-- [ ] `check_company_exists` for known address returns `opening_hours` dict
-- [ ] `check_company_exists` for unknown address returns `opening_hours: null`
+- [x] MCP server starts without errors: `cd mcp-servers && docker-compose up --build inspection-history`
+- [x] Health check passes: `curl http://localhost:5005/health`
+- [x] `check_company_exists` for known address returns `opening_hours` dict
+- [x] `check_company_exists` for unknown address returns `opening_hours: null`
 
 #### Manual Verification:
 - [ ] Opening hours appear in chat when inspector looks up a known company
@@ -300,11 +300,11 @@ async def get_company_meldingen(
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] MCP server starts without errors
-- [ ] `get_company_meldingen` appears in tool list: `curl http://localhost:5005/mcp/tools | jq`
-- [ ] Returns 2 meldingen for `2511AA-123` (Bella Rosa)
-- [ ] Returns 0 meldingen for `1012AB-67` (Cafe Het Bruine Paard)
-- [ ] Category filter works correctly
+- [x] MCP server starts without errors
+- [x] `get_company_meldingen` appears in tool list: `curl http://localhost:5005/mcp/tools | jq`
+- [x] Returns 2 meldingen for `2511AA-123` (Bella Rosa)
+- [x] Returns 0 meldingen for `1012AB-67` (Cafe Het Bruine Paard)
+- [x] Category filter works correctly
 
 #### Manual Verification:
 - [ ] Inspector can ask about meldingen for a company in the chat
@@ -371,9 +371,9 @@ Add to `FORMAT` section (line 235):
 ### Success Criteria:
 
 #### Automated Verification:
-- [ ] Both orchestrators start without import errors
-- [ ] `python -c "from agora_openai.core.agent_definitions import AGENT_CONFIGS; print('OK')"` succeeds
-- [ ] `python -c "from agora_langgraph.core.agent_definitions import AGENT_CONFIGS; print('OK')"` succeeds
+- [x] Both orchestrators start without import errors
+- [x] `python -c "from agora_openai.core.agent_definitions import AGENT_CONFIGS; print('OK')"` succeeds
+- [x] `python -c "from agora_langgraph.core.agent_definitions import AGENT_CONFIGS; print('OK')"` succeeds
 
 #### Manual Verification:
 - [ ] History-agent mentions opening hours when looking up a known company

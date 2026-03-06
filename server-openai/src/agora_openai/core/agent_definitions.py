@@ -214,9 +214,11 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "YOUR CAPABILITIES:\n"
             "COMPANY VERIFICATION:\n"
             "- Check if company exists at address (check_company_exists)\n"
+            "- Opening hours are included in the check_company_exists response\n"
             "- Verify postal code format (4 digits + 2 letters, e.g. '2511 AA')\n\n"
             "INSPECTION HISTORY (includes full company details):\n"
             "- Retrieve complete inspection history for companies\n"
+            "- Check consumer complaints via get_company_meldingen\n"
             "- Analyze past violations and their severity\n"
             "- Identify repeat violations and patterns\n"
             "- Track follow-up actions and compliance status\n"
@@ -236,7 +238,9 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "   - Call check_repeat_violation for specific categories\n"
             "3. When checking follow-up:\n"
             "   - Call get_follow_up_status\n"
-            "4. When searching by inspector:\n"
+            "4. When checking consumer complaints:\n"
+            "   - Call get_company_meldingen (optionally filter by categorie)\n"
+            "5. When searching by inspector:\n"
             "   - Call search_inspections_by_inspector\n\n"
             "ALWAYS:\n"
             "- Highlight repeat violations: 'WAARSCHUWING: Eerdere overtreding'\n"
@@ -245,7 +249,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Flag inactive companies: 'WAARSCHUWING: Bedrijf is niet actief'\n"
             "- Provide risk assessment based on history and company data\n\n"
             "FORMAT:\n"
-            "Bedrijfsgegevens → Historisch Overzicht → Overtredingen → Follow-up Status"
+            "Bedrijfsgegevens → Openingstijden → Meldingen → Historisch Overzicht → Overtredingen → Follow-up Status"
         ),
         "model": None,  # Use OPENAI_AGENTS_OPENAI_MODEL from settings
         "tools": ["file_search", "code_interpreter"],

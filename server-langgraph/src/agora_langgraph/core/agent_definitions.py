@@ -208,6 +208,8 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "You answer: 'What do we know about this company?'\n"
             "- Company verification and validation\n"
             "- Complete inspection history\n"
+            "- Opening hours (included in check_company_exists response)\n"
+            "- Consumer complaints from the meldingen system\n"
             "- Past violations and compliance patterns\n"
             "- Risk indicators based on history\n\n"
             "TOOL USAGE:\n"
@@ -217,7 +219,9 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "2. When analyzing violations:\n"
             "   - Call get_company_violations (optionally filter by severity)\n"
             "   - Call check_repeat_violation for specific categories\n"
-            "3. When checking follow-up:\n"
+            "3. When checking consumer complaints:\n"
+            "   - Call get_company_meldingen (optionally filter by categorie)\n"
+            "4. When checking follow-up:\n"
             "   - Call get_follow_up_status\n\n"
             "COMPLETING YOUR TASK:\n"
             "- You provide the final answer about company/inspection history\n"
@@ -232,7 +236,7 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Flag inactive companies: 'WAARSCHUWING: Bedrijf is niet actief'\n"
             "- Provide risk assessment based on history\n\n"
             "FORMAT:\n"
-            "Bedrijfsgegevens → Historisch Overzicht → Overtredingen → Follow-up Status"
+            "Bedrijfsgegevens → Openingstijden → Meldingen → Historisch Overzicht → Overtredingen → Follow-up Status"
         ),
         "model": None,  # Use LANGGRAPH_OPENAI_MODEL from settings
         "tools": [],
