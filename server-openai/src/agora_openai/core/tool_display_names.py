@@ -23,13 +23,8 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "analyze_regulations": "Analyseren regelgeving",
     "get_database_stats": "Ophalen database statistieken",
     # Reporting agent tools
-    "start_inspection_report": "Starten inspectie rapport",
-    "extract_inspection_data": "Verwerken inspectiegegevens",
-    "verify_inspection_data": "Verifiëren inspectiegegevens",
-    "submit_verification_answers": "Verwerken antwoorden",
+    "generate_report": "Genereren inspectierapport",
     "request_clarification": "Opvragen aanvullende informatie",
-    "generate_final_report": "Genereren eindrapport",
-    "generate_report": "Genereren rapportage",
     # General tools
     "search_documents": "Zoeken in documenten",
     "query_knowledge_base": "Zoeken in kennisbank",
@@ -69,7 +64,7 @@ TOOL_SPOKEN_DESCRIPTIONS: dict[str, list[str]] = {
         "Ik ga kijken wat we over dit bedrijf weten.",
     ],
     # Report generation - shown in approval dialog
-    "generate_final_report": [
+    "generate_report": [
         "Ik ga het eindrapport voor je opstellen.",
         "Momentje, ik genereer het inspectierapport.",
         "Ik ga de bevindingen verwerken in het rapport.",

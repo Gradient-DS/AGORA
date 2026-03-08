@@ -16,7 +16,7 @@ HIGH_RISK_TOOL_PATTERNS = [
 ]
 
 ALWAYS_APPROVE_TOOLS = {
-    "generate_final_report",
+    "generate_report",
 }
 
 HIGH_RISK_PARAMETERS: dict[str, Any] = {

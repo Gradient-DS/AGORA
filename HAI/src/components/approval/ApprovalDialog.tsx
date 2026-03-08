@@ -2,7 +2,7 @@
  * Approval dialog for AG-UI Protocol human-in-the-loop approval flow.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import type { RiskLevel } from '@/types/schemas';
 import type { ApprovalRequest } from '@/stores/useApprovalStore';
 
@@ -45,6 +45,17 @@ export function ApprovalDialog({
 }: ApprovalDialogProps) {
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showFullParams, setShowFullParams] = useState(false);
+
+  const PARAMS_PREVIEW_CHARS = 100;
+  const formattedParams = useMemo(
+    () => JSON.stringify(approval.parameters, null, 2),
+    [approval.parameters],
+  );
+  const isParamsTruncated = formattedParams.length > PARAMS_PREVIEW_CHARS;
+  const visibleParams = showFullParams
+    ? formattedParams
+    : formattedParams.slice(0, PARAMS_PREVIEW_CHARS) + (isParamsTruncated ? ' …' : '');
 
   const handleApprove = async () => {
     setIsSubmitting(true);
@@ -146,9 +157,29 @@ export function ApprovalDialog({
             <h4 className="text-sm font-semibold mb-2">Parameters</h4>
             <div className="bg-muted rounded-md p-3 text-sm font-mono">
               <pre className="whitespace-pre-wrap break-words">
-                {JSON.stringify(approval.parameters, null, 2)}
+                {visibleParams}
               </pre>
             </div>
+            {isParamsTruncated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-1 text-xs text-muted-foreground"
+                onClick={() => setShowFullParams(!showFullParams)}
+              >
+                {showFullParams ? (
+                  <>
+                    <ChevronUp className="h-3 w-3 mr-1" />
+                    Minder tonen
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3 mr-1" />
+                    Alles tonen
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           <Separator />

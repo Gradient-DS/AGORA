@@ -285,10 +285,10 @@ async def _run_agent_node(
         context_parts.append(f"- email_reports_enabled: {email_reports}")
         context_parts.append("")
         context_parts.append(
-            "When calling start_inspection_report, include inspector_name and inspector_email."
+            "When calling generate_report, include inspector_name and inspector_email."
         )
         context_parts.append(
-            "When calling generate_final_report, set send_email based on email_reports_enabled."
+            "When calling generate_report, set send_email based on email_reports_enabled."
         )
 
         instructions = f"{instructions}\n\n" + "\n".join(context_parts)

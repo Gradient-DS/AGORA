@@ -15,7 +15,7 @@ HIGH_RISK_TOOL_PATTERNS = [
 
 # Tools that ALWAYS require approval regardless of parameters
 ALWAYS_APPROVE_TOOLS = {
-    "generate_final_report",
+    "generate_report",
 }
 
 HIGH_RISK_PARAMETERS = {
@@ -43,7 +43,7 @@ def requires_human_approval(
         tool_name_lower = tool_call.tool_name.lower()
 
         # Check specific tools that always require approval
-        # We use endswith to handle potential SDK prefixes (e.g. reporting_generate_final_report)
+        # We use endswith to handle potential SDK prefixes (e.g. reporting_generate_report)
         if any(tool_name_lower.endswith(t) for t in ALWAYS_APPROVE_TOOLS):
             return (
                 True,
