@@ -23,19 +23,60 @@ DUTCH_MESSAGES = {
 }
 
 
+def parse_phonetic_postal_code(postal_code: str) -> str:
+    """Parse Dutch phonetic alphabet names in postal codes to their first letters.
+
+    In Dutch telephone/radio communication, letters are spelled out using names
+    (e.g., "Anton Bernhard" for "AB"). This helps with speech-to-text recognition
+    where individual letters are hard to pick up.
+
+    Examples:
+        "2511 Albert Anton" -> "2511 AA"
+        "9711 Nico Xavier"  -> "9711 NX"
+        "2521 David Johan"  -> "2521 DJ"
+        "2511 AA"           -> "2511 AA" (already normal, unchanged)
+    """
+    import re
+    parts = postal_code.strip().split()
+    if not parts:
+        return postal_code
+
+    # Find the numeric prefix (4 digits)
+    digits = parts[0] if parts and re.match(r"^\d{4}$", parts[0]) else ""
+    if not digits:
+        return postal_code
+
+    remaining = parts[1:]
+    if not remaining:
+        return postal_code
+
+    # If remaining is already 1-2 uppercase letters, return as-is
+    letters_joined = "".join(remaining).upper()
+    if re.match(r"^[A-Z]{2}$", letters_joined):
+        return f"{digits}{letters_joined}"
+
+    # Otherwise, try to extract first letter of each word (phonetic names)
+    letters = "".join(word[0] for word in remaining if word and word[0].isalpha())
+    if len(letters) == 2:
+        return f"{digits}{letters.upper()}"
+
+    return postal_code
+
+
 def make_lookup_key(postal_code: str, house_number: str) -> str:
     """Create a normalized lookup key from postal code and house number."""
-    normalized_pc = postal_code.replace(" ", "").upper()
+    normalized_pc = parse_phonetic_postal_code(postal_code).replace(" ", "").upper()
     return f"{normalized_pc}-{house_number}"
 
 
 def validate_address(postal_code: str, house_number: str) -> str | None:
     """Validate Dutch postal code and house number format.
 
+    Supports Dutch phonetic alphabet names (e.g., "2511 Anton Anton" -> "2511 AA").
     Returns error message if invalid, None if valid.
     """
     import re
-    normalized_pc = postal_code.replace(" ", "").upper()
+    normalized_pc = parse_phonetic_postal_code(postal_code).replace(" ", "").upper()
     if not re.match(r"^\d{4}[A-Z]{2}$", normalized_pc):
         return DUTCH_MESSAGES["invalid_address"]
     if not house_number.strip().isdigit():

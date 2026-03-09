@@ -49,19 +49,19 @@ def get_tool_display_name(tool_name: str) -> str | None:
 TOOL_SPOKEN_DESCRIPTIONS: dict[str, list[str]] = {
     # Handoff tools - natural, action-oriented descriptions
     "transfer_to_reporting": [
-        "Ik ga het rapport voor je voorbereiden.",
-        "Momentje, ik begin met de rapportage.",
-        "Ik ga de inspectiegegevens verwerken voor het rapport.",
+        "Ik ga het rapport voor je voorbereiden en kom zo bij je terug.",
+        "Momentje, ik begin met de rapportage. Ik ben zo terug.",
+        "Ik ga de inspectiegegevens verwerken voor het rapport, een ogenblikje.",
     ],
     "transfer_to_regulation": [
-        "Ik ga de regelgeving erbij pakken.",
-        "Even de regels checken, momentje.",
-        "Ik zoek de relevante wetgeving voor je op.",
+        "Ik ga de regelgeving erbij pakken en kom zo bij je terug.",
+        "Even de regels checken, ik ben zo terug.",
+        "Ik zoek de relevante wetgeving voor je op, een momentje.",
     ],
     "transfer_to_history": [
-        "Ik ga de bedrijfsgegevens opzoeken.",
-        "Momentje, ik zoek de inspectiehistorie op.",
-        "Ik ga kijken wat we over dit bedrijf weten.",
+        "Ik ga de bedrijfsgegevens opzoeken en kom zo bij je terug.",
+        "Momentje, ik zoek de inspectiehistorie op. Ik ben zo terug.",
+        "Ik ga kijken wat we over dit bedrijf weten, een ogenblikje.",
     ],
     # Report generation - shown in approval dialog
     "generate_report": [
