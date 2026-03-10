@@ -106,9 +106,14 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Violation identification and severity assessment\n"
             "- Actionable compliance guidance\n\n"
             "SEARCH STRATEGY:\n"
-            "- When using search_regulations: DO NOT use filters by default\n"
-            "- Let the vector search find the most relevant regulations\n"
-            "- Only add filters if the inspector specifically requests a certain type\n\n"
+            "- DO NOT use filters by default — let vector search find the best matches\n"
+            "- Only add filters if the inspector specifically requests a certain type\n"
+            "- ⚠️ STRICT LIMIT: Call search_regulations AT MOST 2 times total. "
+            "Combine ALL related topics into ONE broad query. "
+            "Example: instead of searching 'CE markering' + 'conformiteitsverklaring' + "
+            "'etikettering' separately, search 'CE markering conformiteitsverklaring "
+            "etikettering speelgoedrichtlijn' as ONE query.\n"
+            "- One well-phrased broad query returns better results than multiple narrow ones\n\n"
             "COMPLETING YOUR TASK:\n"
             "- You provide the final answer to the user\n"
             "- Stay focused on regulation questions until they are fully answered\n"
@@ -281,13 +286,17 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "1. When inspector provides postal code and house number:\n"
             "   - Call check_company_exists with postal_code and house_number to verify\n"
             "   - Call get_inspection_history for full details\n"
+            "   - Call get_company_meldingen WITHOUT categorie filter (returns all)\n"
+            "   You can call these tools in parallel.\n"
             "2. When analyzing violations:\n"
             "   - Call get_company_violations (optionally filter by severity)\n"
             "   - Call check_repeat_violation for specific categories\n"
-            "3. When checking consumer complaints:\n"
-            "   - Call get_company_meldingen (optionally filter by categorie)\n"
-            "4. When checking follow-up:\n"
+            "3. When checking follow-up:\n"
             "   - Call get_follow_up_status\n\n"
+            "⚠️ EFFICIENCY:\n"
+            "- NEVER call the same tool multiple times with different filters — call it "
+            "ONCE without filters to get all data, then analyze the results yourself.\n"
+            "- Minimize total tool calls. Aim for 2-3 calls per question, not 5+.\n\n"
             "COMPLETING YOUR TASK:\n"
             "- You provide the final answer about company/inspection history\n"
             "- Stay focused on history questions until they are fully answered\n"
@@ -327,10 +336,20 @@ _SPOKEN_TTS_NUMBER_RULES = (
     "- Als codes of links relevant zijn, verwijs naar de chat voor de exacte gegevens\n\n"
 )
 
+# Shared instruction prepended to all spoken prompts to anchor on the latest question
+_SPOKEN_LATEST_MESSAGE_ANCHOR = (
+    "KRITIEK — ANTWOORD OP DE LAATSTE VRAAG:\n"
+    "- Lees het HELE gesprek, maar beantwoord ALLEEN de LAATSTE vraag of boodschap "
+    "van de gebruiker.\n"
+    "- Negeer eerdere vragen die al beantwoord zijn.\n"
+    "- Als de laatste boodschap een opvolging of statusvraag is, geef daar antwoord op.\n\n"
+)
+
 # Spoken text prompts for TTS - independent summary-style responses
 # These run in PARALLEL with written prompts, receiving the same conversation context
 SPOKEN_AGENT_PROMPTS: dict[str, str] = {
     "general-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent AGORA, een vriendelijke NVWA inspectie-assistent die KORTE "
         "gesproken antwoorden geeft.\n\n"
@@ -357,6 +376,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Antwoord: 'Prima, ik zoek de bedrijfsgegevens voor Bakkerij Jansen op.'"
     ),
     "regulation-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een regelgeving-expert die KORTE gesproken antwoorden geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
@@ -376,6 +396,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Celsius volgens de levensmiddelenhygiëne voorschriften.'"
     ),
     "reporting-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een rapportage-specialist die ZEER KORTE gesproken statusupdates "
         "geeft.\n\n"
@@ -394,6 +415,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Die staan in de geschreven versie."
     ),
     "history-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een bedrijfshistorie-specialist die KORTE gesproken "
         "samenvattingen geeft.\n\n"

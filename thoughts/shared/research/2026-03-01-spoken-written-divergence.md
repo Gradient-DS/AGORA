@@ -7,8 +7,9 @@ repository: AGORA
 topic: "Written vs spoken output divergence after image-containing turns"
 tags: [research, codebase, parallel-generation, spoken-written, multimodal, tts]
 status: complete
-last_updated: 2026-03-01
+last_updated: 2026-03-09
 last_updated_by: claude
+last_updated_note: "Added follow-up: message ordering fix, spoken prompt anchoring, extract_text fallback"
 ---
 
 # Research: Written vs Spoken Output Divergence After Image-Containing Turns
@@ -169,3 +170,73 @@ The `gpt-oss-120b` model appears prone to example-copying. A more capable model 
 1. Should the spoken model see the written output before generating? (Fix 2)
 2. Is there a way to detect when spoken/written outputs are semantically misaligned and trigger a retry?
 3. Should the spoken prompts be reworked to avoid concrete examples that models might copy verbatim?
+
+## Follow-up Research 2026-03-09: New Divergence Instances and Fixes
+
+**Branch**: feat/tool-description
+**Git Commit**: ecf14f4d0261f9c0c80f6696635e948297e92954
+
+### New Instances Discovered
+
+Three new divergence cases were reported from demo testing:
+
+| Timestamp | Agent | Written | Spoken | Issue Type |
+|-----------|-------|---------|--------|------------|
+| 15:30:55 | regulation-agent | Full image analysis (food on floor, cross-contamination) | "Stuur me de afbeelding" (asks for image) | Context divergence — spoken didn't know about image |
+| 15:29:46 | general-agent | New status summary for current inspection | Repeated previous turn's temperature answer | **Message ordering bug** |
+| 16:16:28 | history-agent | 0 chars (2 chunks, 0 chars extracted) | 305 chars of useful content | Content extraction bug |
+
+### Root Cause Analysis Update
+
+#### Issue #1 (Image analysis): Already Fixed
+The image is now fully decoupled from LLM context (`orchestrator.py:136-158`). Images are:
+- Forwarded to reporting MCP server for PDF evidence (background task)
+- Described by `gpt-4o-mini` (hardcoded, NOT the main thread model) for report captions only
+- Never sent to the agent LLM or the spoken/written generation models
+- Image-only messages skip LLM entirely (`orchestrator.py:184-191`)
+
+This issue should not recur with the current code.
+
+#### Issue #2 (Spoken repeats previous answer): **Message Ordering Bug — FIXED**
+Root cause identified in `_create_parallel_sends()` (`graph.py:385-400`):
+
+The tool context was injected as the **last message** in the conversation:
+```
+[HumanMessage: earlier question]
+[AIMessage: earlier answer]
+[HumanMessage: user's LATEST question]  ← buried
+[HumanMessage: "[Uitgevoerde tools en resultaten]\n..."]  ← LAST
+```
+
+Industry standard for LLM message ordering is: **System Prompt → Context/History → User's Latest Question (always last)**. This is backed by:
+
+- **"Lost in the Middle" (Liu et al., 2023)**: LLMs exhibit a U-shaped performance curve — accuracy is highest at beginning/end, degrades 30%+ in the middle. [arxiv.org/abs/2307.03172](https://arxiv.org/abs/2307.03172)
+- **Anthropic docs**: "Place long documents near the top, above your query. Queries at the end improve quality by up to 30%." [docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/long-context-tips)
+- **OpenAI GPT-4.1 guide**: "If there are conflicting instructions, GPT-4.1 tends to follow the one closer to the end of the prompt." [cookbook.openai.com/examples/gpt4-1_prompting_guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide)
+- **OpenAI Chat API**: Structurally requires tool results between tool calls and the next user message, naturally placing the user's question last.
+- **LangChain convention**: "Always maintain chronological order: SystemMessage → HumanMessage → AIMessage → ... → HumanMessage."
+
+**Fix applied**: Tool context is now inserted BEFORE the last HumanMessage:
+```
+[HumanMessage: earlier question]
+[AIMessage: earlier answer]
+[HumanMessage: "[Uitgevoerde tools en resultaten]\n..."]  ← context
+[HumanMessage: user's LATEST question]  ← LAST (anchors response)
+```
+
+Additionally, all spoken prompts now include `_SPOKEN_LATEST_MESSAGE_ANCHOR` — an explicit instruction to answer only the LAST user message. Applied to both `server-langgraph` and `server-openai`.
+
+#### Issue #3 (Written empty): **Content Extraction Fallback — FIXED**
+The `extract_text()` function in `message_utils.py` silently skipped dict parts with unrecognized `type` values. Some LLM providers (especially via OpenAI-compatible routers) return non-standard content part types.
+
+**Fix applied**: For dict parts with types other than `"text"`, `None`, `"image_url"`, or `"binary"`, the function now attempts to extract the `"text"` key as a fallback before skipping.
+
+### Files Changed
+
+- `server-langgraph/src/agora_langgraph/core/graph.py:385-410` — Reordered tool context injection to preserve user question as last message
+- `server-langgraph/src/agora_langgraph/core/agent_definitions.py:330-342` — Added `_SPOKEN_LATEST_MESSAGE_ANCHOR` to all spoken prompts
+- `server-langgraph/src/agora_langgraph/common/message_utils.py:38-48` — Added fallback for unrecognized content part types
+- `server-openai/src/agora_openai/core/agent_definitions.py:330-342` — Added same `_SPOKEN_LATEST_MESSAGE_ANCHOR` (server-openai doesn't have the message ordering issue since it uses raw AG-UI messages)
+
+### Test Results
+All tests pass in both `server-langgraph` (12 passed) and `server-openai` (21 passed).

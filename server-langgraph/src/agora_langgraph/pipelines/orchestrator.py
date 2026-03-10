@@ -805,6 +805,7 @@ class Orchestrator:
                     log.info(f"[DEBUG] Skipping TOOL_CALL_END/RESULT for resumed tool: {tool_name} ({tool_run_id})")
                     continue
 
+
                 log.info(f"[DEBUG] Tool completed: {tool_name} (run_id: {tool_run_id})")
 
                 if protocol_handler.is_connected:

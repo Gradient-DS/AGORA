@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Sequence
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import Runnable
 from langchain_openai import ChatOpenAI
 
@@ -61,6 +64,90 @@ except ImportError:
 _agent_tools: dict[str, list[Any]] = {}
 _agent_llms_cache: dict[str, list[BaseChatModel]] = {}
 _spoken_llms: list[BaseChatModel] | None = None
+
+# Dedicated context window logger — writes to context_window.log
+_context_log_path = Path(__file__).resolve().parents[3] / "context_window.log"
+_context_logger = logging.getLogger("agora.context_window")
+_context_logger.setLevel(logging.DEBUG)
+_context_logger.propagate = False
+if not _context_logger.handlers:
+    _fh = logging.FileHandler(_context_log_path, mode="a", encoding="utf-8")
+    _fh.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+    _context_logger.addHandler(_fh)
+
+
+def _log_context_window(
+    call_site: str,
+    agent_id: str,
+    messages: list[Any],
+    system_prompt_chars: int = 0,
+) -> None:
+    """Log a detailed breakdown of context window contents to context_window.log."""
+    total_chars = system_prompt_chars
+    msg_details: list[dict[str, Any]] = []
+
+    if system_prompt_chars:
+        msg_details.append({"role": "system", "chars": system_prompt_chars})
+
+    for msg in messages:
+        role = type(msg).__name__
+        content = getattr(msg, "content", "")
+        if isinstance(content, dict):
+            content = json.dumps(content, ensure_ascii=False)
+        elif isinstance(content, list):
+            # Google-style structured content
+            content = json.dumps(content, ensure_ascii=False)
+        elif not isinstance(content, str):
+            content = str(content)
+
+        chars = len(content)
+        total_chars += chars
+
+        detail: dict[str, Any] = {"role": role, "chars": chars}
+
+        # Add tool-specific info
+        if isinstance(msg, ToolMessage):
+            detail["tool_name"] = getattr(msg, "name", "unknown")
+        elif hasattr(msg, "tool_calls") and msg.tool_calls:
+            detail["tool_calls"] = [tc.get("name", "?") for tc in msg.tool_calls]
+
+        # Show preview for large messages
+        if chars > 500:
+            detail["preview"] = content[:200] + "..."
+
+        msg_details.append(detail)
+
+    # Count by role
+    role_counts: dict[str, int] = {}
+    role_chars: dict[str, int] = {}
+    for d in msg_details:
+        r = d["role"]
+        role_counts[r] = role_counts.get(r, 0) + 1
+        role_chars[r] = role_chars.get(r, 0) + d["chars"]
+
+    summary = (
+        f"\n{'='*80}\n"
+        f"CONTEXT WINDOW — {call_site} | agent={agent_id}\n"
+        f"{'='*80}\n"
+        f"Total: {total_chars:,} chars | {len(messages)} messages\n"
+        f"Breakdown by role:\n"
+    )
+    for role, count in role_counts.items():
+        summary += f"  {role}: {count} msgs, {role_chars[role]:,} chars\n"
+
+    summary += f"\nMessage details:\n"
+    for i, d in enumerate(msg_details):
+        line = f"  [{i}] {d['role']}: {d['chars']:,} chars"
+        if "tool_name" in d:
+            line += f" (tool: {d['tool_name']})"
+        if "tool_calls" in d:
+            line += f" (calls: {', '.join(d['tool_calls'])})"
+        if "preview" in d:
+            line += f"\n       preview: {d['preview']}"
+        summary += line + "\n"
+
+    summary += f"{'='*80}\n"
+    _context_logger.info(summary)
 
 
 def set_agent_tools(agent_id: str, tools: list[Any]) -> None:
@@ -295,6 +382,14 @@ async def _run_agent_node(
 
     system_message = {"role": "system", "content": instructions}
     messages_with_system = [system_message] + list(state["messages"])
+
+    # Log context window contents for debugging
+    _log_context_window(
+        call_site="agent_invoke",
+        agent_id=agent_id,
+        messages=list(state["messages"]),
+        system_prompt_chars=len(instructions),
+    )
 
     try:
         response = await llm_with_tools.ainvoke(messages_with_system)

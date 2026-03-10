@@ -42,6 +42,12 @@ def extract_text(content: Any) -> str:
                     text = part.get("text", "")
                     if text:
                         parts.append(text)
+                elif part_type not in ("image_url", "binary"):
+                    # Unrecognized type — try extracting "text" key as fallback
+                    # (some providers use non-standard type values)
+                    text = part.get("text", "")
+                    if text:
+                        parts.append(text)
             elif hasattr(part, "text"):
                 # Handle Google Part objects or similar with .text attribute
                 text = part.text

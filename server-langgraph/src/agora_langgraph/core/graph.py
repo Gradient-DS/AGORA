@@ -21,6 +21,7 @@ from langgraph.types import Overwrite, Send
 from agora_langgraph.common.message_utils import extract_text
 from agora_langgraph.core.agent_definitions import get_agent_by_id, get_spoken_prompt
 from agora_langgraph.core.agents import (
+    _log_context_window,
     general_agent,
     get_agent_tools,
     get_llm_for_agent,
@@ -392,11 +393,32 @@ def _create_parallel_sends(state: AgentState) -> list[Send]:
 
     # Inject tool execution context as a plain-text message so the generation
     # model has access to all tool results without needing tool bindings.
+    # IMPORTANT: The user's last question must remain the final message
+    # (industry standard: system prompt → context → user question).
+    # This prevents the model from latching onto older messages.
     if tool_context_parts:
         tool_context = "\n".join(tool_context_parts)
-        messages.append(HumanMessage(content=f"[Uitgevoerde tools en resultaten]\n{tool_context}"))
+        tool_context_msg = HumanMessage(
+            content=f"[Uitgevoerde tools en resultaten]\n{tool_context}"
+        )
+
+        # Find the last HumanMessage (the user's actual question) and insert
+        # tool context BEFORE it so the user's question stays at the end.
+        last_human_idx = None
+        for i in range(len(messages) - 1, -1, -1):
+            if isinstance(messages[i], HumanMessage):
+                last_human_idx = i
+                break
+
+        if last_human_idx is not None:
+            messages.insert(last_human_idx, tool_context_msg)
+        else:
+            # No human message found (shouldn't happen), append as fallback
+            messages.append(tool_context_msg)
+
         log.info(
-            f"_create_parallel_sends: Injected {len(tool_context_parts)} tool context entries"
+            f"_create_parallel_sends: Injected {len(tool_context_parts)} tool context entries "
+            f"(before last user message at idx {last_human_idx})"
         )
 
     log.info(
@@ -463,6 +485,14 @@ async def _generate_stream(
     # Build message list with system prompt
     full_messages: list[BaseMessage] = [SystemMessage(content=system_prompt)] + list(
         messages
+    )
+
+    # Log context window contents for debugging
+    _log_context_window(
+        call_site=f"generate_{stream_type}",
+        agent_id=agent_id,
+        messages=list(messages),
+        system_prompt_chars=len(system_prompt),
     )
 
     # Stream - astream_events will capture on_chat_model_stream events

@@ -105,10 +105,14 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Your training data may be outdated - the MCP tools have the current regulations\n"
             "- Wait for tool results before writing your response\n\n"
             "SEARCH STRATEGY:\n"
-            "- When using search_regulations or lookup_regulation_articles: DO NOT use filters by default\n"
-            "- Let the vector search find the most relevant regulations based on semantic similarity\n"
+            "- DO NOT use filters by default — let vector search find the best matches\n"
             "- Only add filters if the inspector specifically requests a certain type\n"
-            "- The search is powerful enough to find relevant results without filtering\n\n"
+            "- ⚠️ STRICT LIMIT: Call search tools AT MOST 2 times total. "
+            "Combine ALL related topics into ONE broad query. "
+            "Example: instead of searching 'CE markering' + 'conformiteitsverklaring' + "
+            "'etikettering' separately, search 'CE markering conformiteitsverklaring "
+            "etikettering speelgoedrichtlijn' as ONE query.\n"
+            "- One well-phrased broad query returns better results than multiple narrow ones\n\n"
             "ALWAYS:\n"
             "- Provide actionable compliance guidance in Dutch\n"
             "- Flag high-risk areas clearly: 'WAARSCHUWING', 'HOOG RISICO'\n"
@@ -282,17 +286,21 @@ AGENT_CONFIGS: list[AgentConfig] = [
             "- Your response should be based on actual database results, not assumptions\n\n"
             "WORKFLOW:\n"
             "1. When inspector provides postal code and house number:\n"
-            "   - First call check_company_exists with postal_code and house_number to verify\n"
-            "   - Then call get_inspection_history (includes company details + past inspections)\n"
+            "   - Call check_company_exists with postal_code and house_number to verify\n"
+            "   - Call get_inspection_history (includes company details + past inspections)\n"
+            "   - Call get_company_meldingen WITHOUT categorie filter (returns all)\n"
+            "   You can call these tools in parallel.\n"
             "2. When analyzing violations:\n"
             "   - Call get_company_violations (optionally filter by severity)\n"
             "   - Call check_repeat_violation for specific categories\n"
             "3. When checking follow-up:\n"
             "   - Call get_follow_up_status\n"
-            "4. When checking consumer complaints:\n"
-            "   - Call get_company_meldingen (optionally filter by categorie)\n"
-            "5. When searching by inspector:\n"
+            "4. When searching by inspector:\n"
             "   - Call search_inspections_by_inspector\n\n"
+            "⚠️ EFFICIENCY:\n"
+            "- NEVER call the same tool multiple times with different filters — call it "
+            "ONCE without filters to get all data, then analyze the results yourself.\n"
+            "- Minimize total tool calls. Aim for 2-3 calls per question, not 5+.\n\n"
             "ALWAYS:\n"
             "- Highlight repeat violations: 'WAARSCHUWING: Eerdere overtreding'\n"
             "- Show severity trends (verbetering/verslechtering)\n"
@@ -327,10 +335,20 @@ _SPOKEN_TTS_NUMBER_RULES = (
     "  * In plaats van 'verzonden naar jan@bedrijf.nl' → 'het rapport is verzonden, het e-mailadres staat in de chat'\n\n"
 )
 
+# Shared instruction prepended to all spoken prompts to anchor on the latest question
+_SPOKEN_LATEST_MESSAGE_ANCHOR = (
+    "KRITIEK — ANTWOORD OP DE LAATSTE VRAAG:\n"
+    "- Lees het HELE gesprek, maar beantwoord ALLEEN de LAATSTE vraag of boodschap "
+    "van de gebruiker.\n"
+    "- Negeer eerdere vragen die al beantwoord zijn.\n"
+    "- Als de laatste boodschap een opvolging of statusvraag is, geef daar antwoord op.\n\n"
+)
+
 # Spoken text prompts for TTS - independent summary-style responses
 # These run in PARALLEL with written prompts, receiving the same conversation context
 SPOKEN_AGENT_PROMPTS: dict[str, str] = {
     "general-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een NVWA inspectie-assistent die KORTE gesproken antwoorden "
         "geeft.\n\n"
@@ -349,6 +367,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Antwoord: 'Prima, ik zoek de bedrijfsgegevens voor Bakkerij Jansen op.'"
     ),
     "regulation-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een regelgeving-expert die KORTE gesproken antwoorden geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
@@ -368,6 +387,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Celsius volgens de levensmiddelenhygiëne voorschriften.'"
     ),
     "reporting-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een rapportage-specialist die KORTE gesproken statusupdates "
         "geeft.\n\n"
@@ -383,6 +403,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Ik heb nog een paar vragen om het compleet te maken.'"
     ),
     "history-agent": (
+        _SPOKEN_LATEST_MESSAGE_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een bedrijfshistorie-specialist die KORTE gesproken "
         "samenvattingen geeft.\n\n"
