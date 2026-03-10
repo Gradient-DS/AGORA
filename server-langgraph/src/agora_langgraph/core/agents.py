@@ -287,6 +287,49 @@ def _filter_extra_tool_args(tool_calls: list[dict[str, Any]], tools: list[Any]) 
                     del args[key]
 
 
+def _build_agent_messages(state: AgentState) -> list[BaseMessage]:
+    """Build filtered message list for agent LLM invocation.
+
+    Prior completed turns: only HumanMessages + final AI responses
+    Current turn: everything (own tool calls, results, handoffs)
+
+    This prevents cross-agent pollution — an agent doesn't need to see
+    another agent's raw tool results when it already has the final answer.
+    """
+    raw = list(state["messages"])
+
+    # Find the last completed turn boundary (last is_final_response AIMessage)
+    last_final_idx = -1
+    for i in range(len(raw) - 1, -1, -1):
+        if (
+            isinstance(raw[i], AIMessage)
+            and raw[i].additional_kwargs.get("is_final_response")
+        ):
+            last_final_idx = i
+            break
+
+    if last_final_idx == -1:
+        # No prior completed turns — this is the first turn, keep everything
+        return raw
+
+    # Prior history: only HumanMessages + final response AIMessages
+    history: list[BaseMessage] = []
+    for msg in raw[: last_final_idx + 1]:
+        if isinstance(msg, HumanMessage):
+            history.append(msg)
+        elif (
+            isinstance(msg, AIMessage)
+            and msg.additional_kwargs.get("is_final_response")
+        ):
+            history.append(msg)
+        # Skip: ToolMessages, AIMessages with tool_calls, raw agent responses
+
+    # Current turn: everything after the last completed turn
+    current_turn = raw[last_final_idx + 1 :]
+
+    return history + current_turn
+
+
 async def _run_agent_node(
     state: AgentState,
     agent_id: str,
@@ -381,13 +424,14 @@ async def _run_agent_node(
         instructions = f"{instructions}\n\n" + "\n".join(context_parts)
 
     system_message = {"role": "system", "content": instructions}
-    messages_with_system = [system_message] + list(state["messages"])
+    filtered_messages = _build_agent_messages(state)
+    messages_with_system = [system_message] + filtered_messages
 
     # Log context window contents for debugging
     _log_context_window(
         call_site="agent_invoke",
         agent_id=agent_id,
-        messages=list(state["messages"]),
+        messages=filtered_messages,
         system_prompt_chars=len(instructions),
     )
 

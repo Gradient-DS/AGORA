@@ -35,8 +35,7 @@ class AgentState(TypedDict):
     current_agent: str
     pending_approval: dict[str, Any] | None
     metadata: dict[str, Any]
-    # Parallel output accumulators - use operator.add to concatenate results from branches
-    written: Annotated[list[str], operator.add]
+    # Spoken output accumulator - use operator.add to concatenate results from branch
     spoken: Annotated[list[str], operator.add]
     # Final merged outputs
     final_written: str
@@ -48,15 +47,11 @@ class AgentState(TypedDict):
 
 
 class GeneratorState(TypedDict):
-    """State passed to parallel generator nodes via Send API.
-
-    Each parallel generator receives this independent state with different prompts
-    but identical message context.
-    """
+    """State passed to spoken generator node via Send API."""
 
     messages: list[BaseMessage]
     system_prompt: str
-    stream_type: str  # "written" or "spoken"
+    stream_type: str  # "spoken"
     agent_id: str
     session_id: str
     metadata: dict[str, Any]

@@ -622,9 +622,8 @@ class Orchestrator:
     ) -> tuple[str, str]:
         """Stream graph response using astream_events with AG-UI Protocol.
 
-        The graph uses parallel generation nodes (generate_written, generate_spoken)
-        via the Send API. Both run simultaneously with shared context but different
-        prompts.
+        The agent's response is streamed directly as written text. Spoken text
+        is generated separately via generate_spoken node.
 
         Dual-channel streaming controlled by user's spoken_text_type preference:
         - 'summarize': Uses generate_spoken output (speech-optimized)
@@ -642,8 +641,11 @@ class Orchestrator:
         active_tool_calls: dict[str, str] = {}
         message_started = False
         spoken_message_started = False
+        # Track whether the current agent invocation is making tool calls.
+        # If it is, we must not stream the text (it's intermediate, not the final answer).
+        agent_streaming_active = False
 
-        # Agent node names - we don't stream from these (ReAct loop)
+        # Agent node names — we stream written text directly from these
         agent_nodes = {
             "general-agent",
             "regulation-agent",
@@ -683,18 +685,20 @@ class Orchestrator:
                     if not content:
                         continue
 
-                    # Only stream from generator nodes, not agent nodes
-                    # Agent nodes run during ReAct loop - their output is regenerated
                     if node_name in agent_nodes:
-                        # Skip streaming from agent nodes (wasted call is filtered)
-                        continue
+                        # Stream agent's response directly as written text.
+                        # Skip chunks that are part of tool call generation.
+                        if hasattr(chunk, "tool_calls") and chunk.tool_calls:
+                            agent_streaming_active = False
+                            continue
+                        if hasattr(chunk, "tool_call_chunks") and chunk.tool_call_chunks:
+                            agent_streaming_active = False
+                            continue
 
-                    if node_name == "generate_written":
-                        # Accumulate for final response
+                        agent_streaming_active = True
                         full_response.append(content)
 
                         if protocol_handler.is_connected:
-                            # Start written channel on first content
                             if not message_started:
                                 log.info(
                                     f"Starting text streams (spoken_mode={spoken_mode})"
@@ -703,14 +707,12 @@ class Orchestrator:
                                     message_id, "assistant"
                                 )
                                 message_started = True
-                                # Only start spoken channel if not already started by generate_spoken
                                 if not spoken_message_started:
                                     await protocol_handler.send_spoken_text_start(
                                         message_id, "assistant"
                                     )
                                     spoken_message_started = True
 
-                            # Send to written channel
                             await protocol_handler.send_text_message_content(
                                 message_id, content
                             )
@@ -724,7 +726,6 @@ class Orchestrator:
                     elif node_name == "generate_spoken":
                         # In summarize mode: send to spoken channel
                         if spoken_mode == "summarize" and protocol_handler.is_connected:
-                            # Ensure spoken started (should be from written first chunk)
                             if not spoken_message_started:
                                 await protocol_handler.send_spoken_text_start(
                                     message_id, "assistant"

@@ -19,7 +19,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.types import Overwrite, Send
 
 from agora_langgraph.common.message_utils import extract_text
-from agora_langgraph.core.agent_definitions import get_agent_by_id, get_spoken_prompt
+from agora_langgraph.core.agent_definitions import get_spoken_prompt
 from agora_langgraph.core.agents import (
     _log_context_window,
     general_agent,
@@ -276,17 +276,17 @@ def route_from_agent(
     )
 
     if not messages:
-        return _create_parallel_sends(state)
+        return _create_spoken_send(state)
 
     last_message = messages[-1]
 
     if not isinstance(last_message, AIMessage):
-        return _create_parallel_sends(state)
+        return _create_spoken_send(state)
 
     tool_calls = getattr(last_message, "tool_calls", None)
     if not tool_calls:
-        log.info("route_from_agent: No tool calls, forking to parallel generation")
-        return _create_parallel_sends(state)
+        log.info("route_from_agent: No tool calls, dispatching spoken generation")
+        return _create_spoken_send(state)
 
     tool_name = tool_calls[0].get("name", "")
     log.info(f"route_from_agent: Tool call '{tool_name}' → routing to ToolNode first")
@@ -322,127 +322,63 @@ def route_after_tools(state: AgentState) -> str:
     return current
 
 
-def _create_parallel_sends(state: AgentState) -> list[Send]:
-    """Create Send commands for parallel spoken and written generation.
+def _create_spoken_send(state: AgentState) -> list[Send]:
+    """Create Send command for spoken generation with minimal context.
 
-    This is used by route_from_agent to dispatch parallel generator instances with:
-    - Same message context (all tool results included)
-    - Different system prompts (written vs spoken)
-
-    The agent's final response (if any) is filtered out since we regenerate
-    it with separate written/spoken prompts.
+    The spoken model only needs:
+    - Conversation summary (HumanMessages + final AI responses from prior turns)
+    - The agent's current response (to summarize for TTS)
+    No tool results needed — the agent's response already incorporates them.
 
     Args:
         state: Current agent state after tool execution
 
     Returns:
-        List of Send commands for parallel generator dispatch
+        List with single Send command for spoken generation
     """
     agent_id = state.get("current_agent", "general-agent")
-
-    # Get prompts for both streams
-    agent_config = get_agent_by_id(agent_id)
-    written_prompt = agent_config["instructions"] if agent_config else ""
     spoken_prompt = get_spoken_prompt(agent_id) or ""
-
-    # Build messages for generation nodes.
-    # We can't pass ToolMessages or AIMessages with tool_calls to models
-    # that have no tools bound (OpenAI-compatible APIs like HuggingFace Router
-    # reject them). Instead, we convert tool call/result sequences into plain
-    # text context so the generation model has the data it needs.
     raw_messages = state.get("messages", [])
 
-    # First pass: collect tool execution context as plain text
-    tool_context_parts: list[str] = []
-    for m in raw_messages:
-        if isinstance(m, AIMessage) and getattr(m, "tool_calls", None):
-            for tc in m.tool_calls:
-                name = tc.get("name", "unknown")
-                args = tc.get("args", {})
-                if is_handoff_tool(name):
-                    continue  # Skip handoff tools — not useful context
-                args_str = ", ".join(f"{k}={v!r}" for k, v in args.items()) if args else ""
-                tool_context_parts.append(f"[Tool aanroep: {name}({args_str})]")
-        elif isinstance(m, ToolMessage):
-            content = extract_text(m.content)
-            # Skip handoff tool results
-            if "Transferring to" in content:
-                continue
-            tool_context_parts.append(f"[Resultaat: {content}]")
+    # Find the last completed turn boundary
+    last_final_idx = -1
+    for i in range(len(raw_messages) - 1, -1, -1):
+        if (
+            isinstance(raw_messages[i], AIMessage)
+            and raw_messages[i].additional_kwargs.get("is_final_response")
+        ):
+            last_final_idx = i
+            break
 
-    # Second pass: keep only HumanMessages and text-only AIMessages
     messages: list[BaseMessage] = []
-    for m in raw_messages:
-        if isinstance(m, SystemMessage):
-            continue
-        if isinstance(m, ToolMessage):
-            continue
-        if isinstance(m, AIMessage):
-            if getattr(m, "tool_calls", None):
-                continue  # Strip all AI messages with tool calls
-            # This is the agent's final plain-text response — we'll remove it below
-        messages.append(m)
 
-    # Filter out the last AI message if it has no tool calls
-    # This is the "wasted" response from the agent that we're regenerating
-    if messages and isinstance(messages[-1], AIMessage):
-        last_msg = messages[-1]
-        if not getattr(last_msg, "tool_calls", None):
-            log.info("_create_parallel_sends: Filtering out agent's final response")
-            messages = messages[:-1]
+    # Prior turns: only HumanMessages + final responses
+    if last_final_idx >= 0:
+        for msg in raw_messages[: last_final_idx + 1]:
+            if isinstance(msg, HumanMessage):
+                messages.append(msg)
+            elif (
+                isinstance(msg, AIMessage)
+                and msg.additional_kwargs.get("is_final_response")
+            ):
+                messages.append(msg)
 
-    # Inject tool execution context as a plain-text message so the generation
-    # model has access to all tool results without needing tool bindings.
-    # IMPORTANT: The user's last question must remain the final message
-    # (industry standard: system prompt → context → user question).
-    # This prevents the model from latching onto older messages.
-    if tool_context_parts:
-        tool_context = "\n".join(tool_context_parts)
-        tool_context_msg = HumanMessage(
-            content=f"[Uitgevoerde tools en resultaten]\n{tool_context}"
-        )
-
-        # Find the last HumanMessage (the user's actual question) and insert
-        # tool context BEFORE it so the user's question stays at the end.
-        last_human_idx = None
-        for i in range(len(messages) - 1, -1, -1):
-            if isinstance(messages[i], HumanMessage):
-                last_human_idx = i
-                break
-
-        if last_human_idx is not None:
-            messages.insert(last_human_idx, tool_context_msg)
-        else:
-            # No human message found (shouldn't happen), append as fallback
-            messages.append(tool_context_msg)
-
-        log.info(
-            f"_create_parallel_sends: Injected {len(tool_context_parts)} tool context entries "
-            f"(before last user message at idx {last_human_idx})"
-        )
+    # Current turn: only HumanMessages + agent's final AIMessage
+    for msg in raw_messages[last_final_idx + 1 :]:
+        if isinstance(msg, HumanMessage):
+            messages.append(msg)
+        elif isinstance(msg, AIMessage) and not getattr(msg, "tool_calls", None):
+            messages.append(msg)
 
     log.info(
-        f"_create_parallel_sends: Dispatching parallel streams for {agent_id} "
-        f"with {len(messages)} messages"
+        f"_create_spoken_send: {len(messages)} messages for spoken generation "
+        f"(was {len(raw_messages)} raw)"
     )
 
-    # Get common state fields
     session_id = state.get("session_id", "")
     metadata = state.get("metadata", {})
 
-    # Both models receive identical text-only messages (images are decoupled)
     return [
-        Send(
-            "generate_written",
-            GeneratorState(
-                messages=messages,
-                system_prompt=written_prompt,
-                stream_type="written",
-                agent_id=agent_id,
-                session_id=session_id,
-                metadata=metadata,
-            ),
-        ),
         Send(
             "generate_spoken",
             GeneratorState(
@@ -535,15 +471,6 @@ async def _generate_stream(
     return {stream_type: [total_content]}
 
 
-async def generate_written_node(state: GeneratorState) -> dict[str, list[str]]:
-    """Generate written text stream.
-
-    This node is easily identifiable in astream_events by name,
-    allowing the orchestrator to route chunks to the written channel.
-    """
-    return await _generate_stream(state, "written")
-
-
 async def generate_spoken_node(state: GeneratorState) -> dict[str, list[str]]:
     """Generate spoken text stream.
 
@@ -554,28 +481,30 @@ async def generate_spoken_node(state: GeneratorState) -> dict[str, list[str]]:
 
 
 def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
-    """Combine parallel generation outputs into final state.
+    """Merge spoken output with the agent's existing response.
 
-    Takes accumulated written/spoken lists from parallel branches
-    and produces final merged output. Also adds written response
-    as AIMessage to conversation history.
-
-    Note: The written/spoken lists use operator.add reducer and accumulate
-    across turns. We only use the LAST item (current turn's generation).
+    The agent's AIMessage is already in state as the written response.
+    We update it with is_final_response marker and spoken_text,
+    then set final_written/final_spoken for the orchestrator.
 
     Args:
-        state: State with accumulated written/spoken lists
+        state: State with spoken list from generate_spoken
 
     Returns:
         Dict with final outputs and updated messages
     """
-    written_parts = state.get("written", [])
     spoken_parts = state.get("spoken", [])
-
-    # Only use the last item from each list (current turn's generation)
-    # The lists accumulate across turns due to operator.add reducer
-    written_content = written_parts[-1] if written_parts else ""
     spoken_content = spoken_parts[-1] if spoken_parts else ""
+
+    # Find the agent's final response (last AIMessage without tool_calls)
+    messages = state.get("messages", [])
+    written_content = ""
+    agent_msg = None
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage) and not getattr(msg, "tool_calls", None):
+            written_content = extract_text(msg.content)
+            agent_msg = msg
+            break
 
     log.info(
         f"merge_parallel_outputs: written={len(written_content)} chars, "
@@ -584,7 +513,7 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
 
     # Log full content to terminal for debugging
     print("\n" + "=" * 80)
-    print("WRITTEN OUTPUT:")
+    print("WRITTEN OUTPUT (from agent):")
     print("=" * 80)
     print(written_content)
     print("\n" + "=" * 80)
@@ -593,16 +522,27 @@ def merge_parallel_outputs(state: AgentState) -> dict[str, Any]:
     print(spoken_content)
     print("=" * 80 + "\n")
 
-    return {
-        "messages": [
-            AIMessage(
-                content=written_content,
-                additional_kwargs={"spoken_text": spoken_content} if spoken_content else {},
-            )
-        ],
+    result: dict[str, Any] = {
         "final_written": written_content,
         "final_spoken": spoken_content,
     }
+
+    # Update the agent's AIMessage with spoken text and final_response marker
+    # Using the same ID triggers add_messages reducer to REPLACE (not append)
+    if agent_msg:
+        updated_kwargs = {**agent_msg.additional_kwargs}
+        updated_kwargs["is_final_response"] = True
+        if spoken_content:
+            updated_kwargs["spoken_text"] = spoken_content
+
+        updated_msg = AIMessage(
+            content=agent_msg.content,
+            id=agent_msg.id,
+            additional_kwargs=updated_kwargs,
+        )
+        result["messages"] = [updated_msg]
+
+    return result
 
 
 def build_agent_graph(
@@ -658,8 +598,7 @@ def build_agent_graph(
         tool_node = ToolNode(unique_tools, handle_tool_errors=True)
         graph.add_node("tools", tool_node)
 
-    # Parallel generation nodes (fork happens via Send in route_from_agent)
-    graph.add_node("generate_written", generate_written_node)
+    # Spoken generation node (agent's response is used directly as written output)
     graph.add_node("generate_spoken", generate_spoken_node)
     graph.add_node("merge", merge_parallel_outputs)
 
@@ -679,7 +618,7 @@ def build_agent_graph(
         },
     )
 
-    # Agent routing - routes to tools or directly dispatches parallel generation via Send
+    # Agent routing - routes to tools or dispatches spoken generation via Send
     for agent_id in [
         "general-agent",
         "regulation-agent",
@@ -687,19 +626,18 @@ def build_agent_graph(
         "history-agent",
     ]:
         if unique_tools:
-            # route_from_agent returns "tools" or list[Send] for parallel generation
-            # When returning list[Send], the Send objects specify targets directly
+            # route_from_agent returns "tools" or list[Send] for spoken generation
             graph.add_conditional_edges(
                 agent_id,
                 route_from_agent,
-                ["tools", "generate_written", "generate_spoken"],
+                ["tools", "generate_spoken"],
             )
         else:
             # No tools - use conditional edges for Send-based fan-out
             graph.add_conditional_edges(
                 agent_id,
                 route_from_agent,
-                ["generate_written", "generate_spoken"],
+                ["generate_spoken"],
             )
 
     # Tools routing back to agents
@@ -741,12 +679,9 @@ def build_agent_graph(
         },
     )
 
-    # Parallel generation edges
-    # fork_generation uses Send API - edges are implicit from Send targets
-    # Both generator nodes merge their outputs
-    graph.add_edge("generate_written", "merge")
+    # Spoken generation merges back to produce final output
     graph.add_edge("generate_spoken", "merge")
     graph.add_edge("merge", END)
 
-    log.info("Agent graph built successfully with parallel generation support")
+    log.info("Agent graph built successfully with spoken generation support")
     return graph

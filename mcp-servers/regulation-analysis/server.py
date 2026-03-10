@@ -13,10 +13,13 @@ try:
     from config import get_settings
     from database.weaviate_client import WeaviateClient
     from embeddings.embedder import create_embedder
+
     WEAVIATE_AVAILABLE = True
 except ImportError as e:
     WEAVIATE_AVAILABLE = False
-    logging.warning(f"Weaviate dependencies not available - search functionality will be limited: {e}")
+    logging.warning(
+        f"Weaviate dependencies not available - search functionality will be limited: {e}"
+    )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,14 +32,20 @@ embedder = None
 if WEAVIATE_AVAILABLE:
     try:
         settings = get_settings()
-        logger.info(f"Loaded configuration with MCP_ prefix (embedding_provider={settings.embedding_provider})")
+        logger.info(
+            f"Loaded configuration with MCP_ prefix (embedding_provider={settings.embedding_provider})"
+        )
 
         weaviate_client = WeaviateClient(settings.weaviate_url)
 
         # Use factory function to create appropriate embedder
         embedder = create_embedder(
             provider=settings.embedding_provider,
-            api_key=settings.openai_api_key.get_secret_value() if settings.embedding_provider == "openai" else None,
+            api_key=(
+                settings.openai_api_key.get_secret_value()
+                if settings.embedding_provider == "openai"
+                else None
+            ),
             model_name=settings.embedding_model,
             device=settings.embedding_device,
         )
@@ -52,9 +61,11 @@ if WEAVIATE_AVAILABLE:
 
 
 @mcp.tool
-async def search_regulations(query: str, filters: Optional[Dict[str, str]] = None, limit: int = 10) -> dict:
+async def search_regulations(
+    query: str, filters: Optional[Dict[str, str]] = None, limit: int = 10
+) -> dict:
     """Search for relevant regulation articles using vector and hybrid search.
-    
+
     Args:
         query: Natural language query describing what you're looking for
         filters: Optional filters (source_type: Dutch/EU/SPEC, regulation_type: microbiological_criteria/allergens/food_information)
@@ -63,76 +74,68 @@ async def search_regulations(query: str, filters: Optional[Dict[str, str]] = Non
     if not weaviate_client or not embedder:
         return {
             "error": "Weaviate search not available",
-            "message": "Vector database is not connected. Please check configuration."
+            "message": "Vector database is not connected. Please check configuration.",
         }
-    
+
     try:
         logger.info(f"Searching for: {query}")
-        
+
         query_vector = embedder.embed_query(query)
-        
+
         results = weaviate_client.search(
-            query_vector=query_vector,
-            filters=filters or {},
-            limit=limit,
-            alpha=0.7
+            query_vector=query_vector, filters=filters or {}, limit=limit, alpha=0.7
         )
-        
+
         formatted_results = []
         for result in results:
             citation = _format_citation(result)
-            
-            formatted_results.append({
-                "content": result.get("content", ""),
-                "citation": citation,
-                "score": result.get("score"),
-                "regulation_type": result.get("regulation_type", ""),
-                "source_type": result.get("source_type", ""),
-                "article": result.get("article_number", ""),
-                "section": result.get("section_title", ""),
-                "document_summary": result.get("document_summary", "")
-            })
-        
+
+            formatted_results.append(
+                {
+                    "content": result.get("content", ""),
+                    "citation": citation,
+                    "score": result.get("score"),
+                    "regulation_type": result.get("regulation_type", ""),
+                    "source_type": result.get("source_type", ""),
+                    "article": result.get("article_number", ""),
+                    "section": result.get("section_title", ""),
+                    "document_summary": result.get("document_summary", ""),
+                }
+            )
+
         return {
             "query": query,
             "filters": filters or {},
             "found": len(formatted_results),
-            "results": formatted_results
+            "results": formatted_results,
         }
-    
+
     except Exception as e:
         logger.error(f"Error searching regulations: {e}")
-        return {
-            "error": str(e),
-            "query": query
-        }
+        return {"error": str(e), "query": query}
 
 
 @mcp.tool
 async def get_regulation_context(chunk_id: str, context_size: int = 2) -> dict:
     """Get surrounding chunks for additional context around a specific regulation chunk.
-    
+
     Args:
         chunk_id: The ID of the chunk to get context for
         context_size: Number of chunks before and after to retrieve (default 2)
     """
     if not weaviate_client:
-        return {
-            "error": "Weaviate search not available"
-        }
-    
+        return {"error": "Weaviate search not available"}
+
     try:
         logger.info(f"Getting context for chunk: {chunk_id}")
-        
+
         current_chunk = weaviate_client.get_chunk_by_id(chunk_id)
-        
+
         if not current_chunk:
-            return {
-                "error": f"Chunk not found: {chunk_id}"
-            }
-        
+            return {"error": f"Chunk not found: {chunk_id}"}
+
         context_chunks = [current_chunk]
-        
+
         prev_id = current_chunk.get("previous_chunk_id")
         for _ in range(context_size):
             if not prev_id:
@@ -141,7 +144,7 @@ async def get_regulation_context(chunk_id: str, context_size: int = 2) -> dict:
             if prev_chunk:
                 context_chunks.insert(0, prev_chunk)
                 prev_id = prev_chunk.get("previous_chunk_id")
-        
+
         next_id = current_chunk.get("next_chunk_id")
         for _ in range(context_size):
             if not next_id:
@@ -150,25 +153,22 @@ async def get_regulation_context(chunk_id: str, context_size: int = 2) -> dict:
             if next_chunk:
                 context_chunks.append(next_chunk)
                 next_id = next_chunk.get("next_chunk_id")
-        
+
         return {
             "chunk_id": chunk_id,
             "context_size": len(context_chunks),
-            "chunks": context_chunks
+            "chunks": context_chunks,
         }
-    
+
     except Exception as e:
         logger.error(f"Error getting context: {e}")
-        return {
-            "error": str(e),
-            "chunk_id": chunk_id
-        }
+        return {"error": str(e), "chunk_id": chunk_id}
 
 
 @mcp.tool
 async def lookup_regulation_articles(domain: str, keywords: list[str]) -> dict:
     """Search for relevant regulation articles by domain and keywords (legacy interface).
-    
+
     Args:
         domain: Regulation domain (microbiological_criteria, allergens, food_information, etc)
         keywords: Keywords to search for in regulations
@@ -176,19 +176,19 @@ async def lookup_regulation_articles(domain: str, keywords: list[str]) -> dict:
     if not weaviate_client or not embedder:
         return {
             "error": "Weaviate search not available",
-            "message": "Vector database is not connected. Please use search_regulations instead."
+            "message": "Vector database is not connected. Please use search_regulations instead.",
         }
-    
+
     query = " ".join(keywords)
     filters = {"regulation_type": domain} if domain else None
-    
-    return await search_regulations(query=query, filters=filters, limit=10)
+
+    return await search_regulations(query=query, filters=filters, limit=6)
 
 
 @mcp.tool
 async def analyze_document(document_uri: str, analysis_type: str) -> dict:
     """Analyze a document for summary, risks, or non-compliance issues.
-    
+
     Args:
         document_uri: URI or path to the document to analyze
         analysis_type: Type of analysis ('summary', 'risks', 'noncompliance')
@@ -199,43 +199,39 @@ async def analyze_document(document_uri: str, analysis_type: str) -> dict:
         "result": f"Analysis of type '{analysis_type}' for document: {document_uri}",
         "findings": [
             "This is a placeholder for document analysis",
-            "In production, this would analyze the actual document"
-        ]
+            "In production, this would analyze the actual document",
+        ],
     }
 
 
 @mcp.tool
 async def get_database_stats() -> dict:
     """Get statistics about the regulation database.
-    
+
     Returns information about total documents, chunks, and collection status.
     """
     if not weaviate_client:
-        return {
-            "error": "Weaviate not available"
-        }
-    
+        return {"error": "Weaviate not available"}
+
     try:
         stats = weaviate_client.get_stats()
         return {
             "status": "connected",
             "weaviate_url": weaviate_client.url,
             "collection": weaviate_client.collection_name,
-            "statistics": stats
+            "statistics": stats,
         }
     except Exception as e:
         logger.error(f"Error getting stats: {e}")
-        return {
-            "error": str(e)
-        }
+        return {"error": str(e)}
 
 
 def _format_citation(result: Dict[str, Any]) -> str:
     parts = []
-    
+
     doc_name = result.get("document_name", "Unknown")
     parts.append(f"Source: {doc_name}")
-    
+
     article = result.get("article_number")
     section = result.get("section_title")
     if article:
@@ -245,27 +241,30 @@ def _format_citation(result: Dict[str, Any]) -> str:
             parts.append(f"Article: {article}")
     elif section:
         parts.append(f"Section: {section}")
-    
+
     page = result.get("page_number")
     if page and page > 0:
         parts.append(f"Page: {page}")
-    
+
     reg_num = result.get("regulation_number")
     if reg_num:
         parts.append(f"Regulation: {reg_num}")
-    
+
     return " | ".join(parts)
 
 
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> JSONResponse:
     """Health check endpoint for Docker and load balancers."""
-    return JSONResponse({
-        "status": "healthy",
-        "server": "regulation-analysis",
-        "timestamp": datetime.now().isoformat(),
-        "weaviate_connected": weaviate_client is not None
-    }, status_code=200)
+    return JSONResponse(
+        {
+            "status": "healthy",
+            "server": "regulation-analysis",
+            "timestamp": datetime.now().isoformat(),
+            "weaviate_connected": weaviate_client is not None,
+        },
+        status_code=200,
+    )
 
 
 @mcp.resource("server://info")
@@ -276,9 +275,9 @@ def server_info() -> str:
         "get_regulation_context",
         "lookup_regulation_articles",
         "analyze_document",
-        "get_database_stats"
+        "get_database_stats",
     ]
-    
+
     info = {
         "name": "Regulation Analysis Server",
         "version": "2.0.0",
@@ -289,7 +288,7 @@ def server_info() -> str:
             "vector_search": weaviate_client is not None,
             "hybrid_search": weaviate_client is not None,
         },
-        "weaviate_connected": weaviate_client is not None
+        "weaviate_connected": weaviate_client is not None,
     }
     return json.dumps(info, indent=2)
 
@@ -436,4 +435,10 @@ Remember: Proper citation is not just good practice - it's legally required for 
 
 if __name__ == "__main__":
     logger.info("Starting Regulation Analysis MCP server on http://0.0.0.0:8000")
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000, path="/mcp", stateless_http=True)
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=8000,
+        path="/mcp",
+        stateless_http=True,
+    )
