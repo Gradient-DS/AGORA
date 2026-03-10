@@ -62,14 +62,14 @@ if WEAVIATE_AVAILABLE:
 
 @mcp.tool
 async def search_regulations(
-    query: str, filters: Optional[Dict[str, str]] = None, limit: int = 10
+    query: str, filters: Optional[Dict[str, str]] = None, limit: int = 6
 ) -> dict:
     """Search for relevant regulation articles using vector and hybrid search.
 
     Args:
         query: Natural language query describing what you're looking for
         filters: Optional filters (source_type: Dutch/EU/SPEC, regulation_type: microbiological_criteria/allergens/food_information)
-        limit: Maximum number of results to return (default 10)
+        limit: Maximum number of results to return (default 6)
     """
     if not weaviate_client or not embedder:
         return {
