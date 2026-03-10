@@ -26,6 +26,10 @@ async def create_checkpointer(
     log.info(f"Creating SQLite checkpointer at {db_path}")
 
     async with AsyncSqliteSaver.from_conn_string(db_path) as checkpointer:
+        # Enable WAL mode for concurrent read/write access.
+        # Without WAL, SQLite uses exclusive locking that causes
+        # "database is locked" errors under concurrent WebSocket connections.
+        await checkpointer.conn.execute("PRAGMA journal_mode=WAL")
         # Set busy_timeout so the checkpointer waits instead of failing
         # immediately when another connection holds the SQLite write lock.
         # The SessionMetadataManager and UserManager share this database
