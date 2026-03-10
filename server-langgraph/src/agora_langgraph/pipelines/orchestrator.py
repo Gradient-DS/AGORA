@@ -13,7 +13,7 @@ from typing import Any
 
 import httpx
 from ag_ui.core import Message as AGUIMessage
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
@@ -109,7 +109,9 @@ class Orchestrator:
 
             if not file_path.exists():
                 file_path.write_bytes(image_bytes)
-                log.info(f"Saved session image {filename} for session {session_id} ({len(image_bytes)} bytes)")
+                log.info(
+                    f"Saved session image {filename} for session {session_id} ({len(image_bytes)} bytes)"
+                )
 
             saved.append({"filename": filename, "mime_type": mime_type})
 
@@ -301,7 +303,9 @@ class Orchestrator:
                     if existing_state and existing_state.values
                     else "general-agent"
                 )
-                log.info(f"[DEBUG] RESUMING interrupted graph with: {user_content[:100]}...")
+                log.info(
+                    f"[DEBUG] RESUMING interrupted graph with: {user_content[:100]}..."
+                )
             elif is_existing_thread:
                 # Existing thread - only send new message
                 # interaction_mode is persisted in checkpointed state
@@ -332,7 +336,9 @@ class Orchestrator:
             # Send initial state snapshot with correct current_agent
             if protocol_handler:
                 # For interrupted flows, use the agent from persisted state
-                initial_agent = self._resuming_agent_id if is_interrupted else "general-agent"
+                initial_agent = (
+                    self._resuming_agent_id if is_interrupted else "general-agent"
+                )
                 await protocol_handler.send_state_snapshot(
                     {
                         "thread_id": thread_id,
@@ -453,21 +459,25 @@ class Orchestrator:
         except Exception:
             self._resuming_agent_id = "general-agent"
 
-        graph_input: Command = Command(resume={
-            "approved": response.approved,
-            "feedback": response.feedback,
-        })
+        graph_input: Command = Command(
+            resume={
+                "approved": response.approved,
+                "feedback": response.feedback,
+            }
+        )
 
         try:
             if protocol_handler:
                 await protocol_handler.send_run_started(thread_id, run_id)
                 await protocol_handler.send_step_started("routing")
-                await protocol_handler.send_state_snapshot({
-                    "thread_id": thread_id,
-                    "run_id": run_id,
-                    "current_agent": self._resuming_agent_id,
-                    "status": "processing",
-                })
+                await protocol_handler.send_state_snapshot(
+                    {
+                        "thread_id": thread_id,
+                        "run_id": run_id,
+                        "current_agent": self._resuming_agent_id,
+                        "status": "processing",
+                    }
+                )
 
                 response_content, active_agent_id = await self._stream_response(
                     graph_input,
@@ -481,12 +491,14 @@ class Orchestrator:
                 )
 
                 if protocol_handler.is_connected:
-                    await protocol_handler.send_state_snapshot({
-                        "thread_id": thread_id,
-                        "run_id": run_id,
-                        "current_agent": active_agent_id,
-                        "status": "completed",
-                    })
+                    await protocol_handler.send_state_snapshot(
+                        {
+                            "thread_id": thread_id,
+                            "run_id": run_id,
+                            "current_agent": active_agent_id,
+                            "status": "completed",
+                        }
+                    )
                     await protocol_handler.send_run_finished(thread_id, run_id)
 
                 self._resuming_agent_id = None
@@ -517,18 +529,27 @@ class Orchestrator:
         async with httpx.AsyncClient(timeout=10.0) as client:
             for img in image_parts:
                 try:
-                    resp = await client.post(url, json={
-                        "image_data": img.get("data", ""),
-                        "caption": caption,
-                        "mime_type": img.get("mimeType", "image/jpeg"),
-                    })
+                    resp = await client.post(
+                        url,
+                        json={
+                            "image_data": img.get("data", ""),
+                            "caption": caption,
+                            "mime_type": img.get("mimeType", "image/jpeg"),
+                        },
+                    )
                     if resp.status_code == 201:
-                        log.info(f"Forwarded evidence image to reporting server for session {session_id}")
+                        log.info(
+                            f"Forwarded evidence image to reporting server for session {session_id}"
+                        )
                     elif resp.status_code == 409:
-                        log.info(f"Image limit reached for session {session_id}, skipping remaining")
+                        log.info(
+                            f"Image limit reached for session {session_id}, skipping remaining"
+                        )
                         break
                     else:
-                        log.warning(f"Failed to forward image: {resp.status_code} {resp.text}")
+                        log.warning(
+                            f"Failed to forward image: {resp.status_code} {resp.text}"
+                        )
                 except Exception as e:
                     log.warning(f"Failed to forward evidence image: {e}")
 
@@ -553,19 +574,27 @@ class Orchestrator:
                 continue
 
             try:
-                response = await llm.ainvoke([
-                    HumanMessage(content=[
-                        {"type": "text", "text": (
-                            "Beschrijf deze foto kort in het Nederlands (max 2 zinnen). "
-                            "Dit is een inspectie-foto gemaakt door een NVWA-inspecteur. "
-                            "Focus op wat zichtbaar is dat relevant kan zijn voor "
-                            "voedselveiligheid of compliance."
-                        )},
-                        {"type": "image_url", "image_url": {"url": data_url}},
-                    ])
-                ])
+                response = await llm.ainvoke(
+                    [
+                        HumanMessage(
+                            content=[
+                                {
+                                    "type": "text",
+                                    "text": (
+                                        "Beschrijf deze foto kort in het Nederlands (max 2 zinnen). "
+                                        "Dit is een inspectie-foto gemaakt door een NVWA-inspecteur. "
+                                        "Focus op wat zichtbaar is dat relevant kan zijn voor "
+                                        "voedselveiligheid of compliance."
+                                    ),
+                                },
+                                {"type": "image_url", "image_url": {"url": data_url}},
+                            ]
+                        )
+                    ]
+                )
                 description = (
-                    response.content if isinstance(response.content, str)
+                    response.content
+                    if isinstance(response.content, str)
                     else str(response.content)
                 )
 
@@ -573,11 +602,17 @@ class Orchestrator:
                 if self.reporting_url:
                     url = f"{self.reporting_url}/reports/{session_id}/images/{i}/description"
                     async with httpx.AsyncClient(timeout=15.0) as client:
-                        resp = await client.patch(url, json={"description": description})
+                        resp = await client.patch(
+                            url, json={"description": description}
+                        )
                         if resp.status_code == 200:
-                            log.info(f"Updated image {i} description for session {session_id}")
+                            log.info(
+                                f"Updated image {i} description for session {session_id}"
+                            )
                         else:
-                            log.warning(f"Failed to update image description: {resp.status_code}")
+                            log.warning(
+                                f"Failed to update image description: {resp.status_code}"
+                            )
             except Exception as e:
                 log.warning(f"Failed to describe image {i}: {e}")
 
@@ -609,6 +644,96 @@ class Orchestrator:
         agent_id = result.get("current_agent", "general-agent")
         return response_content, agent_id
 
+    @staticmethod
+    def _build_spoken_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
+        """Build filtered message list for spoken generation.
+
+        Prior completed turns: only HumanMessages + final AI responses
+        Current turn: only HumanMessages + agent's final AIMessage
+        No tool results — the agent's response already incorporates them.
+        """
+        last_final_idx = -1
+        for i in range(len(messages) - 1, -1, -1):
+            if isinstance(messages[i], AIMessage) and messages[i].additional_kwargs.get(
+                "is_final_response"
+            ):
+                last_final_idx = i
+                break
+
+        filtered: list[BaseMessage] = []
+
+        # Prior turns: only HumanMessages + final responses
+        if last_final_idx >= 0:
+            for msg in messages[: last_final_idx + 1]:
+                if isinstance(msg, HumanMessage):
+                    filtered.append(msg)
+                elif isinstance(msg, AIMessage) and msg.additional_kwargs.get(
+                    "is_final_response"
+                ):
+                    filtered.append(msg)
+
+        # Current turn: only HumanMessages + agent's final AIMessage
+        for msg in messages[last_final_idx + 1 :]:
+            if isinstance(msg, HumanMessage):
+                filtered.append(msg)
+            elif isinstance(msg, AIMessage) and not getattr(msg, "tool_calls", None):
+                filtered.append(msg)
+
+        return filtered
+
+    async def _generate_spoken(
+        self,
+        agent_id: str,
+        messages: list[BaseMessage],
+        message_id: str,
+        protocol_handler: Any,
+    ) -> str:
+        """Generate spoken text and stream to client.
+
+        Can run concurrently with graph execution (via asyncio.create_task)
+        or sequentially after the graph ends. Uses empty callbacks config to
+        isolate from any active LangGraph streaming context.
+        """
+        from agora_langgraph.core.agent_definitions import get_spoken_prompt
+        from agora_langgraph.core.agents import get_llm_for_spoken
+
+        spoken_prompt = get_spoken_prompt(agent_id)
+        if not spoken_prompt:
+            log.warning(f"No spoken prompt for {agent_id}, skipping spoken generation")
+            return ""
+
+        llm = get_llm_for_spoken()
+        full_messages: list[BaseMessage] = [
+            SystemMessage(content=spoken_prompt)
+        ] + list(messages)
+
+        spoken_parts: list[str] = []
+        spoken_started = False
+
+        try:
+            # Pass empty callbacks to prevent leaking into graph's streaming context
+            async for chunk in llm.astream(full_messages, config={"callbacks": []}):
+                if hasattr(chunk, "content") and chunk.content:
+                    content = extract_text(chunk.content)
+                    if not content:
+                        continue
+
+                    if not spoken_started and protocol_handler.is_connected:
+                        await protocol_handler.send_spoken_text_start(
+                            message_id, "assistant"
+                        )
+                        spoken_started = True
+
+                    spoken_parts.append(content)
+                    if protocol_handler.is_connected:
+                        await protocol_handler.send_spoken_text_content(
+                            message_id, content
+                        )
+        except Exception as e:
+            log.error(f"Spoken generation failed: {e}", exc_info=True)
+
+        return "".join(spoken_parts)
+
     async def _stream_response(
         self,
         graph_input: dict[str, Any] | Command,
@@ -623,16 +748,18 @@ class Orchestrator:
         """Stream graph response using astream_events with AG-UI Protocol.
 
         The agent's response is streamed directly as written text. Spoken text
-        is generated separately via generate_spoken node.
+        is generated after the graph ends via _generate_spoken.
 
         Dual-channel streaming controlled by user's spoken_text_type preference:
-        - 'summarize': Uses generate_spoken output (speech-optimized)
-        - 'dictate': Ignores spoken stream, duplicates written to both channels
+        - 'summarize': Spoken generated after graph ends (speech-optimized)
+        - 'dictate': Duplicates written to both channels
         """
         full_response: list[str] = []
         # Handle both normal input and Command resume
         is_resuming_from_interrupt = isinstance(graph_input, Command)
-        resumed_tool_handled = False  # Track if we've skipped the resumed tool's start event
+        resumed_tool_handled = (
+            False  # Track if we've skipped the resumed tool's start event
+        )
         if is_resuming_from_interrupt:
             current_agent_id = self._resuming_agent_id or "general-agent"
         else:
@@ -644,6 +771,8 @@ class Orchestrator:
         # Track whether the current agent invocation is making tool calls.
         # If it is, we must not stream the text (it's intermediate, not the final answer).
         agent_streaming_active = False
+        # Accumulate tool results for spoken context injection
+        tool_results_for_spoken: list[str] = []
 
         # Agent node names — we stream written text directly from these
         agent_nodes = {
@@ -671,6 +800,30 @@ class Orchestrator:
 
         log.info(f"Spoken mode for user {user_id}: {spoken_mode}")
 
+        # Build conversation context for parallel spoken generation.
+        # Combines existing conversation history with the current human message
+        # so the spoken LLM can independently answer the user's question.
+        spoken_context_messages: list[BaseMessage] = []
+        spoken_task: asyncio.Task[str] | None = None
+        if spoken_mode == "summarize" and not isinstance(graph_input, Command):
+            try:
+                all_messages: list[BaseMessage] = []
+                # Get existing conversation history
+                pre_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
+                if pre_state and pre_state.values:
+                    all_messages = list(pre_state.values.get("messages", []))
+                # Append current human message from graph_input
+                input_messages = graph_input.get("messages", [])
+                all_messages.extend(input_messages)
+                if all_messages:
+                    spoken_context_messages = self._build_spoken_messages(all_messages)
+                    log.info(
+                        f"Built spoken context: {len(spoken_context_messages)} messages "
+                        f"from {len(all_messages)} total"
+                    )
+            except Exception as e:
+                log.warning(f"Failed to build spoken context: {e}")
+
         async for event in self.graph.astream_events(
             graph_input, config=config, version="v2"  # type: ignore[arg-type]
         ):
@@ -691,12 +844,45 @@ class Orchestrator:
                         if hasattr(chunk, "tool_calls") and chunk.tool_calls:
                             agent_streaming_active = False
                             continue
-                        if hasattr(chunk, "tool_call_chunks") and chunk.tool_call_chunks:
+                        if (
+                            hasattr(chunk, "tool_call_chunks")
+                            and chunk.tool_call_chunks
+                        ):
                             agent_streaming_active = False
                             continue
 
                         agent_streaming_active = True
                         full_response.append(content)
+
+                        # Start parallel spoken generation on first agent text chunk.
+                        # Inject accumulated tool results so the spoken LLM can
+                        # accurately summarize what the agent found.
+                        if (
+                            spoken_task is None
+                            and spoken_mode == "summarize"
+                            and spoken_context_messages
+                        ):
+                            # Build spoken messages with tool context
+                            spoken_msgs = list(spoken_context_messages)
+                            if tool_results_for_spoken:
+                                tool_context = (
+                                    "[Uitgevoerde tools en resultaten]\n"
+                                    + "\n".join(tool_results_for_spoken)
+                                )
+                                spoken_msgs.append(HumanMessage(content=tool_context))
+                            log.info(
+                                "Starting parallel spoken generation "
+                                f"(agent={current_agent_id}, "
+                                f"tool_results={len(tool_results_for_spoken)})"
+                            )
+                            spoken_task = asyncio.create_task(
+                                self._generate_spoken(
+                                    agent_id=current_agent_id,
+                                    messages=spoken_msgs,
+                                    message_id=message_id,
+                                    protocol_handler=protocol_handler,
+                                )
+                            )
 
                         if protocol_handler.is_connected:
                             if not message_started:
@@ -707,7 +893,13 @@ class Orchestrator:
                                     message_id, "assistant"
                                 )
                                 message_started = True
-                                if not spoken_message_started:
+                                # In dictate mode: start spoken channel eagerly
+                                # (spoken duplicates written chunks)
+                                # In summarize mode: spoken starts via parallel task above
+                                if (
+                                    spoken_mode == "dictate"
+                                    and not spoken_message_started
+                                ):
                                     await protocol_handler.send_spoken_text_start(
                                         message_id, "assistant"
                                     )
@@ -723,21 +915,6 @@ class Orchestrator:
                                     message_id, content
                                 )
 
-                    elif node_name == "generate_spoken":
-                        # In summarize mode: send to spoken channel
-                        if spoken_mode == "summarize" and protocol_handler.is_connected:
-                            if not spoken_message_started:
-                                await protocol_handler.send_spoken_text_start(
-                                    message_id, "assistant"
-                                )
-                                spoken_message_started = True
-
-                            await protocol_handler.send_spoken_text_content(
-                                message_id, content
-                            )
-                        elif spoken_mode == "dictate":
-                            # In dictate mode: ignore spoken stream (we duplicate written)
-                            pass
             elif kind == "on_tool_start":
                 tool_name = event.get("name", "unknown")
                 tool_run_id = event.get("run_id", str(uuid.uuid4()))
@@ -769,7 +946,9 @@ class Orchestrator:
                 current_step = "executing_tools"
 
                 if protocol_handler.is_connected:
-                    log.info(f"[DEBUG] Sending TOOL_CALL_START: {tool_name} ({tool_run_id})")
+                    log.info(
+                        f"[DEBUG] Sending TOOL_CALL_START: {tool_name} ({tool_run_id})"
+                    )
                     await protocol_handler.send_tool_call_start(
                         tool_call_id=tool_run_id,
                         tool_call_name=tool_name,
@@ -787,10 +966,14 @@ class Orchestrator:
             elif kind == "on_tool_end":
                 tool_run_id = event.get("run_id", "")
                 log.info(f"[DEBUG] on_tool_end received: run_id={tool_run_id}")
-                log.info(f"[DEBUG] active_tool_calls before pop: {list(active_tool_calls.keys())}")
+                log.info(
+                    f"[DEBUG] active_tool_calls before pop: {list(active_tool_calls.keys())}"
+                )
                 tool_name = active_tool_calls.pop(tool_run_id, None)
                 output = event.get("data", {}).get("output", "")
-                log.info(f"[DEBUG] on_tool_end: tool_name={tool_name}, output_len={len(str(output)) if output else 0}")
+                log.info(
+                    f"[DEBUG] on_tool_end: tool_name={tool_name}, output_len={len(str(output)) if output else 0}"
+                )
 
                 # Skip if tool wasn't started in this stream (e.g., resumed from interrupt)
                 # Events were already sent when the interrupt was handled
@@ -803,11 +986,18 @@ class Orchestrator:
 
                 # Skip sending events for resumed tools (we already sent them during interrupt handling)
                 if tool_name.startswith("_resumed_"):
-                    log.info(f"[DEBUG] Skipping TOOL_CALL_END/RESULT for resumed tool: {tool_name} ({tool_run_id})")
+                    log.info(
+                        f"[DEBUG] Skipping TOOL_CALL_END/RESULT for resumed tool: {tool_name} ({tool_run_id})"
+                    )
                     continue
 
-
                 log.info(f"[DEBUG] Tool completed: {tool_name} (run_id: {tool_run_id})")
+
+                # Accumulate tool results for spoken context (skip handoff tools)
+                if output and not tool_name.startswith("transfer_to_"):
+                    tool_results_for_spoken.append(
+                        f"[Resultaat van {tool_name}]: {str(output)}"
+                    )
 
                 if protocol_handler.is_connected:
                     # Send TOOL_CALL_END to signal end of streaming
@@ -816,7 +1006,9 @@ class Orchestrator:
                     # Send TOOL_CALL_RESULT with the actual result
                     # Always send TOOL_CALL_RESULT so frontend marks tool as completed
                     result_str = str(output)[:500] if output else ""
-                    log.info(f"[DEBUG] Sending TOOL_CALL_RESULT for {tool_run_id}, content_len={len(result_str)}")
+                    log.info(
+                        f"[DEBUG] Sending TOOL_CALL_RESULT for {tool_run_id}, content_len={len(result_str)}"
+                    )
                     await protocol_handler.send_tool_call_result(
                         message_id=f"tool-result-{tool_run_id}",
                         tool_call_id=tool_run_id,
@@ -840,7 +1032,9 @@ class Orchestrator:
                 if is_interrupt:
                     # Don't pop from active_tool_calls - let interrupt handling close it
                     tool_name = active_tool_calls.get(tool_run_id)
-                    log.info(f"[DEBUG] Tool interrupted (not error): {tool_name} (run_id: {tool_run_id})")
+                    log.info(
+                        f"[DEBUG] Tool interrupted (not error): {tool_name} (run_id: {tool_run_id})"
+                    )
                     # Don't send any events here - interrupt handling will do it
                     continue
 
@@ -951,8 +1145,12 @@ class Orchestrator:
                 # Close any active tool calls that were interrupted
                 if active_tool_calls and protocol_handler.is_connected:
                     for tool_run_id, tool_name in list(active_tool_calls.items()):
-                        log.info(f"Closing interrupted tool call: {tool_name} ({tool_run_id})")
-                        await protocol_handler.send_tool_call_end(tool_call_id=tool_run_id)
+                        log.info(
+                            f"Closing interrupted tool call: {tool_name} ({tool_run_id})"
+                        )
+                        await protocol_handler.send_tool_call_end(
+                            tool_call_id=tool_run_id
+                        )
                         if interrupt_type == "clarification_request":
                             result_content = (
                                 interrupt_value.get("display_text", "")
@@ -992,7 +1190,8 @@ class Orchestrator:
                     if protocol_handler.is_connected:
                         await protocol_handler.send_tool_approval_request(
                             tool_name=i_tool_name,
-                            tool_description=get_tool_spoken_description(i_tool_name) or f"Tool call: {i_tool_name}",
+                            tool_description=get_tool_spoken_description(i_tool_name)
+                            or f"Tool call: {i_tool_name}",
                             parameters=interrupt_value.get("parameters", {}),
                             reasoning=interrupt_value.get("reason")
                             or "Operation requires human approval",
@@ -1044,6 +1243,7 @@ class Orchestrator:
         # Skip when graph is interrupted — final_written may contain stale data
         # from a previous turn
         graph_was_interrupted = final_state and final_state.next
+        listen_mode_response = False
         try:
             if final_state and final_state.values and not graph_was_interrupted:
                 final_written = final_state.values.get("final_written", "")
@@ -1052,12 +1252,17 @@ class Orchestrator:
 
                 # If we have final_written but didn't stream (listen mode), send it now
                 if final_written and not message_started:
-                    await protocol_handler.send_text_message_start(message_id, "assistant")
-                    await protocol_handler.send_text_message_content(message_id, final_written)
+                    listen_mode_response = True
+                    await protocol_handler.send_text_message_start(
+                        message_id, "assistant"
+                    )
+                    await protocol_handler.send_text_message_content(
+                        message_id, final_written
+                    )
                     message_started = True
                     full_response.append(final_written)
 
-                    # Also send spoken if present
+                    # Also send spoken if present (from graph state, e.g. wake word handler)
                     if final_spoken:
                         await protocol_handler.send_spoken_text_start(
                             message_id, "assistant"
@@ -1072,7 +1277,10 @@ class Orchestrator:
                     )
 
                 # Log interaction_mode change (per-session, persisted in graph state)
-                if final_interaction_mode and final_interaction_mode != interaction_mode:
+                if (
+                    final_interaction_mode
+                    and final_interaction_mode != interaction_mode
+                ):
                     log.info(
                         f"interaction_mode changed to '{final_interaction_mode}' "
                         f"(persisted in session state)"
@@ -1080,23 +1288,99 @@ class Orchestrator:
         except Exception as e:
             log.warning(f"Failed to handle listen mode response: {e}")
 
-        written_chars = len("".join(full_response))
-        spoken_source = (
-            "duplicated from written" if spoken_mode == "dictate" else "generate_spoken"
-        )
-        log.info(
-            f"Parallel generation complete: written={written_chars} chars, "
-            f"spoken_mode={spoken_mode}, spoken_source={spoken_source}"
-        )
-
-        # Finalize BOTH channels
+        # Close written text channel and step BEFORE awaiting spoken
+        # so the frontend can finalize the written message immediately
         if protocol_handler.is_connected:
             if message_started:
                 await protocol_handler.send_text_message_end(message_id)
-            if spoken_message_started:
+            # In dictate mode, spoken was already streamed alongside written
+            if spoken_mode == "dictate" and spoken_message_started:
                 await protocol_handler.send_spoken_text_end(message_id)
             if current_step:
                 await protocol_handler.send_step_finished(current_step)
+
+        # Await parallel spoken generation task (started during agent streaming)
+        spoken_content = ""
+        if spoken_task:
+            if graph_was_interrupted:
+                spoken_task.cancel()
+                try:
+                    await spoken_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+            else:
+                try:
+                    spoken_content = await spoken_task
+                    spoken_message_started = spoken_message_started or bool(
+                        spoken_content
+                    )
+                except Exception as e:
+                    log.warning(f"Spoken generation task failed: {e}", exc_info=True)
+        elif (
+            spoken_mode == "summarize"
+            and not graph_was_interrupted
+            and not listen_mode_response
+            and message_started
+        ):
+            # Fallback: sequential spoken if parallel task wasn't started
+            # (e.g. no spoken_context_messages were available)
+            try:
+                state_messages = (
+                    final_state.values.get("messages", [])
+                    if final_state and final_state.values
+                    else []
+                )
+                if state_messages:
+                    spoken_messages = self._build_spoken_messages(state_messages)
+                    spoken_content = await self._generate_spoken(
+                        agent_id=current_agent_id,
+                        messages=spoken_messages,
+                        message_id=message_id,
+                        protocol_handler=protocol_handler,
+                    )
+                    spoken_message_started = spoken_message_started or bool(
+                        spoken_content
+                    )
+            except Exception as e:
+                log.warning(f"Failed to generate spoken text: {e}", exc_info=True)
+
+        # Persist spoken_text on the AIMessage in graph state for history
+        if spoken_content and final_state and not graph_was_interrupted:
+            try:
+                state_messages = (
+                    final_state.values.get("messages", []) if final_state.values else []
+                )
+                for msg in reversed(state_messages):
+                    if isinstance(msg, AIMessage) and msg.additional_kwargs.get(
+                        "is_final_response"
+                    ):
+                        updated_kwargs = {**msg.additional_kwargs}
+                        updated_kwargs["spoken_text"] = spoken_content
+                        updated_msg = AIMessage(
+                            content=msg.content,
+                            id=msg.id,
+                            additional_kwargs=updated_kwargs,
+                        )
+                        await self.graph.aupdate_state(
+                            config,
+                            {"messages": [updated_msg]},
+                        )
+                        break
+            except Exception as e:
+                log.warning(
+                    f"Failed to update spoken_text in state: {e}", exc_info=True
+                )
+
+        # Close spoken channel after generation (summarize mode + listen mode with final_spoken)
+        if protocol_handler.is_connected:
+            if spoken_message_started and spoken_mode != "dictate":
+                await protocol_handler.send_spoken_text_end(message_id)
+
+        written_chars = len("".join(full_response))
+        log.info(
+            f"Response complete: written={written_chars} chars, "
+            f"spoken_mode={spoken_mode}"
+        )
 
         return "".join(full_response), current_agent_id
 
@@ -1105,10 +1389,8 @@ class Orchestrator:
     ) -> list[dict[str, Any]]:
         """Get conversation history for a session.
 
-        Note: Due to parallel generation architecture, the LangGraph checkpoint
-        may contain duplicate AIMessages (agent's response + regenerated response).
-        This method filters out consecutive AI messages without tool calls,
-        keeping only the last one in each sequence (the final regenerated version).
+        Filters out consecutive AI messages without tool calls,
+        keeping only the last one in each sequence (the finalized version).
         """
         config = {"configurable": {"thread_id": thread_id}}
 
@@ -1150,21 +1432,36 @@ class Orchestrator:
                         # Fallback: legacy multimodal messages (backward compat)
                         if not image_attachment and isinstance(msg.content, list):
                             for part in msg.content:
-                                if isinstance(part, dict) and part.get("type") == "image_url":
+                                if (
+                                    isinstance(part, dict)
+                                    and part.get("type") == "image_url"
+                                ):
                                     data_url = part.get("image_url", {}).get("url", "")
                                     mime_type = "image/jpeg"
                                     if data_url.startswith("data:"):
                                         mime_header = data_url.split(",")[0]
                                         if "image/" in mime_header:
-                                            mime_type = mime_header.split(":", 1)[1].split(";")[0]
+                                            mime_type = mime_header.split(":", 1)[
+                                                1
+                                            ].split(";")[0]
                                     if "," in data_url:
                                         _, b64_data = data_url.split(",", 1)
                                         try:
                                             image_bytes = base64.b64decode(b64_data)
-                                            content_hash = hashlib.md5(image_bytes).hexdigest()[:12]
-                                            ext = "jpg" if "jpeg" in mime_type else mime_type.split("/")[-1]
+                                            content_hash = hashlib.md5(
+                                                image_bytes
+                                            ).hexdigest()[:12]
+                                            ext = (
+                                                "jpg"
+                                                if "jpeg" in mime_type
+                                                else mime_type.split("/")[-1]
+                                            )
                                             filename = f"{content_hash}.{ext}"
-                                            file_path = self.SESSION_IMAGES_DIR / thread_id / filename
+                                            file_path = (
+                                                self.SESSION_IMAGES_DIR
+                                                / thread_id
+                                                / filename
+                                            )
                                             if file_path.exists():
                                                 image_attachment = {
                                                     "url": f"/sessions/{thread_id}/images/{filename}",
@@ -1174,7 +1471,10 @@ class Orchestrator:
                                             pass
                                     break
 
-                        entry: dict[str, Any] = {"role": "user", "content": content_text}
+                        entry: dict[str, Any] = {
+                            "role": "user",
+                            "content": content_text,
+                        }
                         if image_attachment:
                             entry["image_attachment"] = image_attachment
                         history.append(entry)
