@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import operator
 from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import BaseMessage
@@ -35,28 +34,10 @@ class AgentState(TypedDict):
     current_agent: str
     pending_approval: dict[str, Any] | None
     metadata: dict[str, Any]
-    # Parallel output accumulators - use operator.add to concatenate results from branches
-    written: Annotated[list[str], operator.add]
-    spoken: Annotated[list[str], operator.add]
-    # Final merged outputs
+    # Final outputs
     final_written: str
     final_spoken: str
     # Listen mode fields
     interaction_mode: str  # "feedback" | "listen"
     message_buffer: Annotated[list[dict[str, Any]], accumulate_messages]
     buffer_context: str  # Processed summary from buffered messages
-
-
-class GeneratorState(TypedDict):
-    """State passed to parallel generator nodes via Send API.
-
-    Each parallel generator receives this independent state with different prompts
-    but identical message context.
-    """
-
-    messages: list[BaseMessage]
-    system_prompt: str
-    stream_type: str  # "written" or "spoken"
-    agent_id: str
-    session_id: str
-    metadata: dict[str, Any]

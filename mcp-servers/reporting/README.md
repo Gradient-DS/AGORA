@@ -33,9 +33,6 @@ Verwerk antwoorden van de inspecteur op verificatievragen.
 ### 5. `generate_final_report`
 Maak definitieve JSON en PDF rapporten.
 
-### 6. `get_report_status`
-Controleer de voltooiing en status van het rapport.
-
 ## Workflow
 
 ### Fase 1: Data-extractie

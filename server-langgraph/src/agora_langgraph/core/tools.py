@@ -277,6 +277,13 @@ AGENT_MCP_MAPPING = {
     "history-agent": ["history"],
 }
 
+# Tools to expose per MCP server. If a server is listed here, only the
+# named tools are kept; unlisted tools are dropped. Servers not in this
+# map expose all their tools (default).
+AGENT_MCP_TOOL_ALLOWLIST: dict[str, set[str]] = {
+    "regulation": {"search_regulations", "get_regulation_context"},
+}
+
 
 def get_tools_for_agent(
     agent_id: str,
@@ -315,6 +322,13 @@ def get_tools_for_agent(
     for server_name in mcp_server_names:
         if server_name in mcp_tools_by_server:
             mcp_tools = mcp_tools_by_server[server_name]
+            # Filter to allowlisted tools if configured
+            allowlist = AGENT_MCP_TOOL_ALLOWLIST.get(server_name)
+            if allowlist:
+                mcp_tools = [
+                    t for t in mcp_tools
+                    if getattr(t, "name", "") in allowlist
+                ]
             # Wrap MCP tools with interrupt-based approval gating
             wrapped_tools = [wrap_tool_with_approval(t) for t in mcp_tools]
             tools.extend(wrapped_tools)

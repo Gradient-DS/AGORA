@@ -4,6 +4,8 @@ Provides Dutch display names for tools shown in the HAI frontend.
 These names are sent via the toolDisplayName field in TOOL_CALL_START events.
 """
 
+import random
+
 TOOL_DISPLAY_NAMES: dict[str, str] = {
     # History agent tools
     "check_company_exists": "Controleren bedrijfsgegevens",
@@ -12,6 +14,7 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "check_repeat_violation": "Controleren herhaalde overtredingen",
     "get_follow_up_status": "Controleren follow-up status",
     "search_inspections_by_inspector": "Zoeken inspecties per inspecteur",
+    "get_company_meldingen": "Ophalen meldingen",
     # Regulation agent tools
     "search_regulations": "Zoeken in regelgeving",
     "get_regulation_context": "Ophalen regelgeving context",
@@ -20,14 +23,8 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "analyze_regulations": "Analyseren regelgeving",
     "get_database_stats": "Ophalen database statistieken",
     # Reporting agent tools
-    "start_inspection_report": "Starten inspectie rapport",
-    "extract_inspection_data": "Verwerken inspectiegegevens",
-    "verify_inspection_data": "Verifiëren inspectiegegevens",
-    "submit_verification_answers": "Verwerken antwoorden",
+    "generate_report": "Genereren inspectierapport",
     "request_clarification": "Opvragen aanvullende informatie",
-    "generate_final_report": "Genereren eindrapport",
-    "get_report_status": "Ophalen rapport status",
-    "generate_report": "Genereren rapportage",
     # General tools
     "search_documents": "Zoeken in documenten",
     "query_knowledge_base": "Zoeken in kennisbank",
@@ -49,16 +46,38 @@ def get_tool_display_name(tool_name: str) -> str | None:
     return TOOL_DISPLAY_NAMES.get(tool_name)
 
 
-TOOL_SPOKEN_DESCRIPTIONS: dict[str, str] = {
-    "transfer_to_reporting": "Ik geef het door aan de rapportage agent.",
-    "transfer_to_regulation": "Ik geef het door aan de regelgeving agent.",
-    "transfer_to_history": "Ik geef het door aan de inspectiehistorie agent.",
-    "transfer_to_general": "Ik geef het door aan de algemene agent.",
-    "transfer_to_triage": "Ik geef het door aan de triage agent.",
-    "transfer_to_agent": "Ik geef het door aan de specialist.",
+TOOL_SPOKEN_DESCRIPTIONS: dict[str, list[str]] = {
+    # Handoff tools - natural, action-oriented descriptions
+    "transfer_to_reporting": [
+        "Ik ga het rapport voor je voorbereiden en kom zo bij je terug.",
+        "Momentje, ik begin met de rapportage. Ik ben zo terug.",
+        "Ik ga de inspectiegegevens verwerken voor het rapport, een ogenblikje.",
+    ],
+    "transfer_to_regulation": [
+        "Ik ga de regelgeving erbij pakken en kom zo bij je terug.",
+        "Even de regels checken, ik ben er zo.",
+        "Ik zoek de relevante wetgeving voor je op, een momentje.",
+    ],
+    "transfer_to_history": [
+        "Ik ga de bedrijfsgegevens opzoeken en kom zo bij je terug.",
+        "Momentje, ik zoek de inspectiehistorie op. Ik ben zo terug.",
+        "Ik ga kijken wat we over dit bedrijf weten, een ogenblikje.",
+    ],
+    # Report generation - shown in approval dialog
+    "generate_report": [
+        "Ik ga het eindrapport voor je opstellen.",
+        "Momentje, ik genereer het inspectierapport.",
+        "Ik ga de bevindingen verwerken in het rapport.",
+    ],
 }
 
 
 def get_tool_spoken_description(tool_name: str) -> str | None:
-    """Get spoken TTS description for a tool, or None for no announcement."""
-    return TOOL_SPOKEN_DESCRIPTIONS.get(tool_name)
+    """Get spoken TTS description for a tool, or None for no announcement.
+
+    Randomly selects from multiple natural-sounding options for variety.
+    """
+    options = TOOL_SPOKEN_DESCRIPTIONS.get(tool_name)
+    if options is None:
+        return None
+    return random.choice(options)

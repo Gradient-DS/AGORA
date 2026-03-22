@@ -17,13 +17,13 @@ class TestApprovalLogic:
         assert reason is None
         assert level == "low"
 
-    def test_generate_final_report_requires_approval(self):
-        """generate_final_report should always require approval."""
-        tool_calls = [ToolCall(tool_name="generate_final_report", parameters={})]
+    def test_generate_report_requires_approval(self):
+        """generate_report should always require approval."""
+        tool_calls = [ToolCall(tool_name="generate_report", parameters={})]
         requires, reason, level = requires_human_approval(tool_calls, {})
 
         assert requires is True
-        assert "Critical operation" in reason
+        assert "goedkeuring" in reason
         assert level == "critical"
 
     def test_delete_pattern_requires_approval(self):

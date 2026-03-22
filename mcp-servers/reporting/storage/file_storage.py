@@ -65,7 +65,7 @@ class FileStorage:
         logger.info(f"Saved PDF report for session {session_id}")
         return str(pdf_path)
     
-    def save_image(self, session_id: str, image_bytes: bytes, filename: str, caption: str, mime_type: str = "image/jpeg") -> dict | None:
+    def save_image(self, session_id: str, image_bytes: bytes, filename: str, caption: str, mime_type: str = "image/jpeg", description: str = "") -> dict | None:
         """Save an evidence image for a session. Returns image metadata or None if limit reached."""
         session_dir = self._get_session_dir(session_id)
         images_dir = session_dir / "images"
@@ -99,6 +99,7 @@ class FileStorage:
             "caption": caption,
             "mime_type": mime_type,
             "size_bytes": len(image_bytes),
+            "description": description,
             "uploaded_at": datetime.now().isoformat(),
         }
         manifest.append(entry)
@@ -108,6 +109,26 @@ class FileStorage:
 
         logger.info(f"Saved evidence image {img_filename} for session {session_id} ({len(image_bytes)} bytes)")
         return entry
+
+    def update_image_description(self, session_id: str, image_index: int, description: str) -> bool:
+        """Update the AI-generated description for an image in the manifest."""
+        session_dir = self._get_session_dir(session_id)
+        manifest_path = session_dir / "images" / "manifest.json"
+
+        if not manifest_path.exists():
+            return False
+
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        for entry in manifest:
+            if entry.get("index") == image_index:
+                entry["description"] = description
+                with open(manifest_path, "w", encoding="utf-8") as f:
+                    json.dump(manifest, f, indent=2, ensure_ascii=False)
+                return True
+
+        return False
 
     def load_images(self, session_id: str) -> list[dict]:
         """Load all evidence images for a session. Returns list of {metadata + 'path': str}."""

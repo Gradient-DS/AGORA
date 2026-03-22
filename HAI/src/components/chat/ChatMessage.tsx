@@ -76,9 +76,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <div className="mb-2">
               <img
                 src={message.imageAttachment.data}
-                alt={message.imageAttachment.filename || 'Bijlage'}
+                alt="Bewijsfoto"
                 className="max-w-full max-h-48 rounded-md object-contain"
               />
+              <p className="text-xs text-primary-foreground/70 mt-1 italic">
+                Wordt toegevoegd als bewijsmateriaal
+              </p>
             </div>
           )}
           {showSpokenComparison && !isUser && message.spokenContent !== undefined ? (
