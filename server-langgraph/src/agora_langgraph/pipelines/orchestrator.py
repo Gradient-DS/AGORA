@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import logging
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -1227,8 +1228,16 @@ class Orchestrator:
                             await protocol_handler.send_text_message_content(
                                 message_id, clarification_message
                             )
+                            # Strip numbered list formatting for
+                            # natural TTS pronunciation
+                            spoken_clarification = re.sub(
+                                r"\d+\.\s*", "", clarification_message
+                            )
+                            spoken_clarification = re.sub(
+                                r"\n+", " ", spoken_clarification
+                            )
                             await protocol_handler.send_spoken_text_content(
-                                message_id, clarification_message
+                                message_id, spoken_clarification
                             )
                             full_response.append(clarification_message)
                             log.info(
