@@ -127,6 +127,32 @@ class AGUIProtocolHandler:
                 # Use Pydantic's JSON serialization with camelCase aliases
                 event_json = event.model_dump_json(by_alias=True, exclude_none=True)
                 log.debug("Sending event: %s", event.type)
+
+                # Debug: log all spoken and written text events
+                if hasattr(event, "name") and isinstance(event.name, str):
+                    if "spoken_text" in event.name:
+                        value = getattr(event, "value", {})
+                        delta_preview = ""
+                        if isinstance(value, dict) and "delta" in value:
+                            delta_preview = f" delta={value['delta'][:80]!r}..."
+                        log.info(
+                            "[SPOKEN-DEBUG] %s | msg=%s%s",
+                            event.name,
+                            value.get("messageId", "?") if isinstance(value, dict) else "?",
+                            delta_preview,
+                        )
+                elif hasattr(event, "type"):
+                    etype = str(event.type)
+                    if "TEXT_MESSAGE" in etype:
+                        delta = getattr(event, "delta", None)
+                        delta_preview = f" delta={delta[:80]!r}..." if delta else ""
+                        log.info(
+                            "[WRITTEN-DEBUG] %s | msg=%s%s",
+                            etype,
+                            getattr(event, "message_id", "?"),
+                            delta_preview,
+                        )
+
                 await self.websocket.send_text(event_json)
             except RuntimeError as e:
                 if "websocket.send" in str(e) or "websocket.close" in str(e):

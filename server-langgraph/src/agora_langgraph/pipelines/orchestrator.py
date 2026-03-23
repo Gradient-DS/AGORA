@@ -688,12 +688,13 @@ class Orchestrator:
         messages: list[BaseMessage],
         message_id: str,
         protocol_handler: Any,
+        written_text: str = "",
     ) -> str:
         """Generate spoken text and stream to client.
 
-        Can run concurrently with graph execution (via asyncio.create_task)
-        or sequentially after the graph ends. Uses empty callbacks config to
-        isolate from any active LangGraph streaming context.
+        Runs sequentially after the graph ends. Receives the completed written
+        response so the spoken LLM can summarize it. Uses empty callbacks config
+        to isolate from any active LangGraph streaming context.
         """
         from agora_langgraph.core.agent_definitions import get_spoken_prompt
         from agora_langgraph.core.agents import get_llm_for_spoken
@@ -707,6 +708,10 @@ class Orchestrator:
         full_messages: list[BaseMessage] = [
             SystemMessage(content=spoken_prompt)
         ] + list(messages)
+
+        # Append the written response so the spoken LLM can summarize it
+        if written_text:
+            full_messages.append(AIMessage(content=written_text))
 
         spoken_parts: list[str] = []
         spoken_started = False
@@ -772,8 +777,6 @@ class Orchestrator:
         # Track whether the current agent invocation is making tool calls.
         # If it is, we must not stream the text (it's intermediate, not the final answer).
         agent_streaming_active = False
-        # Accumulate tool results for spoken context injection
-        tool_results_for_spoken: list[str] = []
 
         # Agent node names — we stream written text directly from these
         agent_nodes = {
@@ -800,30 +803,6 @@ class Orchestrator:
                 log.warning(f"Failed to fetch user preferences: {e}, using default")
 
         log.info(f"Spoken mode for user {user_id}: {spoken_mode}")
-
-        # Build conversation context for parallel spoken generation.
-        # Combines existing conversation history with the current human message
-        # so the spoken LLM can independently answer the user's question.
-        spoken_context_messages: list[BaseMessage] = []
-        spoken_task: asyncio.Task[str] | None = None
-        if spoken_mode == "summarize" and not isinstance(graph_input, Command):
-            try:
-                all_messages: list[BaseMessage] = []
-                # Get existing conversation history
-                pre_state = await self.graph.aget_state(config)  # type: ignore[arg-type]
-                if pre_state and pre_state.values:
-                    all_messages = list(pre_state.values.get("messages", []))
-                # Append current human message from graph_input
-                input_messages = graph_input.get("messages", [])
-                all_messages.extend(input_messages)
-                if all_messages:
-                    spoken_context_messages = self._build_spoken_messages(all_messages)
-                    log.info(
-                        f"Built spoken context: {len(spoken_context_messages)} messages "
-                        f"from {len(all_messages)} total"
-                    )
-            except Exception as e:
-                log.warning(f"Failed to build spoken context: {e}")
 
         async for event in self.graph.astream_events(
             graph_input, config=config, version="v2"  # type: ignore[arg-type]
@@ -855,36 +834,6 @@ class Orchestrator:
                         agent_streaming_active = True
                         full_response.append(content)
 
-                        # Start parallel spoken generation on first agent text chunk.
-                        # Inject accumulated tool results so the spoken LLM can
-                        # accurately summarize what the agent found.
-                        if (
-                            spoken_task is None
-                            and spoken_mode == "summarize"
-                            and spoken_context_messages
-                        ):
-                            # Build spoken messages with tool context
-                            spoken_msgs = list(spoken_context_messages)
-                            if tool_results_for_spoken:
-                                tool_context = (
-                                    "[Uitgevoerde tools en resultaten]\n"
-                                    + "\n".join(tool_results_for_spoken)
-                                )
-                                spoken_msgs.append(HumanMessage(content=tool_context))
-                            log.info(
-                                "Starting parallel spoken generation "
-                                f"(agent={current_agent_id}, "
-                                f"tool_results={len(tool_results_for_spoken)})"
-                            )
-                            spoken_task = asyncio.create_task(
-                                self._generate_spoken(
-                                    agent_id=current_agent_id,
-                                    messages=spoken_msgs,
-                                    message_id=message_id,
-                                    protocol_handler=protocol_handler,
-                                )
-                            )
-
                         if protocol_handler.is_connected:
                             if not message_started:
                                 log.info(
@@ -896,7 +845,7 @@ class Orchestrator:
                                 message_started = True
                                 # In dictate mode: start spoken channel eagerly
                                 # (spoken duplicates written chunks)
-                                # In summarize mode: spoken starts via parallel task above
+                                # In summarize mode: spoken starts after written completes
                                 if (
                                     spoken_mode == "dictate"
                                     and not spoken_message_started
@@ -993,12 +942,6 @@ class Orchestrator:
                     continue
 
                 log.info(f"[DEBUG] Tool completed: {tool_name} (run_id: {tool_run_id})")
-
-                # Accumulate tool results for spoken context (skip handoff tools)
-                if output and not tool_name.startswith("transfer_to_"):
-                    tool_results_for_spoken.append(
-                        f"[Resultaat van {tool_name}]: {str(output)}"
-                    )
 
                 if protocol_handler.is_connected:
                     # Send TOOL_CALL_END to signal end of streaming
@@ -1308,32 +1251,16 @@ class Orchestrator:
             if current_step:
                 await protocol_handler.send_step_finished(current_step)
 
-        # Await parallel spoken generation task (started during agent streaming)
+        # Generate spoken text sequentially from the completed written response
         spoken_content = ""
-        if spoken_task:
-            if graph_was_interrupted:
-                spoken_task.cancel()
-                try:
-                    await spoken_task
-                except (asyncio.CancelledError, Exception):
-                    pass
-            else:
-                try:
-                    spoken_content = await spoken_task
-                    spoken_message_started = spoken_message_started or bool(
-                        spoken_content
-                    )
-                except Exception as e:
-                    log.warning(f"Spoken generation task failed: {e}", exc_info=True)
-        elif (
+        if (
             spoken_mode == "summarize"
             and not graph_was_interrupted
             and not listen_mode_response
             and message_started
         ):
-            # Fallback: sequential spoken if parallel task wasn't started
-            # (e.g. no spoken_context_messages were available)
             try:
+                written_text = "".join(full_response)
                 state_messages = (
                     final_state.values.get("messages", [])
                     if final_state and final_state.values
@@ -1346,6 +1273,7 @@ class Orchestrator:
                         messages=spoken_messages,
                         message_id=message_id,
                         protocol_handler=protocol_handler,
+                        written_text=written_text,
                     )
                     spoken_message_started = spoken_message_started or bool(
                         spoken_content

@@ -336,20 +336,21 @@ _SPOKEN_TTS_NUMBER_RULES = (
     "- Als codes of links relevant zijn, verwijs naar de chat voor de exacte gegevens\n\n"
 )
 
-# Shared instruction prepended to all spoken prompts to anchor on the latest question
-_SPOKEN_LATEST_MESSAGE_ANCHOR = (
-    "KRITIEK — ANTWOORD OP DE LAATSTE VRAAG:\n"
-    "- Lees het HELE gesprek, maar beantwoord ALLEEN de LAATSTE vraag of boodschap "
-    "van de gebruiker.\n"
-    "- Negeer eerdere vragen die al beantwoord zijn.\n"
-    "- Als de laatste boodschap een opvolging of statusvraag is, geef daar antwoord op.\n\n"
+# Shared instruction prepended to all spoken prompts to summarize the written response
+_SPOKEN_WRITTEN_CONTEXT_ANCHOR = (
+    "KRITIEK — VAT DE GESCHREVEN RESPONS SAMEN:\n"
+    "- Je ontvangt de GESCHREVEN respons van de assistent als laatste bericht.\n"
+    "- Vat deze geschreven respons samen in natuurlijke spreektaal.\n"
+    "- Voeg GEEN nieuwe informatie toe die niet in de geschreven respons staat.\n"
+    "- Als de geschreven respons een vraag stelt aan de gebruiker, stel dan dezelfde vraag kort.\n"
+    "- Als de geschreven respons informatie geeft, vat de kern samen.\n\n"
 )
 
-# Spoken text prompts for TTS - independent summary-style responses
-# These run in PARALLEL with written prompts, receiving the same conversation context
+# Spoken text prompts for TTS - summaries derived from written responses
+# These run SEQUENTIALLY after written generation, receiving the written text as context
 SPOKEN_AGENT_PROMPTS: dict[str, str] = {
     "general-agent": (
-        _SPOKEN_LATEST_MESSAGE_ANCHOR +
+        _SPOKEN_WRITTEN_CONTEXT_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent AGORA, een vriendelijke NVWA inspectie-assistent die KORTE "
         "gesproken antwoorden geeft.\n\n"
@@ -377,7 +378,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Antwoord: 'Prima, ik zoek de bedrijfsgegevens voor Bakkerij Jansen op.'"
     ),
     "regulation-agent": (
-        _SPOKEN_LATEST_MESSAGE_ANCHOR +
+        _SPOKEN_WRITTEN_CONTEXT_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een regelgeving-expert die KORTE gesproken antwoorden geeft.\n\n"
         "BELANGRIJK - Dit is voor tekst-naar-spraak (TTS):\n"
@@ -397,7 +398,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Celsius volgens de levensmiddelenhygiëne voorschriften.'"
     ),
     "reporting-agent": (
-        _SPOKEN_LATEST_MESSAGE_ANCHOR +
+        _SPOKEN_WRITTEN_CONTEXT_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een rapportage-specialist die ZEER KORTE gesproken statusupdates "
         "geeft.\n\n"
@@ -420,7 +421,7 @@ SPOKEN_AGENT_PROMPTS: dict[str, str] = {
         "Die staan in de geschreven versie."
     ),
     "history-agent": (
-        _SPOKEN_LATEST_MESSAGE_ANCHOR +
+        _SPOKEN_WRITTEN_CONTEXT_ANCHOR +
         _SPOKEN_TTS_NUMBER_RULES +
         "Je bent een bedrijfshistorie-specialist die KORTE gesproken "
         "samenvattingen geeft.\n\n"
