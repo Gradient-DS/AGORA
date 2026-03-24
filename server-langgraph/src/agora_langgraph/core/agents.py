@@ -169,13 +169,29 @@ def _make_llm(provider: ProviderConfig, temperature: float) -> BaseChatModel:
     """Create an LLM instance from a provider config.
 
     Auto-detects Google providers from base_url and returns the appropriate
-    ChatGoogleGenerativeAI or ChatOpenAI instance.
+    ChatGoogleGenerativeAI or ChatOpenAI instance. Vertex AI providers
+    (aiplatform.googleapis.com) use ADC for authentication.
     """
     if _is_google_provider(provider.base_url):
         if ChatGoogleGenerativeAI is None:
             raise ImportError(
                 "langchain-google-genai is required for Google providers. "
                 "Install it with: pip install langchain-google-genai>=4.0.0"
+            )
+        if provider.is_vertex:
+            settings = get_settings()
+            log.info(
+                f"Creating Vertex AI LLM: {provider.model} "
+                f"(project={settings.vertex_project}, location={settings.vertex_location})"
+            )
+            return ChatGoogleGenerativeAI(
+                model=provider.model,
+                temperature=temperature,
+                streaming=True,
+                vertexai=True,
+                project=settings.vertex_project,
+                location=settings.vertex_location,
+                max_retries=0,
             )
         return ChatGoogleGenerativeAI(
             model=provider.model,

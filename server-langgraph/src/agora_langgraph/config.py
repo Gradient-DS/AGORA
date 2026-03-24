@@ -24,7 +24,14 @@ class ProviderConfig(BaseModel):
     api_key_env: str  # Name of env var holding the API key
 
     @property
+    def is_vertex(self) -> bool:
+        """Check if this provider uses Google Vertex AI (ADC auth, no API key)."""
+        return "aiplatform.googleapis.com" in self.base_url
+
+    @property
     def api_key(self) -> str:
+        if self.is_vertex:
+            return ""  # Vertex AI uses ADC, not API keys
         key = os.getenv(self.api_key_env, "")
         if not key:
             raise ValueError(f"API key env var '{self.api_key_env}' is not set")
@@ -63,6 +70,16 @@ class Settings(BaseSettings):
     spoken_providers: str = Field(
         default="",
         description="Semicolon-separated spoken fallback chain: base_url|model|api_key_env;...",
+    )
+
+    # Google Vertex AI
+    vertex_project: str | None = Field(
+        default=None,
+        description="GCP project ID for Vertex AI (e.g. agora-484112)",
+    )
+    vertex_location: str = Field(
+        default="europe-west4",
+        description="GCP region for Vertex AI",
     )
 
     mcp_servers: str = Field(
